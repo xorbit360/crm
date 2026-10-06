@@ -5,9 +5,9 @@ echo "=== [1/4] Preparando directorio de despliegue ==="
 mkdir -p /docker/crm-xorbit
 cd /docker/crm-xorbit
 
-echo "=== [2/4] Creando Dockerfile para CRM ==="
+echo "=== [2/4] Creando Dockerfile para CRM (Node 22) ==="
 cat << 'EOF' > /docker/crm-xorbit/app/Dockerfile
-FROM node:20-alpine
+FROM node:22-alpine
 
 WORKDIR /app
 
