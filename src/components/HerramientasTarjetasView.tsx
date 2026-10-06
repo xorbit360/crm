@@ -91,7 +91,7 @@ export default function HerramientasTarjetasView({ onSelectTool, hiddenItems = [
       category: 'Ventas en Directo',
       description: 'Transmisiones en vivo multi-canal con producto fijado relámpago, carrito interactivo y escaneo de palabras clave en comentarios.',
       icon: <Radio size={26} />,
-      tags: ['Transmisión Vivo', 'Checkout Interactivo', 'Pancake Comentarios']
+      tags: ['Transmisión Vivo', 'Checkout Interactivo', 'Comentarios IA']
     }
   ];
 

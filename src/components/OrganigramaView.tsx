@@ -96,7 +96,7 @@ export default function OrganigramaView({ onNavigateModule, onNavigateWhatsappTa
     live_selling: {
       title: "Live Selling & Transmisión",
       department: "Marketing",
-      description: "Transmisiones en vivo multi-plataforma (TikTok, Facebook, Instagram), producto fijado con oferta relámpago y captura de pedidos por comentarios estilo Pancake.",
+      description: "Transmisiones en vivo multi-plataforma (TikTok, Facebook, Instagram), producto fijado con oferta relámpago y captura de pedidos por comentarios estilo Xorbit Live.",
       aiPower: "Escaneo con IA de palabras clave de compra en comentarios en vivo, generación de órdenes y despacho automático de checkout por WhatsApp.",
       suggestedPrompt: "Prepara una sesión de Live Selling con ofertas relámpago de 5 minutos para liquidar stock",
       linkedModuleId: "live_selling",

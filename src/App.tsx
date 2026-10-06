@@ -71,9 +71,18 @@ export default function App() {
   }, [language]);
 
   const [currentView, setCurrentView] = useState<'login' | 'register' | 'app'>(() => {
-    // Check if URL has a ?ref= param or /join/ path
-    const searchParams = new URLSearchParams(window.location.search);
-    if (searchParams.has('ref') || window.location.pathname.includes('/join/')) return 'register';
+    try {
+      const searchParams = new URLSearchParams(window.location.search);
+      if (searchParams.has('ref') || window.location.pathname.includes('/join/')) return 'register';
+      const emailParam = searchParams.get('email');
+      const autoLogin = searchParams.get('auto_login');
+      const paymentStatus = searchParams.get('payment_status');
+      if (emailParam && (autoLogin === '1' || autoLogin === 'true' || paymentStatus === 'completed')) {
+        return 'app';
+      }
+      const cached = localStorage.getItem('xorbit_user');
+      if (cached) return 'app';
+    } catch (_) {}
     return 'login';
   });
   const [activeWhatsappTab, setActiveWhatsappTab] = useState('conversaciones');
@@ -91,7 +100,29 @@ export default function App() {
     answers: { [qId: string]: string };
   } | null>(null);
   
-  const [user, setUser] = useState<{name: string, role: string, email: string, plan?: string, username?: string, phone?: string} | null>(null);
+  const [user, setUser] = useState<{name: string, role: string, email: string, plan?: string, username?: string, phone?: string} | null>(() => {
+    try {
+      const searchParams = new URLSearchParams(window.location.search);
+      const emailParam = searchParams.get('email');
+      const autoLogin = searchParams.get('auto_login');
+      const paymentStatus = searchParams.get('payment_status');
+      if (emailParam && (autoLogin === '1' || autoLogin === 'true' || paymentStatus === 'completed')) {
+        const u = {
+          name: searchParams.get('name') || emailParam.split('@')[0],
+          email: emailParam,
+          role: 'droshipper',
+          plan: 'Paquete Pro',
+          username: (searchParams.get('name') || emailParam.split('@')[0]).toLowerCase().replace(/[^a-zA-Z0-9_-]/g, ''),
+          phone: searchParams.get('phone') || ''
+        };
+        localStorage.setItem('xorbit_user', JSON.stringify(u));
+        return u;
+      }
+      const cached = localStorage.getItem('xorbit_user');
+      if (cached) return JSON.parse(cached);
+    } catch (_) {}
+    return null;
+  });
 
   useEffect(() => {
     const userEmail = user?.email;

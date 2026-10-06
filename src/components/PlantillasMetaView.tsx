@@ -64,8 +64,8 @@ const DEFAULT_TEMPLATES: MetaTemplate[] = [
     version: 'v1 en revisión',
     hasImage: false,
     headerText: 'Un cliente necesita tu ayuda',
-    bodyText: 'Hola 👋\n\nEl asistente no supo responderle a {{nombre_cliente}} y le dijo que iba a consultar.\n\nSu pregunta fue: "{{pregunta_cliente}}"\n\nEntra a SeventyChat para responderle antes de que se enfrie la venta.',
-    footerText: 'SeventyChat - Aviso automatico',
+    bodyText: 'Hola 👋\n\nEl asistente no supo responderle a {{nombre_cliente}} y le dijo que iba a consultar.\n\nSu pregunta fue: "{{pregunta_cliente}}"\n\nEntra a Xorbit CRM para responderle antes de que se enfrie la venta.',
+    footerText: 'Xorbit CRM - Aviso automatico',
     language: 'es',
     createdAt: new Date().toISOString()
   },

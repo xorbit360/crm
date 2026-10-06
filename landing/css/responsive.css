@@ -1,0 +1,472 @@
+/* ==========================================================================
+   XORBIT 360 - ULTRA-RESPONSIVE STYLES (MOBILE, TABLET, DESKTOP)
+   Dominio: xorbit360.com
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. GLOBAL RESPONSIVE GUARDS & FLUID RESETS
+   -------------------------------------------------------------------------- */
+html, body {
+  overflow-x: hidden !important;
+  width: 100%;
+  max-width: 100vw;
+  -webkit-text-size-adjust: 100%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+img, video, iframe, svg, canvas {
+  max-width: 100%;
+  height: auto;
+}
+
+/* --------------------------------------------------------------------------
+   2. LARGE SCREENS (Desktop & Laptops: Max 1200px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 1200px) {
+  .container {
+    max-width: 100%;
+    padding-left: 28px;
+    padding-right: 28px;
+  }
+
+  .crm-mockup-window {
+    grid-template-columns: 200px 260px 1fr;
+  }
+  .crm-col-details {
+    display: none;
+  }
+
+  .modules-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .module-card.featured {
+    grid-column: span 2;
+  }
+
+  .footer-top-grid {
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   3. TABLETS & MID SCREENS (Max 992px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 992px) {
+  .container {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  /* Header & Navigation Menu Mobile */
+  .site-header {
+    padding: 12px 0;
+  }
+
+  .nav-menu {
+    position: fixed;
+    top: 70px;
+    left: 16px;
+    right: 16px;
+    background: rgba(8, 12, 24, 0.98);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 20px;
+    padding: 24px 20px;
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85), 0 0 30px rgba(59, 130, 246, 0.15);
+    z-index: 1000;
+    max-height: calc(100vh - 90px);
+    overflow-y: auto;
+  }
+
+  .nav-menu.active {
+    display: flex !important;
+    animation: mobileMenuFadeIn 0.25s ease-out forwards;
+  }
+
+  @keyframes mobileMenuFadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .nav-menu .nav-item {
+    width: 100%;
+  }
+
+  .nav-menu .nav-link {
+    font-size: 1.05rem;
+    padding: 10px 12px;
+    border-radius: 10px;
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .nav-menu .nav-link:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  /* Dropdown en móvil */
+  .dropdown-menu {
+    position: static;
+    transform: none;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: none;
+    padding: 10px;
+    margin-top: 6px;
+    display: none;
+  }
+
+  .nav-item:hover .dropdown-menu,
+  .nav-item.open .dropdown-menu {
+    display: block;
+  }
+
+  .nav-actions .btn-secondary,
+  .nav-actions .lang-selector {
+    display: none;
+  }
+
+  .mobile-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: #ffffff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .mobile-toggle:hover {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  /* Hero Section */
+  .hero-section {
+    padding-top: 110px;
+    padding-bottom: 60px;
+  }
+
+  .hero-title {
+    font-size: clamp(2rem, 5vw, 2.8rem);
+    line-height: 1.2;
+  }
+
+  .hero-description {
+    font-size: 1rem;
+    max-width: 600px;
+  }
+
+  /* Grids & Cards */
+  .pillars-grid {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+
+  .voice-simulator-card {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .live-selling-preview {
+    grid-template-columns: 1fr;
+  }
+
+  .live-chat-stream-side {
+    border-left: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    min-height: 280px;
+  }
+
+  .roi-card {
+    grid-template-columns: 1fr;
+    padding: 28px 20px;
+    gap: 28px;
+  }
+
+  .pricing-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+
+  .pricing-card.popular {
+    transform: none;
+  }
+
+  .crm-mockup-window {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: 480px;
+  }
+
+  .crm-col-nav, .crm-col-chats {
+    display: none;
+  }
+
+  .footer-top-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   4. SMARTPHONES & SMALL MOBILE DEVICES (Max 640px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 640px) {
+  .container {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  /* Announcement Top Bar */
+  .top-announcement {
+    font-size: 0.74rem;
+    padding: 8px 12px;
+    flex-wrap: wrap;
+    gap: 6px;
+    text-align: center;
+    justify-content: center;
+    line-height: 1.4;
+  }
+
+  .top-announcement .badge-pill {
+    font-size: 0.68rem;
+    padding: 2px 6px;
+  }
+
+  /* Hero */
+  .hero-section {
+    padding-top: 95px;
+    padding-bottom: 45px;
+    text-align: center;
+  }
+
+  .hero-badge {
+    font-size: 0.74rem;
+    padding: 5px 12px;
+    margin-bottom: 18px;
+  }
+
+  .hero-title {
+    font-size: clamp(1.75rem, 7.5vw, 2.35rem);
+    letter-spacing: -0.02em;
+    margin-bottom: 14px;
+  }
+
+  .hero-description {
+    font-size: 0.92rem;
+    line-height: 1.55;
+    margin-bottom: 24px;
+  }
+
+  .hero-cta-group {
+    flex-direction: column;
+    width: 100%;
+    gap: 12px;
+  }
+
+  .hero-cta-group .btn {
+    width: 100%;
+    min-height: 48px;
+    font-size: 0.95rem;
+    justify-content: center;
+  }
+
+  .hero-proof-metrics {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-top: 30px;
+  }
+
+  .metric-card {
+    padding: 14px 10px;
+  }
+
+  .metric-card .metric-number {
+    font-size: 1.4rem;
+  }
+
+  .metric-card .metric-label {
+    font-size: 0.72rem;
+  }
+
+  /* Niche & Category Tabs (Horizontal Touch Scroll) */
+  .niche-nav-tabs,
+  .sector-tabs-container {
+    display: flex;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 8px;
+    gap: 8px;
+    margin-left: -16px;
+    margin-right: -16px;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .niche-nav-tabs::-webkit-scrollbar,
+  .sector-tabs-container::-webkit-scrollbar {
+    display: none;
+  }
+
+  .niche-tab-btn,
+  .sector-tab-pill {
+    flex-shrink: 0;
+    white-space: nowrap;
+    padding: 8px 14px;
+    font-size: 0.8rem;
+  }
+
+  /* Modules & Features */
+  .modules-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .module-card {
+    padding: 20px 18px;
+  }
+
+  .module-card.featured {
+    grid-column: span 1;
+  }
+
+  /* Integrations Grid (Dropi, Mastershop, Shopify, etc.) */
+  .integrations-grid,
+  .logos-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+
+  .integration-logo-card {
+    padding: 12px 8px;
+  }
+
+  /* Pricing Section */
+  .pricing-grid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .pricing-card {
+    padding: 24px 18px;
+    border-radius: 18px;
+  }
+
+  .pricing-card .price-amount {
+    font-size: 2rem;
+  }
+
+  /* ROI Calculator */
+  .roi-card {
+    padding: 20px 16px;
+    border-radius: 18px;
+  }
+
+  .roi-inputs-col,
+  .roi-results-col {
+    width: 100%;
+  }
+
+  .roi-slider-group {
+    margin-bottom: 16px;
+  }
+
+  .roi-slider {
+    height: 10px;
+  }
+
+  .roi-profit-highlight {
+    font-size: 1.6rem;
+  }
+
+  /* Bold Checkout Modal Responsive */
+  .bold-checkout-modal-overlay {
+    padding: 12px;
+    align-items: center;
+  }
+
+  .bold-checkout-card {
+    padding: 20px 16px;
+    border-radius: 18px;
+    max-height: 94vh;
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .bold-input-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px;
+  }
+
+  .bold-summary-box {
+    padding: 12px;
+  }
+
+  .bold-summary-row {
+    font-size: 0.78rem;
+  }
+
+  .bold-btn-pay {
+    font-size: 0.92rem;
+    padding: 13px 16px;
+    min-height: 48px;
+  }
+
+  /* Footer */
+  .footer-top-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .footer-bottom-bar {
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+    padding: 20px 0;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   5. EXTRA SMALL PHONES (Max 380px: iPhone SE / Folded)
+   -------------------------------------------------------------------------- */
+@media (max-width: 380px) {
+  .hero-title {
+    font-size: 1.6rem;
+  }
+
+  .btn {
+    font-size: 0.86rem;
+    padding: 10px 14px;
+  }
+
+  .bold-checkout-card {
+    padding: 16px 12px;
+  }
+
+  .bold-modal-header h3 {
+    font-size: 1.15rem;
+  }
+}

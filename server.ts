@@ -2380,7 +2380,7 @@ async function createServer() {
     }
   });
 
-  // --- LIVE SELLING (EFFI + PANCAKE STYLE) API ---
+  // --- LIVE SELLING (XORBIT LIVE STYLE) API ---
   app.get("/api/live-selling/config", (req, res) => {
     try {
       if (!currentDB.liveSelling) {

@@ -405,12 +405,35 @@ export function RecargasView() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           amount: amountInCop,
-          description: `Recarga ${pkg.name} - Expert 360`,
+          description: `Recarga ${pkg.name} - Xorbit 360`,
           currency: 'COP',
-          orderId
+          orderId,
+          originUrl: window.location.origin
         })
       });
       const data = await res.json();
+      
+      if (typeof (window as any).BoldCheckout === 'function' && data.apiKey && data.integritySignature) {
+        try {
+          const boldCheckout = new (window as any).BoldCheckout({
+            orderId: data.orderId || orderId,
+            currency: data.currency || 'COP',
+            amount: String(data.amount || amountInCop),
+            apiKey: data.apiKey,
+            integritySignature: data.integritySignature,
+            description: `Recarga ${pkg.name} - Xorbit 360`,
+            renderMode: 'embedded',
+            redirectionUrl: `${window.location.origin}/#/recargas?payment_status=completed&order=${data.orderId || orderId}`
+          });
+          boldCheckout.open();
+          setPurchaseSuccessToast(`Pasarela oficial de Bold abierta para ${pkg.name}`);
+          setTimeout(() => setPurchaseSuccessToast(null), 4000);
+          return;
+        } catch (e) {
+          console.warn("BoldCheckout instantiation fallback:", e);
+        }
+      }
+
       if (data && data.checkoutUrl) {
         window.open(data.checkoutUrl, '_blank');
         setPurchaseSuccessToast(`Abriendo pasarela oficial de Bold Payments...`);

@@ -668,7 +668,7 @@ export default function LiveSellingView() {
   return (
     <div className="space-y-6 w-full pb-16 text-gray-100 animate-fade-in">
       
-      {/* Top Main Banner - Effi + Pancake style */}
+      {/* Top Main Banner - Xorbit Live Selling style */}
       <div className="p-6 rounded-2xl border border-red-500/20 bg-gradient-to-r from-gray-950 via-gray-900 to-red-950/20 relative overflow-hidden shadow-xl">
         <div className="absolute -top-24 -right-24 w-96 h-96 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
         
@@ -684,7 +684,7 @@ export default function LiveSellingView() {
                   {isLive ? 'EN VIVO AHORA' : 'SALA DE TRANSMISIÓN LISTA'}
                 </span>
                 <span className="text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md flex items-center gap-1">
-                  <Sparkles size={12} /> Motor Pancake + Effi Live Selling
+                  <Sparkles size={12} /> Motor Xorbit Live Selling
                 </span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-bold font-display text-white mt-1.5 flex items-center gap-2">
@@ -770,7 +770,7 @@ export default function LiveSellingView() {
           </div>
         </div>
 
-        {/* STRATEGY BANNER: "GRABAR 1 SOLA VEZ & VENDER 24/7" (EFFI + PANCAKE METHOD) */}
+        {/* STRATEGY BANNER: "GRABAR 1 SOLA VEZ & VENDER 24/7" (XORBIT METHOD) */}
         <div className="mt-5 p-4 rounded-xl bg-gradient-to-r from-amber-500/10 via-red-500/10 to-purple-500/10 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-start gap-3">
             <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 shrink-0 mt-0.5">
@@ -779,12 +779,12 @@ export default function LiveSellingView() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-black uppercase tracking-wider text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded">
-                  Metodología Secreta Effi + Pancake
+                  Metodología Xorbit Live Selling
                 </span>
                 <span className="text-xs font-bold text-emerald-400">🔥 Graba 1 sola vez, vende 24/7</span>
               </div>
               <p className="text-xs text-gray-200 mt-1 font-medium leading-relaxed">
-                <strong>No tienes que estar en vivo 8 horas al día.</strong> Te grabas <strong>una sola vez</strong> haciendo tu mejor presentación de 10 a 20 minutos con tu gancho y ofertas relámpago. El sistema lo reproduce en bucle continuo 24/7 simulando un Live real, mientras Pancake e IA escanean comentarios y cierran pedidos por WhatsApp automáticamente.
+                <strong>No tienes que estar en vivo 8 horas al día.</strong> Te grabas <strong>una sola vez</strong> haciendo tu mejor presentación de 10 a 20 minutos con tu gancho y ofertas relámpago. El sistema lo reproduce en bucle continuo 24/7 simulando un Live real, mientras la IA de Xorbit escanea comentarios y cierra pedidos por WhatsApp automáticamente.
               </p>
             </div>
           </div>
@@ -1050,7 +1050,7 @@ export default function LiveSellingView() {
                   ⚡ LIVE SHOPPING
                 </div>
 
-                {/* PINNED PRODUCT FLOATING OVERLAY (BOTTOM OF VIDEO - PANCAKE STYLE) */}
+                {/* PINNED PRODUCT FLOATING OVERLAY (BOTTOM OF VIDEO - XORBIT LIVE STYLE) */}
                 {pinnedProduct && (
                   <div className="absolute bottom-3 left-3 right-3 bg-gray-950/90 backdrop-blur-md border border-amber-500/40 p-3 rounded-2xl flex items-center justify-between gap-3 shadow-2xl z-10 animate-slide-up">
                     <div className="flex items-center gap-3 overflow-hidden">
@@ -1198,7 +1198,7 @@ export default function LiveSellingView() {
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-white">Comentarios en Tiempo Real</h3>
-                    <p className="text-[10px] text-gray-400">Escaneo automático de pedidos tipo Pancake</p>
+                    <p className="text-[10px] text-gray-400">Escaneo automático de pedidos por comentarios IA</p>
                   </div>
                 </div>
 
@@ -1304,7 +1304,7 @@ export default function LiveSellingView() {
         </div>
       )}
 
-      {/* TAB 2: AUTOMATIZACIÓN DE COMENTARIOS A PEDIDOS (PANCAKE STYLE) */}
+      {/* TAB 2: AUTOMATIZACIÓN DE COMENTARIOS A PEDIDOS (XORBIT LIVE) */}
       {activeTab === 'automation' && (
         <div className="space-y-6">
           <div className="panel p-6 rounded-2xl border border-gray-800 bg-gray-900/80 space-y-6">
@@ -1315,7 +1315,7 @@ export default function LiveSellingView() {
                     <Zap size={20} />
                   </span>
                   <div>
-                    <h2 className="text-lg font-bold text-white">Motor Comment-to-Order (Estilo Pancake)</h2>
+                    <h2 className="text-lg font-bold text-white">Motor Comment-to-Order (Xorbit Live)</h2>
                     <p className="text-xs text-gray-400">Captura pedidos en tiempo real analizando los comentarios del Live</p>
                   </div>
                 </div>
@@ -2077,7 +2077,7 @@ export default function LiveSellingView() {
                   </div>
 
                   <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-300">
-                    💡 <strong>Tip del Experto:</strong> Menciona con frecuencia los códigos (#L1, #L2) y la palabra &quot;QUIERO&quot;. Esto entrena a los espectadores para que el bot de Pancake cree sus pedidos automáticamente.
+                    💡 <strong>Tip del Experto:</strong> Menciona con frecuencia los códigos (#L1, #L2) y la palabra &quot;QUIERO&quot;. Esto entrena a los espectadores para que el bot de Xorbit Live cree sus pedidos automáticamente.
                   </div>
                 </div>
               )}
