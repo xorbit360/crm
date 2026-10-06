@@ -1,26 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Users, 
   DollarSign, 
   Clock, 
   Copy, 
   Check, 
-  Share2, 
   UserPlus, 
   Wallet, 
-  ArrowUpRight, 
-  Sparkles, 
   X, 
   AlertCircle,
-  TrendingUp,
   CheckCircle2,
-  ExternalLink,
-  Gift,
-  Award,
-  Crown,
   Layers,
-  GraduationCap,
-  Megaphone,
   Network
 } from 'lucide-react';
 
@@ -46,22 +36,9 @@ interface WithdrawalRequest {
   status: 'Pendiente' | 'Procesado' | 'Rechazado';
 }
 
-interface LeaderRequest {
-  id: string;
-  userName: string;
-  userEmail: string;
-  communityName: string;
-  membersCount: string;
-  leaderType: 'Educador de la Plataforma' | 'Promotor de Eventos' | 'Líder de Comunidad E-commerce';
-  socialLinks: string;
-  message: string;
-  date: string;
-  status: 'Pendiente' | 'Aprobado' | 'Rechazado';
-}
-
 export default function ReferidosView({ currentUser }: { currentUser?: any }) {
   // Generate or retrieve persistent referral code
-  const [referralCode, setReferralCode] = useState<string>(() => {
+  const [referralCode] = useState<string>(() => {
     const saved = localStorage.getItem('xorbit_referral_code');
     if (saved) return saved;
     const base = currentUser?.email ? currentUser.email.split('@')[0].toUpperCase().slice(0, 4) : '8650';
@@ -75,28 +52,7 @@ export default function ReferidosView({ currentUser }: { currentUser?: any }) {
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
-  const [showLeaderModal, setShowLeaderModal] = useState(false);
   const [selectedLevelTab, setSelectedLevelTab] = useState<number | 'all'>('all');
-
-  // Líder Networker role status
-  const [isLeader, setIsLeader] = useState<boolean>(() => {
-    const savedRole = localStorage.getItem('xorbit_user_role');
-    return currentUser?.role === 'lider_networker' || savedRole === 'lider_networker';
-  });
-
-  const [leaderRequestStatus, setLeaderRequestStatus] = useState<'none' | 'pending' | 'approved'>(() => {
-    const saved = localStorage.getItem('xorbit_leader_request_status');
-    if (saved === 'pending') return 'pending';
-    if (saved === 'approved' || isLeader) return 'approved';
-    return 'none';
-  });
-
-  // Leader Form State
-  const [communityName, setCommunityName] = useState('');
-  const [membersCount, setMembersCount] = useState('');
-  const [leaderType, setLeaderType] = useState<'Educador de la Plataforma' | 'Promotor de Eventos' | 'Líder de Comunidad E-commerce'>('Educador de la Plataforma');
-  const [socialLinks, setSocialLinks] = useState('');
-  const [leaderMessage, setLeaderMessage] = useState('');
 
   // Withdrawal form
   const [withdrawAmount, setWithdrawAmount] = useState('');
@@ -105,7 +61,7 @@ export default function ReferidosView({ currentUser }: { currentUser?: any }) {
   const [toast, setToast] = useState<{ text: string; error?: boolean } | null>(null);
 
   // Balances and Data
-  const [referrals, setReferrals] = useState<ReferralItem[]>(() => {
+  const [referrals] = useState<ReferralItem[]>(() => {
     const saved = localStorage.getItem('xorbit_referrals_list');
     if (saved) {
       try { return JSON.parse(saved); } catch (_) {}
@@ -195,47 +151,7 @@ export default function ReferidosView({ currentUser }: { currentUser?: any }) {
     setShowWithdrawModal(false);
     setWithdrawAmount('');
     setAccountDetails('');
-    showNotification('¡Solicitud de retiro enviada con éxito a los administradores!');
-  };
-
-  const handleSendLeaderRequest = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!communityName.trim() || !socialLinks.trim()) {
-      showNotification('Por favor completa los campos requeridos', true);
-      return;
-    }
-
-    const request: LeaderRequest = {
-      id: `LDR-${Date.now().toString().slice(-6)}`,
-      userName: currentUser?.name || 'Usuario Xorbit 360',
-      userEmail: currentUser?.email || 'usuario@xorbit360.com',
-      communityName,
-      membersCount: membersCount || '50+',
-      leaderType,
-      socialLinks,
-      message: leaderMessage,
-      date: new Date().toISOString().split('T')[0],
-      status: 'Pendiente'
-    };
-
-    // Save to global requests queue
-    try {
-      const existingReqs = JSON.parse(localStorage.getItem('xorbit_admin_leader_requests') || '[]');
-      existingReqs.unshift(request);
-      localStorage.setItem('xorbit_admin_leader_requests', JSON.stringify(existingReqs));
-      localStorage.setItem('xorbit_leader_request_status', 'pending');
-    } catch (_) {}
-
-    // Send to backend endpoint
-    fetch('/api/referrals/request-leader-role', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(request)
-    }).catch(() => {});
-
-    setLeaderRequestStatus('pending');
-    setShowLeaderModal(false);
-    showNotification('¡Solicitud de Líder Networker enviada! Los administradores revisarán tu perfil.');
+    showNotification('¡Solicitud de retiro enviada con éxito!');
   };
 
   const filteredReferrals = selectedLevelTab === 'all' 
@@ -244,7 +160,6 @@ export default function ReferidosView({ currentUser }: { currentUser?: any }) {
 
   const totalCommissions = referrals.reduce((sum, r) => sum + (r.commissionEarned || 0), 0);
 
-  // Group counts by level
   const countByLevel = {
     1: referrals.filter(r => r.level === 1).length,
     2: referrals.filter(r => r.level === 2).length,
@@ -271,36 +186,15 @@ export default function ReferidosView({ currentUser }: { currentUser?: any }) {
       {/* Header View */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white flex items-center gap-2.5 font-display">
-              Referidos & Red Multinivel
-            </h1>
-            {isLeader ? (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-gradient-to-r from-amber-500/20 via-yellow-500/30 to-amber-500/20 text-amber-300 border border-amber-500/50 shadow-lg shadow-amber-500/10">
-                <Crown size={14} className="text-amber-400" /> Líder Networker (+10% Bono)
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-950/60 text-emerald-400 border border-emerald-700/50">
-                5 Niveles de Comisión
-              </span>
-            )}
-          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white font-display">
+            Referidos
+          </h1>
           <p className="text-xs sm:text-sm text-gray-400 mt-1">
-            Gana hasta el <span className="text-emerald-400 font-bold">40% de comisión total</span> repartido en 5 niveles de profundidad por cada recarga de tus referidos.
+            Gana comisiones en <span className="text-emerald-400 font-semibold">5 niveles</span> por cada compra de recargas de tus referidos.
           </p>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
-          {!isLeader && (
-            <button
-              onClick={() => setShowLeaderModal(true)}
-              className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-amber-950/80 to-yellow-950/60 hover:from-amber-900/90 hover:to-yellow-900/80 text-amber-300 border border-amber-600/60 font-semibold text-xs transition shadow-md shadow-amber-950/30 cursor-pointer"
-            >
-              <Crown size={15} className="text-amber-400" />
-              <span>{leaderRequestStatus === 'pending' ? 'Solicitud Líder Pendiente' : 'Solicitar Rol Líder Networker (+10%)'}</span>
-            </button>
-          )}
-
           <button
             onClick={() => setShowWithdrawModal(true)}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-950/70 hover:bg-emerald-900/90 text-emerald-400 border border-emerald-700/60 font-medium text-sm transition shadow-sm cursor-pointer"
@@ -319,43 +213,13 @@ export default function ReferidosView({ currentUser }: { currentUser?: any }) {
         </div>
       </div>
 
-      {/* Leader Networker Banner (if not leader) */}
-      {!isLeader && (
-        <div className="bg-gradient-to-r from-amber-950/40 via-zinc-900/90 to-zinc-900 border border-amber-500/30 rounded-2xl p-5 relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-start gap-3.5">
-            <div className="p-3 bg-amber-500/20 border border-amber-500/40 text-amber-300 rounded-2xl shrink-0 mt-0.5">
-              <Award size={24} />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-bold text-base text-white font-display">
-                  ¿Eres Educador de la Plataforma o Líder de Comunidad?
-                </h3>
-                <span className="px-2 py-0.5 rounded text-[10px] font-black bg-amber-500 text-black uppercase tracking-wider">
-                  Bono +10%
-                </span>
-              </div>
-              <p className="text-xs text-gray-300 mt-1 max-w-2xl leading-relaxed">
-                Los <strong className="text-amber-300">Líderes Networkers</strong> reciben un <strong className="text-amber-300">10% adicional de comisión</strong> por educar, crear comunidad y promover eventos de la plataforma. Solicita la activación de tu rol para ser revisado por los administradores.
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={() => setShowLeaderModal(true)}
-            className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs transition shrink-0 self-start md:self-auto cursor-pointer shadow-lg shadow-amber-500/20"
-          >
-            {leaderRequestStatus === 'pending' ? '⏳ Solicitud en Revisión' : '🌟 Solicitar Rol Líder Networker'}
-          </button>
-        </div>
-      )}
-
       {/* Top 4 Metrics Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
         {/* Card 1: Total Referidos */}
         <div className="bg-[#121418] border border-gray-800/90 rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden group hover:border-gray-700 transition">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-300">Total Red de Referidos</span>
+            <span className="text-sm font-medium text-gray-300">Total Referidos</span>
             <div className="w-9 h-9 rounded-full bg-emerald-950/80 border border-emerald-800/50 flex items-center justify-center text-emerald-400">
               <Users size={18} />
             </div>
@@ -364,7 +228,7 @@ export default function ReferidosView({ currentUser }: { currentUser?: any }) {
             <div className="text-3xl sm:text-4xl font-black text-white tracking-tight">
               {referrals.length}
             </div>
-            <p className="text-xs text-gray-500 mt-1">Repartidos en tus 5 niveles</p>
+            <p className="text-xs text-gray-500 mt-1">En tus 5 niveles de red</p>
           </div>
         </div>
 
@@ -388,7 +252,7 @@ export default function ReferidosView({ currentUser }: { currentUser?: any }) {
         <div className="bg-[#121418] border border-gray-800/90 rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden group hover:border-gray-700 transition">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-gray-300">Retiro Pendiente</span>
-            <div className="w-9 h-9 rounded-full bg-amber-950/80 border border-amber-800/50 flex items-center justify-center text-amber-400">
+            <div className="w-9 h-9 rounded-full bg-emerald-950/80 border border-emerald-800/50 flex items-center justify-center text-emerald-400">
               <Clock size={18} />
             </div>
           </div>
@@ -419,7 +283,7 @@ export default function ReferidosView({ currentUser }: { currentUser?: any }) {
             </div>
           </div>
           <p className="text-[11px] text-gray-500 mt-3 leading-snug">
-            Comparte este código o enlace y gana comisiones automáticas por las recargas de tu red.
+            Comparte este código o enlace y gana un 20% de comisión por cada referido directo.
           </p>
         </div>
 
@@ -431,23 +295,22 @@ export default function ReferidosView({ currentUser }: { currentUser?: any }) {
           <div>
             <h2 className="text-lg font-bold text-white flex items-center gap-2 font-display">
               <Layers size={18} className="text-emerald-400" />
-              Estructura de Comisiones por Niveles
+              Estructura de Comisiones (5 Niveles)
             </h2>
-            <p className="text-xs text-gray-400 mt-0.5">Porcentaje de ganancia sobre cada compra de paquete de recarga en tu organización</p>
+            <p className="text-xs text-gray-400 mt-0.5">Porcentaje de ganancia sobre cada compra de recarga en tu red</p>
           </div>
           <span className="text-xs font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800/60 px-3 py-1 rounded-full w-fit">
-            Total Repartido: {isLeader ? '50%' : '40%'}
+            Total Repartido: 40%
           </span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           
           {/* Level 1 */}
-          <div className="bg-black/50 border border-emerald-500/40 rounded-xl p-3.5 text-center space-y-1 relative overflow-hidden">
+          <div className="bg-black/50 border border-emerald-500/40 rounded-xl p-3.5 text-center space-y-1">
             <div className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Nivel 1 (Directos)</div>
-            <div className="text-2xl font-black text-emerald-400">{isLeader ? '30%' : '20%'}</div>
+            <div className="text-2xl font-black text-emerald-400">20%</div>
             <p className="text-[10px] text-gray-400">{countByLevel[1]} referidos</p>
-            {isLeader && <span className="text-[9px] bg-amber-500/20 text-amber-300 font-bold px-1.5 py-0.5 rounded block">+10% Líder</span>}
           </div>
 
           {/* Level 2 */}
@@ -478,24 +341,13 @@ export default function ReferidosView({ currentUser }: { currentUser?: any }) {
             <p className="text-[10px] text-gray-400">{countByLevel[5]} referidos</p>
           </div>
 
-          {/* Bonus Líder */}
-          <div className={`border rounded-xl p-3.5 text-center space-y-1 ${
-            isLeader ? 'bg-amber-950/40 border-amber-500/50' : 'bg-black/50 border-gray-800/80 opacity-70'
-          }`}>
-            <div className="text-[10px] font-bold text-amber-400 uppercase tracking-wider flex items-center justify-center gap-1">
-              <Crown size={12} /> Líder Networker
-            </div>
-            <div className="text-2xl font-black text-amber-400">+10%</div>
-            <p className="text-[10px] text-amber-300/80">{isLeader ? 'Activo' : 'Solicitar Rol'}</p>
-          </div>
-
         </div>
       </div>
 
       {/* Mis Referidos Section */}
       <div className="bg-[#121418] border border-gray-800/90 rounded-2xl p-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-          <h2 className="text-lg font-bold text-white">Mis Referidos y Red</h2>
+          <h2 className="text-lg font-bold text-white">Mis Referidos</h2>
 
           {/* Filter Level Tabs */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
@@ -579,7 +431,7 @@ export default function ReferidosView({ currentUser }: { currentUser?: any }) {
 
       {/* Cómo funciona Section */}
       <div className="bg-[#121418] border border-gray-800/90 rounded-2xl p-6 sm:p-8">
-        <h2 className="text-lg font-bold text-white mb-8">Cómo funciona la Red Multinivel</h2>
+        <h2 className="text-lg font-bold text-white mb-8">Cómo funciona</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
           
@@ -597,142 +449,27 @@ export default function ReferidosView({ currentUser }: { currentUser?: any }) {
           {/* Step 2 */}
           <div className="flex flex-col items-center space-y-3.5">
             <div className="w-16 h-16 rounded-full bg-emerald-950/60 border border-emerald-800/50 flex items-center justify-center text-emerald-400 shadow-lg shadow-emerald-950/40">
-              <Network size={26} />
+              <UserPlus size={26} />
             </div>
-            <h3 className="font-bold text-base text-white">2. Tu Red Crece en 5 Niveles</h3>
+            <h3 className="font-bold text-base text-white">2. Tus contactos se registran</h3>
             <p className="text-xs sm:text-sm text-gray-400 leading-relaxed max-w-xs">
-              Gana el <strong className="text-emerald-400">20%</strong> de tus directos (Nivel 1) y el <strong className="text-emerald-400">5%</strong> en cada nivel subsiguiente hasta el 5to nivel.
+              Cuando alguien se registra usando tu enlace, queda vinculado automáticamente a tu cuenta como referido.
             </p>
           </div>
 
           {/* Step 3 */}
           <div className="flex flex-col items-center space-y-3.5">
-            <div className="w-16 h-16 rounded-full bg-amber-950/60 border border-amber-800/50 flex items-center justify-center text-amber-400 shadow-lg shadow-amber-950/40">
-              <Crown size={26} />
+            <div className="w-16 h-16 rounded-full bg-emerald-950/60 border border-emerald-800/50 flex items-center justify-center text-emerald-400 shadow-lg shadow-emerald-950/40">
+              <DollarSign size={26} />
             </div>
-            <h3 className="font-bold text-base text-white">3. Bono Líder Networker (+10%)</h3>
+            <h3 className="font-bold text-base text-white">3. Recibe comisiones</h3>
             <p className="text-xs sm:text-sm text-gray-400 leading-relaxed max-w-xs">
-              Si educas a tu comunidad y promueves eventos, solicita el rol de <strong className="text-amber-400">Líder Networker</strong> para ganar un 10% adicional.
+              Obtén comisiones automáticas por cada compra de recargas realizada por tus referidos en los 5 niveles.
             </p>
           </div>
 
         </div>
       </div>
-
-      {/* Modal: Solicitar Rol Líder Networker */}
-      {showLeaderModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#121418] border border-amber-500/40 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-scale-up">
-            <div className="p-5 border-b border-gray-800 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 bg-amber-500/20 text-amber-400 rounded-xl border border-amber-500/30">
-                  <Crown size={22} />
-                </div>
-                <div>
-                  <h3 className="font-bold text-white text-base">Solicitar Rol Líder Networker</h3>
-                  <p className="text-xs text-amber-300/80">Acceso a +10% de comisión por liderazgo y eventos</p>
-                </div>
-              </div>
-              <button 
-                onClick={() => setShowLeaderModal(false)}
-                className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleSendLeaderRequest} className="p-5 space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-gray-300 mb-1.5">
-                  Nombre de tu Comunidad o Academia
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ej: Academia E-commerce LatAm / Comunidad Drophippers Pro"
-                  value={communityName}
-                  onChange={(e) => setCommunityName(e.target.value)}
-                  className="w-full bg-black/60 border border-gray-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-300 mb-1.5">
-                    Tipo de Liderazgo
-                  </label>
-                  <select
-                    value={leaderType}
-                    onChange={(e: any) => setLeaderType(e.target.value)}
-                    className="w-full bg-black/60 border border-gray-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500 cursor-pointer"
-                  >
-                    <option value="Educador de la Plataforma">Educador de la Plataforma</option>
-                    <option value="Promotor de Eventos">Promotor de Eventos</option>
-                    <option value="Líder de Comunidad E-commerce">Líder de Comunidad E-commerce</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-300 mb-1.5">
-                    Miembros / Alumnos Aprox.
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Ej: 250 miembros"
-                    value={membersCount}
-                    onChange={(e) => setMembersCount(e.target.value)}
-                    className="w-full bg-black/60 border border-gray-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-300 mb-1.5">
-                  Enlaces de Redes / Canal de Telegram / WhatsApp / Instagram
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ej: https://t.me/mi_comunidad o @micuenta_instagram"
-                  value={socialLinks}
-                  onChange={(e) => setSocialLinks(e.target.value)}
-                  className="w-full bg-black/60 border border-gray-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-300 mb-1.5">
-                  Mensaje / Propuesta para los Administradores
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder="Describe brevemente tus próximos eventos o actividades educativas que realizarás con la plataforma..."
-                  value={leaderMessage}
-                  onChange={(e) => setLeaderMessage(e.target.value)}
-                  className="w-full bg-black/60 border border-gray-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-amber-500 resize-none"
-                />
-              </div>
-
-              <div className="pt-2 flex items-center justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowLeaderModal(false)}
-                  className="px-4 py-2 text-sm text-gray-400 hover:text-white rounded-xl hover:bg-gray-800 transition cursor-pointer"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 text-sm font-bold text-black bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 rounded-xl transition shadow-lg shadow-amber-500/20 cursor-pointer"
-                >
-                  Enviar Solicitud a Administradores
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* Modal: Retiro de Comisiones */}
       {showWithdrawModal && (

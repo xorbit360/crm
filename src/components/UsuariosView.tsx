@@ -95,61 +95,11 @@ export default function UsuariosView({
   currentUser?: { name: string; role: string; email: string; plan?: string } | null;
 }) {
   const isAdmin = !currentUser || currentUser.role === 'superadmin' || currentUser.role === 'admin';
-  const [activeTab, setActiveTab] = useState<'lista' | 'roles' | 'modulos' | 'solicitudes_lider'>('lista');
+  const [activeTab, setActiveTab] = useState<'lista' | 'roles' | 'modulos'>('lista');
   const [users, setUsers] = useState<UserData[]>(initialUsers);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'todos' | SubscriptionStatus>('todos');
   const [roleFilter, setRoleFilter] = useState<'todos' | RoleType>('todos');
-
-  // Leader Requests State
-  const [leaderRequests, setLeaderRequests] = useState<any[]>(() => {
-    const saved = localStorage.getItem('xorbit_admin_leader_requests');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (_) {}
-    }
-    return [
-      {
-        id: 'LDR-9921',
-        userName: 'Carlos Drophipper',
-        userEmail: 'carlos.d@email.com',
-        communityName: 'Drophippers Master LatAm',
-        membersCount: '350 miembros',
-        leaderType: 'Educador de la Plataforma',
-        socialLinks: 'https://t.me/drophippers_master / @carlos_drop',
-        message: 'Organizo workshops semanales y entreno a mi equipo en ventas de alta conversión.',
-        date: '2026-10-05',
-        status: 'Pendiente'
-      }
-    ];
-  });
-
-  const handleApproveLeader = (reqId: string, email: string) => {
-    const updatedReqs = leaderRequests.map(r => r.id === reqId ? { ...r, status: 'Aprobado' } : r);
-    setLeaderRequests(updatedReqs);
-    try {
-      localStorage.setItem('xorbit_admin_leader_requests', JSON.stringify(updatedReqs));
-      localStorage.setItem('xorbit_user_role', 'lider_networker');
-      localStorage.setItem('xorbit_leader_request_status', 'approved');
-    } catch (_) {}
-
-    // Update user in users list
-    setUsers(prev => prev.map(u => u.email === email ? { ...u, role: 'lider_networker' } : u));
-    
-    fetch('/api/admin/approve-leader-role', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reqId, email, approved: true })
-    }).catch(() => {});
-  };
-
-  const handleRejectLeader = (reqId: string) => {
-    const updatedReqs = leaderRequests.map(r => r.id === reqId ? { ...r, status: 'Rechazado' } : r);
-    setLeaderRequests(updatedReqs);
-    try {
-      localStorage.setItem('xorbit_admin_leader_requests', JSON.stringify(updatedReqs));
-      localStorage.setItem('xorbit_leader_request_status', 'none');
-    } catch (_) {}
-  };
 
   // Modal State for adding/editing user tools
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
@@ -345,17 +295,6 @@ export default function UsuariosView({
           className={`px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'modulos' ? 'text-gold border-b-2 border-gold -mb-[9px]' : 'text-gray-500 hover:text-gray-300'}`}
         >
           Módulos y Menús
-        </button>
-        <button 
-          onClick={() => setActiveTab('solicitudes_lider')}
-          className={`px-4 py-2 text-sm font-medium transition-colors flex items-center gap-2 ${activeTab === 'solicitudes_lider' ? 'text-amber-400 border-b-2 border-amber-400 -mb-[9px] font-bold' : 'text-gray-500 hover:text-gray-300'}`}
-        >
-          <Crown size={15} className="text-amber-400" /> Solicitudes Líder Networker
-          {leaderRequests.filter(r => r.status === 'Pendiente').length > 0 && (
-            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-black">
-              {leaderRequests.filter(r => r.status === 'Pendiente').length}
-            </span>
-          )}
         </button>
       </div>
 
@@ -780,107 +719,7 @@ export default function UsuariosView({
                  Configurar Permisos
               </button>
             </div>
-
-            {/* Líder Networker */}
-            <div className="panel p-6 rounded-2xl border flex flex-col border-amber-500/40 bg-gradient-to-b from-amber-950/20 to-black relative">
-              <div className="absolute top-0 right-4 px-3 py-1 bg-amber-500/30 text-amber-300 text-xs font-bold rounded-b-lg">+10% Bono Red</div>
-              <div className="w-12 h-12 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center mb-4 border border-amber-500/40">
-                 <Crown size={24} />
-              </div>
-              <h3 className="text-xl font-bold text-white mb-2">Líder Networker</h3>
-              <p className="text-gray-400 text-sm mb-6 pb-6 border-b border-gray-800 flex-1">
-                Educadores de la plataforma y líderes de comunidad que organizan eventos. Reciben un 10% adicional en sus comisiones de red por dinamizar la academia.
-              </p>
-              <div className="space-y-3 pb-6 border-b border-gray-800 mb-6">
-                 <h4 className="text-xs font-bold text-amber-400 uppercase tracking-widest mb-3">Beneficios del Rol</h4>
-                 <div className="flex items-center gap-2 text-sm text-gray-300"><Check size={16} className="text-amber-400" /> 30% Comisión Directa (Nivel 1)</div>
-                 <div className="flex items-center gap-2 text-sm text-gray-300"><Check size={16} className="text-amber-400" /> 5% Comisiones Niveles 2 al 5</div>
-                 <div className="flex items-center gap-2 text-sm text-gray-300"><Check size={16} className="text-amber-400" /> Creación de eventos y salas educativas</div>
-              </div>
-              <button 
-                onClick={() => setActiveTab('solicitudes_lider')}
-                className="w-full py-2 bg-amber-500/20 border border-amber-500/50 text-amber-300 text-sm font-semibold rounded-lg hover:bg-amber-500/30 transition-colors cursor-pointer"
-              >
-                 Ver Solicitudes Pendientes
-              </button>
-            </div>
           </div>
-       )}
-
-       {/* Solicitudes Líder Networker Tab */}
-       {activeTab === 'solicitudes_lider' && (
-         <div className="panel p-6 rounded-2xl border border-gray-800 bg-black/40 space-y-6">
-           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-800 pb-4">
-             <div>
-               <div className="flex items-center gap-2">
-                 <Crown className="text-amber-400" size={22} />
-                 <h3 className="text-lg font-bold text-white">Solicitudes de Rol: Líder Networker</h3>
-               </div>
-               <p className="text-xs text-gray-400 mt-1">
-                 Revisa las solicitudes de educadores y líderes de comunidad para asignarles el rol de Líder Networker y activar su bono del +10% en comisiones.
-               </p>
-             </div>
-           </div>
-
-           {leaderRequests.length === 0 ? (
-             <div className="text-center py-12 text-sm text-gray-500">
-               No hay solicitudes pendientes en este momento.
-             </div>
-           ) : (
-             <div className="space-y-4">
-               {leaderRequests.map((req) => (
-                 <div 
-                   key={req.id} 
-                   className="p-5 rounded-2xl bg-gray-900/70 border border-gray-800 hover:border-gray-700 transition flex flex-col md:flex-row md:items-center justify-between gap-4"
-                 >
-                   <div className="space-y-2 flex-1">
-                     <div className="flex items-center gap-3">
-                       <span className="font-bold text-white text-base">{req.userName}</span>
-                       <span className="text-xs text-gray-400 font-mono">({req.userEmail})</span>
-                       <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black ${
-                         req.status === 'Aprobado' 
-                           ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' 
-                           : req.status === 'Rechazado'
-                           ? 'bg-red-950 text-red-400 border border-red-800'
-                           : 'bg-amber-950 text-amber-400 border border-amber-800'
-                       }`}>
-                         {req.status}
-                       </span>
-                     </div>
-
-                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-gray-300">
-                       <div><strong>Comunidad:</strong> {req.communityName} ({req.membersCount})</div>
-                       <div><strong>Liderazgo:</strong> {req.leaderType}</div>
-                       <div className="sm:col-span-2"><strong>Redes/Canal:</strong> <span className="text-amber-300 font-mono">{req.socialLinks}</span></div>
-                       {req.message && <div className="sm:col-span-2 text-gray-400 italic">"{req.message}"</div>}
-                     </div>
-                   </div>
-
-                   {req.status === 'Pendiente' ? (
-                     <div className="flex items-center gap-2 shrink-0">
-                       <button
-                         onClick={() => handleRejectLeader(req.id)}
-                         className="px-3 py-2 bg-red-950/60 hover:bg-red-900/80 text-red-400 border border-red-800 rounded-xl text-xs font-bold transition cursor-pointer"
-                       >
-                         Rechazar
-                       </button>
-                       <button
-                         onClick={() => handleApproveLeader(req.id, req.userEmail)}
-                         className="px-4 py-2 bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-black rounded-xl text-xs font-black transition shadow-lg shadow-amber-500/20 cursor-pointer flex items-center gap-1.5"
-                       >
-                         <Crown size={14} /> Aprobar Líder Networker (+10%)
-                       </button>
-                     </div>
-                   ) : (
-                     <span className="text-xs font-semibold text-gray-500">
-                       {req.status === 'Aprobado' ? '✅ Rol asignado exitosamente' : '❌ Solicitud desestimada'}
-                     </span>
-                   )}
-                 </div>
-               ))}
-             </div>
-           )}
-         </div>
        )}
 
        {/* Droshipper Permissions Modal */}
