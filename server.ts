@@ -5097,7 +5097,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
     }
   });
 
-  // --- CHATBOT INTEGRATION TOKENS (Dropi, Shopify, Meta CAPI, Google, TikTok, ChateaPro) ---
+  // --- CHATBOT INTEGRATION TOKENS (Dropi, Shopify, Meta CAPI, Google, TikTok, ChateaPro, OpenRouter) ---
   app.get('/api/integrations/chatbot-tokens', (req, res) => {
     try {
       const defaultHost = `${req.protocol}://${req.get('host')}`;
@@ -5149,10 +5149,22 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
           syncContacts: true,
           transferToAgent: true,
           status: 'disconnected'
+        },
+        openrouter: {
+          token: currentDB.openrouterApiKey || currentDB.customApiKey || '',
+          model: currentDB.aiModel || 'google/gemini-2.5-flash',
+          status: (currentDB.openrouterApiKey || currentDB.customApiKey) ? 'connected' : 'disconnected'
         }
       };
 
       const tokens = currentDB.chatbotIntegrationTokens || defaultTokens;
+      if (!tokens.openrouter) {
+        tokens.openrouter = {
+          token: currentDB.openrouterApiKey || currentDB.customApiKey || '',
+          model: currentDB.aiModel || 'google/gemini-2.5-flash',
+          status: (currentDB.openrouterApiKey || currentDB.customApiKey) ? 'connected' : 'disconnected'
+        };
+      }
       // Always update dynamic host for webhooks
       if (tokens.dropi) tokens.dropi.webhookUrl = `${defaultHost}/api/integrations/dropi/webhook`;
       if (tokens.chateapro) tokens.chateapro.webhookUrl = `${defaultHost}/api/integrations/chateapro/webhook`;
@@ -5216,22 +5228,39 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
 
   app.post('/api/integrations/chatbot-tokens', (req, res) => {
     try {
-      const { provider, data } = req.body;
+      const { provider, platform, data } = req.body;
+      const target = provider || platform;
+
       if (!currentDB.chatbotIntegrationTokens) {
         currentDB.chatbotIntegrationTokens = {};
       }
 
-      if (provider && data) {
-        currentDB.chatbotIntegrationTokens[provider] = {
-          ...(currentDB.chatbotIntegrationTokens[provider] || {}),
+      if (target && data) {
+        currentDB.chatbotIntegrationTokens[target] = {
+          ...(currentDB.chatbotIntegrationTokens[target] || {}),
           ...data,
+          status: data.token ? 'connected' : 'disconnected',
           updatedAt: new Date().toISOString()
         };
+
+        // If OpenRouter token was updated, configure AI provider & API key
+        if (target === 'openrouter' && data.token) {
+          currentDB.openrouterApiKey = data.token.trim();
+          currentDB.customApiKey = data.token.trim();
+          currentDB.apiProvider = 'openrouter';
+          console.log('[OpenRouter] API Key de OpenRouter configurada exitosamente como motor de IA.');
+        }
       } else if (req.body.tokens) {
         currentDB.chatbotIntegrationTokens = {
           ...currentDB.chatbotIntegrationTokens,
           ...req.body.tokens
         };
+        if (req.body.tokens.openrouter?.token) {
+          const key = req.body.tokens.openrouter.token.trim();
+          currentDB.openrouterApiKey = key;
+          currentDB.customApiKey = key;
+          currentDB.apiProvider = 'openrouter';
+        }
       }
 
       saveDBData(currentDB);
@@ -5243,8 +5272,9 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
 
   app.post('/api/integrations/test-token', async (req, res) => {
     try {
-      const { provider, credentials } = req.body;
-      console.log(`[Integration Test] Probando credenciales para ${provider}:`, credentials ? 'Credenciales provistas' : 'Vacías');
+      const { provider, platform, credentials } = req.body;
+      const targetProvider = provider || platform;
+      console.log(`[Integration Test] Probando credenciales para ${targetProvider}:`, credentials ? 'Credenciales provistas' : 'Vacías');
 
       if (!credentials) {
         return res.status(400).json({ success: false, message: 'No se recibieron credenciales para probar.' });
@@ -5255,7 +5285,14 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
       let latency = Math.floor(Math.random() * 80) + 120; // 120-200ms
       let message = '';
 
-      switch (provider) {
+      switch (targetProvider) {
+        case 'openrouter':
+          if (!credentials.token || credentials.token.length < 10) {
+            return res.status(400).json({ success: false, message: 'El token de OpenRouter parece inválido o demasiado corto (debe comenzar con sk-or-...).' });
+          }
+          isValid = true;
+          message = '¡Token de OpenRouter AI validado exitosamente! Motor de agentes IA conectado.';
+          break;
         case 'dropi':
           if (!credentials.token || credentials.token.length < 5) {
             return res.status(400).json({ success: false, message: 'El token de Dropi parece inválido o demasiado corto.' });
@@ -5271,6 +5308,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
           message = '¡Tienda Shopify conectada con éxito! API Admin lista para sincronizar órdenes.';
           break;
         case 'metaConversions':
+        case 'meta':
           if (!credentials.token || credentials.token.length < 15 || !credentials.pixelId) {
             return res.status(400).json({ success: false, message: 'Debes ingresar el Token de Acceso del Sistema y el Pixel ID de Meta.' });
           }

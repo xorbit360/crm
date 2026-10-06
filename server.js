@@ -1388,15 +1388,37 @@ function setupBoldRoutes(app, getCurrentDB, saveCurrentDB) {
   };
   app.get("/api/integrations/bold/webhook", webhookGetHandler);
   app.get("/api/payments/bold/webhook", webhookGetHandler);
+  function getPackageDetailsFromAmount(amount, description) {
+    const desc = (description || "").toLowerCase();
+    const amt = Number(amount);
+    if (desc.includes("enterprise") || amt >= 1e6 || amt === 319) {
+      return { id: "enterprise", name: "Paquete Enterprise", conversations: 2e4, aiMessagesPerConv: 65, audioMinutes: 0 };
+    }
+    if (desc.includes("pro audio") || amt === 1e5 || amt === 25) {
+      return { id: "audio_pro", name: "Paquete Pro Audio", conversations: 90, aiMessagesPerConv: 40, audioMinutes: 90 };
+    }
+    if (desc.includes("audio standard") || amt === 4e4 || amt === 10) {
+      return { id: "audio_standard", name: "Paquete Standard Audio", conversations: 30, aiMessagesPerConv: 40, audioMinutes: 30 };
+    }
+    if (desc.includes("pro") || amt >= 25e4 && amt <= 3e5 || amt === 69) {
+      return { id: "pro", name: "Paquete Pro", conversations: 3e3, aiMessagesPerConv: 50, audioMinutes: 0 };
+    }
+    if (desc.includes("standard") || amt >= 12e4 && amt <= 15e4 || amt === 33) {
+      return { id: "standard", name: "Paquete Standard", conversations: 1e3, aiMessagesPerConv: 40, audioMinutes: 0 };
+    }
+    return { id: "starter", name: "Paquete Starter", conversations: 500, aiMessagesPerConv: 25, audioMinutes: 0 };
+  }
   const webhookPostHandler = async (req, res) => {
     try {
       const payload = req.body || {};
       const eventId = `WH-BOLD-${Date.now()}-${Math.floor(Math.random() * 1e3)}`;
       console.log(`[Bold Webhook] Recibida notificaci\xF3n de evento Bold:`, JSON.stringify(payload).substring(0, 300));
       const eventType = payload.event || payload.type || payload.status || "PAYMENT_EVENT";
-      const orderId = payload.orderId || payload.reference || payload.id || payload.data?.orderId || payload.data?.reference;
+      const orderId = payload.orderId || payload.reference || payload.id || payload.data?.orderId || payload.data?.reference || eventId;
       const status = (payload.status || payload.data?.status || "APPROVED").toUpperCase();
-      const amount = payload.amount || payload.data?.amount || 0;
+      const amount = Number(payload.amount || payload.data?.amount || 0);
+      const description = payload.description || payload.data?.description || "";
+      const isApproved = status.includes("APPROV") || status === "PAID" || status === "SUCCESS";
       const logEntry = {
         id: eventId,
         timestamp: (/* @__PURE__ */ new Date()).toISOString(),
@@ -1408,7 +1430,7 @@ function setupBoldRoutes(app, getCurrentDB, saveCurrentDB) {
       if (inMemoryWebhookLogs.length > 50) inMemoryWebhookLogs.pop();
       if (orderId && inMemoryTransactions.has(orderId)) {
         const tx = inMemoryTransactions.get(orderId);
-        if (status.includes("APPROV") || status === "PAID" || status === "SUCCESS") {
+        if (isApproved) {
           tx.status = "APPROVED";
         } else if (status.includes("REJECT") || status === "FAILED") {
           tx.status = "REJECTED";
@@ -1422,7 +1444,7 @@ function setupBoldRoutes(app, getCurrentDB, saveCurrentDB) {
         if (supabase) {
           try {
             await supabase.from("transactions").insert({
-              order_id: orderId || eventId,
+              order_id: orderId,
               merchant_id: BOLD_PRODUCTION_CONFIG.merchantId,
               gateway: "bold",
               amount,
@@ -1450,6 +1472,34 @@ function setupBoldRoutes(app, getCurrentDB, saveCurrentDB) {
               timestamp: (/* @__PURE__ */ new Date()).toISOString()
             });
             if (db.boldTransactions.length > 100) db.boldTransactions = db.boldTransactions.slice(0, 100);
+            if (isApproved) {
+              const pkg = getPackageDetailsFromAmount(amount, description);
+              if (!db.aiBalance) {
+                db.aiBalance = {
+                  conversations: 500,
+                  aiMessagesPerConv: 25,
+                  audioMinutes: 0,
+                  packagesBought: 0
+                };
+              }
+              db.aiBalance.conversations = (db.aiBalance.conversations || 0) + pkg.conversations;
+              db.aiBalance.packagesBought = (db.aiBalance.packagesBought || 0) + 1;
+              db.aiBalance.aiMessagesPerConv = Math.max(db.aiBalance.aiMessagesPerConv || 25, pkg.aiMessagesPerConv);
+              db.aiBalance.audioMinutes = (db.aiBalance.audioMinutes || 0) + (pkg.audioMinutes || 0);
+              db.aiBalance.lastRechargeAt = (/* @__PURE__ */ new Date()).toISOString();
+              if (!db.rechargeHistory) db.rechargeHistory = [];
+              db.rechargeHistory.unshift({
+                id: orderId,
+                date: (/* @__PURE__ */ new Date()).toISOString().split("T")[0],
+                packageName: pkg.name,
+                type: pkg.audioMinutes > 0 ? "Audio" : "Texto",
+                amount,
+                creditsAdded: `+${pkg.conversations.toLocaleString()} chats (${pkg.aiMessagesPerConv} msgs/chat)`,
+                status: "Completado"
+              });
+              if (db.rechargeHistory.length > 50) db.rechargeHistory = db.rechargeHistory.slice(0, 50);
+              console.log(`[Bold Gateway] Recarga procesada exitosamente: ${pkg.name} (+${pkg.conversations} conv, ${pkg.aiMessagesPerConv} msgs/conv). Nuevo balance: ${db.aiBalance.conversations} conversaciones.`);
+            }
             saveCurrentDB(db);
           }
         } catch (dbSaveErr) {
@@ -5831,9 +5881,21 @@ ${currentDB.products.map((p) => `- ${p.name}: ${p.stock > 0 ? p.stock + " dispon
           syncContacts: true,
           transferToAgent: true,
           status: "disconnected"
+        },
+        openrouter: {
+          token: currentDB.openrouterApiKey || currentDB.customApiKey || "",
+          model: currentDB.aiModel || "google/gemini-2.5-flash",
+          status: currentDB.openrouterApiKey || currentDB.customApiKey ? "connected" : "disconnected"
         }
       };
       const tokens = currentDB.chatbotIntegrationTokens || defaultTokens;
+      if (!tokens.openrouter) {
+        tokens.openrouter = {
+          token: currentDB.openrouterApiKey || currentDB.customApiKey || "",
+          model: currentDB.aiModel || "google/gemini-2.5-flash",
+          status: currentDB.openrouterApiKey || currentDB.customApiKey ? "connected" : "disconnected"
+        };
+      }
       if (tokens.dropi) tokens.dropi.webhookUrl = `${defaultHost}/api/integrations/dropi/webhook`;
       if (tokens.chateapro) tokens.chateapro.webhookUrl = `${defaultHost}/api/integrations/chateapro/webhook`;
       res.json({ success: true, tokens });
@@ -5888,21 +5950,35 @@ ${currentDB.products.map((p) => `- ${p.name}: ${p.stock > 0 ? p.stock + " dispon
   });
   app.post("/api/integrations/chatbot-tokens", (req, res) => {
     try {
-      const { provider, data } = req.body;
+      const { provider, platform, data } = req.body;
+      const target = provider || platform;
       if (!currentDB.chatbotIntegrationTokens) {
         currentDB.chatbotIntegrationTokens = {};
       }
-      if (provider && data) {
-        currentDB.chatbotIntegrationTokens[provider] = {
-          ...currentDB.chatbotIntegrationTokens[provider] || {},
+      if (target && data) {
+        currentDB.chatbotIntegrationTokens[target] = {
+          ...currentDB.chatbotIntegrationTokens[target] || {},
           ...data,
+          status: data.token ? "connected" : "disconnected",
           updatedAt: (/* @__PURE__ */ new Date()).toISOString()
         };
+        if (target === "openrouter" && data.token) {
+          currentDB.openrouterApiKey = data.token.trim();
+          currentDB.customApiKey = data.token.trim();
+          currentDB.apiProvider = "openrouter";
+          console.log("[OpenRouter] API Key de OpenRouter configurada exitosamente como motor de IA.");
+        }
       } else if (req.body.tokens) {
         currentDB.chatbotIntegrationTokens = {
           ...currentDB.chatbotIntegrationTokens,
           ...req.body.tokens
         };
+        if (req.body.tokens.openrouter?.token) {
+          const key = req.body.tokens.openrouter.token.trim();
+          currentDB.openrouterApiKey = key;
+          currentDB.customApiKey = key;
+          currentDB.apiProvider = "openrouter";
+        }
       }
       saveDBData(currentDB);
       res.json({ success: true, tokens: currentDB.chatbotIntegrationTokens });
@@ -5912,15 +5988,23 @@ ${currentDB.products.map((p) => `- ${p.name}: ${p.stock > 0 ? p.stock + " dispon
   });
   app.post("/api/integrations/test-token", async (req, res) => {
     try {
-      const { provider, credentials } = req.body;
-      console.log(`[Integration Test] Probando credenciales para ${provider}:`, credentials ? "Credenciales provistas" : "Vac\xEDas");
+      const { provider, platform, credentials } = req.body;
+      const targetProvider = provider || platform;
+      console.log(`[Integration Test] Probando credenciales para ${targetProvider}:`, credentials ? "Credenciales provistas" : "Vac\xEDas");
       if (!credentials) {
         return res.status(400).json({ success: false, message: "No se recibieron credenciales para probar." });
       }
       let isValid = false;
       let latency = Math.floor(Math.random() * 80) + 120;
       let message = "";
-      switch (provider) {
+      switch (targetProvider) {
+        case "openrouter":
+          if (!credentials.token || credentials.token.length < 10) {
+            return res.status(400).json({ success: false, message: "El token de OpenRouter parece inv\xE1lido o demasiado corto (debe comenzar con sk-or-...)." });
+          }
+          isValid = true;
+          message = "\xA1Token de OpenRouter AI validado exitosamente! Motor de agentes IA conectado.";
+          break;
         case "dropi":
           if (!credentials.token || credentials.token.length < 5) {
             return res.status(400).json({ success: false, message: "El token de Dropi parece inv\xE1lido o demasiado corto." });
@@ -5936,6 +6020,7 @@ ${currentDB.products.map((p) => `- ${p.name}: ${p.stock > 0 ? p.stock + " dispon
           message = "\xA1Tienda Shopify conectada con \xE9xito! API Admin lista para sincronizar \xF3rdenes.";
           break;
         case "metaConversions":
+        case "meta":
           if (!credentials.token || credentials.token.length < 15 || !credentials.pixelId) {
             return res.status(400).json({ success: false, message: "Debes ingresar el Token de Acceso del Sistema y el Pixel ID de Meta." });
           }

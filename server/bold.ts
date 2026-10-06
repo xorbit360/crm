@@ -88,6 +88,29 @@ export function setupBoldRoutes(app: express.Express, getCurrentDB?: () => any, 
   app.get('/api/integrations/bold/webhook', webhookGetHandler);
   app.get('/api/payments/bold/webhook', webhookGetHandler);
 
+  function getPackageDetailsFromAmount(amount: number, description?: string) {
+    const desc = (description || '').toLowerCase();
+    const amt = Number(amount);
+    
+    if (desc.includes('enterprise') || amt >= 1000000 || amt === 319) {
+      return { id: 'enterprise', name: 'Paquete Enterprise', conversations: 20000, aiMessagesPerConv: 65, audioMinutes: 0 };
+    }
+    if (desc.includes('pro audio') || amt === 100000 || amt === 25) {
+      return { id: 'audio_pro', name: 'Paquete Pro Audio', conversations: 90, aiMessagesPerConv: 40, audioMinutes: 90 };
+    }
+    if (desc.includes('audio standard') || amt === 40000 || amt === 10) {
+      return { id: 'audio_standard', name: 'Paquete Standard Audio', conversations: 30, aiMessagesPerConv: 40, audioMinutes: 30 };
+    }
+    if (desc.includes('pro') || (amt >= 250000 && amt <= 300000) || amt === 69) {
+      return { id: 'pro', name: 'Paquete Pro', conversations: 3000, aiMessagesPerConv: 50, audioMinutes: 0 };
+    }
+    if (desc.includes('standard') || (amt >= 120000 && amt <= 150000) || amt === 33) {
+      return { id: 'standard', name: 'Paquete Standard', conversations: 1000, aiMessagesPerConv: 40, audioMinutes: 0 };
+    }
+    // Default or Starter ($19 USD / 76,000 COP)
+    return { id: 'starter', name: 'Paquete Starter', conversations: 500, aiMessagesPerConv: 25, audioMinutes: 0 };
+  }
+
   const webhookPostHandler = async (req: express.Request, res: express.Response) => {
     try {
       const payload = req.body || {};
@@ -95,9 +118,12 @@ export function setupBoldRoutes(app: express.Express, getCurrentDB?: () => any, 
       console.log(`[Bold Webhook] Recibida notificación de evento Bold:`, JSON.stringify(payload).substring(0, 300));
 
       const eventType = payload.event || payload.type || payload.status || 'PAYMENT_EVENT';
-      const orderId = payload.orderId || payload.reference || payload.id || payload.data?.orderId || payload.data?.reference;
+      const orderId = payload.orderId || payload.reference || payload.id || payload.data?.orderId || payload.data?.reference || eventId;
       const status = (payload.status || payload.data?.status || 'APPROVED').toUpperCase();
-      const amount = payload.amount || payload.data?.amount || 0;
+      const amount = Number(payload.amount || payload.data?.amount || 0);
+      const description = payload.description || payload.data?.description || '';
+
+      const isApproved = status.includes('APPROV') || status === 'PAID' || status === 'SUCCESS';
 
       const logEntry = {
         id: eventId,
@@ -112,7 +138,7 @@ export function setupBoldRoutes(app: express.Express, getCurrentDB?: () => any, 
       // If we have an existing transaction, update its status
       if (orderId && inMemoryTransactions.has(orderId)) {
         const tx = inMemoryTransactions.get(orderId)!;
-        if (status.includes('APPROV') || status === 'PAID' || status === 'SUCCESS') {
+        if (isApproved) {
           tx.status = 'APPROVED';
         } else if (status.includes('REJECT') || status === 'FAILED') {
           tx.status = 'REJECTED';
@@ -122,13 +148,13 @@ export function setupBoldRoutes(app: express.Express, getCurrentDB?: () => any, 
         inMemoryTransactions.set(orderId, tx);
       }
 
-      // Sync with Supabase / currentDB if functions provided
+      // Sync with Supabase
       try {
         const supabase = getSupabase();
         if (supabase) {
           try {
             await (supabase.from('transactions').insert({
-              order_id: orderId || eventId,
+              order_id: orderId,
               merchant_id: BOLD_PRODUCTION_CONFIG.merchantId,
               gateway: 'bold',
               amount,
@@ -142,6 +168,7 @@ export function setupBoldRoutes(app: express.Express, getCurrentDB?: () => any, 
         console.warn('[Bold Webhook] Supabase sync notice:', dbErr);
       }
 
+      // Update AI Balance and packages in currentDB
       if (getCurrentDB && saveCurrentDB) {
         try {
           const db = getCurrentDB();
@@ -156,6 +183,38 @@ export function setupBoldRoutes(app: express.Express, getCurrentDB?: () => any, 
               timestamp: new Date().toISOString()
             });
             if (db.boldTransactions.length > 100) db.boldTransactions = db.boldTransactions.slice(0, 100);
+
+            if (isApproved) {
+              const pkg = getPackageDetailsFromAmount(amount, description);
+              if (!db.aiBalance) {
+                db.aiBalance = {
+                  conversations: 500,
+                  aiMessagesPerConv: 25,
+                  audioMinutes: 0,
+                  packagesBought: 0
+                };
+              }
+              db.aiBalance.conversations = (db.aiBalance.conversations || 0) + pkg.conversations;
+              db.aiBalance.packagesBought = (db.aiBalance.packagesBought || 0) + 1;
+              db.aiBalance.aiMessagesPerConv = Math.max(db.aiBalance.aiMessagesPerConv || 25, pkg.aiMessagesPerConv);
+              db.aiBalance.audioMinutes = (db.aiBalance.audioMinutes || 0) + (pkg.audioMinutes || 0);
+              db.aiBalance.lastRechargeAt = new Date().toISOString();
+
+              if (!db.rechargeHistory) db.rechargeHistory = [];
+              db.rechargeHistory.unshift({
+                id: orderId,
+                date: new Date().toISOString().split('T')[0],
+                packageName: pkg.name,
+                type: pkg.audioMinutes > 0 ? 'Audio' : 'Texto',
+                amount,
+                creditsAdded: `+${pkg.conversations.toLocaleString()} chats (${pkg.aiMessagesPerConv} msgs/chat)`,
+                status: 'Completado'
+              });
+              if (db.rechargeHistory.length > 50) db.rechargeHistory = db.rechargeHistory.slice(0, 50);
+
+              console.log(`[Bold Gateway] Recarga procesada exitosamente: ${pkg.name} (+${pkg.conversations} conv, ${pkg.aiMessagesPerConv} msgs/conv). Nuevo balance: ${db.aiBalance.conversations} conversaciones.`);
+            }
+
             saveCurrentDB(db);
           }
         } catch (dbSaveErr) {

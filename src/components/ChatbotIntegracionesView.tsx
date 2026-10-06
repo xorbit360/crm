@@ -18,6 +18,7 @@ interface TokensState {
   google: string;
   tiktok: string;
   chateapro: string;
+  openrouter: string;
 }
 
 const DEFAULT_TOKENS: TokensState = {
@@ -26,10 +27,17 @@ const DEFAULT_TOKENS: TokensState = {
   meta: '',
   google: '',
   tiktok: '',
-  chateapro: ''
+  chateapro: '',
+  openrouter: ''
 };
 
 const INTEGRATIONS_CONFIG = [
+  {
+    key: 'openrouter' as const,
+    name: 'OpenRouter AI',
+    tag: 'Agentes IA & Modelos',
+    placeholder: 'sk-or-v1-xxxxxxxxxxxxxxxxxxxxxxxx'
+  },
   {
     key: 'dropi' as const,
     name: 'Dropi',
@@ -94,7 +102,8 @@ export default function ChatbotIntegracionesView() {
             meta: old.metaConversions?.token || '',
             google: old.google?.conversionId || old.google?.developerToken || '',
             tiktok: old.tiktok?.token || '',
-            chateapro: old.chateapro?.token || ''
+            chateapro: old.chateapro?.token || '',
+            openrouter: old.openrouter?.token || old.openrouter || ''
           });
         }
       }
@@ -113,7 +122,8 @@ export default function ChatbotIntegracionesView() {
               meta: t.metaConversions?.token || prev.meta || '',
               google: t.google?.conversionId || t.google?.developerToken || prev.google || '',
               tiktok: t.tiktok?.token || prev.tiktok || '',
-              chateapro: t.chateapro?.token || prev.chateapro || ''
+              chateapro: t.chateapro?.token || prev.chateapro || '',
+              openrouter: t.openrouter?.token || t.openrouter || prev.openrouter || ''
             };
             try {
               localStorage.setItem('EXPERT360_CHATBOT_TOKENS_SIMPLE', JSON.stringify(next));
