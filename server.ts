@@ -1714,6 +1714,69 @@ async function createServer() {
     }
   });
 
+  // Strict Google Login: User must be active/paid in database to enter
+  app.post("/api/auth/google-login", (req, res) => {
+    try {
+      const { email, name } = req.body || {};
+      if (!email) {
+        return res.status(400).json({ success: false, error: "Correo de Google no proporcionado." });
+      }
+
+      const normEmail = String(email).trim().toLowerCase();
+
+      // Master admin check
+      if (normEmail === 'oscar@expert360.ai' || normEmail === 'admin@xorbit360.com') {
+        return res.json({
+          success: true,
+          user: {
+            name: name || 'Oscar Molina',
+            email: normEmail,
+            role: 'superadmin',
+            username: 'admin',
+            phone: '573192392853',
+            plan: 'SuperAdmin Master'
+          }
+        });
+      }
+
+      // Check in registered active users
+      const users = Array.isArray(currentDB.users) ? currentDB.users : [];
+      const matchedUser = users.find((u: any) => u.email && u.email.trim().toLowerCase() === normEmail);
+
+      if (matchedUser) {
+        if (matchedUser.status !== 'activo') {
+          return res.status(403).json({
+            success: false,
+            requirePayment: true,
+            error: `Tu cuenta de Google (${normEmail}) no tiene un paquete activo. Para ingresar debes adquirir tu plan en https://xorbit360.com`
+          });
+        }
+
+        return res.json({
+          success: true,
+          user: {
+            name: matchedUser.name || name || normEmail.split('@')[0],
+            email: matchedUser.email || normEmail,
+            role: matchedUser.role || 'droshipper',
+            username: matchedUser.username || normEmail.split('@')[0],
+            phone: matchedUser.phone || '',
+            plan: matchedUser.plan || 'Paquete Pro'
+          }
+        });
+      }
+
+      // If user hasn't paid yet, block and require payment
+      return res.status(403).json({
+        success: false,
+        requirePayment: true,
+        error: `La cuenta de Google (${normEmail}) no está registrada como cliente activo. Debes adquirir tu paquete primero en https://xorbit360.com para tener acceso a crm.xorbit360.com.`
+      });
+    } catch (err: any) {
+      console.error("[Google Auth Error]:", err);
+      res.status(500).json({ success: false, error: "Error en el servidor de autenticación." });
+    }
+  });
+
   // Setup Bold Payments Gateway (Merchant ID FFVSR3C7Y1) Routes & Webhook
   setupBoldRoutes(app, () => currentDB, (db) => saveDBData(db));
 
