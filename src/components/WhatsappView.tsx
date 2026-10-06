@@ -12,6 +12,7 @@ import PedidosView from './PedidosView';
 import AlertasView from './AlertasView';
 import ProgramacionesBotView from './ProgramacionesBotView';
 import { RecargasView } from './RecargasView';
+import ReferidosView from './ReferidosView';
 import { VoiceNotePlayer } from './VoiceNotePlayer';
 import { LiveAudioRecorder } from './LiveAudioRecorder';
 import ChatbotIntegracionesView from './ChatbotIntegracionesView';
@@ -9448,6 +9449,9 @@ ${parametersString}
       )}
       {currentViewTab === 'recargas' && (
         <div className="pt-4"><RecargasView /></div>
+      )}
+      {currentViewTab === 'referidos' && (
+        <div className="pt-4"><ReferidosView currentUser={currentUser} /></div>
       )}
 
       {/* Lightbox Modal for Fullscreen Image Viewing */}

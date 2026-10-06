@@ -5351,6 +5351,65 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
     }
   });
 
+  // --- REFERRALS & 20% COMMISSION AFFILIATE SYSTEM ---
+  app.get('/api/referrals/stats', (req, res) => {
+    try {
+      const email = (req.query.email as string) || 'usuario@xorbit360.com';
+      if (!currentDB.referralStats) currentDB.referralStats = {};
+      if (!currentDB.referralStats[email]) {
+        currentDB.referralStats[email] = {
+          referralCode: '8650A73D',
+          commissionRate: 0.20,
+          balance: { available: 0, pendingWithdraw: 0, totalEarned: 0 },
+          referrals: [],
+          withdrawals: []
+        };
+      }
+      res.json({ success: true, ...currentDB.referralStats[email] });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message || 'Error fetching referral stats' });
+    }
+  });
+
+  app.post('/api/referrals/withdraw', (req, res) => {
+    try {
+      const { email = 'usuario@xorbit360.com', amount, method, accountDetails } = req.body;
+      const numAmount = parseFloat(amount);
+      if (!numAmount || numAmount <= 0) {
+        return res.status(400).json({ success: false, message: 'Monto inválido' });
+      }
+
+      if (!currentDB.referralStats) currentDB.referralStats = {};
+      if (!currentDB.referralStats[email]) {
+        currentDB.referralStats[email] = {
+          referralCode: '8650A73D',
+          commissionRate: 0.20,
+          balance: { available: 0, pendingWithdraw: 0, totalEarned: 0 },
+          referrals: [],
+          withdrawals: []
+        };
+      }
+
+      const userStats = currentDB.referralStats[email];
+      const newRequest = {
+        id: `RET-${Date.now().toString().slice(-6)}`,
+        date: new Date().toISOString().split('T')[0],
+        amount: numAmount,
+        method: method || 'NEQUI',
+        accountDetails: accountDetails || '',
+        status: 'Pendiente'
+      };
+
+      userStats.withdrawals.unshift(newRequest);
+      userStats.balance.pendingWithdraw = (userStats.balance.pendingWithdraw || 0) + numAmount;
+      saveDBData(currentDB);
+
+      res.json({ success: true, message: 'Solicitud de retiro registrada exitosamente', request: newRequest });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message || 'Error al procesar solicitud de retiro' });
+    }
+  });
+
   // --- REAL & PERSISTENT META & TIKTOK CAMPAIGNS API ---
   const getSimulatedCampaigns = () => {
     return [

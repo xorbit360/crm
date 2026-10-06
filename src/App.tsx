@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Bot, Lightbulb, Image as ImageIcon, Layout, Megaphone, Smartphone, Settings as SettingsIcon, Menu, X, ArrowRight, ShieldCheck, ChevronRight, Network, Link, Paperclip, Mic, FileImage, Video, FileAudio, Users, Share2, LogOut, GraduationCap, Package, ShoppingCart, BarChart3, HeartHandshake, Send, Calendar, QrCode, Database, MessageCircle, MessageSquare, FileText, Zap, TrendingUp, Sparkles, Flame, Search, Calculator, MonitorPlay, Eye, Bell, CheckCircle, Sun, Moon, PanelLeft, PanelLeftClose, FolderKanban, Terminal, Globe, Radio, CreditCard } from 'lucide-react';
+import { ChevronDown, Bot, Lightbulb, Image as ImageIcon, Layout, Megaphone, Smartphone, Settings as SettingsIcon, Menu, X, ArrowRight, ShieldCheck, ChevronRight, Network, Link, Paperclip, Mic, FileImage, Video, FileAudio, Users, Share2, LogOut, GraduationCap, Package, ShoppingCart, BarChart3, HeartHandshake, Send, Calendar, QrCode, Database, MessageCircle, MessageSquare, FileText, Zap, TrendingUp, Sparkles, Flame, Search, Calculator, MonitorPlay, Eye, Bell, CheckCircle, Sun, Moon, PanelLeft, PanelLeftClose, FolderKanban, Terminal, Globe, Radio, CreditCard, Gift } from 'lucide-react';
 import type { ModuleId, AppState } from './types';
 import { translations, FlagES, FlagUK, Language, Theme } from './lib/i18n';
 import { getCachedWhiteLabel, fetchWhiteLabelConfig, WhiteLabelConfig } from './lib/whitelabel';
@@ -10,6 +10,7 @@ import ContenidoView from './components/ContenidoView';
 import AdsView from './components/AdsView';
 import WhatsappView from './components/WhatsappView';
 import { RecargasView } from './components/RecargasView';
+import ReferidosView from './components/ReferidosView';
 import AutomatizacionesView from './components/AutomatizacionesView';
 import DashboardMetrics from './components/DashboardMetrics';
 import ComunidadView from './components/ComunidadView';
@@ -703,6 +704,7 @@ type ChatMessage = {
                       { id: 'catalogo', label: 'Catálogo', icon: <ShoppingCart size={16} /> },
                       { id: 'reportes', label: 'Consultor IA', icon: <Bot size={16} /> },
                       { id: 'recargas', label: 'Recargas', icon: <CreditCard size={16} /> },
+                      { id: 'referidos', label: 'Referidos', icon: <Gift size={16} /> },
                       { id: 'entrenamiento_chatbot', label: 'Entrenamiento Chatbot', icon: <Bot size={16} /> }
                     ].filter(tab => !hiddenItems.includes(tab.id)).map(tab => (
                       <div key={tab.id} className="relative flex items-center">
@@ -1342,6 +1344,18 @@ type ChatMessage = {
                 hiddenItems={hiddenItems}
                 toggleVisibility={toggleVisibility}
                 initialTab="recargas"
+              />
+            )}
+            {activeModule === 'referidos' && (
+              <ConfiguracionGeneralView 
+                currentLanguage={language} 
+                onLanguageChange={setLanguage} 
+                currentTheme={theme} 
+                onThemeChange={setTheme}
+                hiddenItems={hiddenItems}
+                toggleVisibility={toggleVisibility}
+                initialTab="referidos"
+                currentUser={user}
               />
             )}
             {activeModule === 'dominio' && (

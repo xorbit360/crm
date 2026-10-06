@@ -53,6 +53,7 @@ export const translations = {
     email: 'Email Marketing',
     usuarios: 'Usuarios y Roles',
     recargas: 'Recargas de Créditos',
+    referidos: 'Sistema de Referidos (20%)',
     dominio: 'Dominio Personalizado',
     live_selling: 'Live Selling',
     proyectos: 'Proyectos',

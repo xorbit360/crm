@@ -5,6 +5,7 @@ import UsuariosView from './UsuariosView';
 import AutomatizacionesView from './AutomatizacionesView';
 import IntegracionesView from './IntegracionesView';
 import RecargasView from './RecargasView';
+import ReferidosView from './ReferidosView';
 import DominioView from './DominioView';
 import SoporteTicketsView from './SoporteTicketsView';
 import CostosSaasView from './CostosSaasView';
@@ -22,7 +23,7 @@ interface ConfiguracionGeneralViewProps {
   toggleVisibility?: (id: string) => void;
   currentUser?: { name: string; role: string; email: string; plan?: string } | null;
   onCustomizationApplied?: (config: any) => void;
-  initialTab?: 'personalizacion' | 'general' | 'usuarios' | 'automatizaciones' | 'integraciones' | 'recargas' | 'dominio' | 'tickets' | 'costos' | 'pasarela' | 'mcp_api' | 'embudos';
+  initialTab?: 'personalizacion' | 'general' | 'usuarios' | 'automatizaciones' | 'integraciones' | 'recargas' | 'referidos' | 'dominio' | 'tickets' | 'costos' | 'pasarela' | 'mcp_api' | 'embudos';
 }
 
 export default function ConfiguracionGeneralView({
@@ -37,7 +38,7 @@ export default function ConfiguracionGeneralView({
   initialTab = 'general',
 }: ConfiguracionGeneralViewProps) {
   const t = translations[currentLanguage];
-  const [activeTab, setActiveTab] = useState<'personalizacion' | 'general' | 'usuarios' | 'automatizaciones' | 'integraciones' | 'recargas' | 'dominio' | 'tickets' | 'costos' | 'pasarela' | 'mcp_api' | 'embudos'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'personalizacion' | 'general' | 'usuarios' | 'automatizaciones' | 'integraciones' | 'recargas' | 'referidos' | 'dominio' | 'tickets' | 'costos' | 'pasarela' | 'mcp_api' | 'embudos'>(initialTab);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [autoSave, setAutoSave] = useState(true);
   const [notifications, setNotifications] = useState(true);
@@ -166,6 +167,18 @@ export default function ConfiguracionGeneralView({
           </button>
 
           <button
+            onClick={() => setActiveTab('referidos')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap cursor-pointer ${
+              activeTab === 'referidos'
+                ? 'bg-[#00E676] text-black shadow-lg shadow-emerald-500/20 font-bold'
+                : 'text-[#00E676] hover:text-white hover:bg-emerald-950/40 border border-emerald-500/30'
+            }`}
+          >
+            <Users size={16} />
+            {t.referidos || 'Referidos (20%)'}
+          </button>
+
+          <button
             onClick={() => setActiveTab('automatizaciones')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap cursor-pointer ${
               activeTab === 'automatizaciones'
@@ -238,6 +251,10 @@ export default function ConfiguracionGeneralView({
 
       {activeTab === 'recargas' && (
         <RecargasView />
+      )}
+
+      {activeTab === 'referidos' && (
+        <ReferidosView currentUser={currentUser} />
       )}
 
       {activeTab === 'usuarios' && (
