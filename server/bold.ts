@@ -186,9 +186,12 @@ export function setupBoldRoutes(app: express.Express, getCurrentDB?: () => any, 
   // 3. Create Real Payment Order & Signed Checkout URL
   const createPaymentHandler = async (req: express.Request, res: express.Response) => {
     try {
-      const { amount, description, customerEmail, customerName, currency = 'COP', orderId: reqOrderId } = req.body || {};
+      const body = req.body || {};
+      const { description, customerEmail, customerName, currency = 'COP', orderId: reqOrderId } = body;
+      
+      const rawAmount = body.amount ?? body.amountCop ?? (body.amountUsd ? body.amountUsd * 4000 : 76000);
+      const numericAmount = Number(rawAmount);
 
-      const numericAmount = Number(amount);
       if (!numericAmount || numericAmount <= 0) {
         return res.status(400).json({
           success: false,

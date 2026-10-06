@@ -1476,8 +1476,10 @@ function setupBoldRoutes(app, getCurrentDB, saveCurrentDB) {
   app.post("/api/payments/bold/webhook", webhookPostHandler);
   const createPaymentHandler = async (req, res) => {
     try {
-      const { amount, description, customerEmail, customerName, currency = "COP", orderId: reqOrderId } = req.body || {};
-      const numericAmount = Number(amount);
+      const body = req.body || {};
+      const { description, customerEmail, customerName, currency = "COP", orderId: reqOrderId } = body;
+      const rawAmount = body.amount ?? body.amountCop ?? (body.amountUsd ? body.amountUsd * 4e3 : 76e3);
+      const numericAmount = Number(rawAmount);
       if (!numericAmount || numericAmount <= 0) {
         return res.status(400).json({
           success: false,
