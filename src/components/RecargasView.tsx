@@ -402,14 +402,20 @@ export function RecargasView() {
       await ensureBoldCheckoutScript();
 
       const amountInCop = Math.round(pkg.price * 4000);
-      const res = await fetch('/api/integrations/bold/create-payment', {
+      const res = await fetch('/api/create-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          amountCop: amountInCop,
           amount: amountInCop,
-          description: `Recarga ${pkg.name} - Xorbit 360`,
+          amountUsd: pkg.price,
+          packageName: pkg.name,
+          conversations: pkg.conversations,
+          msgsPerConv: pkg.aiMessagesPerConv,
+          description: `Recarga Xorbit 360 AI - ${pkg.name}`,
           currency: 'COP',
           orderId,
+          packageId: pkg.id,
           originUrl: window.location.origin
         })
       });
@@ -423,25 +429,28 @@ export function RecargasView() {
             amount: String(data.amount || amountInCop),
             apiKey: data.apiKey,
             integritySignature: data.integritySignature || data.signature,
-            description: data.description || `Recarga ${pkg.name} - Xorbit 360`,
+            description: data.description || `Recarga Xorbit 360 AI - ${pkg.name}`,
             renderMode: 'embedded',
-            redirectionUrl: data.redirectionUrl || `${window.location.origin}/#/recargas?payment_status=completed&order=${data.orderId || orderId}`
+            redirectionUrl: `${window.location.origin}/#/recargas?payment_status=completed&order=${data.orderId || orderId}`
           });
           boldCheckout.open();
-          setPurchaseSuccessToast(`Pasarela oficial de Bold abierta para ${pkg.name}`);
-          setTimeout(() => setPurchaseSuccessToast(null), 4000);
           return;
         } catch (e) {
           console.warn("BoldCheckout instantiation fallback:", e);
         }
       }
 
-      if (data && data.checkoutUrl) {
-        window.open(data.checkoutUrl, '_blank');
-        setPurchaseSuccessToast(`Abriendo pasarela oficial de Bold Payments...`);
-        setTimeout(() => setPurchaseSuccessToast(null), 4000);
-        return;
-      }
+      // Encrypted Bold Button fallback
+      const btnUrl = generateBoldBtnUrl({
+        orderId: data.orderId || orderId,
+        currency: 'COP',
+        amount: String(data.amount || amountInCop),
+        apiKey: data.apiKey || 'l_5Wz-8KQmld8Vb_iyy05KWBQ0A3zz5LOtAgMmCjfbk',
+        integritySignature: data.integritySignature || data.signature,
+        description: data.description || `Recarga Xorbit 360 AI - ${pkg.name}`,
+        redirectionUrl: `${window.location.origin}/#/recargas?payment_status=completed&order=${data.orderId || orderId}`
+      });
+      window.location.href = btnUrl;
     } catch (err: any) {
       console.error("Error abriendo pasarela Bold:", err);
       alert("Error al conectar con la pasarela Bold: " + (err?.message || err));
@@ -453,7 +462,7 @@ export function RecargasView() {
   const isLowBalance = alertsEnabled && balance.conversations <= alertThreshold;
 
   return (
-    <div className="space-y-8 w-full pb-16 animate-fade-in text-gray-100">
+    <div className="space-y-6 w-full pb-16 animate-fade-in text-gray-100">
       
       {/* Toast Notification */}
       {purchaseSuccessToast && (
@@ -466,29 +475,6 @@ export function RecargasView() {
         </div>
       )}
 
-      {/* Main Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold font-display text-white tracking-tight flex items-center gap-3">
-            <span className="p-2.5 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-              <Zap size={28} />
-            </span>
-            Recargas
-          </h1>
-          <p className="text-gray-400 text-sm mt-1.5 max-w-3xl">
-            Tu saldo de mensajes e IA. Recarga créditos para que tu bot responda en automático sin necesidad de abrir cuentas ni conectar claves API externas (OpenAI, Gemini, Grok, Claude).
-          </p>
-        </div>
-
-        <button
-          onClick={() => setShowHistoryModal(true)}
-          className="self-start md:self-auto px-4 py-2.5 rounded-xl bg-gray-900 hover:bg-gray-800 text-gray-200 border border-gray-700/80 font-semibold text-sm transition-all flex items-center gap-2 cursor-pointer shadow-md"
-        >
-          <History size={16} className="text-gold" />
-          Historial de Pagos
-        </button>
-      </div>
-
       {/* Current Balance Panel - Styled Emerald Card */}
       <div className="panel p-6 sm:p-8 rounded-2xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-green-500 text-black shadow-xl shadow-emerald-900/20 relative overflow-hidden border border-emerald-400/30">
         <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none"></div>
@@ -496,7 +482,7 @@ export function RecargasView() {
         <div className="relative z-10 space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-black/10 pb-4">
             <div>
-              <p className="text-xs uppercase tracking-wider font-black text-black/70">Tu balance actual</p>
+              <p className="text-xs uppercase tracking-wider font-black text-black/70">Tu balance actual de recargas</p>
               <div className="flex items-baseline gap-2 mt-1">
                 <span className="text-4xl sm:text-5xl font-black font-display tracking-tight text-black">
                   {balance.conversations.toLocaleString()}
@@ -505,11 +491,14 @@ export function RecargasView() {
               </div>
             </div>
 
-            <div className="text-left sm:text-right">
-              <p className="text-xs text-black/70 font-semibold">Último pago:</p>
-              <p className="text-sm font-black text-black">
-                {transactions.length > 0 ? `${transactions[0].packageName} ($${transactions[0].amount.toFixed(2)})` : 'Sin pagos recientes'}
-              </p>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowHistoryModal(true)}
+                className="px-4 py-2.5 rounded-xl bg-black/80 hover:bg-black text-white font-bold text-xs transition-all flex items-center gap-2 cursor-pointer shadow-md"
+              >
+                <History size={15} className="text-gold" />
+                Historial de Pagos
+              </button>
             </div>
           </div>
 

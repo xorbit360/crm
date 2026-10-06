@@ -13,9 +13,9 @@ export interface BoldConfig {
 
 export const BOLD_PRODUCTION_CONFIG: BoldConfig = {
   merchantId: process.env.BOLD_MERCHANT_ID || 'FFVSR3C7Y1',
-  apiKey: process.env.BOLD_API_KEY || 'l_5Wz-8KQmld8Vb_iyy05KWBQ0A3zz5LOtagMmCjfbk',
+  apiKey: process.env.BOLD_API_KEY || 'l_5Wz-8KQmld8Vb_iyy05KWBQ0A3zz5LOtAgMmCjfbk',
   secretKey: process.env.BOLD_SECRET_KEY || '53nBWst7REiVw9So1Zf5aQ',
-  checkoutUrl: process.env.BOLD_CHECKOUT_URL || 'https://checkout.bold.co/payment',
+  checkoutUrl: 'https://checkout.bold.co',
   webhookUrl: 'https://expert360.ai.studio/api/integrations/bold/webhook',
   environment: 'production'
 };
