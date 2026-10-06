@@ -205,11 +205,11 @@ export function setupBoldRoutes(app: express.Express, getCurrentDB?: () => any, 
       );
 
       // Generate production Bold Checkout URL for merchant FFVSR3C7Y1
-      const encodedDesc = encodeURIComponent(description || 'Recarga de Saldo - Comunidad Expert AI');
+      const encodedDesc = encodeURIComponent(description || 'Recarga de Saldo - Xorbit 360 AI');
       const checkoutUrl = `https://checkout.bold.co/payment/${BOLD_PRODUCTION_CONFIG.merchantId}?amount=${numericAmount}&currency=${currency}&description=${encodedDesc}&reference=${orderId}&apiKey=${encodeURIComponent(
         BOLD_PRODUCTION_CONFIG.apiKey
       )}&integritySignature=${signature}&callbackUrl=${encodeURIComponent(
-        'https://expert360.ai.studio/#/recargas'
+        'https://crm.xorbit360.com/#/recargas'
       )}`;
 
       const newTx: BoldTransaction = {
@@ -218,10 +218,10 @@ export function setupBoldRoutes(app: express.Express, getCurrentDB?: () => any, 
         merchantId: BOLD_PRODUCTION_CONFIG.merchantId,
         amount: numericAmount,
         currency,
-        description: description || 'Recarga de Saldo - Comunidad Expert AI',
+        description: description || 'Recarga de Saldo - Xorbit 360 AI',
         status: 'PENDING',
-        customerEmail: customerEmail || 'usuario@comunidadexpert.com',
-        customerName: customerName || 'Cliente Expert 360',
+        customerEmail: customerEmail || 'usuario@xorbit360.com',
+        customerName: customerName || 'Cliente Xorbit 360',
         signature,
         checkoutUrl,
         createdAt: new Date().toISOString(),
@@ -239,6 +239,8 @@ export function setupBoldRoutes(app: express.Express, getCurrentDB?: () => any, 
         amount: numericAmount,
         currency,
         signature,
+        integritySignature: signature,
+        apiKey: BOLD_PRODUCTION_CONFIG.apiKey,
         checkoutUrl,
         boldConfig: {
           merchantId: BOLD_PRODUCTION_CONFIG.merchantId,
