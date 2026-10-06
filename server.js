@@ -6113,6 +6113,52 @@ ${currentDB.products.map((p) => `- ${p.name}: ${p.stock > 0 ? p.stock + " dispon
       res.status(500).json({ success: false, error: err.message || "Error al procesar solicitud de retiro" });
     }
   });
+  app.post("/api/referrals/request-leader-role", (req, res) => {
+    try {
+      const requestData = req.body;
+      if (!currentDB.leaderRequests) currentDB.leaderRequests = [];
+      const newReq = {
+        id: requestData.id || `LDR-${Date.now().toString().slice(-6)}`,
+        userName: requestData.userName || "Usuario",
+        userEmail: requestData.userEmail || "",
+        communityName: requestData.communityName || "",
+        membersCount: requestData.membersCount || "50+",
+        leaderType: requestData.leaderType || "Educador de la Plataforma",
+        socialLinks: requestData.socialLinks || "",
+        message: requestData.message || "",
+        date: (/* @__PURE__ */ new Date()).toISOString().split("T")[0],
+        status: "Pendiente"
+      };
+      currentDB.leaderRequests.unshift(newReq);
+      saveDBData(currentDB);
+      console.log(`[L\xEDder Networker] Nueva solicitud recibida de ${newReq.userName} (${newReq.userEmail})`);
+      res.json({ success: true, message: "Solicitud guardada correctamente", request: newReq });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message || "Error al enviar solicitud" });
+    }
+  });
+  app.get("/api/admin/leader-requests", (req, res) => {
+    try {
+      const list = currentDB.leaderRequests || [];
+      res.json({ success: true, requests: list });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+  app.post("/api/admin/approve-leader-role", (req, res) => {
+    try {
+      const { reqId, email, approved } = req.body;
+      if (!currentDB.leaderRequests) currentDB.leaderRequests = [];
+      currentDB.leaderRequests = currentDB.leaderRequests.map(
+        (r) => r.id === reqId || r.userEmail === email ? { ...r, status: approved ? "Aprobado" : "Rechazado" } : r
+      );
+      saveDBData(currentDB);
+      console.log(`[L\xEDder Networker] Solicitud ${reqId} de ${email} marcada como: ${approved ? "Aprobada" : "Rechazada"}`);
+      res.json({ success: true, message: `Rol ${approved ? "aprobado" : "rechazado"} con \xE9xito` });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
   const getSimulatedCampaigns = () => {
     return [
       {
