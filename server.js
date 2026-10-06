@@ -1342,9 +1342,9 @@ function setupZernioRoutes(app, onIncomingMessage) {
 import crypto2 from "crypto";
 var BOLD_PRODUCTION_CONFIG = {
   merchantId: process.env.BOLD_MERCHANT_ID || "FFVSR3C7Y1",
-  apiKey: process.env.BOLD_API_KEY || "l_5Wz-8KQmld8Vb_iyy05KWBQ0A3zz5LOtagMmCjfbk",
+  apiKey: process.env.BOLD_API_KEY || "l_5Wz-8KQmld8Vb_iyy05KWBQ0A3zz5LOtAgMmCjfbk",
   secretKey: process.env.BOLD_SECRET_KEY || "53nBWst7REiVw9So1Zf5aQ",
-  checkoutUrl: process.env.BOLD_CHECKOUT_URL || "https://checkout.bold.co/payment",
+  checkoutUrl: "https://checkout.bold.co",
   webhookUrl: "https://expert360.ai.studio/api/integrations/bold/webhook",
   environment: "production"
 };
@@ -1476,7 +1476,7 @@ function setupBoldRoutes(app, getCurrentDB, saveCurrentDB) {
   app.post("/api/payments/bold/webhook", webhookPostHandler);
   const createPaymentHandler = async (req, res) => {
     try {
-      const { amount, description, customerEmail, customerName, currency = "COP" } = req.body || {};
+      const { amount, description, customerEmail, customerName, currency = "COP", orderId: reqOrderId } = req.body || {};
       const numericAmount = Number(amount);
       if (!numericAmount || numericAmount <= 0) {
         return res.status(400).json({
@@ -1484,18 +1484,19 @@ function setupBoldRoutes(app, getCurrentDB, saveCurrentDB) {
           error: "Monto de pago inv\xE1lido. Debe ser mayor a 0."
         });
       }
-      const orderId = `REC-BOLD-${Date.now()}-${Math.floor(1e3 + Math.random() * 9e3)}`;
+      const orderId = reqOrderId || `XOR-${Date.now()}-${Math.floor(1e3 + Math.random() * 9e3)}`;
+      const amountStr = String(Math.round(numericAmount));
       const signature = calculateBoldIntegritySignature(
         orderId,
         numericAmount,
         currency,
         BOLD_PRODUCTION_CONFIG.secretKey
       );
-      const encodedDesc = encodeURIComponent(description || "Recarga de Saldo - Comunidad Expert AI");
-      const checkoutUrl = `https://checkout.bold.co/payment/${BOLD_PRODUCTION_CONFIG.merchantId}?amount=${numericAmount}&currency=${currency}&description=${encodedDesc}&reference=${orderId}&apiKey=${encodeURIComponent(
+      const encodedDesc = encodeURIComponent(description || "Recarga de Saldo - Xorbit 360 AI");
+      const checkoutUrl = `https://checkout.bold.co/payment/${BOLD_PRODUCTION_CONFIG.merchantId}?amount=${amountStr}&currency=${currency}&description=${encodedDesc}&reference=${orderId}&apiKey=${encodeURIComponent(
         BOLD_PRODUCTION_CONFIG.apiKey
       )}&integritySignature=${signature}&callbackUrl=${encodeURIComponent(
-        "https://expert360.ai.studio/#/recargas"
+        "https://crm.xorbit360.com/#/recargas"
       )}`;
       const newTx = {
         id: orderId,
@@ -1503,10 +1504,10 @@ function setupBoldRoutes(app, getCurrentDB, saveCurrentDB) {
         merchantId: BOLD_PRODUCTION_CONFIG.merchantId,
         amount: numericAmount,
         currency,
-        description: description || "Recarga de Saldo - Comunidad Expert AI",
+        description: description || "Recarga de Saldo - Xorbit 360 AI",
         status: "PENDING",
-        customerEmail: customerEmail || "usuario@comunidadexpert.com",
-        customerName: customerName || "Cliente Expert 360",
+        customerEmail: customerEmail || "usuario@xorbit360.com",
+        customerName: customerName || "Cliente Xorbit 360",
         signature,
         checkoutUrl,
         createdAt: (/* @__PURE__ */ new Date()).toISOString(),
@@ -1521,6 +1522,11 @@ function setupBoldRoutes(app, getCurrentDB, saveCurrentDB) {
         amount: numericAmount,
         currency,
         signature,
+        integritySignature: signature,
+        apiKey: BOLD_PRODUCTION_CONFIG.apiKey,
+        description: description || "Recarga de Saldo - Xorbit 360 AI",
+        renderMode: "embedded",
+        redirectionUrl: `https://crm.xorbit360.com/#/recargas?payment_status=completed&order=${orderId}`,
         checkoutUrl,
         boldConfig: {
           merchantId: BOLD_PRODUCTION_CONFIG.merchantId,
@@ -1538,6 +1544,7 @@ function setupBoldRoutes(app, getCurrentDB, saveCurrentDB) {
   };
   app.post("/api/integrations/bold/create-payment", createPaymentHandler);
   app.post("/api/payments/bold/create-payment", createPaymentHandler);
+  app.post("/api/create-payment", createPaymentHandler);
   app.get("/api/integrations/bold/transactions", (req, res) => {
     const list = Array.from(inMemoryTransactions.values()).reverse();
     res.json({
@@ -2801,6 +2808,117 @@ async function createServer() {
   app.use("/uploads", express2.static(uploadsDir));
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok" });
+  });
+  app.post("/api/auth/login", (req, res) => {
+    try {
+      const { username, password } = req.body || {};
+      if (!username || !password) {
+        return res.status(400).json({ success: false, error: "Por favor ingresa usuario/correo y contrase\xF1a." });
+      }
+      const normUser = String(username).trim().toLowerCase();
+      const pass = String(password).trim();
+      if ((normUser === "admin" || normUser === "oscar@expert360.ai") && pass === "Colombia1") {
+        return res.json({
+          success: true,
+          user: {
+            name: "Oscar Molina",
+            email: "oscar@expert360.ai",
+            role: "superadmin",
+            username: "admin",
+            phone: "573192392853",
+            plan: "SuperAdmin Master"
+          }
+        });
+      }
+      const users = Array.isArray(currentDB.users) ? currentDB.users : [];
+      const matchedUser = users.find(
+        (u) => u.email && u.email.trim().toLowerCase() === normUser || u.username && u.username.trim().toLowerCase() === normUser
+      );
+      if (matchedUser) {
+        const validPass = matchedUser.password === pass || matchedUser.tempPassword === pass;
+        if (!validPass) {
+          return res.status(401).json({ success: false, error: "Contrase\xF1a incorrecta." });
+        }
+        if (matchedUser.status !== "activo") {
+          return res.status(403).json({
+            success: false,
+            requirePayment: true,
+            error: "Tu suscripci\xF3n no est\xE1 activa. Para acceder al CRM adquiere tu plan en https://xorbit360.com"
+          });
+        }
+        return res.json({
+          success: true,
+          user: {
+            name: matchedUser.name || normUser,
+            email: matchedUser.email || normUser,
+            role: matchedUser.role || "droshipper",
+            username: matchedUser.username || normUser,
+            phone: matchedUser.phone || "",
+            plan: matchedUser.plan || "Paquete Pro"
+          }
+        });
+      }
+      return res.status(403).json({
+        success: false,
+        requirePayment: true,
+        error: "Acceso no autorizado: crm.xorbit360.com es exclusivo para clientes activos. Por favor adquiere tu paquete en https://xorbit360.com para recibir tus credenciales de ingreso."
+      });
+    } catch (err) {
+      console.error("[Auth Login Error]:", err);
+      res.status(500).json({ success: false, error: "Error en el servidor de autenticaci\xF3n." });
+    }
+  });
+  app.post("/api/auth/google-login", (req, res) => {
+    try {
+      const { email, name } = req.body || {};
+      if (!email) {
+        return res.status(400).json({ success: false, error: "Correo de Google no proporcionado." });
+      }
+      const normEmail = String(email).trim().toLowerCase();
+      if (normEmail === "oscar@expert360.ai" || normEmail === "admin@xorbit360.com") {
+        return res.json({
+          success: true,
+          user: {
+            name: name || "Oscar Molina",
+            email: normEmail,
+            role: "superadmin",
+            username: "admin",
+            phone: "573192392853",
+            plan: "SuperAdmin Master"
+          }
+        });
+      }
+      const users = Array.isArray(currentDB.users) ? currentDB.users : [];
+      const matchedUser = users.find((u) => u.email && u.email.trim().toLowerCase() === normEmail);
+      if (matchedUser) {
+        if (matchedUser.status !== "activo") {
+          return res.status(403).json({
+            success: false,
+            requirePayment: true,
+            error: `Tu cuenta de Google (${normEmail}) no tiene un paquete activo. Para ingresar debes adquirir tu plan en https://xorbit360.com`
+          });
+        }
+        return res.json({
+          success: true,
+          user: {
+            name: matchedUser.name || name || normEmail.split("@")[0],
+            email: matchedUser.email || normEmail,
+            role: matchedUser.role || "droshipper",
+            username: matchedUser.username || normEmail.split("@")[0],
+            phone: matchedUser.phone || "",
+            plan: matchedUser.plan || "Paquete Pro"
+          }
+        });
+      }
+      return res.status(403).json({
+        success: false,
+        requirePayment: true,
+        error: `La cuenta de Google (${normEmail}) no est\xE1 registrada como cliente activo. Debes adquirir tu paquete primero en https://xorbit360.com para tener acceso a crm.xorbit360.com.`
+      });
+    } catch (err) {
+      console.error("[Google Auth Error]:", err);
+      res.status(500).json({ success: false, error: "Error en el servidor de autenticaci\xF3n." });
+    }
   });
   setupBoldRoutes(app, () => currentDB, (db) => saveDBData(db));
   setupZernioRoutes(app, (event) => {
