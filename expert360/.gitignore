@@ -14,8 +14,3 @@ coverage/
 # Sesiones de WhatsApp / Baileys
 baileys_auth_info*
 auth_info_baileys*
-
-# Archivos comprimidos y temporales
-*.zip
-*.tar.gz
-bundle_b64.txt

@@ -1,0 +1,10 @@
+/onClick={() => setActiveTab('planificador')}/,/<\/button>/ {
+  /<\/button>/ a\
+          <button\
+            onClick={() => setActiveTab('editor_video')}\
+            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-2 ${activeTab === 'editor_video' ? 'bg-purple-600 text-white shadow' : 'text-gray-400 hover:text-gray-200'}`}\
+          >\
+            <MonitorPlay size={14} />\
+            🎬 Editor de Video IA\
+          </button>
+}

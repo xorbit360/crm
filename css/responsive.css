@@ -1,0 +1,132 @@
+/* ==========================================================================
+   XORBIT 360 - RESPONSIVE STYLES
+   ========================================================================== */
+
+@media (max-width: 1200px) {
+  .crm-mockup-window {
+    grid-template-columns: 200px 260px 1fr;
+  }
+  .crm-col-details {
+    display: none; /* Hide 4th column on mid screens for better layout */
+  }
+  .modules-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .module-card.featured {
+    grid-column: span 2;
+  }
+  .footer-top-grid {
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+  }
+}
+
+@media (max-width: 992px) {
+  .nav-menu, .nav-actions .btn-secondary, .nav-actions .lang-selector {
+    display: none;
+  }
+  .mobile-toggle {
+    display: block;
+  }
+  
+  .hero-title {
+    font-size: 2.5rem;
+  }
+
+  .pillars-grid {
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
+
+  .voice-simulator-card {
+    grid-template-columns: 1fr;
+  }
+
+  .live-selling-preview {
+    grid-template-columns: 1fr;
+  }
+
+  .live-chat-stream-side {
+    border-left: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .roi-card {
+    grid-template-columns: 1fr;
+    padding: 32px 24px;
+  }
+
+  .pricing-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+
+  .pricing-card.popular {
+    transform: none;
+  }
+
+  .crm-mockup-window {
+    grid-template-columns: 1fr;
+    height: 520px;
+  }
+
+  .crm-col-nav, .crm-col-chats {
+    display: none;
+  }
+
+  .footer-top-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+  }
+}
+
+@media (max-width: 640px) {
+  .container {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .hero-title {
+    font-size: 2rem;
+  }
+
+  .hero-description {
+    font-size: 0.95rem;
+  }
+
+  .hero-cta-group {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .hero-cta-group .btn {
+    width: 100%;
+  }
+
+  .modules-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .module-card.featured {
+    grid-column: span 1;
+  }
+
+  .footer-top-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .footer-bottom-bar {
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+  }
+
+  .top-announcement {
+    font-size: 0.76rem;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .crm-modal-overlay {
+    padding: 24px 18px;
+  }
+}

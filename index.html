@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="es" class="notranslate" translate="no">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Plataforma integral de Agentes de IA, CRM, Comunicaciones, Recargas Bold Payments y Gestión de Equipos para Comunidad Expert 360." />
+    <meta name="google" content="notranslate" />
+    <title>Comunidad Expert 360</title>
+    <script>
+      // Safe DOM patch for Google Translate / Browser Extensions DOM node manipulation in React
+      if (typeof window !== 'undefined' && typeof Node !== 'undefined') {
+        var origInsertBefore = Node.prototype.insertBefore;
+        Node.prototype.insertBefore = function(newNode, referenceNode) {
+          if (referenceNode && referenceNode.parentNode !== this) {
+            if (referenceNode.parentNode) {
+              return referenceNode.parentNode.insertBefore(newNode, referenceNode);
+            }
+            return this.appendChild(newNode);
+          }
+          return origInsertBefore.call(this, newNode, referenceNode);
+        };
+
+        var origRemoveChild = Node.prototype.removeChild;
+        Node.prototype.removeChild = function(child) {
+          if (child && child.parentNode !== this) {
+            if (child.parentNode) {
+              return child.parentNode.removeChild(child);
+            }
+            return child;
+          }
+          return origRemoveChild.call(this, child);
+        };
+
+        window.addEventListener('error', function(e) {
+          if (
+            e.message === 'Script error.' || 
+            (e.message && e.message.indexOf('ResizeObserver') !== -1) ||
+            (e.message && e.message.indexOf('insertBefore') !== -1) ||
+            (e.message && e.message.indexOf('removeChild') !== -1)
+          ) {
+            e.stopImmediatePropagation();
+          }
+        });
+      }
+    </script>
+    <!-- Bold Payments Colombia Official Checkout Library -->
+    <script src="https://checkout.bold.co/library/boldPaymentButton.js"></script>
+  </head>
+  <body class="notranslate">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

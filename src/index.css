@@ -1,0 +1,167 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Fira+Code:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Playfair Display", ui-serif, Georgia, serif;
+  --font-mono: "Fira Code", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-gold: #d4af37;
+  --color-gold-300: #fceea7;
+  --color-gold-400: #f5d76e;
+  --color-gold-500: #d4af37;
+  --color-gold-600: #b5952f;
+  --color-gold-700: #8f7524;
+}
+
+:root {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+
+/* Custom subtle animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulseBorder {
+  0% { border-color: rgba(212, 175, 55, 0.2); }
+  50% { border-color: rgba(212, 175, 55, 0.6); }
+  100% { border-color: rgba(212, 175, 55, 0.2); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+.animated-border {
+  animation: pulseBorder 3s infinite ease-in-out;
+}
+
+/* Custom scrollbar for beautiful lists */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(212, 175, 55, 0.3);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(212, 175, 55, 0.6);
+}
+
+/* Base custom styling for dark and light mode */
+body {
+  background-color: #050505; /* Deep black background default */
+  color: #ededed; /* Soft white text */
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Light mode styles */
+html.light body, body.light {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+html.light .panel, body.light .panel,
+html.light .bg-\[\#111111\], body.light .bg-\[\#111111\],
+html.light .bg-\[\#111\], body.light .bg-\[\#111\],
+html.light .bg-\[\#1e1e1e\], body.light .bg-\[\#1e1e1e\],
+html.light .bg-\[\#121212\], body.light .bg-\[\#121212\],
+html.light .bg-\[\#18181b\], body.light .bg-\[\#18181b\],
+html.light .bg-gray-900, body.light .bg-gray-900,
+html.light .bg-gray-900\/50, body.light .bg-gray-900\/50,
+html.light .bg-gray-900\/80, body.light .bg-gray-900\/80,
+html.light .bg-gray-950, body.light .bg-gray-950,
+html.light .bg-black, body.light .bg-black,
+html.light .bg-black\/80, body.light .bg-black\/80 {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+}
+
+html.light header, body.light header {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+html.light aside, body.light aside {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+html.light .border-gray-800, body.light .border-gray-800,
+html.light .border-gray-700, body.light .border-gray-700,
+html.light .border-gray-900, body.light .border-gray-900 {
+  border-color: #e2e8f0 !important;
+}
+
+html.light .text-white, body.light .text-white,
+html.light .text-gray-100, body.light .text-gray-100,
+html.light .text-gray-200, body.light .text-gray-200,
+html.light .text-gray-300, body.light .text-gray-300 {
+  color: #0f172a !important;
+}
+
+html.light .text-gray-400, body.light .text-gray-400,
+html.light .text-gray-500, body.light .text-gray-500 {
+  color: #64748b !important;
+}
+
+html.light input, html.light select, html.light textarea {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+html.light input::placeholder, html.light textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+html.light .bg-gray-800, body.light .bg-gray-800,
+html.light .bg-gray-800\/50, body.light .bg-gray-800\/50,
+html.light .bg-gray-800\/60, body.light .bg-gray-800\/60 {
+  background-color: #f1f5f9 !important;
+}
+
+html.light .hover\:bg-gray-800:hover, body.light .hover\:bg-gray-800:hover,
+html.light .hover\:bg-gray-900:hover, body.light .hover\:bg-gray-900:hover {
+  background-color: #e2e8f0 !important;
+}
+
+/* Custom utility classes */
+.panel {
+  background-color: #111111;
+  border: 1px solid #222222;
+}
+
+.text-gold {
+  color: var(--color-gold-500);
+}
+
+.bg-gold {
+  background-color: var(--color-gold-500);
+}
+
+.border-gold {
+  border-color: var(--color-gold-500);
+}
+@layer utilities {
+  .hide-scrollbar, .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar, .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
