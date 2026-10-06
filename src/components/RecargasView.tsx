@@ -399,6 +399,8 @@ export function RecargasView() {
     // 2. Open official Bold Payments Gateway
     setIsGeneratingBoldCheckout(true);
     try {
+      await ensureBoldCheckoutScript();
+
       const amountInCop = Math.round(pkg.price * 4000);
       const res = await fetch('/api/integrations/bold/create-payment', {
         method: 'POST',
@@ -413,17 +415,17 @@ export function RecargasView() {
       });
       const data = await res.json();
       
-      if (typeof (window as any).BoldCheckout === 'function' && data.apiKey && data.integritySignature) {
+      if (typeof (window as any).BoldCheckout === 'function' && data.apiKey && (data.integritySignature || data.signature)) {
         try {
           const boldCheckout = new (window as any).BoldCheckout({
             orderId: data.orderId || orderId,
             currency: data.currency || 'COP',
             amount: String(data.amount || amountInCop),
             apiKey: data.apiKey,
-            integritySignature: data.integritySignature,
-            description: `Recarga ${pkg.name} - Xorbit 360`,
+            integritySignature: data.integritySignature || data.signature,
+            description: data.description || `Recarga ${pkg.name} - Xorbit 360`,
             renderMode: 'embedded',
-            redirectionUrl: `${window.location.origin}/#/recargas?payment_status=completed&order=${data.orderId || orderId}`
+            redirectionUrl: data.redirectionUrl || `${window.location.origin}/#/recargas?payment_status=completed&order=${data.orderId || orderId}`
           });
           boldCheckout.open();
           setPurchaseSuccessToast(`Pasarela oficial de Bold abierta para ${pkg.name}`);
@@ -440,8 +442,9 @@ export function RecargasView() {
         setTimeout(() => setPurchaseSuccessToast(null), 4000);
         return;
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error abriendo pasarela Bold:", err);
+      alert("Error al conectar con la pasarela Bold: " + (err?.message || err));
     } finally {
       setIsGeneratingBoldCheckout(false);
     }
@@ -463,14 +466,14 @@ export function RecargasView() {
         </div>
       )}
 
-      {/* Main Header & IA Advantage Banner */}
+      {/* Main Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold font-display text-white tracking-tight flex items-center gap-3">
             <span className="p-2.5 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
               <Zap size={28} />
             </span>
-            Recargar Créditos IA
+            Recargas
           </h1>
           <p className="text-gray-400 text-sm mt-1.5 max-w-3xl">
             Tu saldo de mensajes e IA. Recarga créditos para que tu bot responda en automático sin necesidad de abrir cuentas ni conectar claves API externas (OpenAI, Gemini, Grok, Claude).
@@ -484,171 +487,6 @@ export function RecargasView() {
           <History size={16} className="text-gold" />
           Historial de Pagos
         </button>
-      </div>
-
-      {/* Bold Official Production Gateway & Webhook Status Banner */}
-      <div className="p-4 rounded-2xl bg-[#0f172a]/90 border border-emerald-500/40 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-red-600/20 border border-red-500/30 flex items-center justify-center text-red-500 font-black text-sm shrink-0">
-            ⚡
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-black text-white">Pasarela de Pago Bold Co (Producción)</span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                ONLINE
-              </span>
-            </div>
-            <p className="text-xs text-gray-400 mt-0.5">
-              ID de Comerciante: <strong className="text-emerald-400 font-mono font-black">{boldMerchantId}</strong> • Webhook Oficial: <code className="text-gray-300 font-mono text-[11px]">https://expert360.ai.studio/api/integrations/bold/webhook</code>
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-mono font-bold text-gray-300 bg-gray-900 px-3 py-1.5 rounded-xl border border-gray-800">
-            Merchant: <span className="text-gold">{boldMerchantId}</span>
-          </span>
-          <span className="text-xs font-bold text-emerald-400 bg-emerald-950/60 px-3 py-1.5 rounded-xl border border-emerald-500/30">
-            ✓ Webhook 200 OK
-          </span>
-        </div>
-      </div>
-
-      {/* AI Zero-API Advantage Banner */}
-      <div className="panel p-5 rounded-2xl border border-emerald-500/20 bg-gradient-to-r from-emerald-950/40 via-gray-900/80 to-gray-900/90 relative overflow-hidden">
-        <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
-          <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 shrink-0">
-            <Cpu size={24} />
-          </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <span className="text-xs uppercase tracking-wider font-bold px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                IA Automatizada e Incluida
-              </span>
-              <span className="text-xs text-gray-400">Sin APIs externas</span>
-            </div>
-            <h3 className="text-base font-bold text-white mt-1">
-              ¿No quieres lidiar con configuraciones de API externas?
-            </h3>
-            <p className="text-xs text-gray-300 mt-0.5 leading-relaxed">
-              Con este sistema de créditos no necesitas ingresar tarjetas en OpenAI, Google, Anthropic ni xAI (Grok). La plataforma gestiona en automático las respuestas de la IA con la más alta velocidad y prioridad.
-            </p>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="px-2.5 py-1 rounded-lg bg-gray-900 text-[11px] font-semibold text-gray-300 border border-gray-800">
-              GPT-4o
-            </span>
-            <span className="px-2.5 py-1 rounded-lg bg-gray-900 text-[11px] font-semibold text-gray-300 border border-gray-800">
-              Gemini 1.5
-            </span>
-            <span className="px-2.5 py-1 rounded-lg bg-gray-900 text-[11px] font-semibold text-gray-300 border border-gray-800">
-              Claude 3.5
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Low Balance Warning Banner */}
-      {isLowBalance && (
-        <div className="p-5 rounded-2xl bg-amber-500/10 border-2 border-amber-500/50 text-amber-200 shadow-xl shadow-amber-950/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-pulse">
-          <div className="flex items-start sm:items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-400 shrink-0 border border-amber-500/30">
-              <AlertCircle size={26} />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs uppercase tracking-widest font-black px-2 py-0.5 rounded bg-amber-500 text-black">
-                  ¡Alerta de Saldo Bajo!
-                </span>
-                <span className="text-xs text-amber-300 font-semibold">
-                  Límite configurado: {alertThreshold} conversaciones
-                </span>
-              </div>
-              <p className="text-sm font-bold text-white mt-1">
-                Te quedan solo <span className="text-amber-400 text-base underline decoration-amber-500 font-extrabold">{balance.conversations} conversaciones</span> disponibles.
-              </p>
-              <p className="text-xs text-amber-200/80 mt-0.5">
-                Para evitar que tus bots de WhatsApp e IA interrumpan sus respuestas a clientes, recarga un paquete de conversaciones.
-              </p>
-            </div>
-          </div>
-          
-          <button
-            onClick={() => {
-              const el = document.getElementById('paquetes-seccion');
-              if (el) el.scrollIntoView({ behavior: 'smooth' });
-            }}
-            className="self-start sm:self-center px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs transition-all shadow-md flex items-center gap-2 shrink-0 cursor-pointer"
-          >
-            <Zap size={16} />
-            Recargar Ahora
-          </button>
-        </div>
-      )}
-
-      {/* Alert System Configuration & Simulation Panel */}
-      <div className="panel p-6 rounded-2xl border border-gray-800 bg-gray-900/60 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-800/80 pb-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
-              <AlertCircle size={20} />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                Sistema de Alertas de Saldo Bajo
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${alertsEnabled ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-gray-800 text-gray-400'}`}>
-                  {alertsEnabled ? 'ALERTAS ACTIVAS' : 'ALERTAS DESACTIVADAS'}
-                </span>
-              </h3>
-              <p className="text-xs text-gray-400 mt-0.5">
-                Notificación visual automática en el Dashboard cuando tus créditos estén por agotarse.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 self-start sm:self-center">
-            <label className="text-xs font-semibold text-gray-300">Alertas en Dashboard:</label>
-            <button
-              onClick={() => updateAlertsEnabledAndNotify(!alertsEnabled)}
-              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                alertsEnabled ? 'bg-emerald-500' : 'bg-gray-700'
-              }`}
-            >
-              <span
-                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                  alertsEnabled ? 'translate-x-5' : 'translate-x-0'
-                }`}
-              />
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-1">
-          {/* Threshold selector */}
-          <div className="space-y-2 col-span-2">
-            <label className="text-xs font-bold text-gray-300 uppercase tracking-wider block">
-              Umbral Mínimo de Notificación ({alertThreshold} conversaciones)
-            </label>
-            <div className="flex items-center gap-3">
-              <input
-                type="range"
-                min="20"
-                max="500"
-                step="10"
-                value={alertThreshold}
-                onChange={(e) => updateThresholdAndNotify(parseInt(e.target.value, 10))}
-                className="w-full h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-emerald-500"
-              />
-              <span className="text-xs font-bold px-3 py-1.5 rounded-lg bg-gray-800 text-emerald-400 border border-gray-700 shrink-0">
-                {alertThreshold} conv.
-              </span>
-            </div>
-            <p className="text-[11px] text-gray-500">
-              Se activará la alerta en el Dashboard si tu saldo es igual o menor a esta cantidad.
-            </p>
-          </div>
-        </div>
       </div>
 
       {/* Current Balance Panel - Styled Emerald Card */}

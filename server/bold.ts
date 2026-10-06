@@ -186,7 +186,7 @@ export function setupBoldRoutes(app: express.Express, getCurrentDB?: () => any, 
   // 3. Create Real Payment Order & Signed Checkout URL
   const createPaymentHandler = async (req: express.Request, res: express.Response) => {
     try {
-      const { amount, description, customerEmail, customerName, currency = 'COP' } = req.body || {};
+      const { amount, description, customerEmail, customerName, currency = 'COP', orderId: reqOrderId } = req.body || {};
 
       const numericAmount = Number(amount);
       if (!numericAmount || numericAmount <= 0) {
@@ -196,7 +196,8 @@ export function setupBoldRoutes(app: express.Express, getCurrentDB?: () => any, 
         });
       }
 
-      const orderId = `REC-BOLD-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+      const orderId = reqOrderId || `XOR-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+      const amountStr = String(Math.round(numericAmount));
       const signature = calculateBoldIntegritySignature(
         orderId,
         numericAmount,
@@ -206,7 +207,7 @@ export function setupBoldRoutes(app: express.Express, getCurrentDB?: () => any, 
 
       // Generate production Bold Checkout URL for merchant FFVSR3C7Y1
       const encodedDesc = encodeURIComponent(description || 'Recarga de Saldo - Xorbit 360 AI');
-      const checkoutUrl = `https://checkout.bold.co/payment/${BOLD_PRODUCTION_CONFIG.merchantId}?amount=${numericAmount}&currency=${currency}&description=${encodedDesc}&reference=${orderId}&apiKey=${encodeURIComponent(
+      const checkoutUrl = `https://checkout.bold.co/payment/${BOLD_PRODUCTION_CONFIG.merchantId}?amount=${amountStr}&currency=${currency}&description=${encodedDesc}&reference=${orderId}&apiKey=${encodeURIComponent(
         BOLD_PRODUCTION_CONFIG.apiKey
       )}&integritySignature=${signature}&callbackUrl=${encodeURIComponent(
         'https://crm.xorbit360.com/#/recargas'
@@ -241,6 +242,9 @@ export function setupBoldRoutes(app: express.Express, getCurrentDB?: () => any, 
         signature,
         integritySignature: signature,
         apiKey: BOLD_PRODUCTION_CONFIG.apiKey,
+        description: description || 'Recarga de Saldo - Xorbit 360 AI',
+        renderMode: 'embedded',
+        redirectionUrl: `https://crm.xorbit360.com/#/recargas?payment_status=completed&order=${orderId}`,
         checkoutUrl,
         boldConfig: {
           merchantId: BOLD_PRODUCTION_CONFIG.merchantId,
@@ -259,6 +263,7 @@ export function setupBoldRoutes(app: express.Express, getCurrentDB?: () => any, 
 
   app.post('/api/integrations/bold/create-payment', createPaymentHandler);
   app.post('/api/payments/bold/create-payment', createPaymentHandler);
+  app.post('/api/create-payment', createPaymentHandler);
 
   // 4. List Transactions
   app.get('/api/integrations/bold/transactions', (req, res) => {

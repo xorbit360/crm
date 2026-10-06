@@ -702,7 +702,7 @@ type ChatMessage = {
                       { id: 'citas', label: 'Citas', icon: <Calendar size={16} /> },
                       { id: 'catalogo', label: 'Catálogo', icon: <ShoppingCart size={16} /> },
                       { id: 'reportes', label: 'Consultor IA', icon: <Bot size={16} /> },
-                      { id: 'recargas', label: 'Recargas y Saldo', icon: <CreditCard size={16} /> },
+                      { id: 'recargas', label: 'Recargas', icon: <CreditCard size={16} /> },
                       { id: 'entrenamiento_chatbot', label: 'Entrenamiento Chatbot', icon: <Bot size={16} /> }
                     ].filter(tab => !hiddenItems.includes(tab.id)).map(tab => (
                       <div key={tab.id} className="relative flex items-center">
