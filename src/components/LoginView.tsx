@@ -1,156 +1,174 @@
 import React, { useState } from 'react';
-import { Bot, Lock, User, ArrowRight } from 'lucide-react';
+import { Lock, User, ArrowRight, ShieldAlert, ShoppingBag, CheckCircle2 } from 'lucide-react';
 import { getCachedWhiteLabel } from '../lib/whitelabel';
 
 interface LoginViewProps {
-  onLogin: (user: { name: string; role: string; email: string; username?: string; phone?: string }) => void;
+  onLogin: (user: { name: string; role: string; email: string; username?: string; phone?: string; plan?: string }) => void;
   onGoToRegister: () => void;
 }
 
-export default function LoginView({ onLogin, onGoToRegister }: LoginViewProps) {
+export default function LoginView({ onLogin }: LoginViewProps) {
   const whiteLabel = getCachedWhiteLabel();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [requirePayment, setRequirePayment] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setRequirePayment(false);
 
-    const normUser = username.trim().toLowerCase();
+    const normUser = username.trim();
+    const pass = password.trim();
 
-    // Hardcoded superadmin login
-    if ((normUser === 'admin' || normUser === 'oscar@expert360.ai') && password === 'Colombia1') {
-      onLogin({
-        name: 'Oscar Molina',
-        email: 'oscar@expert360.ai',
-        role: 'superadmin',
-        username: 'admin',
-        phone: '573192392853'
-      });
-    } else if ((normUser === 'jose' || normUser === 'jose@email.com') && password === 'Cali123') {
-      onLogin({
-        name: 'Jose',
-        email: 'jose@email.com',
-        role: 'droshipper',
-        username: 'jose',
-        phone: '573001234567'
-      });
-    } else if (normUser === 'jose' || normUser === 'jose@email.com') {
-      setError('Contraseña incorrecta para el usuario jose.');
-    } else if (username && password) {
-      // Simulate normal user login for demo purposes
-      onLogin({
-        name: username,
-        email: `${username}@email.com`,
-        role: 'droshipper',
-        username: username.toLowerCase().replace(/[^a-zA-Z0-9_-]/g, ''),
-        phone: '573192392853'
-      });
-    } else {
-      setError('Por favor ingresa usuario y contraseña.');
+    if (!normUser || !pass) {
+      setError('Por favor ingresa tu usuario/correo y contraseña.');
+      return;
     }
-  };
 
-  const handleGoogleLogin = () => {
-    // Simulate Google Login
-    onLogin({
-      name: 'Usuario Google',
-      email: 'usuario@gmail.com',
-      role: 'droshipper',
-      username: 'usuario',
-      phone: '573192392853'
-    });
+    setIsLoading(true);
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: normUser, password: pass })
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success && data.user) {
+        localStorage.setItem('xorbit_user', JSON.stringify(data.user));
+        onLogin(data.user);
+      } else {
+        setError(data.error || 'Acceso denegado. Credenciales inválidas o cuenta no activa.');
+        if (data.requirePayment || res.status === 403) {
+          setRequirePayment(true);
+        }
+      }
+    } catch (err: any) {
+      // Fallback local check for offline or network limits
+      const lower = normUser.toLowerCase();
+      if ((lower === 'admin' || lower === 'oscar@expert360.ai') && pass === 'Colombia1') {
+        const adminUser = {
+          name: 'Oscar Molina',
+          email: 'oscar@expert360.ai',
+          role: 'superadmin',
+          username: 'admin',
+          phone: '573192392853',
+          plan: 'SuperAdmin Master'
+        };
+        localStorage.setItem('xorbit_user', JSON.stringify(adminUser));
+        onLogin(adminUser);
+      } else {
+        setError('Error al verificar credenciales con el servidor. Si aún no tienes acceso activo, ingresa a xorbit360.com');
+        setRequirePayment(true);
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md panel p-8 rounded-2xl relative overflow-hidden group">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-gold-600 via-gold to-gold-400"></div>
-        <div className="absolute -top-32 -right-32 w-64 h-64 bg-gold/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="w-full max-w-md panel p-8 rounded-2xl relative overflow-hidden group border border-zinc-800 shadow-2xl">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-600 via-amber-500 to-emerald-500"></div>
+        <div className="absolute -top-32 -right-32 w-64 h-64 bg-red-600/10 rounded-full blur-3xl pointer-events-none"></div>
         
         <div className="relative z-10">
           <div className="flex justify-center mb-6">
-            {whiteLabel.logoUrl ? (
-              <img 
-                src={whiteLabel.logoUrl} 
-                alt="Logo" 
-                className="w-16 h-16 rounded-xl object-contain bg-black/60 border border-gold/30 p-1 shadow-lg shadow-gold/10" 
-              />
-            ) : (
-              <div className="w-16 h-16 rounded-xl bg-gold flex items-center justify-center font-bold text-black font-display shadow-lg shadow-gold/20 text-3xl">
-                {whiteLabel.brandName ? whiteLabel.brandName.charAt(0).toUpperCase() : 'E'}
-              </div>
-            )}
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-red-600 to-amber-500 flex items-center justify-center font-bold text-white font-display shadow-lg shadow-red-600/30 text-3xl">
+              X
+            </div>
           </div>
           
-          <h2 className="text-3xl font-display text-white text-center mb-2">Bienvenido</h2>
-          <p className="text-gray-400 text-center mb-8 text-sm">
-            Ingresa a tu plataforma {whiteLabel.brandName || 'Expert 360°'}
+          <h2 className="text-2xl font-bold font-display text-white text-center mb-1 tracking-tight">Acceso Privado CRM</h2>
+          <p className="text-gray-400 text-center mb-6 text-xs">
+            Exclusivo para clientes con suscripción activa en <strong className="text-white">xorbit360.com</strong>
           </p>
-
-          <button 
-            type="button"
-            onClick={handleGoogleLogin}
-            className="w-full bg-white text-black font-bold py-3 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center gap-3 mb-6"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-            </svg>
-            Continuar con Google
-          </button>
-
-          <div className="flex items-center gap-4 mb-6">
-            <div className="h-px bg-gray-800 flex-1"></div>
-            <span className="text-gray-500 text-xs font-bold uppercase tracking-widest">O ingresa con tus datos</span>
-            <div className="h-px bg-gray-800 flex-1"></div>
-          </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="bg-red-900/30 border border-red-900/50 text-red-500 text-sm p-3 rounded-lg text-center">
-                {error}
+              <div className="bg-red-950/60 border border-red-500/50 text-red-300 text-xs p-3.5 rounded-xl text-left space-y-2">
+                <div className="flex items-start gap-2">
+                  <ShieldAlert size={16} className="text-red-400 shrink-0 mt-0.5" />
+                  <p className="leading-relaxed">{error}</p>
+                </div>
+                
+                {requirePayment && (
+                  <div className="pt-2 border-t border-red-500/30">
+                    <a
+                      href="https://xorbit360.com"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-2.5 px-3 rounded-lg bg-gradient-to-r from-red-600 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md transition-all text-center no-underline"
+                    >
+                      <ShoppingBag size={14} /> Adquirir Plan en xorbit360.com
+                    </a>
+                  </div>
+                )}
               </div>
             )}
             
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Usuario</label>
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Correo o Usuario</label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
                 <input 
                   type="text" 
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full bg-black border border-gray-800 rounded-lg pl-10 pr-4 py-3 text-sm text-gray-200 focus:border-gold focus:outline-none transition-colors"
-                  placeholder="Tu usuario"
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-10 pr-4 py-3 text-xs text-gray-200 focus:border-red-500 focus:outline-none transition-colors"
+                  placeholder="tu@correo.com"
+                  required
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Contraseña</label>
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Contraseña de Acceso</label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
                 <input 
                   type="password" 
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-black border border-gray-800 rounded-lg pl-10 pr-4 py-3 text-sm text-gray-200 focus:border-gold focus:outline-none transition-colors"
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-10 pr-4 py-3 text-xs text-gray-200 focus:border-red-500 focus:outline-none transition-colors"
                   placeholder="••••••••"
+                  required
                 />
               </div>
             </div>
 
             <button 
               type="submit" 
-              className="w-full bg-gold text-black font-bold py-3 rounded-lg hover:bg-yellow-400 transition-colors flex items-center justify-center gap-2 mt-4"
+              disabled={isLoading}
+              className="w-full bg-gradient-to-r from-red-600 via-red-500 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-extrabold py-3.5 rounded-xl shadow-lg shadow-red-600/25 transition-all flex items-center justify-center gap-2 mt-4 cursor-pointer disabled:opacity-50 text-xs tracking-wide uppercase"
             >
-              Ingresar al Dashboard <ArrowRight size={18} />
+              {isLoading ? (
+                <span>Verificando Acceso...</span>
+              ) : (
+                <>
+                  <span>Ingresar al CRM</span> <ArrowRight size={16} />
+                </>
+              )}
             </button>
           </form>
+
+          <div className="mt-6 pt-5 border-t border-zinc-800/80 text-center space-y-2">
+            <p className="text-[11px] text-zinc-400">¿Aún no tienes acceso a la plataforma?</p>
+            <a 
+              href="https://xorbit360.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-colors"
+            >
+              <CheckCircle2 size={13} /> Activar paquete de IA en xorbit360.com
+            </a>
+          </div>
+
         </div>
       </div>
     </div>

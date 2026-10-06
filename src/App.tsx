@@ -551,15 +551,23 @@ type ChatMessage = {
   };
 
   const handleLogout = () => {
+    try {
+      localStorage.removeItem('xorbit_user');
+    } catch (_) {}
     setUser(null);
     setCurrentView('login');
   };
 
-  if (currentView === 'login') {
+  if (!user || currentView === 'login') {
     return (
       <LoginView 
-        onLogin={(loggedInUser) => { setUser(loggedInUser); setCurrentView('app'); }} 
-        onGoToRegister={() => setCurrentView('register')} 
+        onLogin={(loggedInUser) => { 
+          setUser(loggedInUser); 
+          setCurrentView('app'); 
+        }} 
+        onGoToRegister={() => {
+          window.open('https://xorbit360.com', '_blank');
+        }} 
       />
     );
   }

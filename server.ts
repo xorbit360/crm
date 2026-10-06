@@ -1642,6 +1642,78 @@ async function createServer() {
     res.json({ status: "ok" });
   });
 
+  // Strict Authentication & Access Validation (Paid / Active Users Only)
+  app.post("/api/auth/login", (req, res) => {
+    try {
+      const { username, password } = req.body || {};
+      if (!username || !password) {
+        return res.status(400).json({ success: false, error: "Por favor ingresa usuario/correo y contraseña." });
+      }
+
+      const normUser = String(username).trim().toLowerCase();
+      const pass = String(password).trim();
+
+      // 1. Superadmin master accounts
+      if ((normUser === 'admin' || normUser === 'oscar@expert360.ai') && pass === 'Colombia1') {
+        return res.json({
+          success: true,
+          user: {
+            name: 'Oscar Molina',
+            email: 'oscar@expert360.ai',
+            role: 'superadmin',
+            username: 'admin',
+            phone: '573192392853',
+            plan: 'SuperAdmin Master'
+          }
+        });
+      }
+
+      // 2. Search in active database users (registered / paid via landing)
+      const users = Array.isArray(currentDB.users) ? currentDB.users : [];
+      const matchedUser = users.find((u: any) => 
+        (u.email && u.email.trim().toLowerCase() === normUser) ||
+        (u.username && u.username.trim().toLowerCase() === normUser)
+      );
+
+      if (matchedUser) {
+        const validPass = matchedUser.password === pass || matchedUser.tempPassword === pass;
+        if (!validPass) {
+          return res.status(401).json({ success: false, error: "Contraseña incorrecta." });
+        }
+
+        if (matchedUser.status !== 'activo') {
+          return res.status(403).json({
+            success: false,
+            requirePayment: true,
+            error: "Tu suscripción no está activa. Para acceder al CRM adquiere tu plan en https://xorbit360.com"
+          });
+        }
+
+        return res.json({
+          success: true,
+          user: {
+            name: matchedUser.name || normUser,
+            email: matchedUser.email || normUser,
+            role: matchedUser.role || 'droshipper',
+            username: matchedUser.username || normUser,
+            phone: matchedUser.phone || '',
+            plan: matchedUser.plan || 'Paquete Pro'
+          }
+        });
+      }
+
+      // 3. User not found -> Deny access and direct to payment
+      return res.status(403).json({
+        success: false,
+        requirePayment: true,
+        error: "Acceso no autorizado: crm.xorbit360.com es exclusivo para clientes activos. Por favor adquiere tu paquete en https://xorbit360.com para recibir tus credenciales de ingreso."
+      });
+    } catch (err: any) {
+      console.error("[Auth Login Error]:", err);
+      res.status(500).json({ success: false, error: "Error en el servidor de autenticación." });
+    }
+  });
+
   // Setup Bold Payments Gateway (Merchant ID FFVSR3C7Y1) Routes & Webhook
   setupBoldRoutes(app, () => currentDB, (db) => saveDBData(db));
 
