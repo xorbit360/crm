@@ -9469,7 +9469,7 @@ ${parametersString}
         <div className="pt-4"><ComentariosSocialesView /></div>
       )}
       {currentViewTab === 'reportes' && (
-        <div className="pt-4"><ReportesView businessType={businessType} /></div>
+        <div className="pt-4"><ReportesView businessType={businessType} currentUser={currentUser} /></div>
       )}
       {currentViewTab === 'integrations' && (
         <div className="pt-4"><ChatbotIntegracionesView /></div>

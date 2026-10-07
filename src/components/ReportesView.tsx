@@ -4,6 +4,7 @@ import {
   RefreshCcw, XCircle, Users, Bot, Sparkles, Send, MessageSquare,
   ChevronRight, Brain, Truck, DollarSign, Clock, CheckCircle, Percent, ArrowUpDown
 } from 'lucide-react';
+import { isPrincipalAdmin } from '../lib/demoSales';
 
 // Simple bold parser
 function parseBold(text: string) {
@@ -88,7 +89,8 @@ function renderMarkdown(text: string) {
   );
 }
 
-export default function ReportesView({ businessType = 'E-Commerce (Venta de Productos)' }: { businessType?: string }) {
+export default function ReportesView({ businessType = 'E-Commerce (Venta de Productos)', currentUser }: { businessType?: string; currentUser?: { role?: string; email?: string; username?: string; name?: string } | null }) {
+  const isAdminDemo = isPrincipalAdmin(currentUser);
   const [activeSubTab, setActiveSubTab] = useState<'dashboard' | 'consultor'>('consultor');
 
   let chatImprovementText = "Ajustar saludos, reducir respuestas demoradas, optimizar persuasión, recuperación de carritos y automatización de pedidos.";
@@ -285,12 +287,14 @@ export default function ReportesView({ businessType = 'E-Commerce (Venta de Prod
         <div className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { label: 'Ventas Totales', value: '$45,230', icon: <TrendingUp size={20} className="text-emerald-400" /> },
-              { label: 'Gastos Operativos', value: '$12,400', icon: <AlertTriangle size={20} className="text-amber-400" /> },
-              { label: 'ROI Real (Retorno)', value: '264%', icon: <Sparkles size={20} className="text-gold" /> },
-              { label: 'Devoluciones Tot.', value: '24', icon: <RefreshCcw size={20} className="text-red-400" /> },
-              { label: 'Pedidos Entregados', value: '1,438', icon: <Package size={20} className="text-blue-400" /> },
-              { label: 'Efectividad COD (Recaudo)', value: '91.8%', icon: <Percent size={20} className="text-green-400" /> },
+              { label: 'Ventas Totales', value: isAdminDemo ? '$200.000.000' : '$0', icon: <TrendingUp size={20} className="text-emerald-400" /> },
+              { label: 'Gastos Operativos', value: isAdminDemo ? '$12.400.000' : '$0', icon: <AlertTriangle size={20} className="text-amber-400" /> },
+              { label: 'ROI Real (Retorno)', value: isAdminDemo ? '1.513%' : '0%', icon: <Sparkles size={20} className="text-gold" /> },
+              { label: 'Devoluciones Tot.', value: isAdminDemo ? '150 (12%)' : '0', icon: <RefreshCcw size={20} className="text-red-400" /> },
+              { label: 'Pedidos Entregados', value: isAdminDemo ? '787' : '0', icon: <Package size={20} className="text-blue-400" /> },
+              { label: 'Pedidos en Tránsito', value: isAdminDemo ? '250 (20%)' : '0', icon: <Truck size={20} className="text-cyan-400" /> },
+              { label: 'Cancelaciones', value: isAdminDemo ? '63 (5%)' : '0', icon: <XCircle size={20} className="text-red-400" /> },
+              { label: 'Efectividad COD (Recaudo)', value: isAdminDemo ? '78,7%' : '0%', icon: <Percent size={20} className="text-green-400" /> },
               { label: 'Flete Promedio (Costo)', value: '$9,250', icon: <DollarSign size={20} className="text-blue-300" /> },
               { label: 'Tiempo de Entrega', value: '1.8 días', icon: <Clock size={20} className="text-amber-400" /> },
               { label: 'Entregas por Región (Top)', value: 'Antioquia', icon: <MapPin size={20} className="text-blue-400" /> },
