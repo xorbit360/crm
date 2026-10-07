@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   MessageSquare,
   Send,
@@ -92,6 +92,45 @@ export default function ComentariosSocialesView() {
       replyText: 'Hola Andrés, totalmente. Tienes 30 días de garantía por defectos de fábrica o daños en el transporte. Nos encargamos de todo el proceso sin costos adicionales.'
     }
   ]);
+
+  // Cargar comentarios reales recibidos por el webhook (Instagram/Facebook/
+  // TikTok) y mantenerlos visibles junto a los datos de demostración.
+  useEffect(() => {
+    let active = true;
+    const loadSocialComments = async () => {
+      try {
+        const response = await fetch('/api/backoffice/state', { credentials: 'include' });
+        if (!response.ok) return;
+        const state: any = await response.json();
+        const incoming = Array.isArray(state?.socialComments) ? state.socialComments : [];
+        if (!active || incoming.length === 0) return;
+        const mapped: Comment[] = incoming.map((item: any) => ({
+          id: String(item.id || `social-${Date.now()}`),
+          authorName: item.authorName || 'Usuario de red social',
+          authorAvatar: item.authorAvatar || '',
+          platform: ['facebook', 'instagram', 'tiktok'].includes(String(item.platform).toLowerCase())
+            ? String(item.platform).toLowerCase() as Comment['platform'] : 'instagram',
+          postTitle: item.postTitle || 'Publicación de Instagram',
+          postImage: item.postImage,
+          text: item.text || '',
+          timestamp: item.timestamp ? new Date(item.timestamp).toLocaleString('es-CO') : 'Reciente',
+          status: item.status === 'respondido_ia' || item.status === 'respondido_manual' ? item.status : 'pendiente',
+          replyText: item.replyText,
+          aiSuggestedReply: item.aiSuggestedReply
+        }));
+        setComments(previous => {
+          const existing = new Set(previous.map(comment => comment.id));
+          return [...mapped.filter(comment => !existing.has(comment.id)), ...previous];
+        });
+        setSelectedCommentId(previous => previous || mapped[0]?.id || '');
+      } catch (error) {
+        console.warn('[Comentarios Redes] No se pudo cargar la bandeja:', error);
+      }
+    };
+    loadSocialComments();
+    const timer = window.setInterval(loadSocialComments, 15000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, []);
 
   // UI state filters
   const [platformFilter, setPlatformFilter] = useState<'all' | 'facebook' | 'instagram' | 'tiktok'>('all');

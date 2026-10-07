@@ -1792,7 +1792,7 @@ async function createServer() {
     try {
       const msg = event.message;
       if (!msg) return;
-      const cleanPhone = (msg.senderPhone || msg.senderId || '').replace(/\D/g, '');
+      const cleanPhone = (msg.senderPhone || msg.senderId || msg.conversationId || '').replace(/\D/g, '') || `social-${String(msg.senderId || msg.conversationId || Date.now()).replace(/[^a-zA-Z0-9_-]/g, '')}`;
       if (!cleanPhone) return;
 
       const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -1801,12 +1801,37 @@ async function createServer() {
 
       currentDB.messagesHistory[cleanPhone].push({
         role: msg.direction === 'outgoing' ? 'agent' : 'client',
-        source: 'zernio_meta',
+        source: `social_${msg.raw?.platform || msg.raw?.data?.platform || 'omnichannel'}`,
         fromMobile: msg.direction === 'outgoing',
         text: msg.text,
         time: nowStr,
         timestamp: Date.now()
       });
+
+      // Los comentarios de publicaciones e historias también deben quedar
+      // disponibles en el módulo "Comentarios Redes".
+      if (event.eventType === 'comment.received' || event.eventType === 'comment.created') {
+        if (!Array.isArray(currentDB.socialComments)) currentDB.socialComments = [];
+        const raw: any = event.raw || {};
+        const data: any = raw.data || {};
+        const comment: any = raw.comment || data.comment || {};
+        const commentId = String(event.eventId || msg.id || `comment-${Date.now()}`);
+        if (!currentDB.socialComments.some((item: any) => String(item.id) === commentId)) {
+          currentDB.socialComments.unshift({
+            id: commentId,
+            authorName: msg.senderName || comment.author?.name || comment.from?.name || 'Usuario de red social',
+            authorAvatar: comment.author?.avatar || comment.from?.profile_picture || '',
+            authorId: msg.senderId || comment.author?.id || comment.from?.id || '',
+            platform: String(raw.platform || data.platform || comment.platform || 'instagram').toLowerCase(),
+            postTitle: comment.post?.title || data.post?.title || data.media?.caption || 'Publicación de Instagram',
+            postId: comment.postId || data.postId || data.media?.id || '',
+            text: msg.text || comment.text || comment.message || '',
+            timestamp: new Date().toISOString(),
+            status: 'pendiente'
+          });
+          currentDB.socialComments = currentDB.socialComments.slice(0, 500);
+        }
+      }
 
       if (currentDB.messagesHistory[cleanPhone].length > 40) {
         currentDB.messagesHistory[cleanPhone].shift();

@@ -35,6 +35,10 @@ export const ZERNIO_REQUIRED_EVENTS = [
   'message.failed',
   'message.edited',
   'message.deleted',
+  'comment.received',
+  'review.new',
+  'reaction.received',
+  'lead.received',
   'account.connected',
   'account.disconnected'
 ];
