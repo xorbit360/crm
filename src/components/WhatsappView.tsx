@@ -3525,11 +3525,11 @@ ${parametersString}
           const channelsList = [
             {
               id: 'CAN-01',
-              name: 'WhatsApp Business Cloud API',
+              name: 'WhatsApp Web (sin API)',
               category: 'whatsapp',
-              platformLabel: 'WhatsApp Cloud API',
+              platformLabel: 'WhatsApp Web / Sesión vinculada',
               identifier: whatsappConnectedNumber || waAccount?.phoneNumber || (isWaOfficialActive ? 'Línea Oficial Vinculada' : 'No vinculado'),
-              type: 'Oficial Meta (Sin VPS)',
+              type: 'WhatsApp Web (sin API)',
               status: isWaOfficialActive ? 'Conectado' : 'Disponible',
               isActive: isWaOfficialActive,
               icon: <MessageCircle size={18} className="text-emerald-400" />,
@@ -3600,7 +3600,7 @@ ${parametersString}
               ['CAN-15', 'Snapchat', 'snapchat'], ['CAN-16', 'Discord', 'discord'], ['CAN-17', 'Slack', 'slack']
             ].map(([id, name, category]) => ({
               id, name, category, platformLabel: name, identifier: 'No vinculado', type: 'Zernio API',
-              status: 'Disponible', isActive: false, icon: <MessageCircle size={18} className="text-zinc-400" />,
+              status: 'Disponible', isActive: false, icon: category === 'tiktok' ? <Video size={18} className="text-cyan-400" /> : category === 'telegram' ? <Send size={18} className="text-sky-400" /> : category === 'youtube' ? <Video size={18} className="text-red-400" /> : category === 'linkedin' ? <Users size={18} className="text-blue-400" /> : category === 'discord' || category === 'slack' ? <MessageSquare size={18} className="text-indigo-400" /> : category === 'reddit' ? <Globe size={18} className="text-orange-400" /> : <Globe size={18} className="text-zinc-400" />,
               accountId: null, actionType: category, date: '-'
             }))
           ];
