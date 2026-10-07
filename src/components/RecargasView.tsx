@@ -17,7 +17,8 @@ import {
   TrendingUp,
   Cpu,
   CheckCircle2, ExternalLink, Link as LinkIcon,
-  Settings
+  Settings,
+  Plus
 } from 'lucide-react';
 
 interface PackageOption {
@@ -28,6 +29,7 @@ interface PackageOption {
   price: number;
   conversations?: number;
   aiMessagesPerConv?: number;
+  channelsIncluded?: number;
   audioMinutes?: number;
   popular?: boolean;
 }
@@ -41,6 +43,7 @@ const CONVERSATION_PACKAGES: PackageOption[] = [
     price: 19.00,
     conversations: 500,
     aiMessagesPerConv: 25,
+    channelsIncluded: 1,
   },
   {
     id: 'standard',
@@ -50,6 +53,7 @@ const CONVERSATION_PACKAGES: PackageOption[] = [
     price: 33.00,
     conversations: 1000,
     aiMessagesPerConv: 40,
+    channelsIncluded: 2,
   },
   {
     id: 'pro',
@@ -59,6 +63,7 @@ const CONVERSATION_PACKAGES: PackageOption[] = [
     price: 69.00,
     conversations: 3000,
     aiMessagesPerConv: 50,
+    channelsIncluded: 3,
     popular: true,
   },
   {
@@ -69,6 +74,7 @@ const CONVERSATION_PACKAGES: PackageOption[] = [
     price: 319.00,
     conversations: 20000,
     aiMessagesPerConv: 65,
+    channelsIncluded: 5,
   }
 ];
 
@@ -129,6 +135,7 @@ export function RecargasView() {
   });
 
   const [selectedPackage, setSelectedPackage] = useState<PackageOption | null>(CONVERSATION_PACKAGES[2]); // Default to Pro
+  const [additionalChannels, setAdditionalChannels] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState<'bold'>('bold');
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [purchaseSuccessToast, setPurchaseSuccessToast] = useState<string | null>(null);
@@ -376,6 +383,7 @@ export function RecargasView() {
     if (!pkg) return;
 
     const orderId = `REC-BOLD-${Date.now()}`;
+    const totalUsd = pkg.price + additionalChannels * 3;
     setCurrentOrderId(orderId);
     setSelectedPackage(pkg);
 
@@ -401,14 +409,14 @@ export function RecargasView() {
     try {
       await ensureBoldCheckoutScript();
 
-      const amountInCop = Math.round(pkg.price * 4000);
+      const amountInCop = Math.round(totalUsd * 4000);
       const res = await fetch('/api/integrations/bold/create-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           amountCop: amountInCop,
           amount: amountInCop,
-          amountUsd: pkg.price,
+          amountUsd: totalUsd,
           packageName: pkg.name,
           conversations: pkg.conversations,
           msgsPerConv: pkg.aiMessagesPerConv,
@@ -590,6 +598,14 @@ export function RecargasView() {
                       <Cpu size={14} className="shrink-0 text-gray-500" />
                       <span>Modelos OpenAI & Gemini incl.</span>
                     </li>
+                    <li className="flex items-center gap-2 text-cyan-300 font-medium">
+                      <MessageSquare size={14} className="shrink-0 text-cyan-400" />
+                      <span>{pkg.channelsIncluded} canal{pkg.channelsIncluded === 1 ? '' : 'es'} incluido{pkg.channelsIncluded === 1 ? '' : 's'}</span>
+                    </li>
+                    <li className="flex items-center gap-2 text-gray-400">
+                      <Plus size={14} className="shrink-0 text-gray-500" />
+                      <span>Canal adicional: $3 USD/mes</span>
+                    </li>
                   </ul>
                 </div>
 
@@ -723,6 +739,16 @@ export function RecargasView() {
                   <span className="font-bold text-white">{selectedPackage.aiMessagesPerConv}</span>
                 </div>
               )}
+              {selectedPackage.channelsIncluded && (
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-400">Canales incluidos:</span>
+                  <span className="font-bold text-cyan-300">{selectedPackage.channelsIncluded}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center text-sm gap-4">
+                <span className="text-gray-400">Canales adicionales ($3 USD c/u):</span>
+                <input type="number" min="0" max="50" value={additionalChannels} onChange={(e) => setAdditionalChannels(Math.max(0, Math.min(50, Number(e.target.value) || 0)))} className="w-20 bg-gray-900 border border-gray-700 rounded-lg px-2 py-1 text-right text-white" />
+              </div>
               {selectedPackage.audioMinutes && (
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-gray-400">Minutos de Audio:</span>
@@ -732,12 +758,12 @@ export function RecargasView() {
 
               <div className="pt-3 border-t border-gray-800/80 flex justify-between items-center text-sm">
                 <span className="text-gray-400">Precio:</span>
-                <span className="font-semibold text-gray-200">${selectedPackage.price.toFixed(2)}</span>
+                <span className="font-semibold text-gray-200">${(selectedPackage.price + additionalChannels * 3).toFixed(2)}</span>
               </div>
 
               <div className="pt-2 flex justify-between items-center text-lg font-black">
                 <span className="text-white">TOTAL:</span>
-                <span className="text-emerald-400 font-display text-2xl">${selectedPackage.price.toFixed(2)}</span>
+                <span className="text-emerald-400 font-display text-2xl">${(selectedPackage.price + additionalChannels * 3).toFixed(2)}</span>
               </div>
             </div>
 
