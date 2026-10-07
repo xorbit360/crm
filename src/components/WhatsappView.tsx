@@ -3525,11 +3525,11 @@ ${parametersString}
           const channelsList = [
             {
               id: 'CAN-01',
-              name: 'WhatsApp Web (sin API)',
+              name: 'WhatsApp Business Cloud API',
               category: 'whatsapp',
-              platformLabel: 'WhatsApp Web / Sesión vinculada',
+              platformLabel: 'WhatsApp Cloud API',
               identifier: whatsappConnectedNumber || waAccount?.phoneNumber || (isWaOfficialActive ? 'Línea Oficial Vinculada' : 'No vinculado'),
-              type: 'WhatsApp Web (sin API)',
+              type: 'API oficial de Meta',
               status: isWaOfficialActive ? 'Conectado' : 'Disponible',
               isActive: isWaOfficialActive,
               icon: <MessageCircle size={18} className="text-emerald-400" />,
