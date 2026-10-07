@@ -32,11 +32,11 @@ export function normalizeWebhookEvent(envelope: any): {
   message?: NormalizedMessage;
   raw: any;
 } {
-  const event = String(envelope?.event || envelope?.type || 'unknown');
+  const event = String(envelope?.event || envelope?.type || envelope?.data?.event || envelope?.data?.type || 'unknown');
   const eventId = String(envelope?.id || envelope?.eventId || '');
-  const rawMsg = envelope?.message || envelope?.data?.message || envelope?.data || {};
+  const rawMsg = envelope?.message || envelope?.data?.message || envelope?.payload?.message || envelope?.data?.payload || envelope?.data || {};
   const rawConv = envelope?.conversation || envelope?.data?.conversation || {};
-  const rawSender = rawMsg?.sender || {};
+  const rawSender = rawMsg?.sender || rawMsg?.from || envelope?.sender || envelope?.data?.sender || {};
   const rawMetadata = envelope?.metadata || rawMsg?.metadata || {};
 
   const direction: 'incoming' | 'outgoing' = 

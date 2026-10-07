@@ -155,7 +155,12 @@ export default function App() {
     }
   }, [user?.email, user?.plan]);
 
-  const [activeModule, setActiveModule] = useState<ModuleId | 'dashboard'>('herramientas');
+  const [activeModule, setActiveModule] = useState<ModuleId | 'dashboard'>(() => {
+    try { return (localStorage.getItem('xorbit_active_module') as ModuleId | 'dashboard') || 'herramientas'; } catch { return 'herramientas'; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem('xorbit_active_module', activeModule); } catch {}
+  }, [activeModule]);
   const isInsideTool = ['whatsapp', 'llamadas', 'email', 'contenido', 'branding', 'mercado', 'landing', 'ads', 'live_selling'].includes(activeModule);
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['herramientas', 'configuracion']);
 

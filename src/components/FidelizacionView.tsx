@@ -2,6 +2,12 @@ import React from 'react';
 import { HeartHandshake, Filter, Users, Calendar, Plus, MessageSquare } from 'lucide-react';
 
 export default function FidelizacionView() {
+  const clientes = Array.from({ length: 18 }, (_, index) => ({
+    name: ['Laura Gómez', 'Andrés Rojas', 'Camila Torres', 'Juan Martínez', 'Mariana Cárdenas', 'Santiago Pérez'][index % 6],
+    channel: ['Instagram', 'WhatsApp', 'Facebook', 'Shopify'][index % 4],
+    lastMessage: ['Gracias por tu compra', '¿Quieres repetir tu pedido?', 'Oferta exclusiva para ti'][index % 3],
+    status: index % 3 === 0 ? 'Listo para contactar' : index % 3 === 1 ? 'Recompra pendiente' : 'Cliente recurrente'
+  }));
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
@@ -35,6 +41,22 @@ export default function FidelizacionView() {
                <Filter size={16} /> Aplicar Filtros
              </button>
            </div>
+        </div>
+      </div>
+
+      <div className="bg-[#1a1a1a] p-6 rounded-xl border border-gray-800">
+        <div className="flex items-center justify-between border-b border-gray-800 pb-4 mb-4">
+          <h3 className="font-bold text-gray-100 flex items-center gap-2"><Users size={17} className="text-gold" /> Clientes para fidelizar</h3>
+          <span className="text-xs text-emerald-400 font-bold">{clientes.length} clientes sincronizados</span>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+          {clientes.map((cliente, index) => (
+            <div key={index} className="bg-gray-900 border border-gray-800 rounded-lg p-3 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-zinc-800 text-gold flex items-center justify-center font-bold text-xs">{cliente.name.split(' ').map(n => n[0]).slice(0, 2).join('')}</div>
+              <div className="min-w-0 flex-1"><p className="text-sm text-white font-semibold truncate">{cliente.name}</p><p className="text-[10px] text-gray-500 truncate">{cliente.channel} · {cliente.lastMessage}</p></div>
+              <span className="text-[9px] text-emerald-400 text-right">{cliente.status}</span>
+            </div>
+          ))}
         </div>
       </div>
 
