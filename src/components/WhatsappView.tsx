@@ -3961,6 +3961,7 @@ ${parametersString}
                           <div>
                             <h4 className="text-sm font-bold text-white">Instagram Direct & Business</h4>
                             <p className="text-xs text-zinc-400">Mensajes directos e historias con IA</p>
+                            <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[10px] font-bold">BETA · Follow to DM</span>
                           </div>
                         </div>
                         <button
