@@ -161,6 +161,19 @@ export function setupZernioRoutes(app: express.Express, onIncomingMessage?: (msg
     res.json(result);
   });
 
+  // Plantillas de WhatsApp: sincronización unificada desde Xorbit.
+  router.post('/templates/sync', async (req, res) => {
+    const result = await zernioRequest({ method: 'GET', path: '/v1/whatsapp/templates' });
+    if (!result.success) return res.status((result as any).error?.status || 502).json(result);
+    res.json({ success: true, data: result.data });
+  });
+
+  router.post('/templates', async (req, res) => {
+    const result = await zernioRequest({ method: 'POST', path: '/v1/whatsapp/templates', body: req.body });
+    if (!result.success) return res.status((result as any).error?.status || 502).json(result);
+    res.json({ success: true, data: result.data });
+  });
+
   router.delete('/webhook/:id', async (req, res) => {
     const result = await zernioRequest({ method: 'DELETE', path: `/v1/webhooks/settings/${encodeURIComponent(req.params.id)}` });
     if (!result.success) return res.status((result as any).error?.status || 400).json(result);

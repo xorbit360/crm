@@ -503,12 +503,15 @@ export default function PlantillasMetaView({ onBackToCampaigns }: { onBackToCamp
     } catch (_) {}
   }, [triggers]);
 
-  const handleRefreshMeta = () => {
+  const handleRefreshMeta = async () => {
     setIsRefreshing(true);
-    setTimeout(() => {
-      setIsRefreshing(false);
-      alert('Estados de Meta sincronizados con éxito. (API Meta Graph v18.0)');
-    }, 900);
+    try {
+      const res = await fetch('/api/zernio/templates/sync', { method: 'POST' });
+      if (!res.ok) throw new Error('sync');
+      alert('Todas las plantillas fueron sincronizadas correctamente.');
+    } catch (_) {
+      alert('No fue posible sincronizar las plantillas. Verifica que haya un canal oficial conectado.');
+    } finally { setIsRefreshing(false); }
   };
 
   const handleStartCreate = () => {
@@ -558,6 +561,11 @@ export default function PlantillasMetaView({ onBackToCampaigns }: { onBackToCamp
       language: 'es',
       createdAt: editingTemplate ? editingTemplate.createdAt : new Date().toISOString()
     };
+
+    fetch('/api/zernio/templates', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: updatedTemplate.name, category: updatedTemplate.category, language: updatedTemplate.language, body: updatedTemplate.bodyText, header: updatedTemplate.headerText, footer: updatedTemplate.footerText, buttons: updatedTemplate.buttons })
+    }).catch(() => {});
 
     if (editingTemplate) {
       setTemplates(prev => prev.map(t => t.id === editingTemplate.id ? updatedTemplate : t));
@@ -972,7 +980,7 @@ export default function PlantillasMetaView({ onBackToCampaigns }: { onBackToCamp
             className="px-3.5 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 text-xs font-semibold transition flex items-center gap-2 cursor-pointer shadow-sm disabled:opacity-50"
           >
             <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
-            <span>Refrescar estados de Meta</span>
+            <span>Sincronizar todas las plantillas</span>
           </button>
 
           <button
