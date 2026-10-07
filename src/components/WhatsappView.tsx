@@ -3566,6 +3566,20 @@ ${parametersString}
               date: isTtActive ? 'Sincronizado' : '-'
             },
             {
+              id: 'CAN-02-BETA',
+              name: 'Instagram Follow to DM (BETA)',
+              category: 'instagram',
+              platformLabel: 'Instagram Follow to DM',
+              identifier: igAccount?.name || 'Requiere elegibilidad Meta',
+              type: 'Meta Beta · Nuevos seguidores',
+              status: igAccount ? 'Disponible para probar' : 'Conecta Instagram primero',
+              isActive: false,
+              icon: <Instagram size={18} className="text-amber-400" />,
+              accountId: igAccount?.id,
+              actionType: 'instagram',
+              date: '-'
+            },
+            {
               id: 'CAN-04',
               name: 'Facebook Messenger & Páginas',
               category: 'facebook',
