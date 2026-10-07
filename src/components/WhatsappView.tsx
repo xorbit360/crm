@@ -988,6 +988,21 @@ export default function WhatsappView({
           });
         }
       }
+      // Importar también conversaciones recientes de Instagram/Messenger
+      // desde Zernio para recuperar hilos que llegaron antes de abrir el CRM.
+      await fetch('/api/zernio/history/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ maxPages: 5, isAiAgentActive: isBotActive })
+      }).catch(() => undefined);
+      const unifiedState = await fetch('/api/backoffice/state').then(r => r.ok ? r.json() : null).catch(() => null);
+      if (Array.isArray(unifiedState?.chats)) {
+        setChats(previous => {
+          const byId = new Map(previous.map(chat => [chat.id, chat]));
+          unifiedState.chats.forEach((chat: any) => byId.set(chat.id, { ...byId.get(chat.id), ...chat, msg: chat.message || chat.msg || byId.get(chat.id)?.msg }));
+          return Array.from(byId.values());
+        });
+      }
     } catch (e) {
       console.error('Error syncing chats:', e);
     } finally {
@@ -2097,7 +2112,7 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
     { id: 'envios', name: 'Envíos', isNestLogistics: true },
     { id: 'carritos_recuperados', name: 'Carritos Recuperados', automation: '2 mensajes automáticos a los 30 minutos, 4 horas y 8 horas' },
     { id: 'llamadas_ia', name: 'Llamadas IA', automation: 'Confirmación de pedidos, reintento de llamadas y novedades' },
-    { id: 'post_venta', name: 'Post-Venta' }
+    { id: 'post_venta', name: 'Clientes' }
   ]);
   const [activePipelineId, setActivePipelineId] = useState<string>('ventas');
 
@@ -2497,7 +2512,8 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
     { id: 'llamada_confirmada', name: 'Confirmadas', color: '#22c55e', pipelineId: 'llamadas_ia' },
     { id: 'post_nuevos', name: 'Clientes nuevos', color: '#3b82f6', pipelineId: 'post_venta' },
     { id: 'post_recuperados', name: 'Clientes recuperados', color: '#22c55e', pipelineId: 'post_venta' },
-    { id: 'post_perdidos', name: 'Clientes perdidos', color: '#ef4444', pipelineId: 'post_venta' }
+    { id: 'post_perdidos', name: 'Clientes perdidos', color: '#ef4444', pipelineId: 'post_venta' },
+    { id: 'post_campanas', name: 'Campañas', color: '#eab308', pipelineId: 'post_venta' }
   ]);
 
   // AI Rules & Alerts States

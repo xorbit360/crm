@@ -465,8 +465,9 @@ export function RecargasView() {
       // generó el servidor. Esto evita reconstruirlo en el navegador con una
       // clave distinta o con parámetros incompletos.
       if (typeof data.checkoutUrl === 'string' && /^https:\/\/checkout\.bold\.co\//.test(data.checkoutUrl)) {
-        window.location.href = data.checkoutUrl;
-        return;
+        // La URL /payment/{merchant} no es un checkout público de Bold
+        // (devuelve BTN-000). Solo se utiliza el SDK oficial arriba.
+        throw new Error('No se pudo cargar el checkout oficial de Bold. Recarga la página e inténtalo nuevamente.');
       }
 
       // Fallback local para versiones antiguas de la API.
