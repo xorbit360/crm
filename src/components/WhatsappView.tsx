@@ -1614,7 +1614,8 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
     { id: '10', name: "Sofía Castro", time: "08:45 a. m.", msg: "Mi paquete ya aparece despachado en Coordinadora", unread: 0, phone: "+57 301 777 2211", columnId: 'en_transito', tags: ['Despachado'], leadStatus: 'tibio' as const, avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=150&h=150&q=80' }
   ];
 
-  const ADMIN_DEMO_CHATS = DEFAULT_CHATS.map((chat, index) => ({
+  const ADMIN_DEMO_CHATS = [
+    ...DEFAULT_CHATS.map((chat, index) => ({
     ...chat,
     columnId: ['entregado', 'entregado', 'en_transito', 'en_transito', 'entregado', 'en_transito', 'novedad', 'devolucion', 'novedad', 'en_transito'][index],
     name: ['Laura Gómez', 'Andrés Rojas', 'Camila Torres', 'Juan Martínez', 'Mariana Cárdenas', 'Santiago Pérez', 'Daniela Restrepo', 'Nicolás Vargas', 'Valentina Salazar', 'Sebastián Castro'][index],
@@ -1631,7 +1632,20 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
       'Llegué desde Google. ¿Puedo pedir el combo en talla M?'
     ][index],
     tags: [index % 3 === 0 ? 'Venta Cerrada' : 'Interesado', index % 2 === 0 ? 'Combo Polos' : 'Logística']
-  }));
+    })),
+    ...['nuevo_contacto', 'msg_inicial', 'en_conversacion', 'alta_intencion', 'datos_incompletos', 'pago_anticipado', 'pago_validado', 'pedido_confirmado', 'objecion', 'modificacion', 'anulacion', 'por_subir', 'pendiente_confirmacion', 'pendiente', 'guia_generada', 'preparado_recogido', 'en_reparto', 'cancelado_rechazado', 'indemnizacion_cerrado'].map((columnId, index) => ({
+      id: `demo-funnel-${index + 1}`,
+      name: ['Felipe Moreno', 'Carolina Mendez', 'David Arias', 'Natalia Ramirez', 'Mateo Herrera', 'Paula Lopez'][index % 6],
+      time: '10:30 a. m.',
+      msg: `Seguimiento combo de camisas polo $160.000 - etapa ${index + 1}`,
+      unread: 0,
+      phone: `+57 320 555 ${String(1000 + index).slice(-4)}`,
+      columnId,
+      tags: ['Combo Polos', index % 2 === 0 ? 'Venta Cerrada' : 'Logistica'],
+      leadStatus: 'caliente' as const,
+      avatar: DEFAULT_CHATS[index % DEFAULT_CHATS.length].avatar
+    }))
+  ];
 
   // Dynamic CRM Chat States (con almacenamiento persistente local)
   const [chats, setChats] = useState<{ id: string, name: string, time: string, msg: string, unread: number, phone: string, columnId: string, tags: string[], leadStatus?: 'frío' | 'tibio' | 'caliente', avatar?: string }[]>(() => {
