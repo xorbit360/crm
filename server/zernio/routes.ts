@@ -4,6 +4,7 @@
 import express from 'express';
 import { getZernioAccounts, getZernioConnectUrl, connectZernioHeadlessWaba, deleteZernioAccount } from './accounts.ts';
 import { ZERNIO_DEFAULT_KEY } from './client.ts';
+import { zernioRequest } from './client.ts';
 import { handleZernioWebhook, registerOrUpdateZernioWebhook, getZernioWebhookStatus, runZernioSweeper } from './webhook.ts';
 import { enviarMensajeZernio } from './messaging.ts';
 import { importZernioConversations } from './history.ts';
@@ -156,6 +157,12 @@ export function setupZernioRoutes(app: express.Express, onIncomingMessage?: (msg
     const targetUrl = req.body.url || defaultUrl || dynamicUrl;
 
     const result = await registerOrUpdateZernioWebhook(targetUrl, req.body.name);
+    res.json(result);
+  });
+
+  router.delete('/webhook/:id', async (req, res) => {
+    const result = await zernioRequest({ method: 'DELETE', path: `/v1/webhooks/settings/${encodeURIComponent(req.params.id)}` });
+    if (!result.success) return res.status((result as any).error?.status || 400).json(result);
     res.json(result);
   });
 
