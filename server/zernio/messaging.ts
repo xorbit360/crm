@@ -117,6 +117,7 @@ export async function enviarMensajeZernio(params: OutboundMessageParams): Promis
       if (params.text) body.text = params.text;
     } else {
       body.text = params.text;
+      body.message = params.text;
     }
 
     const res = await zernioRequest({
