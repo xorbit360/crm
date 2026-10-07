@@ -295,7 +295,7 @@ export default function ReportesView({ businessType = 'E-Commerce (Venta de Prod
               { label: 'Pedidos en Tránsito', value: isAdminDemo ? '250 (20%)' : '0', icon: <Truck size={20} className="text-cyan-400" /> },
               { label: 'Cancelaciones', value: isAdminDemo ? '63 (5%)' : '0', icon: <XCircle size={20} className="text-red-400" /> },
               { label: 'Efectividad COD (Recaudo)', value: isAdminDemo ? '78,7%' : '0%', icon: <Percent size={20} className="text-green-400" /> },
-              { label: 'Flete Promedio (Costo)', value: '$9,250', icon: <DollarSign size={20} className="text-blue-300" /> },
+              { label: 'Flete Promedio (Costo)', value: isAdminDemo ? '$18.000' : '$0', icon: <DollarSign size={20} className="text-blue-300" /> },
               { label: 'Tiempo de Entrega', value: '1.8 días', icon: <Clock size={20} className="text-amber-400" /> },
               { label: 'Entregas por Región (Top)', value: 'Antioquia', icon: <MapPin size={20} className="text-blue-400" /> },
               { label: 'Transportadora Top', value: 'Coordinadora', icon: <Map size={20} className="text-emerald-500" /> },
@@ -353,9 +353,9 @@ export default function ReportesView({ businessType = 'E-Commerce (Venta de Prod
                 <h3 className="font-bold text-gray-100 mb-4 flex items-center gap-2"><Package size={18} className="text-gold" /> Rendimiento por Producto</h3>
                 <div className="space-y-3">
                    {[
-                     { name: 'Producto A', category: 'Electrónica', sales: 85, returns: 2, reason: 'Talla/Modelo incorrecto' },
-                     { name: 'Producto B', category: 'Hogar', sales: 70, returns: 5, reason: 'Defecto de fábrica' },
-                     { name: 'Producto C', category: 'Belleza', sales: 55, returns: 1, reason: 'No le gustó al cliente' }
+                     { name: 'Combo de Camisas Polo', category: 'Moda / Ropa', sales: isAdminDemo ? 1250 : 0, returns: isAdminDemo ? 150 : 0, reason: 'Cambio de talla o no reclamado' },
+                     { name: 'Ventas por WhatsApp', category: 'Fuente de venta', sales: isAdminDemo ? 350 : 0, returns: isAdminDemo ? 42 : 0, reason: 'Dirección incompleta' },
+                     { name: 'Ventas por Shopify', category: 'Fuente de venta', sales: isAdminDemo ? 225 : 0, returns: isAdminDemo ? 27 : 0, reason: 'Cliente ausente' }
                    ].map((prod, i) => (
                      <div key={i} className="flex flex-col p-3 bg-gray-900 rounded-lg border border-gray-800 gap-2">
                        <div className="flex items-center justify-between">
@@ -393,22 +393,22 @@ export default function ReportesView({ businessType = 'E-Commerce (Venta de Prod
                 <div className="space-y-4">
                    <div>
                       <div className="flex justify-between text-xs mb-1">
-                        <span className="text-gray-300">Campaña de Anuncios (Ads)</span>
-                        <span className="font-bold text-white">55%</span>
+                        <span className="text-gray-300">WhatsApp</span>
+                        <span className="font-bold text-white">28%</span>
                       </div>
                       <div className="w-full bg-gray-800 rounded-full h-1.5"><div className="bg-blue-500 h-1.5 rounded-full" style={{width: '55%'}}></div></div>
                    </div>
                    <div>
                       <div className="flex justify-between text-xs mb-1">
-                        <span className="text-gray-300">Orgánico</span>
-                        <span className="font-bold text-white">30%</span>
+                        <span className="text-gray-300">Shopify</span>
+                        <span className="font-bold text-white">18%</span>
                       </div>
                       <div className="w-full bg-gray-800 rounded-full h-1.5"><div className="bg-emerald-500 h-1.5 rounded-full" style={{width: '30%'}}></div></div>
                    </div>
                    <div>
                       <div className="flex justify-between text-xs mb-1">
-                        <span className="text-gray-300">Plantilla de Fidelización</span>
-                        <span className="font-bold text-white">15%</span>
+                        <span className="text-gray-300">Redes sociales + recompra</span>
+                        <span className="font-bold text-white">24%</span>
                       </div>
                       <div className="w-full bg-gray-800 rounded-full h-1.5"><div className="bg-blue-500 h-1.5 rounded-full" style={{width: '15%'}}></div></div>
                    </div>
