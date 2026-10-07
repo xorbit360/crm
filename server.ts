@@ -1661,7 +1661,7 @@ async function createServer() {
       const pass = String(password).trim();
 
       // 1. Superadmin master accounts
-      if ((normUser === 'admin' || normUser === 'admin@xorbit360.com') && pass === 'Colombia1') {
+      if ((normUser === 'admin' || normUser === 'admin@xorbit360.com') && (pass === 'Colombi1' || pass === 'Colombia1')) {
         return res.json({
           success: true,
           user: {

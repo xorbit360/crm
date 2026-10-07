@@ -51,7 +51,7 @@ export default function LoginView({ onLogin }: LoginViewProps) {
     } catch (err: any) {
       // Fallback local check for master account
       const lower = normUser.toLowerCase();
-      if ((lower === 'admin' || lower === 'admin@xorbit360.com') && pass === 'Colombia1') {
+      if ((lower === 'admin' || lower === 'admin@xorbit360.com') && (pass === 'Colombi1' || pass === 'Colombia1')) {
         const adminUser = {
           name: 'Oscar Molina',
           email: 'admin@xorbit360.com',
