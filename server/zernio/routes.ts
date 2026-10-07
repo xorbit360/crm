@@ -27,7 +27,7 @@ export function setupZernioRoutes(app: express.Express, onIncomingMessage?: (msg
       hasApiKey,
       hasWebhookSecret,
       baseUrl: 'https://zernio.com/api/v1',
-      supportedPlatforms: ['whatsapp', 'instagram', 'messenger'],
+      supportedPlatforms: ['instagram', 'tiktok', 'twitter', 'facebook', 'linkedin', 'youtube', 'whatsapp', 'threads', 'pinterest', 'reddit', 'bluesky', 'telegram', 'googlebusiness', 'snapchat', 'discord', 'slack'],
       logisticsSupported: ['dropi', 'mastershop', 'effix']
     });
   });
