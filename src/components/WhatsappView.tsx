@@ -4190,9 +4190,9 @@ ${parametersString}
         })()}
 
                         {currentViewTab === 'conversaciones' && (
-          <div className="flex flex-col h-[calc(100vh-20px)] sm:h-[calc(100vh-14px)] min-h-[640px] bg-zinc-950 rounded-xl border border-zinc-800 overflow-hidden panel p-0 relative mt-0">
+          <div className="flex flex-col h-[calc(100dvh-8px)] sm:h-[calc(100vh-14px)] min-h-[560px] bg-zinc-950 rounded-xl border border-zinc-800 overflow-hidden panel p-0 relative mt-0">
              {/* Toggle Header */}
-             <div className="p-3 border-b border-zinc-800 bg-zinc-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+             <div className={`p-3 border-b border-zinc-800 bg-zinc-950 flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0 ${mobileView === 'chat' ? 'hidden md:flex' : 'flex'}`}>
                 <div className="flex flex-wrap items-center justify-between gap-3 w-full sm:w-auto">
                    <div className="flex items-center gap-2.5">
                       {onToggleSidebar && (
@@ -4423,10 +4423,10 @@ ${parametersString}
                     <button
                       type="button"
                       onClick={() => setMobileView('list')}
-                      className="md:hidden text-gray-400 hover:text-white mr-1 p-1"
+                      className="md:hidden text-white hover:text-emerald-300 mr-2 p-2.5 -ml-1 rounded-full bg-[#00a884]/20 border border-[#00a884]/40 shadow-sm"
                       title="Volver a la lista de chats"
                     >
-                      <ArrowLeft size={20} />
+                      <ArrowLeft size={25} strokeWidth={2.5} />
                     </button>
 
                     <div className="shrink-0">
