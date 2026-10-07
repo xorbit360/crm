@@ -1660,6 +1660,22 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
       leadStatus: 'caliente' as const,
       avatar: DEFAULT_CHATS[index % DEFAULT_CHATS.length].avatar
     })),
+    // Leads de prueba distribuidos en los nuevos embudos para que cada etapa
+    // tenga varios registros visibles desde el primer acceso del administrador.
+    ...['carrito_30m', 'carrito_4h', 'carrito_8h', 'carrito_recuperado', 'llamada_confirmacion', 'llamada_reintento', 'llamada_novedades', 'llamada_confirmada', 'post_nuevos', 'post_recuperados', 'post_perdidos'].flatMap((columnId, columnIndex) =>
+      Array.from({ length: 6 }, (_, index) => ({
+        id: `demo-${columnId}-${index + 1}`,
+        name: ['Laura Gómez', 'Andrés Rojas', 'Camila Torres', 'Juan Martínez', 'Mariana Cárdenas', 'Santiago Pérez'][index],
+        time: 'Hoy',
+        msg: columnId.startsWith('carrito_') ? 'Carrito abandonado - Combo de Camisas Polo $160.000' : columnId.startsWith('llamada_') ? 'Seguimiento de llamada IA - pedido de camisas polo' : 'Seguimiento post-venta - Combo de Camisas Polo',
+        unread: index % 3 === 0 ? 1 : 0,
+        phone: `+57 315 ${String(2000000 + columnIndex * 10 + index).slice(-7)}`,
+        columnId,
+        tags: [columnId.startsWith('carrito_') ? 'Carrito Recuperado' : columnId.startsWith('llamada_') ? 'Llamada IA' : 'Post-Venta', 'Combo Polos'],
+        leadStatus: 'caliente' as const,
+        avatar: DEFAULT_CHATS[index % DEFAULT_CHATS.length].avatar
+      }))
+    ),
     ...Array.from({ length: 1250 }, (_, index) => {
       const funnelColumns = ['nuevo_contacto', 'msg_inicial', 'en_conversacion', 'alta_intencion', 'datos_incompletos', 'pago_anticipado', 'pago_validado', 'pedido_confirmado', 'objecion', 'modificacion', 'anulacion', 'por_subir', 'pendiente_confirmacion', 'pendiente', 'guia_generada', 'preparado_recogido', 'en_transito', 'en_reparto', 'entregado', 'novedad', 'devolucion', 'cancelado_rechazado', 'indemnizacion_cerrado'];
       const columnId = funnelColumns[index % funnelColumns.length];
@@ -2070,7 +2086,10 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
   // Custom Pipelines / Embudos State
   const [pipelines, setPipelines] = useState<{ id: string, name: string, isNestComplaints?: boolean, isNestLogistics?: boolean, instructions?: string, automation?: string }[]>([
     { id: 'ventas', name: 'Ventas' },
-    { id: 'envios', name: 'Envíos', isNestLogistics: true }
+    { id: 'envios', name: 'Envíos', isNestLogistics: true },
+    { id: 'carritos_recuperados', name: 'Carritos Recuperados', automation: '2 mensajes automáticos a los 30 minutos, 4 horas y 8 horas' },
+    { id: 'llamadas_ia', name: 'Llamadas IA', automation: 'Confirmación de pedidos, reintento de llamadas y novedades' },
+    { id: 'post_venta', name: 'Post-Venta' }
   ]);
   const [activePipelineId, setActivePipelineId] = useState<string>('ventas');
 
@@ -2460,6 +2479,17 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
     { id: 'devolucion', name: 'Devolución', color: '#ec4899', pipelineId: 'envios' },
     { id: 'cancelado_rechazado', name: 'Cancelado / Rechazado', color: '#7f1d1d', pipelineId: 'envios' },
     { id: 'indemnizacion_cerrado', name: 'Indemnización / Cerrado', color: '#111827', pipelineId: 'envios' }
+    ,{ id: 'carrito_30m', name: 'Mensaje 30 minutos', color: '#f59e0b', pipelineId: 'carritos_recuperados' },
+    { id: 'carrito_4h', name: 'Mensaje 4 horas', color: '#f97316', pipelineId: 'carritos_recuperados' },
+    { id: 'carrito_8h', name: 'Mensaje 8 horas', color: '#ef4444', pipelineId: 'carritos_recuperados' },
+    { id: 'carrito_recuperado', name: 'Recuperado', color: '#22c55e', pipelineId: 'carritos_recuperados' },
+    { id: 'llamada_confirmacion', name: 'Confirmación de pedidos', color: '#3b82f6', pipelineId: 'llamadas_ia' },
+    { id: 'llamada_reintento', name: 'Reintento de llamadas', color: '#a855f7', pipelineId: 'llamadas_ia' },
+    { id: 'llamada_novedades', name: 'Novedades', color: '#ef4444', pipelineId: 'llamadas_ia' },
+    { id: 'llamada_confirmada', name: 'Confirmadas', color: '#22c55e', pipelineId: 'llamadas_ia' },
+    { id: 'post_nuevos', name: 'Clientes nuevos', color: '#3b82f6', pipelineId: 'post_venta' },
+    { id: 'post_recuperados', name: 'Clientes recuperados', color: '#22c55e', pipelineId: 'post_venta' },
+    { id: 'post_perdidos', name: 'Clientes perdidos', color: '#ef4444', pipelineId: 'post_venta' }
   ]);
 
   // AI Rules & Alerts States

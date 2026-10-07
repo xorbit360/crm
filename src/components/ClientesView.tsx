@@ -29,6 +29,7 @@ export interface Client {
   logisticsRisk: 'low' | 'medium' | 'high';
   orderHistory?: OrderHistoryItem[];
   notes?: string;
+  tags?: string[];
 }
 
 export default function ClientesView({ currentUser }: { currentUser?: { role?: string; email?: string } | null }) {
@@ -67,8 +68,12 @@ export default function ClientesView({ currentUser }: { currentUser?: { role?: s
   useEffect(() => {
     if (isPrincipalAdmin(currentUser)) {
       const demoClients = buildAdminDemoClients();
-      setClients(demoClients);
-      localStorage.setItem(clientsStorageKey, JSON.stringify(demoClients));
+      const taggedClients = demoClients.map((client, index) => ({
+        ...client,
+        tags: [index % 4 === 0 ? 'Clientes recuperados' : index % 4 === 1 ? 'Clientes nuevos' : index % 4 === 2 ? 'Clientes perdidos' : 'Post-Venta', 'Combo Polos']
+      }));
+      setClients(taggedClients);
+      localStorage.setItem(clientsStorageKey, JSON.stringify(taggedClients));
       return;
     }
     setClients([]);
@@ -650,6 +655,9 @@ export default function ClientesView({ currentUser }: { currentUser?: { role?: s
                       <td className="p-4">
                         <div>
                           <span className="font-bold text-white text-sm block">{client.name}</span>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {(client.tags || []).map(tag => <span key={tag} className="rounded px-1.5 py-0.5 text-[8px] font-bold bg-zinc-800 text-zinc-300">{tag}</span>)}
+                          </div>
                           <span className="font-mono text-[9px] text-gray-500 mt-0.5 block flex items-center gap-1">
                             {client.id}
                             {client.isRecurring && (
