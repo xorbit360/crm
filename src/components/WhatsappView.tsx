@@ -767,13 +767,17 @@ export default function WhatsappView({
   const handleConnectPlatform = async (platform: string, onboardingMode?: string) => {
     setIsConnectingPlatform(platform);
     try {
-      let url = `/api/zernio/connect-url?platform=${platform}`;
+      const apiPlatform = platform === 'instagram_beta' ? 'instagram' : platform;
+      let url = `/api/zernio/connect-url?platform=${apiPlatform}`;
       if (platform === 'whatsapp') {
         const mode = onboardingMode || (whatsappMode === 'coexistente' ? 'business_app' : 'api');
         url += `&onboarding=${mode}`;
-      } else if (platform === 'instagram') {
-        // Use Meta's unified Facebook login flow for Instagram Business accounts.
+      } else if (platform === 'instagram_beta') {
+        // Beta: use Meta's unified Facebook login flow for Follow to DM eligibility.
         url += '&loginMethod=facebook_login';
+      } else if (platform === 'instagram') {
+        // Standard Instagram connection.
+        url += '&loginMethod=instagram_login';
       }
       const res = await fetch(url);
       const json = await res.json();
@@ -3576,7 +3580,7 @@ ${parametersString}
               isActive: false,
               icon: <Instagram size={18} className="text-amber-400" />,
               accountId: igAccount?.id,
-              actionType: 'instagram',
+              actionType: 'instagram_beta',
               date: '-'
             },
             {
