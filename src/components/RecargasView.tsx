@@ -402,7 +402,7 @@ export function RecargasView() {
       await ensureBoldCheckoutScript();
 
       const amountInCop = Math.round(pkg.price * 4000);
-      const res = await fetch('/api/create-payment', {
+      const res = await fetch('/api/integrations/bold/create-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
