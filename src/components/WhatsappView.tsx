@@ -3589,7 +3589,17 @@ ${parametersString}
               accountId: isWaQrActive ? 'local_qr' : null,
               actionType: 'qr',
               date: isWaQrActive ? 'Sincronizado' : '-'
-            }
+            },
+            ...[
+              ['CAN-06', 'Telegram', 'telegram'], ['CAN-07', 'X / Twitter', 'twitter'], ['CAN-08', 'LinkedIn', 'linkedin'],
+              ['CAN-09', 'YouTube', 'youtube'], ['CAN-10', 'Threads', 'threads'], ['CAN-11', 'Pinterest', 'pinterest'],
+              ['CAN-12', 'Reddit', 'reddit'], ['CAN-13', 'Bluesky', 'bluesky'], ['CAN-14', 'Google Business', 'googlebusiness'],
+              ['CAN-15', 'Snapchat', 'snapchat'], ['CAN-16', 'Discord', 'discord'], ['CAN-17', 'Slack', 'slack']
+            ].map(([id, name, category]) => ({
+              id, name, category, platformLabel: name, identifier: 'No vinculado', type: 'Zernio API',
+              status: 'Disponible', isActive: false, icon: <MessageCircle size={18} className="text-zinc-400" />,
+              accountId: null, actionType: category, date: '-'
+            }))
           ];
 
           const filteredChannels = channelsList.filter((ch) => {
