@@ -165,6 +165,71 @@ html.light .hover\:bg-gray-900:hover, body.light .hover\:bg-gray-900:hover {
 .border-gold {
   border-color: var(--color-gold-500);
 }
+
+/* Entrenamiento unificado: grafito profesional con un solo acento dorado. */
+.training-professional {
+  --training-accent: #d4af37;
+  --training-surface: #111316;
+  --training-surface-raised: #1a1d21;
+  --training-border: #30343a;
+}
+
+.training-professional .panel {
+  background-color: var(--training-surface) !important;
+  border-color: var(--training-border) !important;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.28);
+}
+
+.training-professional [class*="text-emerald-"],
+.training-professional [class*="text-green-"],
+.training-professional [class*="text-blue-"],
+.training-professional [class*="text-cyan-"] {
+  color: var(--training-accent) !important;
+}
+
+.training-professional [class*="bg-emerald-"],
+.training-professional [class*="bg-green-"],
+.training-professional [class*="bg-blue-"],
+.training-professional [class*="bg-cyan-"] {
+  background-color: var(--training-surface-raised) !important;
+}
+
+.training-professional [class*="border-emerald-"],
+.training-professional [class*="border-green-"],
+.training-professional [class*="border-blue-"],
+.training-professional [class*="border-cyan-"] {
+  border-color: var(--training-border) !important;
+}
+
+.training-professional [class*="from-emerald-"],
+.training-professional [class*="from-green-"],
+.training-professional [class*="from-blue-"],
+.training-professional [class*="from-cyan-"] {
+  --tw-gradient-from: #17191d var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgb(23 25 29 / 0) var(--tw-gradient-to-position) !important;
+}
+
+.training-professional [class*="via-emerald-"],
+.training-professional [class*="via-green-"],
+.training-professional [class*="via-blue-"],
+.training-professional [class*="via-cyan-"] {
+  --tw-gradient-via: #0b0c0e var(--tw-gradient-via-position) !important;
+}
+
+.training-professional [class*="to-emerald-"],
+.training-professional [class*="to-green-"],
+.training-professional [class*="to-blue-"],
+.training-professional [class*="to-cyan-"] {
+  --tw-gradient-to: #17191d var(--tw-gradient-to-position) !important;
+}
+
+.training-professional [class*="focus:border-emerald-"]:focus,
+.training-professional [class*="focus:border-green-"]:focus,
+.training-professional [class*="focus:border-blue-"]:focus,
+.training-professional [class*="focus:border-cyan-"]:focus {
+  border-color: var(--training-accent) !important;
+}
+
 @layer utilities {
   .hide-scrollbar, .no-scrollbar {
     -ms-overflow-style: none;

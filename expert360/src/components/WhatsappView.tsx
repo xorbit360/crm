@@ -5657,7 +5657,7 @@ ${parametersString}
            </div>
         )}
         {currentViewTab === 'training' && (
-          <div className="space-y-6 animate-fade-in">
+          <div className="training-professional space-y-6 animate-fade-in">
             {/* Secondary navigation tab bar for training sub-modules */}
             <div className="flex gap-2 border-b border-gray-800 overflow-x-auto pb-px mb-6">
               <button
@@ -5667,46 +5667,6 @@ ${parametersString}
               >
                 <Database size={14} className="inline mr-1.5" />
                 Configuración Base
-              </button>
-              <button
-                type="button"
-                onClick={() => setTrainingSubTab('greeting')}
-                className={`px-4 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-colors ${trainingSubTab === 'greeting' ? 'border-green-500 text-green-400' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
-              >
-                <MessageCircle size={14} className="inline mr-1.5" />
-                Saludo Inicial
-              </button>
-              <button
-                type="button"
-                onClick={() => setTrainingSubTab('faqs')}
-                className={`px-4 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-colors ${trainingSubTab === 'faqs' ? 'border-green-500 text-green-400' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
-              >
-                <FileText size={14} className="inline mr-1.5" />
-                Preguntas Frecuentes
-              </button>
-              <button
-                type="button"
-                onClick={() => setTrainingSubTab('ai_rules')}
-                className={`px-4 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-colors ${trainingSubTab === 'ai_rules' ? 'border-green-500 text-green-400' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
-              >
-                <Sparkles size={14} className="inline mr-1.5 text-yellow-400" />
-                Reglas y Alertas IA
-              </button>
-              <button
-                type="button"
-                onClick={() => setTrainingSubTab('memory')}
-                className={`px-4 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-colors ${trainingSubTab === 'memory' ? 'border-blue-500 text-blue-400 font-bold' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
-              >
-                <Bot size={14} className="inline mr-1.5 text-blue-400" />
-                Memoria del Bot
-              </button>
-              <button
-                type="button"
-                onClick={() => setTrainingSubTab('remarketing')}
-                className={`px-4 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-colors ${trainingSubTab === 'remarketing' ? 'border-emerald-500 text-emerald-400 font-bold' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
-              >
-                <RefreshCw size={14} className="inline mr-1.5 text-emerald-400 animate-spin-slow" />
-                Remarketing Automatizado
               </button>
               <button
                 type="button"
@@ -6189,8 +6149,8 @@ ${parametersString}
           </div>
         )}
 
-        {currentViewTab === 'training' && trainingSubTab === 'greeting' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {currentViewTab === 'training' && trainingSubTab === 'base' && (
+          <div className="training-professional grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="panel p-6 rounded-2xl space-y-6">
               <div>
                 <h3 className="text-sm font-semibold text-white mb-2">Mensaje de Saludo</h3>
@@ -6298,10 +6258,10 @@ ${parametersString}
               <div className="bg-[#075e54] p-3 text-white text-sm font-medium flex items-center gap-2">
                 <Smartphone size={16} /> Previsualización en Vivo de WhatsApp
               </div>
-              <div className="p-4 bg-[#ece5dd] flex-1 flex flex-col gap-3 min-h-[320px]">
+              <div className="p-4 bg-[#0f1114] flex-1 flex flex-col gap-3 min-h-[320px]">
                 {/* Media preview inside bubble */}
                 {greetingAttachments.map((att, idx) => (
-                  <div key={idx} className="self-end bg-[#dcf8c6] p-2 rounded-lg max-w-[85%] shadow-sm">
+                  <div key={idx} className="self-end bg-[#24272c] border border-[#34383f] p-2 rounded-lg max-w-[85%] shadow-sm">
                     {att.type === 'audio' ? (
                       <VoiceNotePlayer
                         src={att.url || 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'}
@@ -6320,7 +6280,7 @@ ${parametersString}
                   </div>
                 ))}
 
-                <div className="self-end bg-[#dcf8c6] p-2.5 rounded-lg text-sm text-black max-w-[85%] shadow-sm relative">
+                <div className="self-end bg-[#24272c] border border-[#34383f] p-2.5 rounded-lg text-sm text-gray-100 max-w-[85%] shadow-sm relative">
                   {greetingMessage}
                   <span className="text-[9px] text-gray-500 block text-right mt-1">10:45 AM</span>
                 </div>
@@ -6329,8 +6289,8 @@ ${parametersString}
           </div>
         )}
 
-        {currentViewTab === 'training' && trainingSubTab === 'faqs' && (
-          <div className="panel p-6 rounded-2xl">
+        {currentViewTab === 'training' && trainingSubTab === 'base' && (
+          <div className="training-professional panel p-6 rounded-2xl">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
               <div>
                 <div className="flex items-center gap-2">
@@ -6550,8 +6510,8 @@ ${parametersString}
           </div>
         )}
 
-        {currentViewTab === 'training' && trainingSubTab === 'ai_rules' && (
-          <div className="space-y-6">
+        {currentViewTab === 'training' && trainingSubTab === 'base' && (
+          <div className="training-professional space-y-6">
             {/* Multi-User Bot Profile Configurator */}
             <div className="panel p-6 rounded-2xl bg-[#0e0e11] border border-blue-500/20 space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -6977,8 +6937,8 @@ ${parametersString}
         )}
 
         {/* Memoria Module */}
-        {currentViewTab === 'training' && trainingSubTab === 'memory' && (
-          <div className="space-y-6">
+        {currentViewTab === 'training' && trainingSubTab === 'base' && (
+          <div className="training-professional space-y-6">
             <div className="panel p-6 rounded-2xl bg-black border border-blue-500/20 space-y-6">
               <div className="flex items-center justify-between pb-4 border-b border-gray-800">
                 <div className="flex items-center gap-3">
@@ -7076,8 +7036,8 @@ ${parametersString}
           </div>
         )}
 
-        {currentViewTab === 'training' && trainingSubTab === 'remarketing' && (
-          <div className="space-y-6 animate-fade-in text-left">
+        {currentViewTab === 'training' && trainingSubTab === 'base' && (
+          <div className="training-professional space-y-6 animate-fade-in text-left">
             <div className="panel p-6 rounded-2xl bg-black border border-emerald-500/20 space-y-6">
               <div className="flex items-center justify-between pb-4 border-b border-gray-800">
                 <div className="flex items-center gap-3">
