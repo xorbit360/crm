@@ -1644,7 +1644,23 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
       tags: ['Combo Polos', index % 2 === 0 ? 'Venta Cerrada' : 'Logistica'],
       leadStatus: 'caliente' as const,
       avatar: DEFAULT_CHATS[index % DEFAULT_CHATS.length].avatar
-    }))
+    })),
+    ...Array.from({ length: 1250 }, (_, index) => {
+      const funnelColumns = ['nuevo_contacto', 'msg_inicial', 'en_conversacion', 'alta_intencion', 'datos_incompletos', 'pago_anticipado', 'pago_validado', 'pedido_confirmado', 'objecion', 'modificacion', 'anulacion', 'por_subir', 'pendiente_confirmacion', 'pendiente', 'guia_generada', 'preparado_recogido', 'en_transito', 'en_reparto', 'entregado', 'novedad', 'devolucion', 'cancelado_rechazado', 'indemnizacion_cerrado'];
+      const columnId = funnelColumns[index % funnelColumns.length];
+      return {
+        id: `demo-order-chat-${index + 1}`,
+        name: `Cliente ${String(index + 1).padStart(4, '0')}`,
+        time: 'Hoy',
+        msg: `Pedido Combo de Camisas Polo x1 - $160.000 - ${columnId}`,
+        unread: 0,
+        phone: `+57 300 ${String(1000000 + index).slice(-7)}`,
+        columnId,
+        tags: ['Combo Polos', index % 2 === 0 ? 'Venta Cerrada' : 'Seguimiento'],
+        leadStatus: 'caliente' as const,
+        avatar: DEFAULT_CHATS[index % DEFAULT_CHATS.length].avatar
+      };
+    })
   ];
 
   // Dynamic CRM Chat States (con almacenamiento persistente local)
