@@ -239,3 +239,29 @@ html.light .hover\:bg-gray-900:hover, body.light .hover\:bg-gray-900:hover {
     display: none;
   }
 }
+
+/* Responsive foundation: all modules remain usable on phones and tablets. */
+*, *::before, *::after { box-sizing: border-box; }
+html, body, #root { width: 100%; min-width: 0; max-width: 100%; overflow-x: hidden; }
+img, video, canvas, svg { max-width: 100%; }
+button, input, select, textarea { max-width: 100%; }
+table { max-width: 100%; }
+
+@media (max-width: 1024px) {
+  .panel { box-shadow: 0 8px 20px rgba(0,0,0,.18); }
+  main { min-width: 0 !important; }
+  [class*="max-w-[1600px]"], [class*="max-w-[1400px]"] { max-width: 100%; }
+}
+
+@media (max-width: 640px) {
+  body { font-size: 14px; }
+  .panel { border-radius: .75rem; }
+  h1 { font-size: clamp(1.35rem, 6vw, 2rem); }
+  h2 { font-size: clamp(1.15rem, 5vw, 1.6rem); }
+  h3 { font-size: clamp(1rem, 4vw, 1.25rem); }
+  input, select, textarea { font-size: 16px !important; } /* prevents iOS zoom */
+  button { min-height: 40px; }
+  .overflow-x-auto { -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+  .grid { min-width: 0; }
+  [class*="fixed"][class*="right-"] { max-width: calc(100vw - 1rem); }
+}
