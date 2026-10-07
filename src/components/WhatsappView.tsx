@@ -3613,7 +3613,7 @@ ${parametersString}
               ['CAN-12', 'Reddit', 'reddit'], ['CAN-13', 'Bluesky', 'bluesky'], ['CAN-14', 'Google Business', 'googlebusiness'],
               ['CAN-15', 'Snapchat', 'snapchat'], ['CAN-16', 'Discord', 'discord'], ['CAN-17', 'Slack', 'slack']
             ].map(([id, name, category]) => ({
-              id, name, category, platformLabel: name, identifier: 'No vinculado', type: 'Zernio API',
+              id, name, category, platformLabel: name, identifier: 'No vinculado', type: 'Xorbit 360 Omnicanal',
               status: 'Disponible', isActive: false, icon: category === 'tiktok' ? <Video size={18} className="text-cyan-400" /> : category === 'telegram' ? <Send size={18} className="text-sky-400" /> : category === 'youtube' ? <Video size={18} className="text-red-400" /> : category === 'linkedin' ? <Users size={18} className="text-blue-400" /> : category === 'discord' || category === 'slack' ? <MessageSquare size={18} className="text-indigo-400" /> : category === 'reddit' ? <Globe size={18} className="text-orange-400" /> : <Globe size={18} className="text-zinc-400" />,
               accountId: null, actionType: category, date: '-'
             }))
@@ -9571,7 +9571,7 @@ ${parametersString}
         </div>
       )}
 
-      {/* Modal: Conexión Headless BYO-WABA (Zernio Prompt 2) */}
+      {/* Modal: Conexión oficial WhatsApp Business Cloud */}
       {showHeadlessModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-scale-up">
