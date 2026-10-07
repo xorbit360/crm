@@ -1798,9 +1798,11 @@ async function createServer() {
       const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       const rawEvent: any = event.raw || {};
       const rawData: any = rawEvent.data || {};
-      const profileAvatar = msg.raw?.sender?.profile_picture || msg.raw?.sender?.avatar ||
-        rawData.sender?.profile_picture || rawData.sender?.avatar || rawData.profile_picture || '';
+      const profileAvatar = msg.raw?.sender?.profile_picture || msg.raw?.sender?.profilePicture || msg.raw?.sender?.avatar ||
+        rawData.sender?.profile_picture || rawData.sender?.profilePicture || rawData.sender?.avatar || rawData.profile_picture || rawData.profilePicture || '';
       const incomingMessage = msg.direction !== 'outgoing';
+      const socialPlatform = String(msg.raw?.platform || msg.raw?.data?.platform || rawEvent.platform || 'whatsapp').toLowerCase();
+      const zernioConversationId = msg.conversationId || msg.raw?.conversationId || msg.raw?.data?.conversationId || '';
       if (!currentDB.messagesHistory) currentDB.messagesHistory = {};
       if (!currentDB.messagesHistory[cleanPhone]) currentDB.messagesHistory[cleanPhone] = [];
 
@@ -1847,6 +1849,10 @@ async function createServer() {
       if (chatIdx !== -1) {
         currentDB.chats[chatIdx].message = msg.text;
         currentDB.chats[chatIdx].time = nowStr;
+        currentDB.chats[chatIdx].channelId = socialPlatform === 'instagram' ? 'instagram' : currentDB.chats[chatIdx].channelId;
+        currentDB.chats[chatIdx].platform = socialPlatform;
+        currentDB.chats[chatIdx].conversationId = zernioConversationId || currentDB.chats[chatIdx].conversationId;
+        currentDB.chats[chatIdx].externalId = msg.senderId || currentDB.chats[chatIdx].externalId;
         if (profileAvatar) currentDB.chats[chatIdx].avatar = profileAvatar;
         if (incomingMessage) currentDB.chats[chatIdx].unread = (Number(currentDB.chats[chatIdx].unread) || 0) + 1;
       } else {
@@ -1859,6 +1865,10 @@ async function createServer() {
           status: 'en_conversacion',
           avatar: profileAvatar || undefined,
           unread: incomingMessage ? 1 : 0
+          ,channelId: socialPlatform === 'instagram' ? 'instagram' : 'whatsapp'
+          ,platform: socialPlatform
+          ,conversationId: zernioConversationId || undefined
+          ,externalId: msg.senderId || undefined
         });
       }
       saveDBData(currentDB);

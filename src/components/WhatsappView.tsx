@@ -571,13 +571,17 @@ export default function WhatsappView({
                   if (existingIdx >= 0) {
                     const existing = updated[existingIdx];
                     if (existing.msg !== bChat.message || existing.time !== bChat.time || (!existing.avatar && bChat.avatar)) {
-                  updated[existingIdx] = {
+                    updated[existingIdx] = {
                     ...existing,
                     msg: bChat.message || existing.msg,
                     time: bChat.time || existing.time,
                     columnId: bChat.status || existing.columnId,
                     avatar: bChat.avatar || existing.avatar,
-                    name: (bChat.sender && bChat.sender !== 'Cliente WhatsApp' ? bChat.sender : existing.name)
+                      name: (bChat.sender && bChat.sender !== 'Cliente WhatsApp' ? bChat.sender : existing.name),
+                      channelId: bChat.channelId || existing.channelId,
+                      platform: bChat.platform || existing.platform,
+                      conversationId: bChat.conversationId || existing.conversationId,
+                      externalId: bChat.externalId || existing.externalId
                       };
                     }
                     if (typeof bChat.unread === 'number' && bChat.unread !== existing.unread) {
@@ -593,6 +597,10 @@ export default function WhatsappView({
                   unread: 1,
                   phone: bChat.phone,
                   avatar: bChat.avatar || undefined,
+                  channelId: bChat.channelId,
+                  platform: bChat.platform,
+                  conversationId: bChat.conversationId,
+                  externalId: bChat.externalId,
                   columnId: bChat.status || 'nuevo_contacto',
                   tags: ['WhatsApp Real'],
                   leadStatus: 'caliente' as const
@@ -1695,7 +1703,7 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
   ];
 
   // Dynamic CRM Chat States (con almacenamiento persistente local)
-  const [chats, setChats] = useState<{ id: string, name: string, time: string, msg: string, unread: number, phone: string, columnId: string, tags: string[], leadStatus?: 'frío' | 'tibio' | 'caliente', avatar?: string }[]>(() => {
+  const [chats, setChats] = useState<{ id: string, name: string, time: string, msg: string, unread: number, phone: string, columnId: string, tags: string[], leadStatus?: 'frío' | 'tibio' | 'caliente', avatar?: string, channelId?: string, platform?: string, conversationId?: string, externalId?: string }[]>(() => {
     try {
       if (isAdminDemo) return ADMIN_DEMO_CHATS;
       const saved = localStorage.getItem(chatsStorageKey);
@@ -3127,14 +3135,22 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
     // 2. Update preview message in chat list
     setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, msg: text, time: 'Ahora' } : c));
 
-    // 3. Dispatch real message via WhatsApp API / socket
+    // 3. Dispatch por Zernio para Instagram/Messenger y por WhatsApp para
+    // números tradicionales. La conversación conserva su ID externo.
     const activeChat = chats.find(c => c.id === activeChatId);
     if (activeChat && activeChat.phone) {
       try {
-        await fetch('/api/whatsapp/reply', {
+        const isSocial = activeChat.platform === 'instagram' || activeChat.platform === 'messenger' || activeChat.channelId === 'instagram';
+        await fetch(isSocial ? '/api/zernio/send-message' : '/api/whatsapp/reply', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+          body: JSON.stringify(isSocial ? {
+            platform: activeChat.platform || 'instagram',
+            conversationId: activeChat.conversationId,
+            recipientPhone: activeChat.externalId || activeChat.phone,
+            text,
+            accountId: activeChat.channelId
+          } : {
             phone: activeChat.phone,
             message: text,
             channelId: activeChat.channelId || userChannelId
@@ -4447,11 +4463,18 @@ ${parametersString}
                        </div>
                        <div className="flex-1 min-w-0 border-b border-gray-800 pb-2">
                           <div className="flex justify-between items-center mb-1">
-                             <h4 className="text-[#e9edef] text-sm truncate font-medium">{chat.name}</h4>
+                             <h4 className="text-[#e9edef] text-sm truncate font-medium flex items-center gap-1.5">
+                               {chat.platform === 'instagram' && <Instagram size={13} className="text-pink-400 shrink-0" />}
+                               {chat.platform === 'messenger' && <Facebook size={13} className="text-blue-400 shrink-0" />}
+                               {chat.name}
+                             </h4>
                              <span className={`text-xs ${chat.unread ? 'text-[#00a884]' : 'text-[#8696a0]'}`}>{formatColombiaTime(chat.time)}</span>
                           </div>
                           <div className="flex justify-between items-center">
-                             <p className="text-[#8696a0] text-sm truncate">{chat.msg}</p>
+                             <div className="min-w-0">
+                               <p className="text-[#8696a0] text-sm truncate">{chat.msg}</p>
+                               {(chat.platform === 'instagram' || chat.externalId) && <span className="text-[9px] text-pink-300/80 font-mono truncate block">ID: {chat.externalId || chat.phone}</span>}
+                             </div>
                              {chat.unread > 0 && <span className="bg-[#00a884] text-[#111b21] text-[10px] font-bold px-1.5 py-0.5 rounded-full">{chat.unread}</span>}
                           </div>
                        </div>
