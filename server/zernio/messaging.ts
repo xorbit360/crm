@@ -102,6 +102,8 @@ export async function enviarMensajeZernio(params: OutboundMessageParams): Promis
   // CASO A: Conversación existente (POST /v1/inbox/conversations/{id}/messages)
   if (params.conversationId) {
     const body: any = {};
+    if (params.accountId) body.accountId = params.accountId;
+    if (params.platform) body.platform = params.platform;
     if (params.template) {
       body.template = {
         elements: [

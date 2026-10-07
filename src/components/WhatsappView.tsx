@@ -990,11 +990,31 @@ export default function WhatsappView({
       }
       // Importar también conversaciones recientes de Instagram/Messenger
       // desde Zernio para recuperar hilos que llegaron antes de abrir el CRM.
-      await fetch('/api/zernio/history/import', {
+      const zernioHistoryResponse = await fetch('/api/zernio/history/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ maxPages: 5, isAiAgentActive: isBotActive })
       }).catch(() => undefined);
+      const zernioHistory: any = zernioHistoryResponse?.ok ? await zernioHistoryResponse.json().catch(() => null) : null;
+      if (Array.isArray(zernioHistory?.conversations)) {
+        setChats(previous => {
+          const next = [...previous];
+          zernioHistory.conversations.forEach((conversation: any) => {
+            if (String(conversation.platform).toLowerCase() !== 'instagram' && String(conversation.platform).toLowerCase() !== 'messenger') return;
+            const id = String(conversation.id || conversation.externalId);
+            const existing = next.find(chat => chat.conversationId === id || chat.externalId === conversation.externalId);
+            if (existing) {
+              existing.conversationId = id;
+              existing.platform = String(conversation.platform).toLowerCase();
+              existing.channelId = existing.platform;
+              existing.externalId = conversation.externalId || existing.externalId;
+            } else {
+              next.unshift({ id: `zernio-${id}`, name: conversation.externalId || 'Contacto Instagram', time: 'Reciente', msg: 'Conversación social sincronizada', unread: conversation.unreadCount || 0, phone: conversation.externalId || id, columnId: 'nuevo_contacto', tags: ['Instagram'], platform: String(conversation.platform).toLowerCase(), channelId: String(conversation.platform).toLowerCase(), conversationId: id, externalId: conversation.externalId });
+            }
+          });
+          return next;
+        });
+      }
       const unifiedState = await fetch('/api/backoffice/state').then(r => r.ok ? r.json() : null).catch(() => null);
       if (Array.isArray(unifiedState?.chats)) {
         setChats(previous => {
@@ -1718,7 +1738,7 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
   ];
 
   // Dynamic CRM Chat States (con almacenamiento persistente local)
-  const [chats, setChats] = useState<{ id: string, name: string, time: string, msg: string, unread: number, phone: string, columnId: string, tags: string[], leadStatus?: 'frío' | 'tibio' | 'caliente', avatar?: string, channelId?: string, platform?: string, conversationId?: string, externalId?: string }[]>(() => {
+  const [chats, setChats] = useState<{ id: string, name: string, time: string, msg: string, unread: number, phone: string, columnId: string, tags: string[], leadStatus?: 'frío' | 'tibio' | 'caliente', avatar?: string, channelId?: string, platform?: string, conversationId?: string, externalId?: string, accountId?: string }[]>(() => {
     try {
       if (isAdminDemo) return ADMIN_DEMO_CHATS;
       const saved = localStorage.getItem(chatsStorageKey);
@@ -3157,6 +3177,12 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
     if (activeChat && activeChat.phone) {
       try {
         const isSocial = activeChat.platform === 'instagram' || activeChat.platform === 'messenger' || activeChat.channelId === 'instagram';
+        let socialAccountId = activeChat.accountId;
+        if (isSocial && !socialAccountId) {
+          const accountsResponse = await fetch('/api/zernio/accounts');
+          const accountsPayload: any = accountsResponse.ok ? await accountsResponse.json() : null;
+          socialAccountId = accountsPayload?.data?.find((account: any) => account.platform === (activeChat.platform || 'instagram'))?.id;
+        }
         await fetch(isSocial ? '/api/zernio/send-message' : '/api/whatsapp/reply', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -3165,7 +3191,7 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
             conversationId: activeChat.conversationId,
             recipientPhone: activeChat.externalId || activeChat.phone,
             text,
-            accountId: activeChat.channelId
+            accountId: socialAccountId
           } : {
             phone: activeChat.phone,
             message: text,
