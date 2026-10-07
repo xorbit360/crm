@@ -568,9 +568,9 @@ export default function WhatsappView({
 
               const existingIdx = updated.findIndex(c => c.phone.replace(/\D/g, '') === cleanBPhone || c.id === bChat.id);
 
-              if (existingIdx >= 0) {
-                const existing = updated[existingIdx];
-                if (existing.msg !== bChat.message || existing.time !== bChat.time || (!existing.avatar && bChat.avatar)) {
+                  if (existingIdx >= 0) {
+                    const existing = updated[existingIdx];
+                    if (existing.msg !== bChat.message || existing.time !== bChat.time || (!existing.avatar && bChat.avatar)) {
                   updated[existingIdx] = {
                     ...existing,
                     msg: bChat.message || existing.msg,
@@ -578,8 +578,11 @@ export default function WhatsappView({
                     columnId: bChat.status || existing.columnId,
                     avatar: bChat.avatar || existing.avatar,
                     name: (bChat.sender && bChat.sender !== 'Cliente WhatsApp' ? bChat.sender : existing.name)
-                  };
-                }
+                      };
+                    }
+                    if (typeof bChat.unread === 'number' && bChat.unread !== existing.unread) {
+                      updated[existingIdx] = { ...updated[existingIdx], unread: bChat.unread };
+                    }
               } else {
                 // Nuevo chat recibido por WhatsApp real
                 const newChatObj = {
@@ -4383,7 +4386,22 @@ ${parametersString}
                       key={chat.id}
                       onClick={() => {
                         setActiveChatId(chat.id);
-                        setChats(prev => prev.map(c => c.id === chat.id ? { ...c, unread: 0 } : c));
+                        setChats(prev => {
+                          const next = prev.map(c => c.id === chat.id ? { ...c, unread: 0 } : c);
+                          // Persistir la lectura para que el contador sea consistente
+                          // entre dispositivos y sesiones del mismo usuario.
+                          fetch('/api/backoffice/state', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({ chats: next.map(item => ({
+                              id: item.id, sender: item.name, phone: item.phone,
+                              message: item.msg, time: item.time, status: item.columnId,
+                              avatar: item.avatar, unread: item.unread
+                            })) })
+                          }).catch(() => undefined);
+                          return next;
+                        });
                         setMobileView('chat');
                       }}
                       className={`flex items-center px-3 py-3 cursor-pointer hover:bg-[#202c33] transition-colors ${chat.id === activeChatId ? 'bg-[#2a3942]' : ''}`}

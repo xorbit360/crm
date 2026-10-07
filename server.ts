@@ -1796,6 +1796,11 @@ async function createServer() {
       if (!cleanPhone) return;
 
       const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const rawEvent: any = event.raw || {};
+      const rawData: any = rawEvent.data || {};
+      const profileAvatar = msg.raw?.sender?.profile_picture || msg.raw?.sender?.avatar ||
+        rawData.sender?.profile_picture || rawData.sender?.avatar || rawData.profile_picture || '';
+      const incomingMessage = msg.direction !== 'outgoing';
       if (!currentDB.messagesHistory) currentDB.messagesHistory = {};
       if (!currentDB.messagesHistory[cleanPhone]) currentDB.messagesHistory[cleanPhone] = [];
 
@@ -1842,6 +1847,8 @@ async function createServer() {
       if (chatIdx !== -1) {
         currentDB.chats[chatIdx].message = msg.text;
         currentDB.chats[chatIdx].time = nowStr;
+        if (profileAvatar) currentDB.chats[chatIdx].avatar = profileAvatar;
+        if (incomingMessage) currentDB.chats[chatIdx].unread = (Number(currentDB.chats[chatIdx].unread) || 0) + 1;
       } else {
         currentDB.chats.unshift({
           id: `CH-${Date.now().toString().slice(-4)}`,
@@ -1849,7 +1856,9 @@ async function createServer() {
           phone: `+${cleanPhone}`,
           message: msg.text,
           time: nowStr,
-          status: 'en_conversacion'
+          status: 'en_conversacion',
+          avatar: profileAvatar || undefined,
+          unread: incomingMessage ? 1 : 0
         });
       }
       saveDBData(currentDB);
