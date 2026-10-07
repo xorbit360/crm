@@ -297,7 +297,7 @@ export default function PedidosView() {
         if (storedClients) {
           try { clientList = JSON.parse(storedClients); } catch (e) {}
         }
-        const existingIdx = clientList.findIndex(c => 
+        const existingIdx = clientList.findIndex(c =>
           (c.name && c.name.toLowerCase() === formClientName.trim().toLowerCase()) ||
           (c.phone && formPhone && c.phone.replace(/\D/g, '') === formPhone.replace(/\D/g, ''))
         );
@@ -337,7 +337,7 @@ export default function PedidosView() {
   const handleDropiSync = () => {
     setIsSyncing(true);
     setSyncMessage('Conectando con la API de Dropi Latam...');
-    
+
     setTimeout(() => {
       setSyncMessage('Autenticando credenciales de MasterShop/Dropi...');
       setTimeout(() => {
@@ -370,11 +370,11 @@ export default function PedidosView() {
     const trackingStr = o.trackingCode || '';
     const idStr = o.id || '';
 
-    const matchesSearch = clientNameStr.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          productsStr.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          trackingStr.includes(searchTerm) || 
+    const matchesSearch = clientNameStr.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          productsStr.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          trackingStr.includes(searchTerm) ||
                           idStr.includes(searchTerm);
-    
+
     const matchesShipping = filterShipping === 'ALL' || o.shippingStatus === filterShipping;
     const matchesPayment = filterPayment === 'ALL' || o.paymentStatus === filterPayment;
 
@@ -400,7 +400,7 @@ export default function PedidosView() {
 
   return (
     <div className="space-y-6 animate-fade-in text-left">
-      
+
       {/* Header Banner */}
       <div className="bg-[#0c0c0c] border border-gray-800 rounded-2xl p-6 relative overflow-hidden">
         <div className="absolute top-0 right-0 p-6 opacity-5">
@@ -420,7 +420,7 @@ export default function PedidosView() {
       {/* Metrics Board */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="panel p-5 rounded-xl border border-gray-800 bg-[#111] flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+          <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
             <ShoppingCart size={20} />
           </div>
           <div>
@@ -481,8 +481,8 @@ export default function PedidosView() {
               {tab.icon}
               <span>{tab.label}</span>
               <span className={`px-1.5 py-0.5 text-[10px] font-mono rounded-full ${
-                isActive 
-                  ? 'bg-white/10 text-current' 
+                isActive
+                  ? 'bg-white/10 text-current'
                   : 'bg-[#1a1a1a] text-gray-500 border border-gray-800'
               }`}>
                 {tab.count}
@@ -494,8 +494,8 @@ export default function PedidosView() {
 
       {/* Sync State Loader */}
       {isSyncing && (
-        <div className="bg-indigo-950/20 border border-indigo-500/20 rounded-xl p-4 flex items-center gap-3 text-xs text-indigo-300">
-          <RefreshCw size={16} className="animate-spin shrink-0 text-indigo-400" />
+        <div className="bg-blue-950/20 border border-blue-500/20 rounded-xl p-4 flex items-center gap-3 text-xs text-blue-300">
+          <RefreshCw size={16} className="animate-spin shrink-0 text-blue-400" />
           <div className="flex-1 text-left">
             <p className="font-bold">Sincronizando con Dropi en tiempo real...</p>
             <p className="text-[10px] text-gray-400 mt-0.5">{syncMessage}</p>
@@ -517,14 +517,14 @@ export default function PedidosView() {
         </div>
 
         <div className="flex flex-wrap gap-2 w-full md:w-auto">
-          <button 
+          <button
             onClick={handleDropiSync}
             disabled={isSyncing}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-2 transition disabled:opacity-50"
+            className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-2 transition disabled:opacity-50"
           >
             <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} /> Sincronizar Dropi API
           </button>
-          <button 
+          <button
             onClick={handleOpenCreate}
             className="bg-gold text-black hover:bg-yellow-400 text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-2 transition"
           >
@@ -537,7 +537,7 @@ export default function PedidosView() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-[#111] p-4 rounded-xl border border-gray-800/60 text-xs text-gray-400">
         <div>
           <label className="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Filtrar por Estado de Envío</label>
-          <select 
+          <select
             value={filterShipping}
             onChange={(e) => setFilterShipping(e.target.value)}
             className="w-full bg-black border border-gray-800 rounded-lg p-2 text-white focus:border-gold outline-none"
@@ -552,7 +552,7 @@ export default function PedidosView() {
 
         <div>
           <label className="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Filtrar por Estado de Pago</label>
-          <select 
+          <select
             value={filterPayment}
             onChange={(e) => setFilterPayment(e.target.value)}
             className="w-full bg-black border border-gray-800 rounded-lg p-2 text-white focus:border-gold outline-none"
@@ -653,7 +653,7 @@ export default function PedidosView() {
                         }`}>
                           {order.shippingStatus}
                         </span>
-                        <button 
+                        <button
                           onClick={() => setActiveTracking(order.trackingCode)}
                           className="font-mono text-[10px] text-sky-400 hover:underline flex items-center gap-1 cursor-pointer bg-transparent border-none"
                         >
@@ -663,7 +663,7 @@ export default function PedidosView() {
                     </td>
                     <td className="p-4 text-center">
                       <div className="flex items-center justify-center gap-1.5">
-                        <button 
+                        <button
                           onClick={() => {
                             setSelectedTemplateOrder(order);
                             setTemplateResult(null);
@@ -673,14 +673,14 @@ export default function PedidosView() {
                         >
                           <MessageSquare size={13} />
                         </button>
-                        <button 
+                        <button
                           onClick={() => handleOpenEdit(order)}
                           className="p-1.5 bg-gray-800 hover:bg-gray-750 text-gray-400 hover:text-white rounded transition"
                           title="Editar"
                         >
                           <Edit3 size={13} />
                         </button>
-                        <button 
+                        <button
                           onClick={() => handleDeleteOrder(order.id)}
                           className="p-1.5 bg-red-950/20 hover:bg-red-900/20 text-red-400 hover:text-red-300 rounded border border-red-900/10 transition"
                           title="Eliminar"
@@ -707,7 +707,7 @@ export default function PedidosView() {
       {isFormOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-[#0c0c0c] border border-gray-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-scale-up relative">
-            <button 
+            <button
               onClick={() => setIsFormOpen(false)}
               className="absolute top-4 right-4 text-gray-500 hover:text-white transition"
             >
@@ -725,8 +725,8 @@ export default function PedidosView() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-[10px] uppercase font-bold text-gray-500 block mb-1">Nombre del Cliente</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     required
                     placeholder="ej. Carlos Ruiz"
                     value={formClientName}
@@ -736,8 +736,8 @@ export default function PedidosView() {
                 </div>
                 <div>
                   <label className="text-[10px] uppercase font-bold text-gray-500 block mb-1">Teléfono / WhatsApp</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     required
                     placeholder="ej. +57 315 888 9900"
                     value={formPhone}
@@ -749,8 +749,8 @@ export default function PedidosView() {
 
               <div>
                 <label className="text-[10px] uppercase font-bold text-gray-500 block mb-1">Detalle Productos (Cantidad y Nombre)</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   required
                   placeholder="ej. 1x Aspiradora Robot CleanMax"
                   value={formProducts}
@@ -762,8 +762,8 @@ export default function PedidosView() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-[10px] uppercase font-bold text-gray-500 block mb-1">Total Pedido (COP)</label>
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     required
                     placeholder="ej. 350000"
                     value={formTotal}
@@ -773,7 +773,7 @@ export default function PedidosView() {
                 </div>
                 <div>
                   <label className="text-[10px] uppercase font-bold text-gray-500 block mb-1">Canal Origen</label>
-                  <select 
+                  <select
                     value={formSource}
                     onChange={(e) => setFormSource(e.target.value)}
                     className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-gold"
@@ -790,7 +790,7 @@ export default function PedidosView() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-[10px] uppercase font-bold text-gray-500 block mb-1">Estado de Pago</label>
-                  <select 
+                  <select
                     value={formPayment}
                     onChange={(e) => setFormPayment(e.target.value)}
                     className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-gold"
@@ -802,7 +802,7 @@ export default function PedidosView() {
                 </div>
                 <div>
                   <label className="text-[10px] uppercase font-bold text-gray-500 block mb-1">Estado de Envío (Logística)</label>
-                  <select 
+                  <select
                     value={formShipping}
                     onChange={(e) => setFormShipping(e.target.value)}
                     className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-gold"
@@ -819,8 +819,8 @@ export default function PedidosView() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-[10px] uppercase font-bold text-gray-500 block mb-1">Código de Rastreo (Dropi ID)</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     placeholder="ej. CO-DRP-8823192"
                     value={formTracking}
                     onChange={(e) => setFormTracking(e.target.value)}
@@ -829,8 +829,8 @@ export default function PedidosView() {
                 </div>
                 <div>
                   <label className="text-[10px] uppercase font-bold text-gray-500 block mb-1">Fecha de Pedido</label>
-                  <input 
-                    type="date" 
+                  <input
+                    type="date"
                     value={formDate}
                     onChange={(e) => setFormDate(e.target.value)}
                     className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-gold"
@@ -840,7 +840,7 @@ export default function PedidosView() {
 
               <div>
                 <label className="text-[10px] uppercase font-bold text-gray-500 block mb-1">Estado de Confirmación (Flujo de Ventas)</label>
-                <select 
+                <select
                   value={formConfirmationStatus}
                   onChange={(e) => setFormConfirmationStatus(e.target.value as 'Confirmado' | 'No Confirmado')}
                   className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-gold"
@@ -851,15 +851,15 @@ export default function PedidosView() {
               </div>
 
               <div className="flex gap-2 pt-4 border-t border-gray-850">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setIsFormOpen(false)}
                   className="flex-1 bg-gray-900 hover:bg-gray-850 text-gray-400 hover:text-white transition font-bold py-2.5 rounded-lg text-xs"
                 >
                   Cancelar
                 </button>
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   className="flex-1 bg-gold text-black hover:bg-yellow-400 transition font-bold py-2.5 rounded-lg text-xs"
                 >
                   {isEditMode ? 'Guardar Cambios' : 'Registrar Pedido'}
@@ -874,7 +874,7 @@ export default function PedidosView() {
       {activeTracking && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-[#0c0c0c] border border-gray-800 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl animate-scale-up relative">
-            <button 
+            <button
               onClick={() => setActiveTracking(null)}
               className="absolute top-4 right-4 text-gray-500 hover:text-white transition"
             >
@@ -890,7 +890,7 @@ export default function PedidosView() {
 
             <div className="p-6 space-y-6 text-left">
               <div className="relative border-l-2 border-gray-800 pl-6 space-y-6">
-                
+
                 {/* Step 4 */}
                 <div className="relative">
                   <div className={`absolute -left-[31px] top-0 w-4 h-4 rounded-full border-2 bg-black flex items-center justify-center ${
@@ -925,7 +925,7 @@ export default function PedidosView() {
                 <div className="relative">
                   <div className={`absolute -left-[31px] top-0 w-4 h-4 rounded-full border-2 bg-black flex items-center justify-center ${
                     ['Bodega Medellín', 'En camino', 'Entregado'].includes(orders.find(o => o.trackingCode === activeTracking)?.shippingStatus || '')
-                      ? 'border-indigo-500 bg-indigo-500/20 text-indigo-500'
+                      ? 'border-blue-500 bg-blue-500/20 text-blue-500'
                       : 'border-gray-800 text-gray-600'
                   }`}>
                     {['Bodega Medellín', 'En camino', 'Entregado'].includes(orders.find(o => o.trackingCode === activeTracking)?.shippingStatus || '') && <CheckCircle2 size={10} />}
@@ -949,7 +949,7 @@ export default function PedidosView() {
 
               </div>
 
-              <button 
+              <button
                 onClick={() => setActiveTracking(null)}
                 className="w-full bg-gray-950 hover:bg-gray-900 border border-gray-800 text-gray-300 font-bold py-2 rounded-xl text-xs transition mt-2"
               >

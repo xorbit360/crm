@@ -152,7 +152,7 @@ export function setupZernioRoutes(app: express.Express, onIncomingMessage?: (msg
     const dynamicUrl = `${protocol}://${host}/api/zernio/webhook`;
     const defaultUrl = process.env.APP_BASE_URL 
       ? `${process.env.APP_BASE_URL.replace(/\/+$/, '')}/api/zernio/webhook`
-      : 'https://expert360.ai.studio/api/zernio/webhook';
+      : 'https://crm.xorbit360.com/api/zernio/webhook';
     const targetUrl = req.body.url || defaultUrl || dynamicUrl;
 
     const result = await registerOrUpdateZernioWebhook(targetUrl, req.body.name);

@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { 
-  Users, 
-  DollarSign, 
-  Clock, 
-  Copy, 
-  Check, 
-  UserPlus, 
-  Wallet, 
-  X, 
+import {
+  Users,
+  DollarSign,
+  Clock,
+  Copy,
+  Check,
+  UserPlus,
+  Wallet,
+  X,
   AlertCircle,
   CheckCircle2,
   Layers,
@@ -154,8 +154,8 @@ export default function ReferidosView({ currentUser }: { currentUser?: any }) {
     showNotification('¡Solicitud de retiro enviada con éxito!');
   };
 
-  const filteredReferrals = selectedLevelTab === 'all' 
-    ? referrals 
+  const filteredReferrals = selectedLevelTab === 'all'
+    ? referrals
     : referrals.filter(r => r.level === selectedLevelTab);
 
   const totalCommissions = referrals.reduce((sum, r) => sum + (r.commissionEarned || 0), 0);
@@ -170,12 +170,12 @@ export default function ReferidosView({ currentUser }: { currentUser?: any }) {
 
   return (
     <div className="w-full max-w-7xl mx-auto space-y-6 pb-12 animate-fade-in text-gray-100">
-      
+
       {/* Toast Notification */}
       {toast && (
         <div className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 border text-sm font-semibold animate-scale-up ${
-          toast.error 
-            ? 'bg-red-950/90 text-red-300 border-red-800/80 shadow-red-950/50' 
+          toast.error
+            ? 'bg-red-950/90 text-red-300 border-red-800/80 shadow-red-950/50'
             : 'bg-emerald-950/90 text-emerald-300 border-emerald-700/80 shadow-emerald-950/50'
         }`}>
           {toast.error ? <AlertCircle size={18} /> : <CheckCircle2 size={18} />}
@@ -215,7 +215,7 @@ export default function ReferidosView({ currentUser }: { currentUser?: any }) {
 
       {/* Top 4 Metrics Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        
+
         {/* Card 1: Total Referidos */}
         <div className="bg-[#121418] border border-gray-800/90 rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden group hover:border-gray-700 transition">
           <div className="flex items-center justify-between">
@@ -305,7 +305,7 @@ export default function ReferidosView({ currentUser }: { currentUser?: any }) {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-          
+
           {/* Level 1 */}
           <div className="bg-black/50 border border-emerald-500/40 rounded-xl p-3.5 text-center space-y-1">
             <div className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Nivel 1 (Directos)</div>
@@ -434,7 +434,7 @@ export default function ReferidosView({ currentUser }: { currentUser?: any }) {
         <h2 className="text-lg font-bold text-white mb-8">Cómo funciona</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-          
+
           {/* Step 1 */}
           <div className="flex flex-col items-center space-y-3.5">
             <div className="w-16 h-16 rounded-full bg-emerald-950/60 border border-emerald-800/50 flex items-center justify-center text-emerald-400 shadow-lg shadow-emerald-950/40">
@@ -485,7 +485,7 @@ export default function ReferidosView({ currentUser }: { currentUser?: any }) {
                   <p className="text-xs text-gray-400">Balance disponible: <span className="text-emerald-400 font-bold">${balance.available} USD</span></p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setShowWithdrawModal(false)}
                 className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition cursor-pointer"
               >

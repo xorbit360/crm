@@ -30,7 +30,7 @@ const initialTickets: Ticket[] = [
     description: 'Generé el token permanente en Meta for Developers pero me sale error HTTP 403 al recibir mensajes en vivo.',
     messages: [
       { sender: 'user', name: 'Oscar Molina', text: 'Generé el token permanente en Meta for Developers pero me sale error HTTP 403 al recibir mensajes en vivo.', time: '14:30' },
-      { sender: 'agent', name: 'Soporte Agente 360°', text: '¡Hola Oscar! Revisa que la URL del Webhook termine en /api/whatsapp/webhook y contenga la clave de verificación configurada.', time: '14:45' }
+      { sender: 'agent', name: 'Soporte Agente Xorbit 360', text: '¡Hola Oscar! Revisa que la URL del Webhook termine en /api/whatsapp/webhook y contenga la clave de verificación configurada.', time: '14:45' }
     ]
   },
   {
@@ -41,10 +41,10 @@ const initialTickets: Ticket[] = [
     status: 'resuelto',
     createdAt: '2026-07-25 09:12',
     updatedAt: '2026-07-25 11:00',
-    description: 'Apunté ofertas.midominio.com hacia cname.expert360.ai, quisiera confirmar si el certificado SSL ya está activo.',
+    description: 'Apunté ofertas.midominio.com hacia crm.xorbit360.com, quisiera confirmar si el certificado SSL ya está activo.',
     messages: [
-      { sender: 'user', name: 'Laura Gómez', text: 'Apunté ofertas.midominio.com hacia cname.expert360.ai, quisiera confirmar si el certificado SSL ya está activo.', time: '09:12' },
-      { sender: 'admin', name: 'Soporte Técnico Expert 360°', text: 'Verificación completada. Tu certificado SSL Let\'s Encrypt de 256-bit fue emitido con éxito.', time: '11:00' }
+      { sender: 'user', name: 'Laura Gómez', text: 'Apunté ofertas.midominio.com hacia crm.xorbit360.com, quisiera confirmar si el certificado SSL ya está activo.', time: '09:12' },
+      { sender: 'admin', name: 'Soporte Técnico Xorbit 360', text: 'Verificación completada. Tu certificado SSL Let\'s Encrypt de 256-bit fue emitido con éxito.', time: '11:00' }
     ]
   }
 ];
@@ -197,7 +197,7 @@ export default function SoporteTicketsView() {
 
                     <h4 className="font-bold text-white text-xs line-clamp-1 mb-1">{t.subject}</h4>
                     <p className="text-[11px] text-gray-400 line-clamp-2">{t.description}</p>
-                    
+
                     <div className="mt-3 pt-2 border-t border-gray-800/60 flex items-center justify-between text-[10px] text-gray-500">
                       <span>Categoría: <strong className="text-gray-300 capitalize">{t.category}</strong></span>
                       <span>{t.updatedAt}</span>

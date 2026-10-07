@@ -20,10 +20,10 @@ export default function LoginView({ onLogin, onGoToRegister }: LoginViewProps) {
     const normUser = username.trim().toLowerCase();
 
     // Hardcoded superadmin login
-    if ((normUser === 'admin' || normUser === 'oscar@expert360.ai') && password === 'Colombia1') {
+    if ((normUser === 'admin' || normUser === 'admin@xorbit360.com') && password === 'Colombia1') {
       onLogin({
         name: 'Oscar Molina',
-        email: 'oscar@expert360.ai',
+        email: 'admin@xorbit360.com',
         role: 'superadmin',
         username: 'admin',
         phone: '573192392853'
@@ -68,14 +68,14 @@ export default function LoginView({ onLogin, onGoToRegister }: LoginViewProps) {
       <div className="w-full max-w-md panel p-8 rounded-2xl relative overflow-hidden group">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-gold-600 via-gold to-gold-400"></div>
         <div className="absolute -top-32 -right-32 w-64 h-64 bg-gold/10 rounded-full blur-3xl pointer-events-none"></div>
-        
+
         <div className="relative z-10">
           <div className="flex justify-center mb-6">
             {whiteLabel.logoUrl ? (
-              <img 
-                src={whiteLabel.logoUrl} 
-                alt="Logo" 
-                className="w-16 h-16 rounded-xl object-contain bg-black/60 border border-gold/30 p-1 shadow-lg shadow-gold/10" 
+              <img
+                src={whiteLabel.logoUrl}
+                alt="Logo"
+                className="w-16 h-16 rounded-xl object-contain bg-black/60 border border-gold/30 p-1 shadow-lg shadow-gold/10"
               />
             ) : (
               <div className="w-16 h-16 rounded-xl bg-gold flex items-center justify-center font-bold text-black font-display shadow-lg shadow-gold/20 text-3xl">
@@ -83,13 +83,13 @@ export default function LoginView({ onLogin, onGoToRegister }: LoginViewProps) {
               </div>
             )}
           </div>
-          
+
           <h2 className="text-3xl font-display text-white text-center mb-2">Bienvenido</h2>
           <p className="text-gray-400 text-center mb-8 text-sm">
-            Ingresa a tu plataforma {whiteLabel.brandName || 'Expert 360°'}
+            Ingresa a tu plataforma {whiteLabel.brandName || 'Xorbit 360'}
           </p>
 
-          <button 
+          <button
             type="button"
             onClick={handleGoogleLogin}
             className="w-full bg-white text-black font-bold py-3 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center gap-3 mb-6"
@@ -115,13 +115,13 @@ export default function LoginView({ onLogin, onGoToRegister }: LoginViewProps) {
                 {error}
               </div>
             )}
-            
+
             <div className="space-y-2">
               <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Usuario</label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="w-full bg-black border border-gray-800 rounded-lg pl-10 pr-4 py-3 text-sm text-gray-200 focus:border-gold focus:outline-none transition-colors"
@@ -134,8 +134,8 @@ export default function LoginView({ onLogin, onGoToRegister }: LoginViewProps) {
               <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Contraseña</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-                <input 
-                  type="password" 
+                <input
+                  type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full bg-black border border-gray-800 rounded-lg pl-10 pr-4 py-3 text-sm text-gray-200 focus:border-gold focus:outline-none transition-colors"
@@ -144,8 +144,8 @@ export default function LoginView({ onLogin, onGoToRegister }: LoginViewProps) {
               </div>
             </div>
 
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               className="w-full bg-gold text-black font-bold py-3 rounded-lg hover:bg-yellow-400 transition-colors flex items-center justify-center gap-2 mt-4"
             >
               Ingresar al Dashboard <ArrowRight size={18} />

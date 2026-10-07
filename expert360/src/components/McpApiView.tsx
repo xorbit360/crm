@@ -1,25 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Terminal, 
-  Code2, 
-  Webhook, 
-  Key, 
-  Copy, 
-  Check, 
-  Play, 
-  RefreshCw, 
-  ExternalLink, 
-  ShieldCheck, 
-  CheckCircle2, 
-  AlertCircle, 
-  Send, 
-  Globe, 
-  Cpu, 
-  BookOpen, 
-  Layers, 
-  Activity, 
-  Trash2, 
-  Plus, 
+import {
+  Terminal,
+  Code2,
+  Webhook,
+  Key,
+  Copy,
+  Check,
+  Play,
+  RefreshCw,
+  ExternalLink,
+  ShieldCheck,
+  CheckCircle2,
+  AlertCircle,
+  Send,
+  Globe,
+  Cpu,
+  BookOpen,
+  Layers,
+  Activity,
+  Trash2,
+  Plus,
   ArrowRight,
   Database,
   Smartphone
@@ -29,10 +29,10 @@ import { getEffectiveDomain, getCachedWhiteLabel } from '../lib/whitelabel';
 export default function McpApiView() {
   const [activeTab, setActiveTab] = useState<'mcp' | 'api' | 'webhooks'>('mcp');
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  
+
   // White-label & domain context
-  const [currentDomain, setCurrentDomain] = useState<string>('https://expert360.ai.studio');
-  
+  const [currentDomain, setCurrentDomain] = useState<string>('https://crm.xorbit360.com');
+
   useEffect(() => {
     const domain = getEffectiveDomain();
     setCurrentDomain(domain);
@@ -241,9 +241,9 @@ export default function McpApiView() {
   const [webhookUrl, setWebhookUrl] = useState('https://webhook.site/demo-endpoint');
   const [webhookSecret, setWebhookSecret] = useState('whsec_exp360_' + Math.random().toString(36).substring(2, 10));
   const [subscribedEvents, setSubscribedEvents] = useState<string[]>([
-    'order.created', 
-    'order.updated', 
-    'customer.new', 
+    'order.created',
+    'order.updated',
+    'customer.new',
     'whatsapp.message_received'
   ]);
   const [isDispatchingWebhook, setIsDispatchingWebhook] = useState(false);
@@ -354,7 +354,7 @@ export default function McpApiView() {
   // Cursor / Claude config sample
   const claudeConfigSnippet = JSON.stringify({
     mcpServers: {
-      expert360: {
+      xorbit360: {
         url: `${currentDomain}/api/mcp/sse`,
         headers: {
           Authorization: `Bearer ${apiKeys[0]?.key || 'exp_live_TU_API_KEY'}`
@@ -365,7 +365,7 @@ export default function McpApiView() {
 
   const cursorConfigSnippet = JSON.stringify({
     mcpServers: {
-      expert360: {
+      xorbit360: {
         type: "sse",
         url: `${currentDomain}/api/mcp/sse`,
         headers: {
@@ -377,19 +377,19 @@ export default function McpApiView() {
 
   return (
     <div className="space-y-8 w-full pb-16 animate-fade-in text-gray-100">
-      
+
       {/* Header Banner */}
-      <div className="panel p-6 sm:p-8 rounded-2xl border border-gray-800 bg-gradient-to-r from-gray-900 via-gray-900/95 to-purple-950/30 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
+      <div className="panel p-6 sm:p-8 rounded-2xl border border-gray-800 bg-gradient-to-r from-gray-900 via-gray-900/95 to-blue-950/30 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <div className="p-3.5 rounded-2xl bg-purple-500/10 text-purple-400 border border-purple-500/20 shadow-lg shadow-purple-500/5 shrink-0">
+            <div className="p-3.5 rounded-2xl bg-blue-500/10 text-blue-400 border border-blue-500/20 shadow-lg shadow-blue-500/5 shrink-0">
               <Terminal size={32} />
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                <span className="text-xs uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-md bg-blue-500/20 text-blue-300 border border-blue-500/30">
                   Model Context Protocol & API v1
                 </span>
                 <span className="text-xs text-emerald-400 flex items-center gap-1">
@@ -414,7 +414,7 @@ export default function McpApiView() {
               rel="noopener noreferrer"
               className="px-3.5 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-300 border border-gray-700 text-xs font-semibold transition flex items-center gap-1.5"
             >
-              <Cpu size={14} className="text-purple-400" />
+              <Cpu size={14} className="text-blue-400" />
               <span>Ver Manifest MCP</span>
               <ExternalLink size={12} />
             </a>
@@ -428,8 +428,8 @@ export default function McpApiView() {
           onClick={() => setActiveTab('mcp')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
             activeTab === 'mcp'
-              ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/20 font-bold'
-              : 'text-purple-400 hover:text-white hover:bg-purple-950/30 border border-purple-500/20'
+              ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20 font-bold'
+              : 'text-blue-400 hover:text-white hover:bg-blue-950/30 border border-blue-500/20'
           }`}
         >
           <Cpu size={16} />
@@ -464,13 +464,13 @@ export default function McpApiView() {
       {/* TAB 1: MODEL CONTEXT PROTOCOL (MCP) */}
       {activeTab === 'mcp' && (
         <div className="space-y-8 animate-fade-in">
-          
+
           {/* Quick MCP Info Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="panel p-5 rounded-2xl border border-gray-800 bg-gray-900/60 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-purple-400">SSE Endpoint</span>
-                <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 text-[10px] font-mono">GET</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-blue-400">SSE Endpoint</span>
+                <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 text-[10px] font-mono">GET</span>
               </div>
               <p className="font-mono text-xs text-white break-all bg-gray-950 p-2 rounded-lg border border-gray-800">
                 {currentDomain}/api/mcp/sse
@@ -520,18 +520,18 @@ export default function McpApiView() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-800 pb-4">
               <div>
                 <h2 className="text-lg font-bold font-display text-white flex items-center gap-2">
-                  <Terminal size={20} className="text-purple-400" />
+                  <Terminal size={20} className="text-blue-400" />
                   Conexión con Claude Desktop & Cursor
                 </h2>
                 <p className="text-xs text-gray-400 mt-1">
-                  Agrega este bloque de configuración en tu archivo <code className="text-purple-300">claude_desktop_config.json</code> o en los ajustes de MCP de Cursor.
+                  Agrega este bloque de configuración en tu archivo <code className="text-blue-300">claude_desktop_config.json</code> o en los ajustes de MCP de Cursor.
                 </p>
               </div>
 
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => copyToClipboard(claudeConfigSnippet, 'claude_cfg')}
-                  className="px-3 py-1.5 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 text-xs font-semibold transition flex items-center gap-1.5"
+                  className="px-3 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 text-xs font-semibold transition flex items-center gap-1.5"
                 >
                   {copiedId === 'claude_cfg' ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
                   <span>{copiedId === 'claude_cfg' ? 'Copiado' : 'Copiar Config Claude'}</span>
@@ -556,7 +556,7 @@ export default function McpApiView() {
           <div className="panel p-6 sm:p-8 rounded-2xl border border-gray-800 bg-gray-900/80 space-y-6">
             <div>
               <h2 className="text-lg font-bold font-display text-white flex items-center gap-2">
-                <Play size={20} className="text-purple-400" />
+                <Play size={20} className="text-blue-400" />
                 Ejecutor y Probador de Herramientas MCP en Vivo
               </h2>
               <p className="text-xs text-gray-400 mt-1">
@@ -565,7 +565,7 @@ export default function McpApiView() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              
+
               {/* Tool list */}
               <div className="lg:col-span-4 space-y-2">
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block">
@@ -578,12 +578,12 @@ export default function McpApiView() {
                       onClick={() => handleMcpToolSelect(tool.name)}
                       className={`w-full text-left p-3 rounded-xl transition border cursor-pointer ${
                         selectedMcpTool === tool.name
-                          ? 'bg-purple-600/20 border-purple-500/40 text-white shadow-sm'
+                          ? 'bg-blue-600/20 border-blue-500/40 text-white shadow-sm'
                           : 'bg-gray-950/60 border-gray-800 text-gray-400 hover:text-white hover:bg-gray-900'
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-mono text-xs font-bold text-purple-300">{tool.name}</span>
+                        <span className="font-mono text-xs font-bold text-blue-300">{tool.name}</span>
                         <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-gray-800 text-gray-400">
                           {tool.category}
                         </span>
@@ -601,7 +601,7 @@ export default function McpApiView() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-bold text-gray-300 uppercase tracking-wider">
-                      Argumentos JSON para <span className="font-mono text-purple-400">{selectedMcpTool}</span>:
+                      Argumentos JSON para <span className="font-mono text-blue-400">{selectedMcpTool}</span>:
                     </label>
                     <span className="text-[11px] text-gray-500">Parámetros del schema</span>
                   </div>
@@ -610,7 +610,7 @@ export default function McpApiView() {
                     rows={6}
                     value={mcpArguments}
                     onChange={(e) => setMcpArguments(e.target.value)}
-                    className="w-full bg-gray-950 border border-gray-800 rounded-xl p-3 text-xs font-mono text-gray-200 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
+                    className="w-full bg-gray-950 border border-gray-800 rounded-xl p-3 text-xs font-mono text-gray-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
                   />
 
                   <div className="flex items-center justify-between pt-1">
@@ -625,7 +625,7 @@ export default function McpApiView() {
                     <button
                       onClick={executeMcpTool}
                       disabled={isExecutingMcp}
-                      className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition shadow-lg shadow-purple-600/20 flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                      className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition shadow-lg shadow-blue-600/20 flex items-center gap-2 cursor-pointer disabled:opacity-50"
                     >
                       {isExecutingMcp ? (
                         <>
@@ -674,7 +674,7 @@ export default function McpApiView() {
       {/* TAB 2: DOCUMENTACIÓN REST API v1 */}
       {activeTab === 'api' && (
         <div className="space-y-8 animate-fade-in">
-          
+
           {/* API Keys Management Box */}
           <div className="panel p-6 sm:p-8 rounded-2xl border border-gray-800 bg-gray-900/80 space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-800 pb-4">
@@ -892,7 +892,7 @@ export default function McpApiView() {
       {/* TAB 3: WEBHOOKS DE LA PLATAFORMA */}
       {activeTab === 'webhooks' && (
         <div className="space-y-8 animate-fade-in">
-          
+
           {/* Outbound Webhooks Config */}
           <div className="panel p-6 sm:p-8 rounded-2xl border border-gray-800 bg-gray-900/80 space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-800 pb-4">
@@ -1023,7 +1023,7 @@ export default function McpApiView() {
             )}
           </div>
 
-          {/* Inbound Webhooks (Receiving data into Expert 360) */}
+          {/* Inbound Webhooks (Receiving data into Xorbit 360) */}
           <div className="panel p-6 sm:p-8 rounded-2xl border border-gray-800 bg-gray-900/80 space-y-4">
             <div className="flex items-center justify-between border-b border-gray-800 pb-4">
               <div>
@@ -1032,7 +1032,7 @@ export default function McpApiView() {
                   Webhooks Entrantes (Inbound - Para recibir datos externos)
                 </h3>
                 <p className="text-xs text-gray-400 mt-1">
-                  Usa esta URL para que pasarelas de pago (Stripe, Mercado Pago, Wompi), formularios (Typeform) o tiendas (Shopify) envíen pedidos a Expert 360.
+                  Usa esta URL para que pasarelas de pago (Stripe, Mercado Pago, Wompi), formularios (Typeform) o tiendas (Shopify) envíen pedidos a Xorbit 360.
                 </p>
               </div>
 

@@ -1,31 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Package, 
-  Plus, 
-  Image as ImageIcon, 
-  Sparkles, 
-  Trash2, 
-  Check, 
-  X, 
-  Search, 
-  Download, 
-  Upload, 
-  ArrowLeft, 
-  CheckCircle2, 
-  PauseCircle, 
-  DollarSign, 
-  Puzzle, 
-  Zap, 
-  FileText, 
-  Edit3, 
-  HelpCircle, 
-  Smile, 
-  Paperclip, 
-  Layers, 
-  Bot, 
-  Truck, 
-  Sliders, 
-  ChevronRight, 
+import {
+  Package,
+  Plus,
+  Image as ImageIcon,
+  Sparkles,
+  Trash2,
+  Check,
+  X,
+  Search,
+  Download,
+  Upload,
+  ArrowLeft,
+  CheckCircle2,
+  PauseCircle,
+  DollarSign,
+  Puzzle,
+  Zap,
+  FileText,
+  Edit3,
+  HelpCircle,
+  Smile,
+  Paperclip,
+  Layers,
+  Bot,
+  Truck,
+  Sliders,
+  ChevronRight,
   AlertTriangle,
   RotateCcw,
   Copy,
@@ -65,24 +65,61 @@ export interface CatalogProduct {
   createdAt: string;
 }
 
+const CATALOG_STORAGE_KEY = 'xorbit_catalog_v2';
+const LEGACY_CATALOG_STORAGE_KEY = 'crm_products_v2';
+
+const normalizeCatalogProduct = (product: any): CatalogProduct => ({
+  id: String(product?.id || product?.sku || `PROD-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`),
+  name: String(product?.name || 'Producto sin nombre'),
+  basicDescription: String(product?.basicDescription || product?.description || ''),
+  features: String(product?.features || ''),
+  problemsSolved: String(product?.problemsSolved || ''),
+  benefits: String(product?.benefits || ''),
+  differentiators: String(product?.differentiators || ''),
+  price: Number(product?.price ?? product?.basePrice ?? 0) || 0,
+  offerPrice: Number(product?.offerPrice ?? product?.price ?? product?.basePrice ?? 0) || 0,
+  stock: product?.stock ?? 'Sin control',
+  isActive: product?.isActive !== false,
+  isAvailableForBot: product?.isAvailableForBot !== false,
+  showInBotList: product?.showInBotList !== false,
+  productType: product?.productType === 'variantes' ? 'variantes' : 'simple',
+  isPack: Boolean(product?.isPack),
+  shippingProvider: String(product?.shippingProvider || 'Ninguno (no sincronizar pedidos)'),
+  shippingType: ['gratis', 'fijo', 'condicional'].includes(product?.shippingType) ? product.shippingType : 'gratis',
+  fixedShippingCost: Number(product?.fixedShippingCost ?? 0) || 0,
+  quantityOffers: Array.isArray(product?.quantityOffers) ? product.quantityOffers : [],
+  image: product?.image || undefined,
+  gallery: Array.isArray(product?.gallery) ? product.gallery : [],
+  welcomeMessage: String(product?.welcomeMessage || ''),
+  welcomeMedia: Array.isArray(product?.welcomeMedia) ? product.welcomeMedia : [],
+  entryQuestion: String(product?.entryQuestion || ''),
+  dataCollectionMode: product?.dataCollectionMode === 'single_message' ? 'single_message' : 'step_by_step',
+  botPersonality: String(product?.botPersonality || ''),
+  rules: Array.isArray(product?.rules) ? product.rules : [],
+  creationMode: product?.creationMode === 'prompt' ? 'prompt' : 'guiado',
+  customPrompt: String(product?.customPrompt || ''),
+  createdAt: String(product?.createdAt || new Date().toISOString()),
+});
+
 export default function CatalogoView() {
   const [products, setProducts] = useState<CatalogProduct[]>(() => {
     try {
-      const saved = localStorage.getItem('crm_products_v2');
+      const saved = localStorage.getItem(CATALOG_STORAGE_KEY) || localStorage.getItem(LEGACY_CATALOG_STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed)) return parsed.map(normalizeCatalogProduct);
       }
     } catch (_) {}
     return [];
   });
+  const [isCatalogHydrated, setIsCatalogHydrated] = useState(false);
 
   // Navigation & View States
   // 'list' | 'mode_select' | 'wizard_step1' | 'wizard_step2' | 'wizard_step3' | 'prompt_mode'
   const [viewState, setViewState] = useState<'list' | 'mode_select' | 'wizard_step1' | 'wizard_step2' | 'wizard_step3' | 'prompt_mode'>('list');
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
   const [hasDismissedOnboarding, setHasDismissedOnboarding] = useState(() => {
-    return localStorage.getItem('EXPERT360_CATALOG_ONBOARDING_DISMISSED') === 'true';
+    return localStorage.getItem('XORBIT 360_CATALOG_ONBOARDING_DISMISSED') === 'true';
   });
 
   // Filter & Search
@@ -110,7 +147,7 @@ export default function CatalogoView() {
   const [formQuantityOffers, setFormQuantityOffers] = useState<Array<{ id: string; qty: number; price: number; label: string }>>([]);
   const [formImage, setFormImage] = useState<string>('');
   const [formGallery, setFormGallery] = useState<string[]>([]);
-  
+
   // Step 2 States
   const [formWelcomeMessage, setFormWelcomeMessage] = useState('');
   const [formWelcomeMedia, setFormWelcomeMedia] = useState<string[]>([]);
@@ -152,10 +189,36 @@ export default function CatalogoView() {
   const [dropiWorkMode, setDropiWorkMode] = useState<'guiado' | 'prompt'>('guiado');
   const [isImportingDropi, setIsImportingDropi] = useState(false);
 
-  // Save to LocalStorage whenever products update
+  // El servidor es la fuente única del catálogo para WhatsApp y los demás módulos.
   useEffect(() => {
+    let cancelled = false;
+
+    const loadCatalog = async () => {
+      try {
+        const response = await fetch('/api/backoffice/state');
+        if (!response.ok) throw new Error('No fue posible cargar el catálogo central');
+        const state = await response.json();
+        if (!cancelled && Array.isArray(state?.products)) {
+          setProducts(state.products.map(normalizeCatalogProduct));
+        }
+      } catch (error) {
+        console.warn('[Catálogo] Se usará la copia local hasta recuperar la conexión con el servidor.', error);
+      } finally {
+        if (!cancelled) setIsCatalogHydrated(true);
+      }
+    };
+
+    loadCatalog();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Mantiene servidor, módulos abiertos y caché local con el mismo catálogo.
+  useEffect(() => {
+    if (!isCatalogHydrated) return;
+
     try {
-      localStorage.setItem('crm_products_v2', JSON.stringify(products));
+      localStorage.setItem(CATALOG_STORAGE_KEY, JSON.stringify(products));
+      localStorage.setItem(LEGACY_CATALOG_STORAGE_KEY, JSON.stringify(products));
       // Also update legacy format for backward compatibility
       const legacy = products.map(p => ({
         id: p.id,
@@ -167,8 +230,24 @@ export default function CatalogoView() {
         image: p.image
       }));
       localStorage.setItem('crm_products', JSON.stringify(legacy));
+      window.dispatchEvent(new CustomEvent('xorbit:catalog-updated', { detail: { products, legacy } }));
     } catch (_) {}
-  }, [products]);
+
+    const timer = window.setTimeout(async () => {
+      try {
+        const response = await fetch('/api/backoffice/state', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ products, catalogUpdatedAt: Date.now() }),
+        });
+        if (!response.ok) throw new Error('El servidor rechazó la sincronización del catálogo');
+      } catch (error) {
+        console.error('[Catálogo] Error sincronizando con el servidor:', error);
+      }
+    }, 400);
+
+    return () => window.clearTimeout(timer);
+  }, [products, isCatalogHydrated]);
 
   const resetForm = () => {
     setFormName('');
@@ -212,7 +291,7 @@ export default function CatalogoView() {
     setShowOnboardingModal(false);
     if (neverShowAgain) {
       setHasDismissedOnboarding(true);
-      localStorage.setItem('EXPERT360_CATALOG_ONBOARDING_DISMISSED', 'true');
+      localStorage.setItem('XORBIT 360_CATALOG_ONBOARDING_DISMISSED', 'true');
     }
     setViewState('mode_select');
   };
@@ -295,7 +374,7 @@ export default function CatalogoView() {
       shippingType: formShippingType,
       fixedShippingCost: formFixedShippingCost,
       quantityOffers: formQuantityOffers,
-      image: formImage || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=400&q=80',
+      image: formImage || undefined,
       gallery: formGallery,
       welcomeMessage: formWelcomeMessage || `¡Hola! Soy tu asesor virtual para ${formName}. ¿En qué te puedo colaborar hoy?`,
       welcomeMedia: formWelcomeMedia,
@@ -419,7 +498,7 @@ OBJETIVO: Pedir Ciudad, Nombre, Dirección y Teléfono para generar la guía Dro
   const totalCount = products.length;
   const activeCount = products.filter(p => p.isActive).length;
   const inactiveCount = products.filter(p => !p.isActive).length;
-  const avgPrice = totalCount > 0 
+  const avgPrice = totalCount > 0
     ? Math.round(products.reduce((acc, p) => acc + (p.offerPrice || p.price), 0) / totalCount)
     : 0;
 
@@ -455,7 +534,7 @@ OBJETIVO: Pedir Ciudad, Nombre, Dirección y Teléfono para generar la guía Dro
     return (
       <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
         <div className="bg-zinc-950 border border-zinc-800 rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl text-left relative space-y-6">
-          <button 
+          <button
             onClick={() => setShowOnboardingModal(false)}
             className="absolute right-5 top-5 text-zinc-500 hover:text-white p-1 rounded-lg"
           >
@@ -581,7 +660,7 @@ OBJETIVO: Pedir Ciudad, Nombre, Dirección y Teléfono para generar la guía Dro
         {/* 2 Mode Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Card 1: Guiado */}
-          <div 
+          <div
             onClick={() => setViewState('wizard_step1')}
             className="bg-zinc-950 hover:bg-zinc-900/60 border border-zinc-800 hover:border-emerald-500/60 p-6 rounded-3xl transition cursor-pointer shadow-xl space-y-4 relative group"
           >
@@ -618,7 +697,7 @@ OBJETIVO: Pedir Ciudad, Nombre, Dirección y Teléfono para generar la guía Dro
           </div>
 
           {/* Card 2: Solo Prompt */}
-          <div 
+          <div
             onClick={() => setViewState('prompt_mode')}
             className="bg-zinc-950 hover:bg-zinc-900/60 border border-zinc-800 hover:border-amber-500/60 p-6 rounded-3xl transition cursor-pointer shadow-xl space-y-4 relative group"
           >
@@ -672,7 +751,7 @@ OBJETIVO: Pedir Ciudad, Nombre, Dirección y Teléfono para generar la guía Dro
             <span>/</span>
             <span className="text-white font-bold">Modo Solo Prompt</span>
           </div>
-          <button 
+          <button
             onClick={() => setViewState('list')}
             className="text-xs text-zinc-400 hover:text-white px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800"
           >
@@ -758,7 +837,7 @@ OBJETIVO: Pedir Ciudad, Nombre, Dirección y Teléfono para generar la guía Dro
       <div className="space-y-4 border-b border-zinc-800 pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs text-zinc-400">
-            <button 
+            <button
               type="button"
               onClick={() => setViewState('list')}
               className="hover:text-white flex items-center gap-1.5 font-medium cursor-pointer"
@@ -786,10 +865,10 @@ OBJETIVO: Pedir Ciudad, Nombre, Dirección y Teléfono para generar la guía Dro
             type="button"
             onClick={() => setViewState('wizard_step1')}
             className={`pb-2.5 transition flex items-center gap-1.5 border-b-2 ${
-              currentStep === 1 
-                ? 'border-[#00c950] text-[#00c950] font-bold' 
-                : currentStep > 1 
-                ? 'border-transparent text-emerald-400' 
+              currentStep === 1
+                ? 'border-[#00c950] text-[#00c950] font-bold'
+                : currentStep > 1
+                ? 'border-transparent text-emerald-400'
                 : 'border-transparent text-zinc-500'
             }`}
           >
@@ -801,10 +880,10 @@ OBJETIVO: Pedir Ciudad, Nombre, Dirección y Teléfono para generar la guía Dro
             type="button"
             onClick={() => setViewState('wizard_step2')}
             className={`pb-2.5 transition flex items-center gap-1.5 border-b-2 ${
-              currentStep === 2 
-                ? 'border-[#00c950] text-[#00c950] font-bold' 
-                : currentStep > 2 
-                ? 'border-transparent text-emerald-400' 
+              currentStep === 2
+                ? 'border-[#00c950] text-[#00c950] font-bold'
+                : currentStep > 2
+                ? 'border-transparent text-emerald-400'
                 : 'border-transparent text-zinc-500'
             }`}
           >
@@ -816,8 +895,8 @@ OBJETIVO: Pedir Ciudad, Nombre, Dirección y Teléfono para generar la guía Dro
             type="button"
             onClick={() => setViewState('wizard_step3')}
             className={`pb-2.5 transition flex items-center gap-1.5 border-b-2 ${
-              currentStep === 3 
-                ? 'border-[#00c950] text-[#00c950] font-bold' 
+              currentStep === 3
+                ? 'border-[#00c950] text-[#00c950] font-bold'
                 : 'border-transparent text-zinc-500'
             }`}
           >
@@ -843,7 +922,7 @@ OBJETIVO: Pedir Ciudad, Nombre, Dirección y Teléfono para generar la guía Dro
               <h3 className="text-sm font-bold text-white">Imágenes</h3>
 
               {/* Cover Photo */}
-              <div 
+              <div
                 onClick={() => {
                   const url = prompt('URL de la foto de portada:', formImage || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=400&q=80');
                   if (url) setFormImage(url);
@@ -880,7 +959,7 @@ OBJETIVO: Pedir Ciudad, Nombre, Dirección y Teléfono para generar la guía Dro
                     + Agregar
                   </button>
                 </div>
-                
+
                 <p className="text-[11px] text-zinc-500 leading-tight">
                   Subí la <strong className="text-amber-400">foto de portada</strong> y pulsá "Guardar y continuar" para habilitar esta galería.
                 </p>
@@ -1026,8 +1105,8 @@ OBJETIVO: Pedir Ciudad, Nombre, Dirección y Teléfono para generar la guía Dro
                 <div
                   onClick={() => setFormProductType('simple')}
                   className={`p-4 rounded-2xl border transition cursor-pointer ${
-                    formProductType === 'simple' 
-                      ? 'bg-zinc-900 border-[#00c950] ring-1 ring-[#00c950]/40' 
+                    formProductType === 'simple'
+                      ? 'bg-zinc-900 border-[#00c950] ring-1 ring-[#00c950]/40'
                       : 'bg-zinc-950 border-zinc-800'
                   }`}
                 >
@@ -1041,8 +1120,8 @@ OBJETIVO: Pedir Ciudad, Nombre, Dirección y Teléfono para generar la guía Dro
                 <div
                   onClick={() => setFormProductType('variantes')}
                   className={`p-4 rounded-2xl border transition cursor-pointer ${
-                    formProductType === 'variantes' 
-                      ? 'bg-zinc-900 border-[#00c950] ring-1 ring-[#00c950]/40' 
+                    formProductType === 'variantes'
+                      ? 'bg-zinc-900 border-[#00c950] ring-1 ring-[#00c950]/40'
                       : 'bg-zinc-950 border-zinc-800'
                   }`}
                 >
@@ -1085,8 +1164,8 @@ OBJETIVO: Pedir Ciudad, Nombre, Dirección y Teléfono para generar la guía Dro
                       key={st.id}
                       onClick={() => setFormShippingType(st.id as any)}
                       className={`p-3 rounded-2xl border transition cursor-pointer ${
-                        formShippingType === st.id 
-                          ? 'bg-zinc-900 border-[#00c950] ring-1 ring-[#00c950]/40' 
+                        formShippingType === st.id
+                          ? 'bg-zinc-900 border-[#00c950] ring-1 ring-[#00c950]/40'
                           : 'bg-zinc-950 border-zinc-800'
                       }`}
                     >
@@ -1456,7 +1535,7 @@ OBJETIVO: Pedir Ciudad, Nombre, Dirección y Teléfono para generar la guía Dro
                 { title: 'Contar historia / testimonio', desc: 'Para dar testimonios o casos reales cuando duda al cerrar', icon: '📖' },
                 { title: 'Regla personalizada (libre)', desc: 'Para casos específicos no cubiertos arriba', icon: '✏️' }
               ].map((rc, i) => (
-                <div 
+                <div
                   key={i}
                   onClick={() => {
                     const customResp = prompt(`Respuesta para "${rc.title}":`);
@@ -1602,8 +1681,8 @@ OBJETIVO: Pedir Ciudad, Nombre, Dirección y Teléfono para generar la guía Dro
             type="button"
             onClick={() => setFilterTab('todos')}
             className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
-              filterTab === 'todos' 
-                ? 'bg-white text-zinc-950 font-bold shadow-sm' 
+              filterTab === 'todos'
+                ? 'bg-white text-zinc-950 font-bold shadow-sm'
                 : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200 border border-zinc-800'
             }`}
           >
@@ -1614,8 +1693,8 @@ OBJETIVO: Pedir Ciudad, Nombre, Dirección y Teléfono para generar la guía Dro
             type="button"
             onClick={() => setFilterTab('activos')}
             className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
-              filterTab === 'activos' 
-                ? 'bg-white text-zinc-950 font-bold shadow-sm' 
+              filterTab === 'activos'
+                ? 'bg-white text-zinc-950 font-bold shadow-sm'
                 : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200 border border-zinc-800'
             }`}
           >
@@ -1626,8 +1705,8 @@ OBJETIVO: Pedir Ciudad, Nombre, Dirección y Teléfono para generar la guía Dro
             type="button"
             onClick={() => setFilterTab('inactivos')}
             className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
-              filterTab === 'inactivos' 
-                ? 'bg-white text-zinc-950 font-bold shadow-sm' 
+              filterTab === 'inactivos'
+                ? 'bg-white text-zinc-950 font-bold shadow-sm'
                 : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200 border border-zinc-800'
             }`}
           >
@@ -1673,23 +1752,23 @@ OBJETIVO: Pedir Ciudad, Nombre, Dirección y Teléfono para generar la guía Dro
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredProducts.map((prod) => (
-            <div 
+            <div
               key={prod.id}
               className="bg-zinc-950 border border-zinc-800/90 rounded-2xl p-5 space-y-4 shadow-xl flex flex-col justify-between hover:border-zinc-700 transition"
             >
               <div>
                 <div className="flex items-start gap-3">
-                  <img 
-                    src={prod.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=150&q=80'} 
+                  <img
+                    src={prod.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=150&q=80'}
                     alt={prod.name}
-                    className="w-16 h-16 rounded-xl object-cover bg-zinc-900 border border-zinc-800 shrink-0" 
+                    className="w-16 h-16 rounded-xl object-cover bg-zinc-900 border border-zinc-800 shrink-0"
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-1">
                       <h4 className="font-bold text-sm text-white truncate">{prod.name}</h4>
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        prod.isActive 
-                          ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' 
+                        prod.isActive
+                          ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
                           : 'bg-zinc-800 text-zinc-400'
                       }`}>
                         {prod.isActive ? 'Activo' : 'Inactivo'}
@@ -1768,9 +1847,9 @@ OBJETIVO: Pedir Ciudad, Nombre, Dirección y Teléfono para generar la guía Dro
                   Ingresa el ID del producto en Dropi para importarlo directamente con todas sus imagenes y variaciones.
                 </p>
               </div>
-              <button 
+              <button
                 type="button"
-                onClick={() => setShowDropiModal(false)} 
+                onClick={() => setShowDropiModal(false)}
                 className="text-zinc-500 hover:text-white p-1 rounded-lg transition"
               >
                 <X size={18} />

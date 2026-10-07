@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { 
-  Mail, Send, Sparkles, Zap, Users, BarChart3, Clock, CheckCircle2, 
-  Plus, Edit3, Trash2, Eye, ArrowUpRight, Filter, Download, Copy, RefreshCw, 
+import {
+  Mail, Send, Sparkles, Zap, Users, BarChart3, Clock, CheckCircle2,
+  Plus, Edit3, Trash2, Eye, ArrowUpRight, Filter, Download, Copy, RefreshCw,
   Layers, ShoppingCart, Tag, AlertCircle, FileText, LayoutTemplate, MousePointer
 } from 'lucide-react';
 
@@ -172,12 +172,12 @@ Tenemos excelentes noticias. **${productName}** ya está disponible con un descu
 
   return (
     <div className="p-4 sm:p-6 bg-[#0c0c0e] text-white min-h-screen space-y-6">
-      
+
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-purple-950 via-[#121216] to-pink-950 border border-purple-800/40 rounded-2xl p-5 sm:p-6 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="bg-gradient-to-r from-blue-950 via-[#121216] to-blue-950 border border-blue-800/40 rounded-2xl p-5 sm:p-6 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="space-y-1">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-500/20 border border-purple-500/30 rounded-full text-purple-300 text-xs font-bold uppercase tracking-wider">
-            <Mail size={14} className="text-pink-400 animate-pulse" /> Marketing Automático & Flujos de Email
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/20 border border-blue-500/30 rounded-full text-blue-300 text-xs font-bold uppercase tracking-wider">
+            <Mail size={14} className="text-blue-400 animate-pulse" /> Marketing Automático & Flujos de Email
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
             Módulo de Email Marketing
@@ -187,9 +187,9 @@ Tenemos excelentes noticias. **${productName}** ya está disponible con un descu
           </p>
         </div>
 
-        <button 
+        <button
           onClick={() => setActiveTab('disenador')}
-          className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-bold text-xs transition-colors flex items-center gap-2 shadow-lg shadow-purple-950 shrink-0"
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-xs transition-colors flex items-center gap-2 shadow-lg shadow-blue-950 shrink-0"
         >
           <Sparkles size={16} /> Crear Email con IA (Gemini)
         </button>
@@ -199,7 +199,7 @@ Tenemos excelentes noticias. **${productName}** ya está disponible con un descu
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="bg-[#121215] border border-gray-800 rounded-2xl p-4 space-y-1">
           <span className="text-xs text-gray-400 font-medium flex items-center justify-between">
-            Emails Enviados Este Mes <Send size={16} className="text-purple-400" />
+            Emails Enviados Este Mes <Send size={16} className="text-blue-400" />
           </span>
           <p className="text-2xl font-black text-white">18,590</p>
           <span className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
@@ -209,15 +209,15 @@ Tenemos excelentes noticias. **${productName}** ya está disponible con un descu
 
         <div className="bg-[#121215] border border-gray-800 rounded-2xl p-4 space-y-1">
           <span className="text-xs text-gray-400 font-medium flex items-center justify-between">
-            Tasa de Apertura (Open Rate) <Eye size={16} className="text-pink-400" />
+            Tasa de Apertura (Open Rate) <Eye size={16} className="text-blue-400" />
           </span>
-          <p className="text-2xl font-black text-pink-400">46.2%</p>
+          <p className="text-2xl font-black text-blue-400">46.2%</p>
           <span className="text-[11px] text-gray-400">Promedio industria: 21%</span>
         </div>
 
         <div className="bg-[#121215] border border-gray-800 rounded-2xl p-4 space-y-1">
           <span className="text-xs text-gray-400 font-medium flex items-center justify-between">
-            Clics en Enlaces (CTR) <MousePointer size={16} className="text-indigo-400" />
+            Clics en Enlaces (CTR) <MousePointer size={16} className="text-blue-400" />
           </span>
           <p className="text-2xl font-black text-white">16.8%</p>
           <span className="text-[11px] text-gray-400">3.2k clics dirigidos a checkout</span>
@@ -249,7 +249,7 @@ Tenemos excelentes noticias. **${productName}** ya está disponible con un descu
               onClick={() => setActiveTab(tab.id as any)}
               className={`py-2.5 px-4 rounded-xl font-bold text-xs flex items-center gap-2 transition-all whitespace-nowrap ${
                 isActive
-                  ? 'bg-purple-600 text-white shadow-md shadow-purple-950'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-950'
                   : 'bg-[#141418] text-gray-400 hover:text-white border border-gray-800'
               }`}
             >
@@ -262,10 +262,10 @@ Tenemos excelentes noticias. **${productName}** ya está disponible con un descu
       {/* TAB 1: GENERADOR DE COPY CON IA & EDITOR */}
       {activeTab === 'disenador' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          
+
           {/* AI Form Inputs */}
           <div className="bg-[#121215] border border-gray-800 rounded-3xl p-6 space-y-4">
-            <div className="flex items-center gap-2 text-purple-400">
+            <div className="flex items-center gap-2 text-blue-400">
               <Sparkles size={20} />
               <h3 className="font-bold text-base text-white">Generador de Copywriter de Email (Gemini IA)</h3>
             </div>
@@ -276,21 +276,21 @@ Tenemos excelentes noticias. **${productName}** ya está disponible con un descu
             <form onSubmit={handleGenerateCopy} className="space-y-4 pt-1">
               <div>
                 <label className="block text-xs font-bold text-gray-300 mb-1">Nombre del Producto / Oferta</label>
-                <input 
+                <input
                   type="text"
                   required
                   value={productName}
                   onChange={(e) => setProductName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500"
+                  className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-gray-300 mb-1">Objetivo del Correo</label>
-                <select 
+                <select
                   value={emailObjective}
                   onChange={(e) => setEmailObjective(e.target.value as any)}
-                  className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500"
+                  className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500"
                 >
                   <option value="carrito">🛒 Recuperación de Carrito Abandonado</option>
                   <option value="confirmacion_cod">📦 Confirmación de Pedido Pago Contra Entrega</option>
@@ -301,19 +301,19 @@ Tenemos excelentes noticias. **${productName}** ya está disponible con un descu
 
               <div>
                 <label className="block text-xs font-bold text-gray-300 mb-1">Incentivo o Descuento</label>
-                <input 
+                <input
                   type="text"
                   value={discountPercent}
                   onChange={(e) => setDiscountPercent(e.target.value)}
                   placeholder="Ej: 15% OFF o Envío Gratis"
-                  className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500"
+                  className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500"
                 />
               </div>
 
-              <button 
+              <button
                 type="submit"
                 disabled={isGenerating}
-                className="w-full py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-purple-950 flex items-center justify-center gap-2"
+                className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-950 flex items-center justify-center gap-2"
               >
                 {isGenerating ? <RefreshCw size={16} className="animate-spin" /> : <Sparkles size={16} />}
                 {isGenerating ? 'Generando Copy con IA...' : 'Generar Correo con IA'}
@@ -326,7 +326,7 @@ Tenemos excelentes noticias. **${productName}** ya está disponible con un descu
             <div className="space-y-4">
               <div className="flex items-center justify-between border-b border-gray-800 pb-3">
                 <h3 className="font-bold text-white text-base flex items-center gap-2">
-                  <Eye size={18} className="text-purple-400" /> Vista Previa del Email
+                  <Eye size={18} className="text-blue-400" /> Vista Previa del Email
                 </h3>
                 <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-0.5 rounded-full font-bold">
                   Score Estimado: 98/100
@@ -352,7 +352,7 @@ Tenemos excelentes noticias. **${productName}** ya está disponible con un descu
             </div>
 
             <div className="flex justify-end gap-2 pt-2 border-t border-gray-800">
-              <button 
+              <button
                 onClick={() => {
                   navigator.clipboard.writeText(generatedBody);
                   alert('¡Texto del correo copiado al portapapeles!');
@@ -361,9 +361,9 @@ Tenemos excelentes noticias. **${productName}** ya está disponible con un descu
               >
                 <Copy size={14} /> Copiar Texto
               </button>
-              <button 
+              <button
                 onClick={() => alert('¡Correo guardado en tu biblioteca de plantillas!')}
-                className="px-5 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold shadow-md shadow-purple-950 flex items-center gap-1.5"
+                className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-950 flex items-center gap-1.5"
               >
                 <CheckCircle2 size={14} /> Usar esta Plantilla
               </button>
@@ -381,7 +381,7 @@ Tenemos excelentes noticias. **${productName}** ya está disponible con un descu
               <h3 className="font-bold text-white text-base">Secuencias de Email Automatizadas (Drip Campaigns)</h3>
               <p className="text-xs text-gray-400">Correos que se envían solos según la conducta del comprador en tu tienda.</p>
             </div>
-            <button className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5">
+            <button className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5">
               <Plus size={16} /> Nuevo Flujo
             </button>
           </div>
@@ -416,7 +416,7 @@ Tenemos excelentes noticias. **${productName}** ya está disponible con un descu
         <div className="bg-[#121215] border border-gray-800 rounded-3xl p-6 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="font-bold text-white text-base">Campañas de Correo Enviadas</h3>
-            <button className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5">
+            <button className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5">
               <Plus size={16} /> Crear Campaña
             </button>
           </div>
@@ -437,10 +437,10 @@ Tenemos excelentes noticias. **${productName}** ya está disponible con un descu
                 {campaigns.map(c => (
                   <tr key={c.id} className="hover:bg-[#18181c]/60">
                     <td className="py-3 px-4 font-bold text-white">{c.subject}</td>
-                    <td className="py-3 px-4 text-purple-300 font-medium">{c.listName}</td>
+                    <td className="py-3 px-4 text-blue-300 font-medium">{c.listName}</td>
                     <td className="py-3 px-4 text-gray-400">{c.sentDate}</td>
-                    <td className="py-3 px-4 font-bold text-pink-400">{c.openRate}</td>
-                    <td className="py-3 px-4 font-bold text-indigo-400">{c.clickRate}</td>
+                    <td className="py-3 px-4 font-bold text-blue-400">{c.openRate}</td>
+                    <td className="py-3 px-4 font-bold text-blue-400">{c.clickRate}</td>
                     <td className="py-3 px-4 font-bold text-emerald-400">{c.revenue}</td>
                   </tr>
                 ))}
@@ -453,11 +453,11 @@ Tenemos excelentes noticias. **${productName}** ya está disponible con un descu
       {/* TAB 4: LISTAS & SEGMENTACIÓN */}
       {activeTab === 'listas' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          
+
           <div className="bg-[#121215] border border-gray-800 rounded-2xl p-5 space-y-3">
             <div className="flex items-center justify-between">
               <h4 className="font-bold text-white text-base">Compradores COD Verificados</h4>
-              <span className="text-xs bg-purple-500/20 text-purple-300 px-2.5 py-1 rounded-full font-bold">
+              <span className="text-xs bg-blue-500/20 text-blue-300 px-2.5 py-1 rounded-full font-bold">
                 1,850 Contactos
               </span>
             </div>

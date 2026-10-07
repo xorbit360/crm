@@ -69,7 +69,7 @@ export default function CitasView() {
                   <Bell className="text-gold" /> Configuración de Recordatorios
                </h3>
                <p className="text-xs text-gray-400 mb-4">Envía mensajes automáticos por WhatsApp antes de la cita.</p>
-               
+
                <div className="space-y-4">
                   <div className="space-y-2 border-b border-gray-800 pb-4">
                      <label className="flex items-center justify-between">
@@ -80,7 +80,7 @@ export default function CitasView() {
                         <option>Plantilla: "Cita_Manana"</option>
                      </select>
                   </div>
-                  
+
                   <div className="space-y-2 pb-2">
                      <label className="flex items-center justify-between">
                         <span className="text-sm text-gray-300">Recordatorio 30m antes</span>
@@ -90,7 +90,7 @@ export default function CitasView() {
                         <option>Plantilla: "Cita_Pronto"</option>
                      </select>
                   </div>
-                  
+
                   <button className="w-full flex items-center justify-center gap-2 bg-gray-800 text-white text-xs font-semibold py-2 rounded-lg hover:bg-gray-700 transition">
                      <Settings2 size={14} /> Ajustes Avanzados
                   </button>

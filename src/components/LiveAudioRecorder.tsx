@@ -133,7 +133,7 @@ export const LiveAudioRecorder: React.FC<LiveAudioRecorderProps> = ({
           const rawBase64 = reader.result as string;
           setAudioBase64(rawBase64);
           setIsConverting(true);
-          
+
           // Optionally send to backend to pre-convert to OGG OPUS PTT format
           try {
             const resp = await fetch('/api/whatsapp/convert-audio', {
@@ -174,7 +174,7 @@ export const LiveAudioRecorder: React.FC<LiveAudioRecorderProps> = ({
   const stopRecording = () => {
     if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
     if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-    
+
     setAudioDuration(recordingSeconds);
 
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {

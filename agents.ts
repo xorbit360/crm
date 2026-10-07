@@ -40,7 +40,13 @@ Responde ÚNICAMENTE con una sola palabra de la categoría: MENU, SOPORTE, SALUD
   if (intent === 'MENU') {
     let catalogStr = "";
     if (currentDB.products && Array.isArray(currentDB.products) && currentDB.products.length > 0) {
-      catalogStr = `CATÁLOGO DE PRODUCTOS:\n` + currentDB.products.map((p: any) => `- ${p.name}: $${p.price || p.basePrice || 0} (${p.stock>0?'Disponible':'Agotado'})`).join('\n') + '\n';
+      const availableProducts = currentDB.products.filter((p: any) => p?.isActive !== false && p?.isAvailableForBot !== false);
+      catalogStr = `CATÁLOGO OFICIAL DE PRODUCTOS (ÚNICA FUENTE AUTORIZADA):\n` + availableProducts.map((p: any) => {
+        const controlledStock = typeof p.stock === 'number' || /^\d+$/.test(String(p.stock || '').trim());
+        const stock = controlledStock ? (Number(p.stock) > 0 ? `${Number(p.stock)} disponibles` : 'Agotado') : 'Disponible';
+        const details = [p.basicDescription || p.description, p.features, p.benefits].filter(Boolean).join(' | ');
+        return `- ${p.name}: $${p.offerPrice || p.price || p.basePrice || 0} COP (${stock})${details ? ` — ${details}` : ''}`;
+      }).join('\n') + '\nREGLA: No agregues datos de internet ni inventes características, precios, promociones o disponibilidad que no estén en este catálogo.\n';
     }
     const m = currentDB.active || {};
     let menuStr = "";

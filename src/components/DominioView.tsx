@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Globe, 
-  ShieldCheck, 
-  Copy, 
-  Check, 
-  RefreshCw, 
-  ExternalLink, 
-  AlertCircle, 
-  CheckCircle2, 
-  Lock, 
-  Server, 
-  Zap, 
-  Info, 
+import {
+  Globe,
+  ShieldCheck,
+  Copy,
+  Check,
+  RefreshCw,
+  ExternalLink,
+  AlertCircle,
+  CheckCircle2,
+  Lock,
+  Server,
+  Zap,
+  Info,
   ArrowRight,
   HelpCircle,
   Image as ImageIcon,
@@ -20,10 +20,10 @@ import {
   Save,
   CheckCheck
 } from 'lucide-react';
-import { 
-  WhiteLabelConfig, 
-  DEFAULT_WHITELABEL, 
-  fetchWhiteLabelConfig, 
+import {
+  WhiteLabelConfig,
+  DEFAULT_WHITELABEL,
+  fetchWhiteLabelConfig,
   saveWhiteLabelConfig,
   getEffectiveDomain,
   getReferralLink
@@ -51,7 +51,7 @@ export default function DominioView() {
     rawError?: string;
   } | null>(null);
 
-  const officialAppUrl = 'https://expert360.ai.studio/';
+  const officialAppUrl = 'https://crm.xorbit360.com/';
 
   useEffect(() => {
     loadConfig();
@@ -153,11 +153,11 @@ export default function DominioView() {
 
   return (
     <div className="space-y-8 w-full pb-16 animate-fade-in text-gray-100">
-      
+
       {/* Header Banner */}
       <div className="panel p-6 sm:p-8 rounded-2xl border border-gray-800 bg-gradient-to-r from-gray-900 via-gray-900/90 to-blue-950/30 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
-        
+
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
             <div className="p-3.5 rounded-2xl bg-blue-500/10 text-blue-400 border border-blue-500/20 shadow-lg shadow-blue-500/5 shrink-0">
@@ -177,7 +177,7 @@ export default function DominioView() {
                 Personalización de Marca y Dominio Propio
               </h1>
               <p className="text-gray-400 text-sm mt-1 max-w-2xl">
-                Configura el nombre de tu plataforma, sube tu logotipo y conecta tu dominio en tiempo real. Todos los enlaces de referidos y de tus clientes mostrarán tu propia marca, manteniendo la infraestructura central de <strong className="text-white">Expert 360°</strong> por detrás.
+                Configura el nombre de tu plataforma, sube tu logotipo y conecta tu dominio en tiempo real. Todos los enlaces de referidos y de tus clientes mostrarán tu propia marca, manteniendo la infraestructura central de <strong className="text-white">Xorbit 360</strong> por detrás.
               </p>
             </div>
           </div>
@@ -233,7 +233,7 @@ export default function DominioView() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          
+
           {/* Brand Form */}
           <div className="space-y-4">
             <div className="space-y-1.5">
@@ -244,7 +244,7 @@ export default function DominioView() {
                 type="text"
                 value={config.brandName}
                 onChange={(e) => setConfig({ ...config, brandName: e.target.value })}
-                placeholder="Ej. Xorbit 360, Expert 360°, Nova AI..."
+                placeholder="Ej. Xorbit 360, Xorbit 360, Nova AI..."
                 className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white font-medium focus:outline-none focus:border-gold transition"
               />
               <span className="text-[11px] text-gray-500">
@@ -319,7 +319,7 @@ export default function DominioView() {
                 )}
                 <div className="overflow-hidden">
                   <div className="font-bold text-base text-gold truncate">
-                    {config.brandName || 'Expert 360°'}
+                    {config.brandName || 'Xorbit 360'}
                   </div>
                   <div className="text-[10px] text-gray-400 uppercase tracking-widest truncate">
                     {config.tagline || 'Marketing & Ventas AI'}
@@ -409,8 +409,8 @@ export default function DominioView() {
         {/* Real DNS Verification Response Box */}
         {dnsResult && (
           <div className={`p-5 rounded-2xl border transition-all animate-fade-in ${
-            dnsResult.isConfigured 
-              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' 
+            dnsResult.isConfigured
+              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
               : 'bg-amber-500/10 border-amber-500/30 text-amber-200'
           }`}>
             <div className="flex items-start justify-between gap-4">
@@ -429,7 +429,7 @@ export default function DominioView() {
                   <p className="text-xs leading-relaxed">
                     {dnsResult.details}
                   </p>
-                  
+
                   {dnsResult.recordsFound && dnsResult.recordsFound.length > 0 && (
                     <div className="mt-2 text-xs font-mono bg-gray-950/80 p-2.5 rounded-lg border border-gray-800 text-gray-300">
                       <strong>Registros detectados actualmente en DNS públicos:</strong> {dnsResult.recordsFound.join(', ')}
@@ -458,7 +458,7 @@ export default function DominioView() {
       <div className="panel p-6 sm:p-8 rounded-2xl border border-gray-800 bg-gray-900/80 space-y-4">
         <div className="flex items-center justify-between border-b border-gray-800 pb-3">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20 shrink-0">
+            <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 shrink-0">
               <Share2 size={20} />
             </div>
             <div>
@@ -469,7 +469,7 @@ export default function DominioView() {
             </div>
           </div>
 
-          <span className="text-xs px-2.5 py-1 rounded bg-purple-500/20 text-purple-300 font-mono font-bold">
+          <span className="text-xs px-2.5 py-1 rounded bg-blue-500/20 text-blue-300 font-mono font-bold">
             White-Label Afiliados
           </span>
         </div>

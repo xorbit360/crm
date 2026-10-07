@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import CalculadoraCOD from './CalculadoraCOD';
 import MultiRecomendadorView from './MultiRecomendadorView';
-import { 
-  Target, 
-  Search, 
-  BarChart, 
-  ArrowRight, 
-  TrendingUp, 
-  BarChart3, 
-  Lightbulb, 
+import {
+  Target,
+  Search,
+  BarChart,
+  ArrowRight,
+  TrendingUp,
+  BarChart3,
+  Lightbulb,
   AlertTriangle,
   Sparkles,
   Zap,
@@ -368,7 +368,7 @@ export default function MercadoView({ activeTab = 'publico' }: MercadoViewProps)
       {activeTab === 'tendencias' && (
         <div className="space-y-6 animate-fade-in">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            
+
             {/* Interest Score card 1 */}
             <div className="panel p-6 rounded-2xl bg-black/40 border border-gray-800 flex flex-col justify-between">
               <div>
@@ -408,16 +408,16 @@ export default function MercadoView({ activeTab = 'publico' }: MercadoViewProps)
             {/* Interest Score card 3 */}
             <div className="panel p-6 rounded-2xl bg-black/40 border border-gray-800 flex flex-col justify-between">
               <div>
-                <span className="text-[10px] text-purple-400 font-bold uppercase tracking-wider">Moda Bienestar</span>
+                <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider">Moda Bienestar</span>
                 <h4 className="text-base font-bold text-white mt-1">Aceites Esenciales / Aromas</h4>
                 <p className="text-xs text-gray-500 mt-2">Productos recurrentes para aumentar el valor del ticket promedio (Upsell).</p>
               </div>
               <div className="mt-4 pt-4 border-t border-gray-900 flex items-end justify-between">
                 <div>
                   <span className="text-2xl font-bold text-white">+31.0%</span>
-                  <span className="text-[9px] text-purple-400 font-bold ml-1.5">▲ EXTREMO</span>
+                  <span className="text-[9px] text-blue-400 font-bold ml-1.5">▲ EXTREMO</span>
                 </div>
-                <div className="w-16 h-8 bg-purple-500/10 rounded border border-purple-500/20 flex items-center justify-center text-xs font-mono font-bold text-purple-400">
+                <div className="w-16 h-8 bg-blue-500/10 rounded border border-blue-500/20 flex items-center justify-center text-xs font-mono font-bold text-blue-400">
                   96/100
                 </div>
               </div>
@@ -428,7 +428,7 @@ export default function MercadoView({ activeTab = 'publico' }: MercadoViewProps)
           <div className="panel p-6 rounded-2xl space-y-4">
             <h3 className="text-base font-bold text-white">Análisis de Volumen Histórico de Ventas</h3>
             <p className="text-xs text-gray-400">Comparativa trimestral estimada de pedidos dropshipping (Bogotá, Medellín, Cali).</p>
-            
+
             <div className="space-y-3 pt-2">
               {[
                 { label: 'Q1 2026 (Realizado)', value: '75%', color: 'from-orange-600 to-orange-400', count: '14,200 pedidos' },
@@ -441,9 +441,9 @@ export default function MercadoView({ activeTab = 'publico' }: MercadoViewProps)
                     <span className="text-gray-400">{item.count}</span>
                   </div>
                   <div className="w-full h-3 bg-gray-950 rounded-full overflow-hidden border border-gray-800">
-                    <div 
-                      className={`h-full bg-gradient-to-r ${item.color} rounded-full transition-all duration-1000`} 
-                      style={{ width: item.value }} 
+                    <div
+                      className={`h-full bg-gradient-to-r ${item.color} rounded-full transition-all duration-1000`}
+                      style={{ width: item.value }}
                     />
                   </div>
                 </div>
@@ -462,12 +462,12 @@ export default function MercadoView({ activeTab = 'publico' }: MercadoViewProps)
                 <Plus className="text-orange-500" size={15} /> Añadir Competidor Comercial
               </h3>
               <p className="text-xs text-gray-400">Registra tus competidores directos para analizar sus debilidades y estructurar una estrategia superior.</p>
-              
+
               <form onSubmit={handleAddCompetitor} className="space-y-3 pt-2">
                 <div>
                   <label className="block text-[10px] text-gray-500 font-bold uppercase mb-1">Nombre Comercial:</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     required
                     value={newCompName}
                     onChange={(e) => setNewCompName(e.target.value)}
@@ -478,8 +478,8 @@ export default function MercadoView({ activeTab = 'publico' }: MercadoViewProps)
 
                 <div>
                   <label className="block text-[10px] text-gray-500 font-bold uppercase mb-1">Precio Promedio de Venta:</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={newCompPrice}
                     onChange={(e) => setNewCompPrice(e.target.value)}
                     className="w-full bg-black border border-gray-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500"
@@ -488,7 +488,7 @@ export default function MercadoView({ activeTab = 'publico' }: MercadoViewProps)
 
                 <div>
                   <label className="block text-[10px] text-gray-500 font-bold uppercase mb-1">Puntos Fuertes (Strength):</label>
-                  <textarea 
+                  <textarea
                     value={newCompStrength}
                     onChange={(e) => setNewCompStrength(e.target.value)}
                     placeholder="ej. Excelente branding y empaque personalizado..."
@@ -496,8 +496,8 @@ export default function MercadoView({ activeTab = 'publico' }: MercadoViewProps)
                   />
                 </div>
 
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   className="w-full py-2 bg-orange-500 hover:bg-orange-400 text-black font-bold text-xs rounded-xl transition"
                 >
                   Registrar Competidor
@@ -554,8 +554,8 @@ export default function MercadoView({ activeTab = 'publico' }: MercadoViewProps)
             </p>
 
             <form onSubmit={handleRateProduct} className="flex gap-2.5 pt-2">
-              <input 
-                type="text" 
+              <input
+                type="text"
                 required
                 value={rawIdeaInput}
                 onChange={(e) => setRawIdeaInput(e.target.value)}
@@ -586,12 +586,12 @@ export default function MercadoView({ activeTab = 'publico' }: MercadoViewProps)
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {generatedIdeas.map((idea) => (
-                <div 
+                <div
                   key={idea.id}
                   className="panel p-5 rounded-2xl bg-black border border-gray-800 hover:border-gray-700 transition relative overflow-hidden flex flex-col justify-between"
                 >
                   <div className="absolute top-0 right-0 w-24 h-24 bg-orange-500/5 rounded-full blur-2xl pointer-events-none"></div>
-                  
+
                   <div className="space-y-2">
                     <div className="flex justify-between items-start gap-3">
                       <h4 className="font-bold text-white text-sm">{idea.product}</h4>
@@ -647,10 +647,10 @@ export default function MercadoView({ activeTab = 'publico' }: MercadoViewProps)
               </div>
             </div>
             <div className="panel p-4 rounded-xl bg-black/40 border border-gray-800 flex flex-col justify-between">
-              <span className="text-[10px] text-purple-400 font-bold uppercase tracking-wider">Volumen Estimado Dropshipping</span>
+              <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider">Volumen Estimado Dropshipping</span>
               <div className="mt-2 flex items-baseline justify-between">
                 <span className="text-xl font-bold text-white">$42,500 USD</span>
-                <span className="text-[10px] text-purple-400 font-bold">Últimas 24h</span>
+                <span className="text-[10px] text-blue-400 font-bold">Últimas 24h</span>
               </div>
             </div>
             <div className="panel p-4 rounded-xl bg-black/40 border border-gray-800 flex flex-col justify-between">
@@ -802,7 +802,7 @@ export default function MercadoView({ activeTab = 'publico' }: MercadoViewProps)
                           onClick={() => handleImportToCatalog(product.id)}
                           disabled={isImported || isImporting}
                           className={`w-full py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${
-                            isImported 
+                            isImported
                               ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 cursor-default'
                               : isImporting
                               ? 'bg-orange-500/40 text-black cursor-wait'
@@ -854,8 +854,8 @@ export default function MercadoView({ activeTab = 'publico' }: MercadoViewProps)
                       <p className="text-[10px] text-gray-400 uppercase tracking-widest">{selectedProductForAI.name}</p>
                     </div>
                   </div>
-                  <button 
-                    onClick={() => setSelectedProductForAI(null)} 
+                  <button
+                    onClick={() => setSelectedProductForAI(null)}
                     className="text-gray-400 hover:text-white p-2 hover:bg-gray-900 rounded-lg transition"
                   >
                     ✕
@@ -872,11 +872,11 @@ export default function MercadoView({ activeTab = 'publico' }: MercadoViewProps)
                       {selectedProductForAI.hooks.map((hook: string, index: number) => (
                         <div key={index} className="p-3 bg-gray-900/50 border border-gray-800 rounded-xl text-xs text-gray-300 relative group flex justify-between items-center">
                           <span>"{hook}"</span>
-                          <button 
+                          <button
                             onClick={() => {
                               navigator.clipboard.writeText(hook);
                               alert('Copiado al portapapeles');
-                            }} 
+                            }}
                             className="text-[9px] text-orange-400 hover:text-orange-300 hover:underline font-bold shrink-0 ml-2"
                           >
                             Copiar
@@ -897,7 +897,7 @@ export default function MercadoView({ activeTab = 'publico' }: MercadoViewProps)
 
                   {/* Complete Script for UGC Video */}
                   <div className="space-y-2">
-                    <h5 className="font-bold text-purple-400 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                    <h5 className="font-bold text-blue-400 text-xs uppercase tracking-wider flex items-center gap-1.5">
                       <Play size={12} /> Guión y Estructura del Video UGC Viral
                     </h5>
                     <div className="p-4 bg-gray-900/60 border border-gray-800 rounded-xl text-xs font-mono text-gray-300 whitespace-pre-wrap leading-loose">
@@ -932,8 +932,8 @@ export default function MercadoView({ activeTab = 'publico' }: MercadoViewProps)
                       <p className="text-[10px] text-gray-400 uppercase tracking-widest">{selectedProductForAds.name}</p>
                     </div>
                   </div>
-                  <button 
-                    onClick={() => setSelectedProductForAds(null)} 
+                  <button
+                    onClick={() => setSelectedProductForAds(null)}
                     className="text-gray-400 hover:text-white p-2 hover:bg-gray-900 rounded-lg transition"
                   >
                     ✕

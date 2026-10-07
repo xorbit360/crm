@@ -106,7 +106,7 @@ export default function LandingView({ activeTab = 'plantillas' }: LandingViewPro
   const handleGenerate = (e: React.FormEvent) => {
     e.preventDefault();
     setIsGenerating(true);
-    
+
     setTimeout(() => {
       const newPage: LandingPage = {
         id: 'lp-' + Date.now(),
@@ -174,9 +174,9 @@ export default function LandingView({ activeTab = 'plantillas' }: LandingViewPro
   </style>
 </head>
 <body class="min-h-screen">
-  
+
   <!-- Announcement Bar (Urgency Header) -->
-  <div class="bg-gradient-to-r from-purple-700 via-indigo-600 to-pink-600 text-white text-center py-2 px-4 text-xs font-black tracking-wide flex items-center justify-center gap-2 shadow-md">
+  <div class="bg-gradient-to-r from-blue-700 via-blue-600 to-blue-600 text-white text-center py-2 px-4 text-xs font-black tracking-wide flex items-center justify-center gap-2 shadow-md">
     <span>🔥 OFERTA DE LANZAMIENTO: Paga al recibir en tu puerta + Envío Gratis Hoy</span>
     <span class="bg-black/30 px-2 py-0.5 rounded font-mono text-[11px]" id="timer-header">14:59</span>
   </div>
@@ -188,7 +188,7 @@ export default function LandingView({ activeTab = 'plantillas' }: LandingViewPro
     </div>
     <h1 class="text-3xl md:text-5xl font-black tracking-tight mb-4 leading-tight text-white">${page.title}</h1>
     <p class="text-base md:text-lg text-gray-300 max-w-2xl mx-auto mb-8 leading-relaxed">${page.subtitle}</p>
-    
+
     <div class="flex justify-center gap-4 flex-wrap">
       <button onclick="openRivoCheckout()" class="px-8 py-4 bg-emerald-500 hover:bg-emerald-400 transition-all text-black font-black rounded-2xl text-lg shadow-xl shadow-emerald-950 flex items-center gap-3">
         🛒 ${page.ctaText}
@@ -199,7 +199,7 @@ export default function LandingView({ activeTab = 'plantillas' }: LandingViewPro
   <!-- Product Gallery & Conversion Benefits -->
   <main class="py-8 md:py-12 px-4 max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
     <div class="relative group">
-      <div class="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-3xl blur opacity-30 group-hover:opacity-60 transition duration-500"></div>
+      <div class="absolute -inset-1 bg-gradient-to-r from-blue-600 to-blue-600 rounded-3xl blur opacity-30 group-hover:opacity-60 transition duration-500"></div>
       <img src="${page.imageUrl}" alt="${page.name}" class="relative rounded-2xl shadow-2xl border border-[${borderClass}] w-full object-cover aspect-square" />
       <div class="absolute top-4 right-4 bg-rose-600 text-white text-xs font-black px-3 py-1 rounded-full uppercase tracking-wider shadow-md">
         -40% OFF
@@ -209,7 +209,7 @@ export default function LandingView({ activeTab = 'plantillas' }: LandingViewPro
     <div class="space-y-5">
       <div class="border-b border-gray-800 pb-3">
         <h2 class="text-2xl font-black text-white">${page.name}</h2>
-        <p class="text-xs text-purple-400 font-bold uppercase tracking-widest mt-1">${page.niche}</p>
+        <p class="text-xs text-blue-400 font-bold uppercase tracking-widest mt-1">${page.niche}</p>
       </div>
 
       <ul class="space-y-3">
@@ -249,8 +249,8 @@ export default function LandingView({ activeTab = 'plantillas' }: LandingViewPro
 
   <!-- SHOPIFY / RIVO STYLE EXPRESS CHECKOUT MODAL (COD) -->
   <div id="checkout-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4">
-    <div class="bg-[#121215] border border-purple-800/40 rounded-3xl max-w-lg w-full p-6 shadow-2xl relative space-y-4 text-white max-h-[90vh] overflow-y-auto">
-      
+    <div class="bg-[#121215] border border-blue-800/40 rounded-3xl max-w-lg w-full p-6 shadow-2xl relative space-y-4 text-white max-h-[90vh] overflow-y-auto">
+
       <button onclick="closeRivoCheckout()" class="absolute top-4 right-4 text-gray-400 hover:text-white font-black text-xl">✕</button>
 
       <div className="border-b border-gray-800 pb-3">
@@ -406,7 +406,7 @@ export default function LandingView({ activeTab = 'plantillas' }: LandingViewPro
             <Edit3 size={13} />
             <span>Creador & Copy</span>
           </button>
-          
+
           <button
             onClick={() => setInternalTab('checkout')}
             className={`px-3.5 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
@@ -493,7 +493,7 @@ export default function LandingView({ activeTab = 'plantillas' }: LandingViewPro
                   </span>
                 </div>
                 <div className="text-xs space-y-1 font-mono text-gray-300 bg-black p-3 rounded-lg border border-gray-900">
-                  <p><span className="text-gray-500">URL Publicada:</span> https://{formData.customDomain || 'landing.expert360.ai'}</p>
+                  <p><span className="text-gray-500">URL Publicada:</span> https://{formData.customDomain || 'subdominio.tudominio.com'}</p>
                   <p><span className="text-gray-500">Certificado SSL:</span> <span className="text-emerald-400">Válido (256-bit HTTPS Auto-renew)</span></p>
                 </div>
               </div>
@@ -505,15 +505,15 @@ export default function LandingView({ activeTab = 'plantillas' }: LandingViewPro
                 <Settings2 size={16} className="text-blue-400" /> Registros DNS Necesarios en tu Dominio
               </h4>
               <p className="text-gray-400">Agrega el siguiente registro CNAME o Registro A en el panel DNS de tu proveedor:</p>
-              
+
               <div className="space-y-2 font-mono">
                 <div className="p-3 bg-gray-900 rounded-xl border border-gray-800 flex justify-between items-center">
                   <div>
                     <span className="text-[10px] text-blue-400 font-bold block uppercase">Registro CNAME (Recomendado)</span>
-                    <span className="text-gray-200">Host: <strong className="text-white">subdominio</strong> → Valor: <strong className="text-emerald-400">cname.expert360.ai</strong></span>
+                    <span className="text-gray-200">Host: <strong className="text-white">subdominio</strong> → Valor: <strong className="text-emerald-400">crm.xorbit360.com</strong></span>
                   </div>
-                  <button 
-                    onClick={() => navigator.clipboard.writeText('cname.expert360.ai')}
+                  <button
+                    onClick={() => navigator.clipboard.writeText('crm.xorbit360.com')}
                     className="p-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-[10px] flex items-center gap-1"
                   >
                     <Copy size={12} /> Copiar
@@ -525,7 +525,7 @@ export default function LandingView({ activeTab = 'plantillas' }: LandingViewPro
                     <span className="text-[10px] text-blue-400 font-bold block uppercase">Registro A (Para Dominio Raíz @)</span>
                     <span className="text-gray-200">Host: <strong className="text-white">@</strong> → IP: <strong className="text-emerald-400">34.120.88.10</strong></span>
                   </div>
-                  <button 
+                  <button
                     onClick={() => navigator.clipboard.writeText('34.120.88.10')}
                     className="p-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-[10px] flex items-center gap-1"
                   >

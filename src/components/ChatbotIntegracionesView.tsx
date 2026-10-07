@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Check, 
-  Copy, 
-  RefreshCw, 
-  Save, 
-  CheckCircle2, 
+import {
+  Check,
+  Copy,
+  RefreshCw,
+  Save,
+  CheckCircle2,
   AlertCircle,
   Key,
   Lock,
@@ -89,11 +89,11 @@ export default function ChatbotIntegracionesView() {
 
   useEffect(() => {
     try {
-      const cached = localStorage.getItem('EXPERT360_CHATBOT_TOKENS_SIMPLE');
+      const cached = localStorage.getItem('XORBIT 360_CHATBOT_TOKENS_SIMPLE');
       if (cached) {
         setTokens(JSON.parse(cached));
       } else {
-        const oldCached = localStorage.getItem('EXPERT360_CHATBOT_TOKENS');
+        const oldCached = localStorage.getItem('XORBIT 360_CHATBOT_TOKENS');
         if (oldCached) {
           const old = JSON.parse(oldCached);
           setTokens({
@@ -126,7 +126,7 @@ export default function ChatbotIntegracionesView() {
               openrouter: t.openrouter?.token || t.openrouter || prev.openrouter || ''
             };
             try {
-              localStorage.setItem('EXPERT360_CHATBOT_TOKENS_SIMPLE', JSON.stringify(next));
+              localStorage.setItem('XORBIT 360_CHATBOT_TOKENS_SIMPLE', JSON.stringify(next));
             } catch (_) {}
             return next;
           });
@@ -139,7 +139,7 @@ export default function ChatbotIntegracionesView() {
     setTokens(prev => {
       const next = { ...prev, [key]: val };
       try {
-        localStorage.setItem('EXPERT360_CHATBOT_TOKENS_SIMPLE', JSON.stringify(next));
+        localStorage.setItem('XORBIT 360_CHATBOT_TOKENS_SIMPLE', JSON.stringify(next));
       } catch (_) {}
       return next;
     });
@@ -148,7 +148,7 @@ export default function ChatbotIntegracionesView() {
   const handleSaveSingle = async (key: keyof TokensState) => {
     setSavingKey(key);
     try {
-      localStorage.setItem('EXPERT360_CHATBOT_TOKENS_SIMPLE', JSON.stringify(tokens));
+      localStorage.setItem('XORBIT 360_CHATBOT_TOKENS_SIMPLE', JSON.stringify(tokens));
 
       const payload = {
         platform: key === 'meta' ? 'metaConversions' : key,
@@ -175,7 +175,7 @@ export default function ChatbotIntegracionesView() {
   const handleSaveAll = async () => {
     setSavingKey('all');
     try {
-      localStorage.setItem('EXPERT360_CHATBOT_TOKENS_SIMPLE', JSON.stringify(tokens));
+      localStorage.setItem('XORBIT 360_CHATBOT_TOKENS_SIMPLE', JSON.stringify(tokens));
 
       const calls = Object.keys(tokens).map(k => {
         const key = k as keyof TokensState;
@@ -238,8 +238,8 @@ export default function ChatbotIntegracionesView() {
       {/* Toast */}
       {toast && (
         <div className={`fixed top-4 right-4 z-50 px-4 py-2.5 rounded-lg border shadow-xl flex items-center gap-2 text-xs font-medium backdrop-blur-md transition-all ${
-          toast.error 
-            ? 'bg-red-950/90 border-red-800/80 text-red-200' 
+          toast.error
+            ? 'bg-red-950/90 border-red-800/80 text-red-200'
             : 'bg-zinc-900/90 border-zinc-700 text-emerald-400'
         }`}>
           {toast.error ? <AlertCircle size={15} /> : <CheckCircle2 size={15} />}
@@ -282,8 +282,8 @@ export default function ChatbotIntegracionesView() {
           const isTesting = testingKey === key;
 
           return (
-            <div 
-              key={key} 
+            <div
+              key={key}
               className="p-4 rounded-xl border border-zinc-800/80 bg-zinc-950/80 hover:border-zinc-700 transition flex flex-col justify-between space-y-3"
             >
               <div className="flex items-center justify-between">

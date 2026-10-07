@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { 
-  Package, Search, Filter, Globe, DollarSign, ArrowUpRight, CheckCircle, 
+import {
+  Package, Search, Filter, Globe, DollarSign, ArrowUpRight, CheckCircle,
   RefreshCw, TrendingUp, ShieldAlert, ShoppingBag, Layers, Truck, HelpCircle
 } from 'lucide-react';
 
@@ -135,7 +135,7 @@ export default function ProveedoresView() {
   const handleImportProduct = (productId: string) => {
     setImportingId(productId);
     setTimeout(() => {
-      setProducts(prev => 
+      setProducts(prev =>
         prev.map(p => p.id === productId ? { ...p, imported: !p.imported } : p)
       );
       setImportingId(null);
@@ -162,8 +162,8 @@ export default function ProveedoresView() {
             Conexión directa con bodegas locales en Latinoamérica (Dropi, MasterShop, Hoko). Sincroniza stock real e importa productos ganadores a tu WhatsApp de ventas en un clic.
           </p>
         </div>
-        
-        <button 
+
+        <button
           onClick={refreshCatalog}
           disabled={isRefreshing}
           className="bg-slate-900 border border-slate-800 hover:border-slate-700 hover:bg-slate-800 text-gray-300 px-5 py-3 rounded-xl text-xs font-bold font-mono tracking-wide flex items-center gap-2 transition-all"
@@ -214,8 +214,8 @@ export default function ProveedoresView() {
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize font-mono ${
-                  selectedCategory === cat 
-                    ? 'bg-gold text-black' 
+                  selectedCategory === cat
+                    ? 'bg-gold text-black'
                     : 'text-gray-400 hover:text-white hover:bg-slate-900'
                 }`}
               >
@@ -231,8 +231,8 @@ export default function ProveedoresView() {
                 key={country}
                 onClick={() => setSelectedCountry(country)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize font-mono ${
-                  selectedCountry === country 
-                    ? 'bg-gold text-black' 
+                  selectedCountry === country
+                    ? 'bg-gold text-black'
                     : 'text-gray-400 hover:text-white hover:bg-slate-900'
                 }`}
               >
@@ -248,15 +248,15 @@ export default function ProveedoresView() {
         {filteredProducts.map((product) => {
           const isImported = product.imported;
           const loadingThis = importingId === product.id;
-          
+
           return (
             <div key={product.id} className="rounded-2xl border border-slate-900 bg-slate-950/30 overflow-hidden hover:border-slate-800 transition-all flex flex-col h-full text-left">
               {/* Product Card Image Banner */}
               <div className="relative aspect-video w-full bg-slate-900 overflow-hidden border-b border-slate-900">
-                <img 
-                  src={product.image} 
-                  alt={product.name} 
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                <img
+                  src={product.image}
+                  alt={product.name}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   referrerPolicy="no-referrer"
                 />
                 <div className="absolute top-2.5 left-2.5 flex flex-wrap gap-1">
@@ -290,8 +290,8 @@ export default function ProveedoresView() {
                     <span className={product.stock < 100 ? 'text-red-400 font-bold' : 'text-green-400'}>{product.stock} unids</span>
                   </div>
                   <div className="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full rounded-full ${product.stock < 100 ? 'bg-red-500' : 'bg-green-500'}`} 
+                    <div
+                      className={`h-full rounded-full ${product.stock < 100 ? 'bg-red-500' : 'bg-green-500'}`}
                       style={{ width: `${Math.min((product.stock / 1500) * 100, 100)}%` }}
                     ></div>
                   </div>
@@ -318,8 +318,8 @@ export default function ProveedoresView() {
                   onClick={() => handleImportProduct(product.id)}
                   disabled={loadingThis}
                   className={`w-full py-2.5 rounded-xl font-bold font-mono text-xs transition-all flex items-center justify-center gap-1.5 border ${
-                    isImported 
-                      ? 'bg-green-950/20 text-green-400 border-green-500/35 hover:bg-green-950/10' 
+                    isImported
+                      ? 'bg-green-950/20 text-green-400 border-green-500/35 hover:bg-green-950/10'
                       : 'bg-gold text-black hover:bg-yellow-400 border-transparent shadow shadow-amber-500/5'
                   }`}
                 >
@@ -348,10 +348,10 @@ export default function ProveedoresView() {
         <div className="space-y-1">
           <h4 className="font-bold text-white text-md flex items-center gap-1.5"><Layers size={18} className="text-gold" /> ¿Cómo funciona la sincronización automática de catálogos?</h4>
           <p className="text-xs text-gray-400 max-w-2xl leading-relaxed">
-            Al hacer clic en "Importar Producto Ganador", Expert 360° crea automáticamente la ficha técnica en tu bot local, asocia el webhook de inventario y optimiza las respuestas de la Inteligencia Artificial con los detalles, SKU y precios de venta.
+            Al hacer clic en "Importar Producto Ganador", Xorbit 360 crea automáticamente la ficha técnica en tu bot local, asocia el webhook de inventario y optimiza las respuestas de la Inteligencia Artificial con los detalles, SKU y precios de venta.
           </p>
         </div>
-        <button 
+        <button
           onClick={() => alert("Consulta por favor el Campus de Entrenamiento o a tu Administrador (@wallet) para habilitar bodegas VIP.")}
           className="px-5 py-3 rounded-xl bg-slate-900 text-xs font-bold font-mono border border-slate-800 hover:border-gray-700 hover:text-white transition-all whitespace-nowrap self-stretch sm:self-center text-center justify-center"
         >

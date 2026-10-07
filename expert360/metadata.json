@@ -1,6 +1,6 @@
 {
-  "name": "Expert 360",
-  "description": "Expert 360",
+  "name": "Xorbit 360",
+  "description": "Xorbit 360",
   "requestFramePermissions": [
     "microphone",
     "camera"

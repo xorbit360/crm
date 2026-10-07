@@ -51,10 +51,10 @@ export default function LoginView({ onLogin }: LoginViewProps) {
     } catch (err: any) {
       // Fallback local check for master account
       const lower = normUser.toLowerCase();
-      if ((lower === 'admin' || lower === 'oscar@expert360.ai') && pass === 'Colombia1') {
+      if ((lower === 'admin' || lower === 'admin@xorbit360.com') && pass === 'Colombia1') {
         const adminUser = {
           name: 'Oscar Molina',
-          email: 'oscar@expert360.ai',
+          email: 'admin@xorbit360.com',
           role: 'superadmin',
           username: 'admin',
           phone: '573192392853',
@@ -108,20 +108,20 @@ export default function LoginView({ onLogin }: LoginViewProps) {
       <div className="w-full max-w-md panel p-8 rounded-2xl relative overflow-hidden group border border-zinc-800 shadow-2xl">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-600 via-amber-500 to-emerald-500"></div>
         <div className="absolute -top-32 -right-32 w-64 h-64 bg-red-600/10 rounded-full blur-3xl pointer-events-none"></div>
-        
+
         <div className="relative z-10">
           <div className="flex justify-center mb-6">
             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-red-600 to-amber-500 flex items-center justify-center font-bold text-white font-display shadow-lg shadow-red-600/30 text-3xl">
               X
             </div>
           </div>
-          
+
           <h2 className="text-2xl font-bold font-display text-white text-center mb-1 tracking-tight">Acceso Privado CRM</h2>
           <p className="text-gray-400 text-center mb-6 text-xs">
             Exclusivo para clientes con suscripción activa en <strong className="text-white">xorbit360.com</strong>
           </p>
 
-          <button 
+          <button
             type="button"
             onClick={handleGoogleLogin}
             disabled={isLoading}
@@ -149,7 +149,7 @@ export default function LoginView({ onLogin }: LoginViewProps) {
                   <ShieldAlert size={16} className="text-red-400 shrink-0 mt-0.5" />
                   <p className="leading-relaxed">{error}</p>
                 </div>
-                
+
                 {requirePayment && (
                   <div className="pt-2 border-t border-red-500/30">
                     <a
@@ -164,13 +164,13 @@ export default function LoginView({ onLogin }: LoginViewProps) {
                 )}
               </div>
             )}
-            
+
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Correo o Usuario</label>
               <div className="relative">
                 <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-10 pr-4 py-3 text-xs text-gray-200 focus:border-red-500 focus:outline-none transition-colors"
@@ -184,8 +184,8 @@ export default function LoginView({ onLogin }: LoginViewProps) {
               <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Contraseña de Acceso</label>
               <div className="relative">
                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
-                <input 
-                  type="password" 
+                <input
+                  type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-10 pr-4 py-3 text-xs text-gray-200 focus:border-red-500 focus:outline-none transition-colors"
@@ -195,8 +195,8 @@ export default function LoginView({ onLogin }: LoginViewProps) {
               </div>
             </div>
 
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={isLoading}
               className="w-full bg-gradient-to-r from-red-600 via-red-500 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-extrabold py-3.5 rounded-xl shadow-lg shadow-red-600/25 transition-all flex items-center justify-center gap-2 mt-4 cursor-pointer disabled:opacity-50 text-xs tracking-wide uppercase"
             >
@@ -212,9 +212,9 @@ export default function LoginView({ onLogin }: LoginViewProps) {
 
           <div className="mt-6 pt-5 border-t border-zinc-800/80 text-center space-y-2">
             <p className="text-[11px] text-zinc-400">¿Aún no tienes acceso a la plataforma?</p>
-            <a 
-              href="https://xorbit360.com" 
-              target="_blank" 
+            <a
+              href="https://xorbit360.com"
+              target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-colors"
             >

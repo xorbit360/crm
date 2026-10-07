@@ -67,7 +67,7 @@ export default function ClientesView() {
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        
+
         // Forced reset if they contain the old high return rates (> 7%) or old CLI-1003 mock data
         const hasHighReturns = parsed.some((c: any) => (c.returnedCount / (c.totalOrdersCount || 1)) > 0.07);
         if (hasHighReturns) {
@@ -78,13 +78,13 @@ export default function ClientesView() {
         // Ensure all loaded clients have the logistics properties
         const migration = parsed.map((c: any) => {
           if (c.totalOrdersCount !== undefined) return c;
-          
+
           // Generate defaults if they don't exist
           const totalCount = c.isRecurring ? 15 : 1;
           const returned = c.id === 'CLI-1003' ? 1 : (c.id === 'CLI-1002' ? 1 : 0);
           const delivered = totalCount - returned;
           const risk = 'low';
-          
+
           return {
             ...c,
             totalOrdersCount: totalCount,
@@ -291,12 +291,12 @@ export default function ClientesView() {
         logisticsRisk: 'low',
         notes: 'Ficha registrada de manera manual.',
         orderHistory: [
-          { 
-            id: `PED-${Math.floor(1000 + Math.random() * 9000)}`, 
-            product: formProduct || 'Producto Desconocido', 
-            total: Number(formTicket) || 0, 
-            date: formDate || new Date().toISOString().split('T')[0], 
-            status: 'Entregado' 
+          {
+            id: `PED-${Math.floor(1000 + Math.random() * 9000)}`,
+            product: formProduct || 'Producto Desconocido',
+            total: Number(formTicket) || 0,
+            date: formDate || new Date().toISOString().split('T')[0],
+            status: 'Entregado'
           }
         ]
       };
@@ -314,15 +314,15 @@ export default function ClientesView() {
     }
 
     setIsAiAnalyzing(true);
-    
+
     // Simulate AI extraction logic
     setTimeout(() => {
       const text = aiText.toLowerCase();
-      
+
       // Heuristic extraction
       let name = '';
-      const nameMatch = aiText.match(/me llamo\s+([A-Za-zñáéíóúÁÉÍÓÚ\s]{2,20})/i) || 
-                        aiText.match(/nombre:\s*([A-Za-zñáéíóúÁÉÍÓÚ\s]{2,20})/i) || 
+      const nameMatch = aiText.match(/me llamo\s+([A-Za-zñáéíóúÁÉÍÓÚ\s]{2,20})/i) ||
+                        aiText.match(/nombre:\s*([A-Za-zñáéíóúÁÉÍÓÚ\s]{2,20})/i) ||
                         aiText.match(/soy\s+([A-Za-zñáéíóúÁÉÍÓÚ\s]{2,20})/i);
       if (nameMatch) {
         name = nameMatch[1].trim();
@@ -369,7 +369,7 @@ export default function ClientesView() {
       }
 
       let isRecurring = text.includes('recurrente') || text.includes('otra vez') || text.includes('segunda vez');
-      
+
       let ticket = 120000;
       if (product.includes('Aspiradora')) ticket = 350000;
       if (product.includes('Auriculares')) ticket = 190000;
@@ -402,14 +402,14 @@ export default function ClientesView() {
 
   // Filtering clients
   const filteredClients = clients.filter(c => {
-    const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          c.phone.includes(searchTerm) || 
-                          c.city.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          c.phone.includes(searchTerm) ||
+                          c.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           c.product.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesDept = filterDept === 'ALL' || c.department === filterDept;
     const matchesCampaign = filterCampaign === 'ALL' || c.campaign === filterCampaign;
-    
+
     let matchesRecur = true;
     if (filterRecur === 'YES') matchesRecur = c.isRecurring;
     if (filterRecur === 'NO') matchesRecur = !c.isRecurring;
@@ -422,15 +422,15 @@ export default function ClientesView() {
   // Export CSV Simulation
   const handleExportCSV = () => {
     const headers = 'ID,Nombre,Telefono,Ciudad,Departamento,Producto Interesado,Campana Origen,Recurrente,Fecha Registro,Ticket de Compra\n';
-    const rows = filteredClients.map(c => 
+    const rows = filteredClients.map(c =>
       `"${c.id}","${c.name}","${c.phone}","${c.city}","${c.department}","${c.product}","${c.campaign}","${c.isRecurring ? 'SI' : 'NO'}","${c.registrationDate}",${c.totalTicket}`
     ).join('\n');
-    
+
     const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `crm_clientes_expert360_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `crm_clientes_xorbit360_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -442,7 +442,7 @@ export default function ClientesView() {
   const recurrenceRate = totalClients > 0 ? ((recurrentCount / totalClients) * 100).toFixed(0) : '0';
   const totalRevenue = clients.reduce((sum, c) => sum + c.totalTicket, 0);
   const avgTicket = totalClients > 0 ? (totalRevenue / totalClients).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }) : '$0';
-  
+
   // Find top product
   const productCount: Record<string, number> = {};
   clients.forEach(c => {
@@ -459,7 +459,7 @@ export default function ClientesView() {
 
   return (
     <div className="space-y-6 animate-fade-in text-left">
-      
+
       {/* Header Info */}
       <div className="bg-[#0c0c0c] border border-gray-800 rounded-2xl p-6 relative overflow-hidden">
         <div className="absolute top-0 right-0 p-6 opacity-5">
@@ -471,7 +471,7 @@ export default function ClientesView() {
             CRM de Clientes Inteligente
           </h3>
           <p className="text-xs text-gray-400">
-            Base de datos unificada de clientes capturados automáticamente por el Bot de WhatsApp en sus conversaciones. 
+            Base de datos unificada de clientes capturados automáticamente por el Bot de WhatsApp en sus conversaciones.
             Permite clasificar leads, guardar ciudades, departamentos, tickets de compra, recurrencias, productos interesados y procedencia publicitaria.
           </p>
         </div>
@@ -510,7 +510,7 @@ export default function ClientesView() {
         </div>
 
         <div className="panel p-5 rounded-xl border border-gray-800 bg-[#111] flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+          <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
             <ShoppingBag size={20} />
           </div>
           <div className="flex-1 min-w-0">
@@ -534,19 +534,19 @@ export default function ClientesView() {
         </div>
 
         <div className="flex flex-wrap gap-2 w-full md:w-auto">
-          <button 
+          <button
             onClick={() => setIsAiOpen(true)}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-2 transition"
+            className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-2 transition"
           >
             <Sparkles size={14} /> Extraer con IA
           </button>
-          <button 
+          <button
             onClick={handleOpenCreate}
             className="bg-green-600 hover:bg-green-500 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-2 transition"
           >
             <Plus size={14} /> Nuevo Cliente
           </button>
-          <button 
+          <button
             onClick={handleExportCSV}
             className="bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-2 transition"
           >
@@ -559,7 +559,7 @@ export default function ClientesView() {
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 bg-[#111] p-4 rounded-xl border border-gray-800/60 text-xs text-gray-400">
         <div>
           <label className="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Filtrar por Departamento</label>
-          <select 
+          <select
             value={filterDept}
             onChange={(e) => setFilterDept(e.target.value)}
             className="w-full bg-black border border-gray-800 rounded-lg p-2 text-white focus:border-green-500 outline-none cursor-pointer"
@@ -572,7 +572,7 @@ export default function ClientesView() {
 
         <div>
           <label className="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Filtrar por Recurrencia</label>
-          <select 
+          <select
             value={filterRecur}
             onChange={(e) => setFilterRecur(e.target.value)}
             className="w-full bg-black border border-gray-800 rounded-lg p-2 text-white focus:border-green-500 outline-none cursor-pointer"
@@ -585,7 +585,7 @@ export default function ClientesView() {
 
         <div>
           <label className="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Semaforo de Riesgo (Logística)</label>
-          <select 
+          <select
             value={filterRisk}
             onChange={(e) => setFilterRisk(e.target.value)}
             className="w-full bg-black border border-gray-800 rounded-lg p-2 text-white focus:border-green-500 outline-none cursor-pointer"
@@ -599,7 +599,7 @@ export default function ClientesView() {
 
         <div>
           <label className="block text-[10px] uppercase font-bold text-gray-500 mb-1.5">Filtrar por Campaña/Anuncio</label>
-          <select 
+          <select
             value={filterCampaign}
             onChange={(e) => setFilterCampaign(e.target.value)}
             className="w-full bg-black border border-gray-800 rounded-lg p-2 text-white focus:border-green-500 outline-none cursor-pointer"
@@ -629,17 +629,17 @@ export default function ClientesView() {
             <tbody className="divide-y divide-gray-850 text-xs">
               {filteredClients.length > 0 ? (
                 filteredClients.map((client) => {
-                  const returnRate = client.totalOrdersCount > 0 
-                    ? Math.round((client.returnedCount / client.totalOrdersCount) * 100) 
+                  const returnRate = client.totalOrdersCount > 0
+                    ? Math.round((client.returnedCount / client.totalOrdersCount) * 100)
                     : 0;
-                  
+
                   return (
                     <tr key={client.id} className="hover:bg-gray-900/30 transition-colors">
                       <td className="p-4">
                         <div>
                           <span className="font-bold text-white text-sm block">{client.name}</span>
                           <span className="font-mono text-[9px] text-gray-500 mt-0.5 block flex items-center gap-1">
-                            {client.id} 
+                            {client.id}
                             {client.isRecurring && (
                               <span className="bg-emerald-500/10 text-emerald-400 text-[8px] px-1 rounded font-sans font-bold">Recurrente</span>
                             )}
@@ -698,22 +698,22 @@ export default function ClientesView() {
                       </td>
                       <td className="p-4 text-center">
                         <div className="flex items-center justify-center gap-1.5">
-                          <button 
+                          <button
                             onClick={() => setHistoryModalClient(client)}
-                            className="p-1.5 bg-indigo-950/30 hover:bg-indigo-900/40 text-indigo-400 hover:text-indigo-300 rounded border border-indigo-900/20 transition flex items-center gap-1"
+                            className="p-1.5 bg-blue-950/30 hover:bg-blue-900/40 text-blue-400 hover:text-blue-300 rounded border border-blue-900/20 transition flex items-center gap-1"
                             title="Ver Perfil Logístico e Historial"
                           >
                             <Eye size={13} />
                             <span className="text-[9px] font-bold">Historial</span>
                           </button>
-                          <button 
+                          <button
                             onClick={() => handleOpenEdit(client)}
                             className="p-1.5 bg-gray-800 hover:bg-gray-750 text-gray-400 hover:text-white rounded transition"
                             title="Editar Ficha"
                           >
                             <Edit3 size={13} />
                           </button>
-                          <button 
+                          <button
                             onClick={() => handleDeleteClient(client.id)}
                             className="p-1.5 bg-red-950/20 hover:bg-red-900/20 text-red-400 hover:text-red-300 rounded border border-red-900/10 transition"
                             title="Eliminar"
@@ -741,7 +741,7 @@ export default function ClientesView() {
       {isFormOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-[#0c0c0c] border border-gray-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-scale-up relative">
-            <button 
+            <button
               onClick={() => setIsFormOpen(false)}
               className="absolute top-4 right-4 text-gray-500 hover:text-white transition"
             >
@@ -759,8 +759,8 @@ export default function ClientesView() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-[10px] uppercase font-bold text-gray-500 block mb-1">Nombre Completo</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     required
                     placeholder="ej. María Camila Restrepo"
                     value={formName}
@@ -770,8 +770,8 @@ export default function ClientesView() {
                 </div>
                 <div>
                   <label className="text-[10px] uppercase font-bold text-gray-500 block mb-1">Número de Teléfono</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     required
                     placeholder="ej. +57 300 123 4567"
                     value={formPhone}
@@ -784,8 +784,8 @@ export default function ClientesView() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-[10px] uppercase font-bold text-gray-500 block mb-1">Ciudad</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     placeholder="ej. Medellín"
                     value={formCity}
                     onChange={(e) => setFormCity(e.target.value)}
@@ -794,8 +794,8 @@ export default function ClientesView() {
                 </div>
                 <div>
                   <label className="text-[10px] uppercase font-bold text-gray-500 block mb-1">Departamento</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     placeholder="ej. Antioquia"
                     value={formDept}
                     onChange={(e) => setFormDept(e.target.value)}
@@ -807,8 +807,8 @@ export default function ClientesView() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-[10px] uppercase font-bold text-gray-500 block mb-1">Producto Interesado</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     placeholder="ej. Smartwatch Ultra X8"
                     value={formProduct}
                     onChange={(e) => setFormProduct(e.target.value)}
@@ -817,8 +817,8 @@ export default function ClientesView() {
                 </div>
                 <div>
                   <label className="text-[10px] uppercase font-bold text-gray-500 block mb-1">Campaña / Anuncio Origen</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     placeholder="ej. Facebook Ads - Campaña 3"
                     value={formCampaign}
                     onChange={(e) => setFormCampaign(e.target.value)}
@@ -830,8 +830,8 @@ export default function ClientesView() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-[10px] uppercase font-bold text-gray-500 block mb-1">Fecha de Registro</label>
-                  <input 
-                    type="date" 
+                  <input
+                    type="date"
                     value={formDate}
                     onChange={(e) => setFormDate(e.target.value)}
                     className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-green-500"
@@ -839,8 +839,8 @@ export default function ClientesView() {
                 </div>
                 <div>
                   <label className="text-[10px] uppercase font-bold text-gray-500 block mb-1">Ticket de Compra Acumulado (COP)</label>
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     placeholder="ej. 120000"
                     value={formTicket}
                     onChange={(e) => setFormTicket(Number(e.target.value))}
@@ -854,7 +854,7 @@ export default function ClientesView() {
                   <p className="text-xs font-bold text-white">¿Es Cliente Recurrente?</p>
                   <p className="text-[10px] text-gray-500">¿Ha registrado múltiples compras o contactos repetidos?</p>
                 </div>
-                <input 
+                <input
                   type="checkbox"
                   checked={formIsRecurring}
                   onChange={(e) => setFormIsRecurring(e.target.checked)}
@@ -863,15 +863,15 @@ export default function ClientesView() {
               </div>
 
               <div className="flex gap-2 pt-4 border-t border-gray-850">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setIsFormOpen(false)}
                   className="flex-1 bg-gray-900 hover:bg-gray-850 text-gray-400 hover:text-white transition font-bold py-2.5 rounded-lg text-xs"
                 >
                   Cancelar
                 </button>
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   className="flex-1 bg-green-600 hover:bg-green-500 text-white transition font-bold py-2.5 rounded-lg text-xs"
                 >
                   {isEditMode ? 'Guardar Cambios' : 'Registrar Cliente'}
@@ -886,7 +886,7 @@ export default function ClientesView() {
       {isAiOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-[#0c0c0c] border border-gray-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-scale-up relative">
-            <button 
+            <button
               onClick={() => setIsAiOpen(false)}
               className="absolute top-4 right-4 text-gray-500 hover:text-white transition"
             >
@@ -894,11 +894,11 @@ export default function ClientesView() {
             </button>
             <div className="p-6 border-b border-gray-800 bg-[#111]">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Sparkles size={18} className="text-indigo-400" />
+                <Sparkles size={18} className="text-blue-400" />
                 Extraer Ficha de Cliente con IA
               </h3>
               <p className="text-[10px] text-gray-400 mt-1">
-                Pega el log de la conversación de WhatsApp con tu cliente. 
+                Pega el log de la conversación de WhatsApp con tu cliente.
                 Nuestra IA analizará el texto para extraer automáticamente el nombre, ciudad, producto, campaña y ticket de compra.
               </p>
             </div>
@@ -906,28 +906,28 @@ export default function ClientesView() {
             <div className="p-6 space-y-4 text-left">
               <div>
                 <label className="text-[10px] uppercase font-bold text-gray-500 block mb-1.5">Conversación / Chat Log</label>
-                <textarea 
+                <textarea
                   value={aiText}
                   onChange={(e) => setAiText(e.target.value)}
                   placeholder="Pegue aquí el chat. Ej:
 [10:01] Cliente: Hola me llamo María Camila Restrepo, vi un anuncio en Facebook del Smartwatch Ultra y me interesa. Tienen envío a Bogotá?
-[10:02] Bot: ¡Hola María! Sí claro, tenemos envío a Bogotá, departamento de Cundinamarca por $120,000 con pago contra entrega." 
-                  className="w-full bg-black border border-gray-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500 h-40 resize-none font-mono placeholder:text-gray-600"
+[10:02] Bot: ¡Hola María! Sí claro, tenemos envío a Bogotá, departamento de Cundinamarca por $120,000 con pago contra entrega."
+                  className="w-full bg-black border border-gray-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-blue-500 h-40 resize-none font-mono placeholder:text-gray-600"
                 />
               </div>
 
               <div className="flex gap-2 pt-4 border-t border-gray-850">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setIsAiOpen(false)}
                   className="flex-1 bg-gray-900 hover:bg-gray-850 text-gray-400 hover:text-white transition font-bold py-2.5 rounded-lg text-xs"
                 >
                   Cerrar
                 </button>
-                <button 
+                <button
                   onClick={handleAiExtract}
                   disabled={isAiAnalyzing}
-                  className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white transition font-bold py-2.5 rounded-lg text-xs flex items-center justify-center gap-1.5 disabled:opacity-50"
+                  className="flex-1 bg-blue-600 hover:bg-blue-500 text-white transition font-bold py-2.5 rounded-lg text-xs flex items-center justify-center gap-1.5 disabled:opacity-50"
                 >
                   {isAiAnalyzing ? (
                     <>
@@ -949,7 +949,7 @@ export default function ClientesView() {
       {historyModalClient && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-[#0c0c0c] border border-gray-800 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl animate-scale-up relative flex flex-col max-h-[90vh]">
-            <button 
+            <button
               onClick={() => setHistoryModalClient(null)}
               className="absolute top-4 right-4 text-gray-400 hover:text-white transition bg-gray-900/60 p-1.5 rounded-full z-10"
             >
@@ -959,8 +959,8 @@ export default function ClientesView() {
             {/* Header */}
             <div className="p-6 border-b border-gray-800 bg-[#111] flex items-center gap-3">
               <div className={`p-2.5 rounded-xl ${
-                historyModalClient.logisticsRisk === 'high' 
-                  ? 'bg-red-500/10 border border-red-500/20 text-red-400' 
+                historyModalClient.logisticsRisk === 'high'
+                  ? 'bg-red-500/10 border border-red-500/20 text-red-400'
                   : historyModalClient.logisticsRisk === 'medium'
                   ? 'bg-amber-500/10 border border-amber-500/20 text-amber-400'
                   : 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
@@ -979,7 +979,7 @@ export default function ClientesView() {
 
             {/* Content (Scrollable) */}
             <div className="p-6 space-y-6 overflow-y-auto text-left flex-1">
-              
+
               {/* Profile Card & Traffic Light */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-[#111] border border-gray-800 rounded-xl p-4 flex flex-col justify-between">
@@ -1005,18 +1005,18 @@ export default function ClientesView() {
                   <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Efectividad de Entrega</span>
                   <div className="mt-2 flex items-baseline gap-1">
                     <span className="text-2xl font-bold font-mono text-white">
-                      {historyModalClient.totalOrdersCount > 0 
-                        ? Math.round((historyModalClient.deliveredCount / historyModalClient.totalOrdersCount) * 100) 
+                      {historyModalClient.totalOrdersCount > 0
+                        ? Math.round((historyModalClient.deliveredCount / historyModalClient.totalOrdersCount) * 100)
                         : 100}%
                     </span>
                     <span className="text-[10px] text-gray-400">éxito</span>
                   </div>
                   <div className="w-full bg-gray-800 h-1.5 rounded-full mt-2 overflow-hidden">
-                    <div 
+                    <div
                       className={`h-full rounded-full ${
                         historyModalClient.logisticsRisk === 'high' ? 'bg-red-500' :
                         historyModalClient.logisticsRisk === 'medium' ? 'bg-amber-500' : 'bg-emerald-500'
-                      }`} 
+                      }`}
                       style={{ width: `${historyModalClient.totalOrdersCount > 0 ? (historyModalClient.deliveredCount / historyModalClient.totalOrdersCount) * 100 : 100}%` }}
                     ></div>
                   </div>
@@ -1044,8 +1044,8 @@ export default function ClientesView() {
 
               {/* Logistical Advice Banner */}
               <div className={`p-4 rounded-xl border flex gap-3 ${
-                historyModalClient.logisticsRisk === 'high' 
-                  ? 'bg-red-950/15 border-red-900/30 text-red-300' 
+                historyModalClient.logisticsRisk === 'high'
+                  ? 'bg-red-950/15 border-red-900/30 text-red-300'
                   : historyModalClient.logisticsRisk === 'medium'
                   ? 'bg-amber-950/15 border-amber-900/30 text-amber-300'
                   : 'bg-emerald-950/15 border-emerald-900/30 text-emerald-300'
@@ -1066,7 +1066,7 @@ export default function ClientesView() {
                      'Estatus: Cliente Estrella de Alta Confianza'}
                   </h4>
                   <p className="text-[11px] leading-relaxed opacity-90">
-                    {historyModalClient.logisticsRisk === 'high' 
+                    {historyModalClient.logisticsRisk === 'high'
                       ? 'Este cliente tiene una alta tasa de devoluciones en envíos contra entrega. Se recomienda encarecidamente NO despachar sin cobrar el valor del flete por adelantado vía transferencia, de lo contrario asumirá pérdidas por flete de retorno.'
                       : historyModalClient.logisticsRisk === 'medium'
                       ? 'Registra un historial mixto. Antes de despachar por transportadoras (Servientrega, Envía, Coordinadora), llame personalmente para validar la dirección, disponibilidad del dinero e interés del cliente en recibir.'
@@ -1080,7 +1080,7 @@ export default function ClientesView() {
                 <h4 className="text-xs font-bold uppercase tracking-widest text-gray-500 flex items-center gap-1.5">
                   <ShoppingBag size={12} /> Historial de Pedidos ({historyModalClient.orderHistory?.length || 0})
                 </h4>
-                
+
                 <div className="bg-[#111] border border-gray-800 rounded-xl divide-y divide-gray-850">
                   {historyModalClient.orderHistory && historyModalClient.orderHistory.length > 0 ? (
                     historyModalClient.orderHistory.map((item) => (
@@ -1121,7 +1121,7 @@ export default function ClientesView() {
             {/* Footer */}
             <div className="p-6 border-t border-gray-800 bg-[#111] flex items-center justify-between">
               <span className="text-[10px] text-gray-500 font-mono">ID Cliente: {historyModalClient.id}</span>
-              <button 
+              <button
                 onClick={() => setHistoryModalClient(null)}
                 className="bg-gray-800 hover:bg-gray-750 text-white font-bold px-5 py-2 rounded-xl text-xs transition"
               >

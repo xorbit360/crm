@@ -1,17 +1,17 @@
-// Timezone Detection & Synchronization Utility for Expert 360°
+// Timezone Detection & Synchronization Utility for Xorbit 360
 // Automatically detects device/browser timezone and synchronizes with server and IP location.
 
 let cachedTimezone: string = 'America/Bogota';
 
 try {
-  const saved = localStorage.getItem('EXPERT360_TIMEZONE');
+  const saved = localStorage.getItem('XORBIT 360_TIMEZONE');
   if (saved) {
     cachedTimezone = saved;
   } else {
     const resolved = Intl.DateTimeFormat().resolvedOptions().timeZone;
     if (resolved) {
       cachedTimezone = resolved;
-      localStorage.setItem('EXPERT360_TIMEZONE', resolved);
+      localStorage.setItem('XORBIT 360_TIMEZONE', resolved);
     }
   }
 } catch (_) {
@@ -26,7 +26,7 @@ export function setTimezone(tz: string): void {
   if (!tz) return;
   cachedTimezone = tz;
   try {
-    localStorage.setItem('EXPERT360_TIMEZONE', tz);
+    localStorage.setItem('XORBIT 360_TIMEZONE', tz);
   } catch (_) {}
 }
 

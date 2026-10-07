@@ -1,21 +1,21 @@
 import React, { useState } from 'react';
-import { 
-  MessageSquare, 
-  Send, 
-  Sparkles, 
-  Facebook, 
-  Instagram, 
-  Video, 
-  Check, 
-  RefreshCw, 
-  AlertCircle, 
-  Filter, 
-  Bot, 
-  Settings, 
-  Zap, 
-  Plus, 
-  UserCircle, 
-  Smile, 
+import {
+  MessageSquare,
+  Send,
+  Sparkles,
+  Facebook,
+  Instagram,
+  Video,
+  Check,
+  RefreshCw,
+  AlertCircle,
+  Filter,
+  Bot,
+  Settings,
+  Zap,
+  Plus,
+  UserCircle,
+  Smile,
   Trash2,
   Clock,
   HelpCircle
@@ -117,7 +117,7 @@ export default function ComentariosSocialesView() {
   // Filters calculation
   const filteredComments = comments.filter(c => {
     const platformMatch = platformFilter === 'all' || c.platform === platformFilter;
-    const statusMatch = statusFilter === 'all' || 
+    const statusMatch = statusFilter === 'all' ||
                         (statusFilter === 'pendiente' && c.status === 'pendiente') ||
                         (statusFilter === 'respondido' && c.status !== 'pendiente');
     return platformMatch && statusMatch;
@@ -154,7 +154,7 @@ export default function ComentariosSocialesView() {
           ? 'Este producto tiene un súper precio de preventa de $149,900 COP.'
           : 'Claro que sí, está disponible para entrega inmediata.'
       } Contamos con envío GRATIS y Pago Contra Entrega para toda Colombia a través de Dropi. 📦🇨🇴 Haz clic en el link de nuestro perfil para finalizar tu compra por WhatsApp. ¡Te esperamos!`;
-      
+
       setComments(prev => prev.map(c => {
         if (c.id === selectedComment.id) {
           return {
@@ -192,7 +192,7 @@ export default function ComentariosSocialesView() {
     setSimName('');
     setSimText('');
     setShowSimulator(false);
-    
+
     // Play a smooth visual notification
     alert(`🔔 Nuevo comentario simulado en ${simPlatform.toUpperCase()} de ${simName}`);
   };
@@ -205,7 +205,7 @@ export default function ComentariosSocialesView() {
 
   return (
     <div className="space-y-6 animate-fade-in text-gray-200 text-left">
-      
+
       {/* Top Header Row */}
       <div className="bg-[#0c0c0c] border border-gray-800 rounded-2xl p-6 relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none">
@@ -236,11 +236,11 @@ export default function ComentariosSocialesView() {
             <Settings size={16} className="text-gold" /> Configuración de Respuestas Automáticas con IA
           </h4>
           <label className="relative inline-flex items-center cursor-pointer">
-            <input 
-              type="checkbox" 
-              checked={autoReplyEnabled} 
+            <input
+              type="checkbox"
+              checked={autoReplyEnabled}
               onChange={() => setAutoReplyEnabled(!autoReplyEnabled)}
-              className="sr-only peer" 
+              className="sr-only peer"
             />
             <div className="w-9 h-5 bg-gray-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-300 after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500"></div>
             <span className="ml-2 text-xs font-medium text-gray-300">{autoReplyEnabled ? 'Auto-IA Activo' : 'Auto-IA Pausado'}</span>
@@ -277,10 +277,10 @@ export default function ComentariosSocialesView() {
 
       {/* Main Connection Workspace */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
+
         {/* Left Side: Filter and Feed */}
         <div className="lg:col-span-5 space-y-4 flex flex-col h-[580px]">
-          
+
           {/* Feed Filter Panel */}
           <div className="bg-[#090909] border border-gray-800 p-3 rounded-2xl flex items-center justify-between gap-2 flex-wrap shrink-0">
             {/* Platform Selection Buttons */}
@@ -362,10 +362,10 @@ export default function ComentariosSocialesView() {
                     </div>
 
                     <div className="flex gap-3 items-start pr-8">
-                      <img 
-                        src={item.authorAvatar} 
+                      <img
+                        src={item.authorAvatar}
                         alt={item.authorName}
-                        className="w-8 h-8 rounded-full border border-gray-800 mt-0.5 shrink-0" 
+                        className="w-8 h-8 rounded-full border border-gray-800 mt-0.5 shrink-0"
                       />
                       <div className="space-y-1 min-w-0">
                         <div className="flex items-center gap-2">
@@ -381,7 +381,7 @@ export default function ComentariosSocialesView() {
 
                     <div className="flex items-center justify-between pt-2.5 mt-2.5 border-t border-gray-900 text-[10px]">
                       <span className="text-gray-500 font-mono">ID: {item.id}</span>
-                      
+
                       {item.status === 'pendiente' && (
                         <span className="text-[10px] bg-zinc-900 text-zinc-300 px-2 py-0.5 rounded font-medium border border-zinc-800">Pendiente</span>
                       )}
@@ -403,14 +403,14 @@ export default function ComentariosSocialesView() {
         <div className="lg:col-span-7 bg-[#090909] border border-gray-800 rounded-2xl p-6 h-[580px] flex flex-col justify-between">
           {selectedComment ? (
             <div className="flex-1 flex flex-col justify-between h-full space-y-4">
-              
+
               {/* Upper Section: Comment Details & Origin */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between border-b border-gray-800 pb-3">
                   <div className="flex items-center gap-3">
-                    <img 
-                      src={selectedComment.authorAvatar} 
-                      alt={selectedComment.authorName} 
+                    <img
+                      src={selectedComment.authorAvatar}
+                      alt={selectedComment.authorName}
                       className="w-10 h-10 rounded-full border border-gray-800 shrink-0"
                     />
                     <div>
@@ -432,9 +432,9 @@ export default function ComentariosSocialesView() {
                 <div className="bg-[#0e0e0e] border border-gray-850 p-3 rounded-xl flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
                     {selectedComment.postImage && (
-                      <img 
-                        src={selectedComment.postImage} 
-                        alt="Post visual" 
+                      <img
+                        src={selectedComment.postImage}
+                        alt="Post visual"
                         className="w-10 h-10 object-cover rounded border border-gray-950 shrink-0"
                       />
                     )}
@@ -469,19 +469,19 @@ export default function ComentariosSocialesView() {
 
               {/* Lower Section: Action area (Input box + Copilot) */}
               <div className="space-y-4">
-                
+
                 {/* AI suggestion panel */}
                 {!selectedComment.replyText && (
-                  <div className="bg-gradient-to-r from-purple-950/20 to-indigo-950/20 border border-purple-500/20 rounded-xl p-4 space-y-2 relative">
+                  <div className="bg-gradient-to-r from-blue-950/20 to-blue-950/20 border border-blue-500/20 rounded-xl p-4 space-y-2 relative">
                     <div className="flex items-center justify-between">
-                      <h5 className="text-xs font-bold text-white flex items-center gap-1.5 text-purple-300">
-                        <Sparkles size={14} className="text-purple-400" /> Copiloto AI Generador de Respuestas
+                      <h5 className="text-xs font-bold text-white flex items-center gap-1.5 text-blue-300">
+                        <Sparkles size={14} className="text-blue-400" /> Copiloto AI Generador de Respuestas
                       </h5>
                       <button
                         type="button"
                         disabled={generatingAIId !== null}
                         onClick={handleGenerateAISuggestion}
-                        className="text-[10px] bg-purple-600 hover:bg-purple-500 text-white font-bold px-2.5 py-1 rounded transition flex items-center gap-1 shrink-0 shadow-sm shadow-purple-600/10"
+                        className="text-[10px] bg-blue-600 hover:bg-blue-500 text-white font-bold px-2.5 py-1 rounded transition flex items-center gap-1 shrink-0 shadow-sm shadow-blue-600/10"
                       >
                         {generatingAIId ? <RefreshCw size={10} className="animate-spin" /> : <RefreshCw size={10} />}
                         Generar Sugerencia
@@ -490,14 +490,14 @@ export default function ComentariosSocialesView() {
 
                     {selectedComment.aiSuggestedReply ? (
                       <div className="space-y-2 animate-fade-in">
-                        <p className="text-xs text-gray-300 bg-black/30 p-2.5 rounded-lg leading-relaxed border border-purple-950 font-sans">
+                        <p className="text-xs text-gray-300 bg-black/30 p-2.5 rounded-lg leading-relaxed border border-blue-950 font-sans">
                           {selectedComment.aiSuggestedReply}
                         </p>
                         <div className="flex justify-end">
                           <button
                             type="button"
                             onClick={() => setReplyInput(selectedComment.aiSuggestedReply || '')}
-                            className="text-[10px] text-purple-400 hover:text-purple-300 font-bold flex items-center gap-1"
+                            className="text-[10px] text-blue-400 hover:text-blue-300 font-bold flex items-center gap-1"
                           >
                             Usar esta respuesta
                           </button>
@@ -569,7 +569,7 @@ export default function ComentariosSocialesView() {
                   {!selectedComment.replyText && (
                     <div className="flex items-center justify-between text-[10px] text-gray-500">
                       <span className="flex items-center gap-1"><Clock size={11} /> Tu respuesta se publicará en tiempo real en la red social del cliente</span>
-                      <button 
+                      <button
                         type="button"
                         onClick={() => handleSendReply('respondido_ia')}
                         className="text-gold hover:underline font-bold flex items-center gap-1"
@@ -581,7 +581,7 @@ export default function ComentariosSocialesView() {
                 </div>
 
               </div>
-              
+
             </div>
           ) : (
             <div className="h-full flex flex-col items-center justify-center text-center text-gray-500">
@@ -601,8 +601,8 @@ export default function ComentariosSocialesView() {
               <h3 className="font-bold text-white text-sm flex items-center gap-2">
                 <Plus size={16} className="text-gold" /> Crear Comentario de Prueba
               </h3>
-              <button 
-                onClick={() => setShowSimulator(false)} 
+              <button
+                onClick={() => setShowSimulator(false)}
                 className="text-gray-500 hover:text-white transition"
               >
                 ✕
@@ -623,14 +623,14 @@ export default function ComentariosSocialesView() {
                   <button
                     type="button"
                     onClick={() => setSimPlatform('instagram')}
-                    className={`p-2.5 rounded-xl border text-xs font-bold transition flex flex-col items-center gap-1.5 ${simPlatform === 'instagram' ? 'bg-pink-600/10 border-pink-500/40 text-pink-400' : 'bg-transparent border-gray-850 text-gray-400'}`}
+                    className={`p-2.5 rounded-xl border text-xs font-bold transition flex flex-col items-center gap-1.5 ${simPlatform === 'instagram' ? 'bg-blue-600/10 border-blue-500/40 text-blue-400' : 'bg-transparent border-gray-850 text-gray-400'}`}
                   >
                     <Instagram size={16} /> Instagram
                   </button>
                   <button
                     type="button"
                     onClick={() => setSimPlatform('tiktok')}
-                    className={`p-2.5 rounded-xl border text-xs font-bold transition flex flex-col items-center gap-1.5 ${simPlatform === 'tiktok' ? 'bg-purple-600/10 border-purple-500/40 text-purple-400' : 'bg-transparent border-gray-850 text-gray-400'}`}
+                    className={`p-2.5 rounded-xl border text-xs font-bold transition flex flex-col items-center gap-1.5 ${simPlatform === 'tiktok' ? 'bg-blue-600/10 border-blue-500/40 text-blue-400' : 'bg-transparent border-gray-850 text-gray-400'}`}
                   >
                     <Video size={16} /> TikTok
                   </button>

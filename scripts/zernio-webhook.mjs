@@ -109,7 +109,7 @@ async function main() {
   // 2. Si no se especificó --url, terminamos el listado
   if (!targetUrl) {
     console.log('\n💡 Para registrar o actualizar tu webhook usa:');
-    console.log('   node scripts/zernio-webhook.mjs --url https://expert360.ai.studio/api/zernio/webhook\n');
+    console.log('   node scripts/zernio-webhook.mjs --url https://crm.xorbit360.com/api/zernio/webhook\n');
     return;
   }
 

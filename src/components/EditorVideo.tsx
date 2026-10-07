@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  MonitorPlay, Upload, Wand2, Type, Layout, Subtitles, Sparkles, 
-  Play, Pause, Video as VideoIcon, Save, Download, Plus, Trash2, 
-  ArrowUp, ArrowDown, CheckCircle2, Music, Loader2, X, Film, 
+import {
+  MonitorPlay, Upload, Wand2, Type, Layout, Subtitles, Sparkles,
+  Play, Pause, Video as VideoIcon, Save, Download, Plus, Trash2,
+  ArrowUp, ArrowDown, CheckCircle2, Music, Loader2, X, Film,
   Check, Settings, Scissors, RefreshCw, Volume2, VolumeX, Maximize
 } from 'lucide-react';
 
@@ -22,20 +22,20 @@ export default function EditorVideo() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingProgress, setProcessingProgress] = useState(0);
   const [processingLog, setProcessingLog] = useState('');
-  
+
   const [step, setStep] = useState(1);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
-  
+
   // Custom video styles & subtitles
   const [effects, setEffects] = useState({
     subtitles: true,
     brolls: true,
     colorGrading: true,
   });
-  
+
   const [subtitleStyle, setSubtitleStyle] = useState<'hormozi' | 'cyberpunk' | 'minimal'>('hormozi');
   const [colorFilter, setColorFilter] = useState<'moody' | 'gold' | 'neon' | 'bnw' | 'none'>('moody');
   const [backgroundMusic, setBackgroundMusic] = useState<string>('inspiring');
@@ -45,7 +45,7 @@ export default function EditorVideo() {
   const [exportProgress, setExportProgress] = useState(0);
   const [exportStage, setExportStage] = useState('');
   const [exportSuccess, setExportSuccess] = useState(false);
-  
+
   const [showDraftToast, setShowDraftToast] = useState(false);
   const [draftSaving, setDraftSaving] = useState(false);
 
@@ -230,7 +230,7 @@ export default function EditorVideo() {
     const interval = setInterval(() => {
       setProcessingProgress(prev => {
         const next = prev + Math.floor(Math.random() * 8) + 4;
-        
+
         // Update logs based on progress ranges
         const logIdx = Math.min(
           Math.floor((next / 100) * logs.length),
@@ -311,7 +311,7 @@ export default function EditorVideo() {
     const interval = setInterval(() => {
       setExportProgress(prev => {
         const next = prev + Math.floor(Math.random() * 6) + 3;
-        
+
         const currentStageIdx = Math.min(
           Math.floor((next / 100) * stages.length),
           stages.length - 1
@@ -365,7 +365,7 @@ export default function EditorVideo() {
 
   return (
     <div className="space-y-6 animate-fade-in text-gray-200">
-      
+
       {/* Draft Saving Toast Notification */}
       {showDraftToast && (
         <div className="fixed top-24 right-6 z-50 flex items-center gap-3 bg-green-500 text-white font-bold py-3 px-5 rounded-2xl shadow-[0_4px_20px_rgba(34,197,94,0.4)] border border-green-400 animate-slide-in">
@@ -381,7 +381,7 @@ export default function EditorVideo() {
       <div className="flex flex-col md:flex-row gap-4 items-start md:items-end justify-between">
         <div>
           <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            <MonitorPlay className="text-purple-500" />
+            <MonitorPlay className="text-blue-500" />
             Editor de Video IA Pro (Multiclip)
           </h2>
           <p className="text-sm text-gray-400 mt-1 max-w-2xl">
@@ -393,27 +393,27 @@ export default function EditorVideo() {
       {step === 1 ? (
         /* STEP 1: Upload and Organize Multiple Videos */
         <div className="space-y-6">
-          <div 
+          <div
             onDragOver={handleDragOver}
             onDrop={handleDrop}
-            className="panel p-8 md:p-12 rounded-2xl border border-gray-800 bg-[#0a0a0a] flex flex-col items-center justify-center min-h-[300px] border-dashed hover:border-purple-500/50 transition-colors relative"
+            className="panel p-8 md:p-12 rounded-2xl border border-gray-800 bg-[#0a0a0a] flex flex-col items-center justify-center min-h-[300px] border-dashed hover:border-blue-500/50 transition-colors relative"
           >
             {isProcessing ? (
               /* Processing Animation & Master Progress Bar with % */
               <div className="flex flex-col items-center justify-center gap-6 w-full max-w-md animate-fade-in text-center">
                 <div className="relative w-20 h-20">
-                  <div className="absolute inset-0 border-4 border-purple-900/30 rounded-full"></div>
-                  <div className="absolute inset-0 border-4 border-purple-500 rounded-full border-t-transparent animate-spin"></div>
-                  <Sparkles className="absolute inset-0 m-auto text-purple-400 animate-pulse animate-bounce" size={24} />
+                  <div className="absolute inset-0 border-4 border-blue-900/30 rounded-full"></div>
+                  <div className="absolute inset-0 border-4 border-blue-500 rounded-full border-t-transparent animate-spin"></div>
+                  <Sparkles className="absolute inset-0 m-auto text-blue-400 animate-pulse animate-bounce" size={24} />
                 </div>
                 <div className="w-full space-y-3">
-                  <div className="flex items-center justify-between text-xs text-purple-400 font-bold px-1">
+                  <div className="flex items-center justify-between text-xs text-blue-400 font-bold px-1">
                     <span className="truncate max-w-[80%]">{processingLog}</span>
-                    <span className="shrink-0 text-white text-sm bg-purple-950 px-2 py-0.5 rounded-md border border-purple-500/30">{processingProgress}%</span>
+                    <span className="shrink-0 text-white text-sm bg-blue-950 px-2 py-0.5 rounded-md border border-blue-500/30">{processingProgress}%</span>
                   </div>
                   <div className="h-2.5 w-full bg-gray-900 rounded-full overflow-hidden border border-gray-800">
-                    <div 
-                      className="h-full bg-gradient-to-r from-purple-600 via-fuchsia-500 to-pink-500 transition-all duration-200"
+                    <div
+                      className="h-full bg-gradient-to-r from-blue-600 via-blue-500 to-blue-500 transition-all duration-200"
                       style={{ width: `${processingProgress}%` }}
                     ></div>
                   </div>
@@ -428,27 +428,27 @@ export default function EditorVideo() {
             ) : (
               /* File Drop & Selector Interface */
               <>
-                <div className="w-16 h-16 rounded-full bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 mb-4">
+                <div className="w-16 h-16 rounded-full bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 mb-4">
                   <Upload size={24} />
                 </div>
                 <h3 className="text-lg font-bold text-white mb-2">Sube uno o varios videos raw / UGC</h3>
                 <p className="text-sm text-gray-400 mb-6 text-center max-w-sm">
                   Arrastra tus clips o selecciónalos desde tu dispositivo. Los uniremos en un solo video editado de alto impacto.
                 </p>
-                
-                <input 
-                  type="file" 
+
+                <input
+                  type="file"
                   accept="video/*"
                   multiple
-                  className="hidden" 
+                  className="hidden"
                   id="video-upload-multiple"
                   ref={fileInputRef}
                   onChange={(e) => handleFileChange(e, false)}
                 />
-                
-                <label 
+
+                <label
                   htmlFor="video-upload-multiple"
-                  className="px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-sm font-bold transition cursor-pointer flex items-center gap-2 shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:scale-[1.02]"
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-bold transition cursor-pointer flex items-center gap-2 shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:scale-[1.02]"
                 >
                   <VideoIcon size={16} /> Seleccionar Videos
                 </label>
@@ -461,23 +461,23 @@ export default function EditorVideo() {
             <div className="panel p-6 bg-[#0d0d0d] border border-gray-800 rounded-2xl space-y-4">
               <div className="flex items-center justify-between border-b border-gray-800 pb-3">
                 <div className="flex items-center gap-2">
-                  <Film className="text-purple-400" size={18} />
+                  <Film className="text-blue-400" size={18} />
                   <h3 className="font-bold text-white">Secuencia de Videos a Combinar ({videos.length})</h3>
                 </div>
-                
+
                 {/* Append more clips button */}
                 <button
                   type="button"
                   onClick={() => appendFileInputRef.current?.click()}
-                  className="text-xs flex items-center gap-1.5 bg-gray-900 border border-gray-800 hover:border-purple-500 hover:text-white text-gray-400 px-3 py-1.5 rounded-lg transition"
+                  className="text-xs flex items-center gap-1.5 bg-gray-900 border border-gray-800 hover:border-blue-500 hover:text-white text-gray-400 px-3 py-1.5 rounded-lg transition"
                 >
                   <Plus size={14} /> Adjuntar más videos
                 </button>
-                <input 
-                  type="file" 
+                <input
+                  type="file"
                   accept="video/*"
                   multiple
-                  className="hidden" 
+                  className="hidden"
                   ref={appendFileInputRef}
                   onChange={(e) => handleFileChange(e, true)}
                 />
@@ -487,33 +487,33 @@ export default function EditorVideo() {
                 {videos.map((vid, idx) => {
                   const isUploading = vid.uploadProgress < 100;
                   return (
-                    <div 
-                      key={vid.id} 
+                    <div
+                      key={vid.id}
                       className={`flex flex-col md:flex-row items-stretch md:items-center justify-between p-3.5 bg-black/40 border rounded-xl gap-4 ${
-                        idx === 0 ? 'border-purple-500/30' : 'border-gray-800/80'
+                        idx === 0 ? 'border-blue-500/30' : 'border-gray-800/80'
                       }`}
                     >
                       <div className="flex items-center gap-3.5 flex-1 min-w-0">
-                        <div className="w-10 h-10 rounded-lg bg-purple-950/40 border border-purple-500/20 flex items-center justify-center text-purple-400 shrink-0">
+                        <div className="w-10 h-10 rounded-lg bg-blue-950/40 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0">
                           <Film size={18} />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-mono font-bold text-purple-400">Clip #{idx + 1}</span>
+                            <span className="text-xs font-mono font-bold text-blue-400">Clip #{idx + 1}</span>
                             <h4 className="text-sm font-semibold text-white truncate">{vid.name}</h4>
                           </div>
                           <p className="text-xs text-gray-500 mt-0.5">{vid.size}</p>
-                          
+
                           {/* Individual upload progress percentage and bar */}
                           {isUploading && (
                             <div className="w-full mt-2 space-y-1">
-                              <div className="flex items-center justify-between text-[10px] text-purple-400 font-bold">
+                              <div className="flex items-center justify-between text-[10px] text-blue-400 font-bold">
                                 <span>Cargando archivo...</span>
                                 <span>{vid.uploadProgress}%</span>
                               </div>
                               <div className="h-1.5 w-full bg-gray-900 rounded-full overflow-hidden">
-                                <div 
-                                  className="h-full bg-purple-500 transition-all duration-200" 
+                                <div
+                                  className="h-full bg-blue-500 transition-all duration-200"
                                   style={{ width: `${vid.uploadProgress}%` }}
                                 ></div>
                               </div>
@@ -562,7 +562,7 @@ export default function EditorVideo() {
                   type="button"
                   onClick={startMasterProcessing}
                   disabled={!allUploaded}
-                  className={`px-8 py-3 bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white rounded-xl text-sm font-bold transition flex items-center gap-2 shadow-[0_0_25px_rgba(168,85,247,0.4)] hover:scale-[1.02] ${
+                  className={`px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-600 hover:from-blue-500 hover:to-blue-500 text-white rounded-xl text-sm font-bold transition flex items-center gap-2 shadow-[0_0_25px_rgba(168,85,247,0.4)] hover:scale-[1.02] ${
                     !allUploaded ? 'opacity-50 cursor-not-allowed' : ''
                   }`}
                 >
@@ -575,26 +575,26 @@ export default function EditorVideo() {
       ) : (
         /* STEP 2: Unified Video Editor & Preview Canvas */
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          
+
           {/* Main Preview Player with dynamic filter overlays */}
           <div className="xl:col-span-2 space-y-4">
-            
+
             {/* The Video Container Frame */}
             <div className="relative aspect-[9/16] max-w-[340px] md:max-w-md mx-auto xl:max-w-none xl:aspect-video bg-black rounded-2xl border border-gray-800 overflow-hidden flex items-center justify-center group shadow-2xl">
-              
-              <video 
+
+              <video
                 ref={videoRef}
-                src={videos[activeVideoIndex]?.url} 
+                src={videos[activeVideoIndex]?.url}
                 className={`absolute inset-0 w-full h-full object-contain transition-all duration-500 ${getColorGradeFilterClass()}`}
                 playsInline
               />
 
               {/* Simulated Ambient Background for vertical clips played in landscape video containers */}
-              <div 
+              <div
                 className="absolute inset-0 -z-10 blur-2xl opacity-20 bg-cover bg-center scale-110"
                 style={{ backgroundImage: `url(${videos[activeVideoIndex]?.url})` }}
               ></div>
-              
+
               {/* Overlay active subtitles if toggled */}
               {effects.subtitles && (
                 <div className="absolute bottom-16 left-0 right-0 text-center z-10 px-6 pointer-events-none select-none">
@@ -624,11 +624,11 @@ export default function EditorVideo() {
               )}
 
               {/* Play / Pause overlay overlay indicator on hover */}
-              <div 
+              <div
                 onClick={() => setIsPlaying(!isPlaying)}
                 className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer"
               >
-                <div className="w-16 h-16 rounded-full bg-purple-600/90 text-white flex items-center justify-center scale-90 group-hover:scale-100 transition-transform shadow-[0_0_35px_rgba(168,85,247,0.6)]">
+                <div className="w-16 h-16 rounded-full bg-blue-600/90 text-white flex items-center justify-center scale-90 group-hover:scale-100 transition-transform shadow-[0_0_35px_rgba(168,85,247,0.6)]">
                   {isPlaying ? <Pause size={28} /> : <Play size={28} className="ml-1" />}
                 </div>
               </div>
@@ -658,14 +658,14 @@ export default function EditorVideo() {
 
               {/* Scrubbing slider */}
               <div className="h-1 flex-1 bg-gray-800 rounded-full relative cursor-pointer w-full md:mx-4 flex items-center">
-                <input 
+                <input
                   type="range"
                   min="0"
                   max={duration || 100}
                   step="0.05"
                   value={currentTime}
                   onChange={handleScrub}
-                  className="w-full accent-purple-500 h-1 cursor-pointer"
+                  className="w-full accent-blue-500 h-1 cursor-pointer"
                 />
               </div>
 
@@ -691,14 +691,14 @@ export default function EditorVideo() {
             <div className="panel p-4 rounded-xl border border-gray-800 bg-[#0a0a0a] space-y-3">
               <div className="flex items-center justify-between">
                 <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <Scissors size={12} className="text-purple-400" /> Línea de Tiempo del Video Combinado
+                  <Scissors size={12} className="text-blue-400" /> Línea de Tiempo del Video Combinado
                 </h4>
                 <div className="flex items-center gap-2">
                   {/* Append directly from editor */}
                   <button
                     type="button"
                     onClick={() => appendFileInputRef.current?.click()}
-                    className="text-[10px] font-bold text-purple-400 hover:text-purple-300 flex items-center gap-1 bg-purple-950/20 px-2 py-1 rounded border border-purple-500/20"
+                    className="text-[10px] font-bold text-blue-400 hover:text-blue-300 flex items-center gap-1 bg-blue-950/20 px-2 py-1 rounded border border-blue-500/20"
                   >
                     <Plus size={10} /> Añadir Clip
                   </button>
@@ -716,14 +716,14 @@ export default function EditorVideo() {
                         setIsPlaying(false);
                       }}
                       className={`flex-1 min-w-[140px] max-w-[200px] p-2.5 rounded-lg border text-left cursor-pointer transition-all ${
-                        isActive 
-                          ? 'bg-purple-950/20 border-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.15)]' 
+                        isActive
+                          ? 'bg-blue-950/20 border-blue-500 shadow-[0_0_10px_rgba(168,85,247,0.15)]'
                           : 'bg-black/30 border-gray-800 hover:border-gray-700'
                       }`}
                     >
                       <div className="flex items-center justify-between text-[10px] font-bold text-gray-500">
                         <span>#{(idx + 1).toString().padStart(2, '0')}</span>
-                        <span className={isActive ? 'text-purple-400' : ''}>{isActive ? 'ACTIVO' : 'SECUENCIA'}</span>
+                        <span className={isActive ? 'text-blue-400' : ''}>{isActive ? 'ACTIVO' : 'SECUENCIA'}</span>
                       </div>
                       <h5 className="text-xs font-semibold text-white mt-1 truncate">{vid.name}</h5>
                       <div className="flex items-center justify-between text-[10px] text-gray-500 mt-2">
@@ -739,15 +739,15 @@ export default function EditorVideo() {
 
           {/* Interactive Tools Panel & Presets */}
           <div className="space-y-4">
-            
+
             {/* 1. Quick Effects Panel */}
             <div className="panel p-5 rounded-2xl border border-gray-800 bg-[#0d0d0d] space-y-6">
               <h3 className="text-sm font-bold text-white flex items-center gap-2 pb-3 border-b border-gray-800">
-                <Sparkles size={16} className="text-purple-400" /> Auto-Efectos Activos
+                <Sparkles size={16} className="text-blue-400" /> Auto-Efectos Activos
               </h3>
-              
+
               <div className="space-y-4">
-                
+
                 {/* Subtitles toggle and style customization */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
@@ -758,9 +758,9 @@ export default function EditorVideo() {
                         <p className="text-[10px] text-gray-500">Transcripción inteligente de voz</p>
                       </div>
                     </div>
-                    <div 
+                    <div
                       onClick={() => setEffects({...effects, subtitles: !effects.subtitles})}
-                      className={`w-10 h-5 ${effects.subtitles ? 'bg-purple-600' : 'bg-gray-700'} rounded-full relative cursor-pointer transition-colors`}
+                      className={`w-10 h-5 ${effects.subtitles ? 'bg-blue-600' : 'bg-gray-700'} rounded-full relative cursor-pointer transition-colors`}
                     >
                       <div className={`absolute top-1 bottom-1 aspect-square bg-white rounded-full transition-all ${effects.subtitles ? 'right-1' : 'left-1'}`}></div>
                     </div>
@@ -774,8 +774,8 @@ export default function EditorVideo() {
                           type="button"
                           onClick={() => setSubtitleStyle(style)}
                           className={`px-2 py-1 text-[9px] font-bold uppercase rounded border transition ${
-                            subtitleStyle === style 
-                              ? 'bg-purple-950 border-purple-500 text-purple-400' 
+                            subtitleStyle === style
+                              ? 'bg-blue-950 border-blue-500 text-blue-400'
                               : 'bg-black/30 border-gray-800 text-gray-500 hover:text-gray-300'
                           }`}
                         >
@@ -795,9 +795,9 @@ export default function EditorVideo() {
                       <p className="text-[10px] text-gray-500">Insertos de stock contextuales</p>
                     </div>
                   </div>
-                  <div 
+                  <div
                     onClick={() => setEffects({...effects, brolls: !effects.brolls})}
-                    className={`w-10 h-5 ${effects.brolls ? 'bg-purple-600' : 'bg-gray-700'} rounded-full relative cursor-pointer transition-colors`}
+                    className={`w-10 h-5 ${effects.brolls ? 'bg-blue-600' : 'bg-gray-700'} rounded-full relative cursor-pointer transition-colors`}
                   >
                     <div className={`absolute top-1 bottom-1 aspect-square bg-white rounded-full transition-all ${effects.brolls ? 'right-1' : 'left-1'}`}></div>
                   </div>
@@ -813,9 +813,9 @@ export default function EditorVideo() {
                         <p className="text-[10px] text-gray-500">LUTs y calibración cromática</p>
                       </div>
                     </div>
-                    <div 
+                    <div
                       onClick={() => setEffects({...effects, colorGrading: !effects.colorGrading})}
-                      className={`w-10 h-5 ${effects.colorGrading ? 'bg-purple-600' : 'bg-gray-700'} rounded-full relative cursor-pointer transition-colors`}
+                      className={`w-10 h-5 ${effects.colorGrading ? 'bg-blue-600' : 'bg-gray-700'} rounded-full relative cursor-pointer transition-colors`}
                     >
                       <div className={`absolute top-1 bottom-1 aspect-square bg-white rounded-full transition-all ${effects.colorGrading ? 'right-1' : 'left-1'}`}></div>
                     </div>
@@ -835,8 +835,8 @@ export default function EditorVideo() {
                           type="button"
                           onClick={() => setColorFilter(lut.key as any)}
                           className={`px-2 py-1 text-[10px] font-bold rounded border text-left truncate transition ${
-                            colorFilter === lut.key 
-                              ? 'bg-purple-950 border-purple-500 text-purple-400' 
+                            colorFilter === lut.key
+                              ? 'bg-blue-950 border-blue-500 text-blue-400'
                               : 'bg-black/30 border-gray-800 text-gray-400 hover:text-gray-200'
                           }`}
                         >
@@ -850,7 +850,7 @@ export default function EditorVideo() {
                 {/* Audio soundtrack backing selection */}
                 <div className="space-y-2 pt-2 border-t border-gray-800/60">
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <Music size={12} className="text-purple-400" /> Soundtrack de Fondo
+                    <Music size={12} className="text-blue-400" /> Soundtrack de Fondo
                   </p>
                   <div className="grid grid-cols-2 gap-1.5">
                     {[
@@ -864,8 +864,8 @@ export default function EditorVideo() {
                         type="button"
                         onClick={() => setBackgroundMusic(track.key)}
                         className={`px-2.5 py-1.5 text-left rounded text-xs font-medium border transition truncate ${
-                          backgroundMusic === track.key 
-                            ? 'bg-purple-950/40 border-purple-500/80 text-purple-300' 
+                          backgroundMusic === track.key
+                            ? 'bg-blue-950/40 border-blue-500/80 text-blue-300'
                             : 'bg-black/20 border-gray-800/80 text-gray-400 hover:text-gray-300'
                         }`}
                       >
@@ -879,23 +879,23 @@ export default function EditorVideo() {
 
               {/* Functional Actions */}
               <div className="pt-4 border-t border-gray-800 space-y-3">
-                <button 
+                <button
                   type="button"
                   onClick={saveDraft}
                   disabled={draftSaving}
                   className="w-full py-2.5 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  {draftSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} 
+                  {draftSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
                   {draftSaving ? 'Guardando Borrador...' : 'Guardar Borrador'}
                 </button>
-                <button 
+                <button
                   type="button"
                   onClick={runExportRender}
-                  className="w-full py-2.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(168,85,247,0.3)] cursor-pointer hover:scale-[1.01]"
+                  className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(168,85,247,0.3)] cursor-pointer hover:scale-[1.01]"
                 >
                   <Download size={14} /> Renderizar y Exportar Video Unificado
                 </button>
-                
+
                 <button
                   type="button"
                   onClick={() => {
@@ -919,10 +919,10 @@ export default function EditorVideo() {
       {showExportModal && (
         <div className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
           <div className="w-full max-w-lg bg-[#0c0c0c] border border-gray-800 rounded-3xl p-6 md:p-8 space-y-6 shadow-[0_10px_50px_rgba(0,0,0,0.8)] relative">
-            
+
             {/* Close modal */}
             {exportSuccess && (
-              <button 
+              <button
                 type="button"
                 onClick={() => setShowExportModal(false)}
                 className="absolute top-5 right-5 text-gray-500 hover:text-white transition"
@@ -932,7 +932,7 @@ export default function EditorVideo() {
             )}
 
             <div className="text-center space-y-2">
-              <div className="w-16 h-16 rounded-full bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 mx-auto">
+              <div className="w-16 h-16 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 mx-auto">
                 {exportSuccess ? (
                   <CheckCircle2 size={32} className="text-green-400 animate-bounce" />
                 ) : (
@@ -943,8 +943,8 @@ export default function EditorVideo() {
                 {exportSuccess ? '¡Video Renderizado Exitosamente!' : 'Procesando y Exportando Video Final'}
               </h3>
               <p className="text-xs text-gray-400 max-w-sm mx-auto">
-                {exportSuccess 
-                  ? 'Hemos compilado tus múltiples clips y el archivo ya se está descargando en tu dispositivo.' 
+                {exportSuccess
+                  ? 'Hemos compilado tus múltiples clips y el archivo ya se está descargando en tu dispositivo.'
                   : 'Compilando clips, integrando audio, filtros y quemando subtítulos de manera permanente.'}
               </p>
             </div>
@@ -952,22 +952,22 @@ export default function EditorVideo() {
             {/* Rendering Progress Bar & Percent Indicator */}
             <div className="space-y-3.5">
               <div className="flex items-center justify-between text-xs px-1 font-bold">
-                <span className={exportSuccess ? 'text-green-400' : 'text-purple-400'}>
+                <span className={exportSuccess ? 'text-green-400' : 'text-blue-400'}>
                   {exportSuccess ? '✓ Renderizado Completo' : exportStage}
                 </span>
                 <span className={`text-sm px-2 py-0.5 rounded-md ${
-                  exportSuccess ? 'bg-green-950 text-green-400 border border-green-500/20' : 'bg-purple-950 text-purple-400 border border-purple-500/20'
+                  exportSuccess ? 'bg-green-950 text-green-400 border border-green-500/20' : 'bg-blue-950 text-blue-400 border border-blue-500/20'
                 }`}>
                   {exportProgress}%
                 </span>
               </div>
-              
+
               <div className="h-3 w-full bg-gray-900 rounded-full overflow-hidden border border-gray-800">
-                <div 
+                <div
                   className={`h-full transition-all duration-150 ${
-                    exportSuccess 
-                      ? 'bg-gradient-to-r from-green-600 to-emerald-500' 
-                      : 'bg-gradient-to-r from-purple-600 via-fuchsia-500 to-pink-500'
+                    exportSuccess
+                      ? 'bg-gradient-to-r from-green-600 to-emerald-500'
+                      : 'bg-gradient-to-r from-blue-600 via-blue-500 to-blue-500'
                   }`}
                   style={{ width: `${exportProgress}%` }}
                 ></div>
@@ -1024,7 +1024,7 @@ export default function EditorVideo() {
                   disabled
                   className="w-full py-3 bg-gray-900 border border-gray-800 text-gray-500 rounded-xl text-sm font-bold flex items-center justify-center gap-2 cursor-not-allowed"
                 >
-                  <Loader2 size={16} className="animate-spin text-purple-500" /> Generando archivo final...
+                  <Loader2 size={16} className="animate-spin text-blue-500" /> Generando archivo final...
                 </button>
               )}
             </div>

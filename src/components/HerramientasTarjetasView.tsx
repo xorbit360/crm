@@ -1,6 +1,6 @@
 import React from 'react';
-import { 
-  Bot, Mic, Send, Video, Sparkles, Lightbulb, Layout, Megaphone, Radio, 
+import {
+  Bot, Mic, Send, Video, Sparkles, Lightbulb, Layout, Megaphone, Radio,
   CheckCircle2, ChevronRight, Zap
 } from 'lucide-react';
 import type { ModuleId } from '../types';

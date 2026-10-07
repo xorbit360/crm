@@ -29,7 +29,7 @@ export default function CampanasView() {
             )}
           </h2>
           <p className="text-xs text-zinc-400 mt-1">
-            {activeTab === 'plantillas' 
+            {activeTab === 'plantillas'
               ? 'Gestiona, diseña y sincroniza tus plantillas aprobadas por Meta y automatizaciones de seguimiento Dropi.'
               : 'Envía mensajes y promociones masivas a tu base de clientes usando plantillas oficiales.'}
           </p>
@@ -92,7 +92,7 @@ export default function CampanasView() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <button 
+                  <button
                     type="button"
                     onClick={() => setStep(2)}
                     className="p-6 border-2 border-dashed border-zinc-800 hover:border-gold/60 bg-zinc-900/40 hover:bg-zinc-900/80 rounded-2xl flex flex-col items-center justify-center gap-3 transition text-zinc-400 hover:text-gold cursor-pointer group"
@@ -106,7 +106,7 @@ export default function CampanasView() {
                     </div>
                   </button>
 
-                  <button 
+                  <button
                     type="button"
                     onClick={() => setStep(2)}
                     className="p-6 border-2 border-dashed border-zinc-800 hover:border-emerald-500/60 bg-zinc-900/40 hover:bg-zinc-900/80 rounded-2xl flex flex-col items-center justify-center gap-3 transition text-zinc-400 hover:text-emerald-400 cursor-pointer group"
@@ -122,16 +122,16 @@ export default function CampanasView() {
                 </div>
 
                 <div className="flex justify-between items-center pt-4 border-t border-zinc-900">
-                  <button 
+                  <button
                     type="button"
                     onClick={() => setActiveTab('plantillas')}
                     className="text-xs text-zinc-400 hover:text-white font-medium flex items-center gap-1 cursor-pointer"
                   >
                     <FileText size={13} /> Gestionar Plantillas Primero
                   </button>
-                  <button 
+                  <button
                     type="button"
-                    onClick={() => setStep(2)} 
+                    onClick={() => setStep(2)}
                     className="bg-gold hover:bg-gold-light text-black px-6 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer shadow-lg shadow-gold/10"
                   >
                     Continuar al Paso 2
@@ -164,20 +164,20 @@ export default function CampanasView() {
                     { name: 'Aviso: un cliente necesita ayuda', slug: 'asesor_necesario', cat: 'Utilidad', desc: 'El asistente no supo responderle a {{nombre_cliente}}...' },
                     { name: 'Promo Flash Black Friday', slug: 'promo_black_friday', cat: 'Marketing', desc: '¡Hola {{nombre}}! 50% de descuento en todo el catálogo solo por 24h...' }
                   ].map((tpl) => (
-                    <label 
-                      key={tpl.slug} 
+                    <label
+                      key={tpl.slug}
                       className={`flex items-start gap-3.5 p-4 border rounded-2xl cursor-pointer transition select-none ${
                         selectedTemplate === tpl.name
                           ? 'bg-zinc-900 border-[#00c950] ring-1 ring-[#00c950]/30'
                           : 'bg-zinc-950 border-zinc-800 hover:border-zinc-700'
                       }`}
                     >
-                      <input 
-                        type="radio" 
-                        name="plantilla" 
+                      <input
+                        type="radio"
+                        name="plantilla"
                         checked={selectedTemplate === tpl.name}
                         onChange={() => setSelectedTemplate(tpl.name)}
-                        className="mt-1 accent-[#00c950]" 
+                        className="mt-1 accent-[#00c950]"
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
@@ -197,16 +197,16 @@ export default function CampanasView() {
                 </div>
 
                 <div className="flex justify-between items-center pt-4 border-t border-zinc-900">
-                  <button 
+                  <button
                     type="button"
-                    onClick={() => setStep(1)} 
+                    onClick={() => setStep(1)}
                     className="text-zinc-400 hover:text-white px-4 py-2 font-semibold text-xs transition cursor-pointer"
                   >
                     Atrás
                   </button>
-                  <button 
+                  <button
                     type="button"
-                    onClick={() => setStep(3)} 
+                    onClick={() => setStep(3)}
                     className="bg-gold hover:bg-gold-light text-black px-6 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer shadow-lg shadow-gold/10"
                   >
                     Continuar al Resumen
@@ -244,19 +244,19 @@ export default function CampanasView() {
                 </div>
 
                 <div className="flex justify-center gap-3 pt-4">
-                  <button 
+                  <button
                     type="button"
-                    onClick={() => setStep(2)} 
+                    onClick={() => setStep(2)}
                     className="text-zinc-400 hover:text-white px-5 py-2.5 font-semibold text-xs rounded-xl border border-zinc-800 hover:bg-zinc-900 transition cursor-pointer"
                   >
                     Volver
                   </button>
-                  <button 
+                  <button
                     type="button"
                     onClick={() => {
                       alert(`🚀 Campaña de difusión con plantilla "${selectedTemplate}" iniciada con éxito.`);
                       setStep(1);
-                    }} 
+                    }}
                     className="bg-[#00c950] hover:bg-[#00a843] text-zinc-950 px-8 py-3 rounded-xl font-bold text-xs shadow-xl shadow-emerald-500/20 flex items-center gap-2 cursor-pointer transition active:scale-[0.99]"
                   >
                     <Send size={15} /> Iniciar Envío Masivo

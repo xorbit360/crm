@@ -20,12 +20,12 @@ import { LiveAudioRecorder } from './LiveAudioRecorder';
 export const getAvatarGradient = (str: string) => {
   const gradients = [
     'from-emerald-500 to-teal-700 text-white',
-    'from-indigo-500 to-blue-700 text-white',
-    'from-purple-500 to-pink-700 text-white',
+    'from-blue-500 to-blue-700 text-white',
+    'from-blue-500 to-blue-700 text-white',
     'from-amber-500 to-orange-700 text-slate-900 font-black',
     'from-rose-500 to-red-700 text-white',
     'from-cyan-500 to-blue-700 text-white',
-    'from-violet-500 to-purple-800 text-white',
+    'from-blue-500 to-blue-800 text-white',
     'from-teal-500 to-emerald-800 text-white',
   ];
   let hash = 0;
@@ -53,11 +53,11 @@ export const getInitials = (name: string, phone?: string) => {
   return (parts[0][0] + parts[1][0]).toUpperCase();
 };
 
-export const ContactAvatar: React.FC<{ 
-  name: string; 
-  phone?: string; 
-  avatar?: string; 
-  size?: string; 
+export const ContactAvatar: React.FC<{
+  name: string;
+  phone?: string;
+  avatar?: string;
+  size?: string;
   textSize?: string;
   className?: string;
 }> = ({
@@ -69,7 +69,7 @@ export const ContactAvatar: React.FC<{
   className = ""
 }) => {
   const [imgError, setImgError] = useState(false);
-  
+
   React.useEffect(() => {
     setImgError(false);
   }, [avatar]);
@@ -78,7 +78,7 @@ export const ContactAvatar: React.FC<{
   const gradient = getAvatarGradient(name + (phone || ''));
 
   const effectiveAvatar = avatar ? (
-    avatar.includes('pps.whatsapp.net') 
+    avatar.includes('pps.whatsapp.net')
       ? `/api/whatsapp/avatar-proxy?url=${encodeURIComponent(avatar)}`
       : avatar
   ) : undefined;
@@ -104,11 +104,11 @@ export const ContactAvatar: React.FC<{
   );
 };
 
-export default function WhatsappView({ 
+export default function WhatsappView({
   activeTab = 'conversaciones',
   onNicheChange,
   currentUser
-}: { 
+}: {
   activeTab?: string,
   onNicheChange?: (niche: string) => void,
   currentUser?: any
@@ -244,7 +244,7 @@ export default function WhatsappView({
   }, [currentUser, connectedPhone]);
 
   // Webhook custom base URL and sync states
-  const [webhookBaseUrl, setWebhookBaseUrl] = useState<string>('https://expert360.ai.studio');
+  const [webhookBaseUrl, setWebhookBaseUrl] = useState<string>('https://crm.xorbit360.com');
   const [isSyncingWebhooks, setIsSyncingWebhooks] = useState<boolean>(false);
   const [webhookSyncSuccess, setWebhookSyncSuccess] = useState<string | null>(null);
 
@@ -534,7 +534,7 @@ export default function WhatsappView({
         }
 
         // Detectar si la memoria fue limpiada en el servidor (chats y messagesHistory vacíos)
-        const isServerCleared = Array.isArray(dbData.chats) && dbData.chats.length === 0 && 
+        const isServerCleared = Array.isArray(dbData.chats) && dbData.chats.length === 0 &&
           (!dbData.messagesHistory || Object.keys(dbData.messagesHistory).length === 0);
 
         if (isServerCleared) {
@@ -658,7 +658,7 @@ export default function WhatsappView({
   const [isOfficialConnected, setIsOfficialConnected] = useState(false);
   const [whatsappMode, setWhatsappMode] = useState<'coexistente' | 'nuevo' | 'transferir'>('coexistente');
   const [whatsappConnectedNumber, setWhatsappConnectedNumber] = useState('');
-  
+
   // Estados para la Guía Paso a Paso de Credenciales WhatsApp API
   const [isSyncingChats, setIsSyncingChats] = useState(false);
   const [activeGuideStep, setActiveGuideStep] = useState(1);
@@ -989,7 +989,7 @@ export default function WhatsappView({
       setIsVerifyingCreds(false);
     }
   };
-  
+
   const [facebookConnected, setFacebookConnected] = useState(false);
   const [instagramConnected, setInstagramConnected] = useState(false);
   const [tiktokConnected, setTiktokConnected] = useState(false);
@@ -1125,7 +1125,7 @@ export default function WhatsappView({
           setIsOfficialConnected(true);
           setWhatsappMode(cfg.mode || 'coexistente');
           setWhatsappConnectedNumber(cfg.phoneNumber || '+57 300 123 4567');
-          
+
           // Rellenar variables de la guía
           setGuideToken(cfg.apiToken || '');
           setGuidePhoneId(cfg.phoneNumberId || '');
@@ -1164,7 +1164,7 @@ export default function WhatsappView({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      
+
       const data = await res.json();
       if (data.success) {
         setApiToken(guideToken);
@@ -1392,12 +1392,12 @@ Te guiaré paso a paso para crear el **Prompt Definitivo** de tu negocio de form
     setRemarketingCount(count);
     setRemarketingInterval(interval);
 
-    const statusText = count === 0 
-      ? 'Desactivado' 
+    const statusText = count === 0
+      ? 'Desactivado'
       : `${count} ${count === 1 ? 'recordatorio' : 'recordatorios'} cada ${interval}`;
 
     const userTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    
+
     const userMsg = {
       id: String(Date.now()),
       sender: 'user' as const,
@@ -1411,7 +1411,7 @@ Te guiaré paso a paso para crear el **Prompt Definitivo** de tu negocio de form
       text: count === 0
         ? `✅ **Remarketing Desactivado**: El bot no enviará mensajes automáticos de seguimiento si los clientes dejan en visto.`
         : `✅ **Remarketing Configurado Exitosamente**:
-        
+
 🔔 **Secuencia Activa**: El bot enviará hasta **${count} ${count === 1 ? 'recordatorio' : 'recordatorios'}** cada **${interval}** a los prospectos que hayan dejado en visto o no hayan respondido.
 
 Los mensajes de seguimiento retomarán la conversación con empatía y elegancia para reactivar el interés sin resultar molestos.`,
@@ -1421,8 +1421,8 @@ Los mensajes de seguimiento retomarán la conversación con empatía y elegancia
     setTrainerMessages(prev => [...prev, userMsg, aiMsg]);
 
     setBotPrompt(prevPrompt => {
-      const remarketingRule = count === 0 
-        ? `\n- REMARKETING Y SEGUIMIENTO: Desactivado.` 
+      const remarketingRule = count === 0
+        ? `\n- REMARKETING Y SEGUIMIENTO: Desactivado.`
         : `\n- REGLAS DE REMARKETING Y SEGUIMIENTO EN VISTO: Si el prospecto no responde o deja en visto, enviar automáticamente hasta ${count} recordatorios amistosos respetando un intervalo de ${interval}. El objetivo es re-enganchar la venta con amabilidad.`;
 
       if (prevPrompt.includes('--- CONFIGURACIÓN DE REMARKETING Y SEGUIMIENTO ---')) {
@@ -1471,9 +1471,9 @@ Los mensajes de seguimiento retomarán la conversación con empatía y elegancia
       const lowerContent = content.toLowerCase();
 
       if (attachmentObj?.type === 'audio') {
-        aiResponseText = `¡He escuchado tu nota de voz detenidamente! 🎤 
-        
-He analizado el tono de voz de tu mensaje y extraído los detalles clave del negocio. He configurado la IA para que utilice un lenguaje natural, empático y fluido, respondiendo como una persona real en lugar de un bot rígido. 
+        aiResponseText = `¡He escuchado tu nota de voz detenidamente! 🎤
+
+He analizado el tono de voz de tu mensaje y extraído los detalles clave del negocio. He configurado la IA para que utilice un lenguaje natural, empático y fluido, respondiendo como una persona real en lugar de un bot rígido.
 
 ¿Hay algún detalle adicional como horarios, promociones del día o políticas de devolución que te gustaría agregar?`;
       } else if (attachmentObj?.type === 'imagen' || attachmentObj?.type === 'video' || lowerContent.includes('imagen') || lowerContent.includes('imagenes') || lowerContent.includes('foto') || lowerContent.includes('fotos') || lowerContent.includes('video')) {
@@ -1491,11 +1491,11 @@ He indexado su contenido como material de consulta para la IA. **¿En qué momen
       } else if (lowerContent.includes('visto') || lowerContent.includes('recordatorio') || lowerContent.includes('remarketing') || lowerContent.includes('seguimiento') || lowerContent.includes('desapar') || lowerContent.includes('responde')) {
         aiResponseText = `¡Entendido perfectamente! 🔔 He configurado las reglas de **Remarketing y Seguimiento en Visto**.
 
-Si un cliente deja en visto al bot o no vuelve a escribir, la IA enviará los recordatorios automáticos (actualmente **${remarketingCount} recordatorios cada ${remarketingInterval}**) con mensajes empáticos y persuasivos para retomar la conversación sin ser invasivo. 
+Si un cliente deja en visto al bot o no vuelve a escribir, la IA enviará los recordatorios automáticos (actualmente **${remarketingCount} recordatorios cada ${remarketingInterval}**) con mensajes empáticos y persuasivos para retomar la conversación sin ser invasivo.
 
 Puedes ajustar la cantidad de recordatorios o la frecuencia usando los botones interactivos de Remarketing arriba.`;
       } else if (lowerContent.includes('hola') || lowerContent.includes('bienvenid') || lowerContent.includes('saludo')) {
-        aiResponseText = `¡Entendido perfectamente! He integrado ese **saludo de bienvenida** en la memoria del bot. 
+        aiResponseText = `¡Entendido perfectamente! He integrado ese **saludo de bienvenida** en la memoria del bot.
 
 El chatbot responderá con esa misma calidez y personalidad desde el primer segundo. Para continuar enriqueciendo el contexto: ¿Cuáles son tus productos o servicios estrella, sus precios y si manejas envío a domicilio o atención presencial?`;
       } else if (lowerContent.includes('menú') || lowerContent.includes('menu') || lowerContent.includes('precio') || lowerContent.includes('plato') || lowerContent.includes('combo') || lowerContent.includes('producto') || lowerContent.includes('costo') || lowerContent.includes('$')) {
@@ -1503,7 +1503,7 @@ El chatbot responderá con esa misma calidez y personalidad desde el primer segu
 
 Ahora cuéntame sobre las **preguntas frecuentes**: ¿Qué métodos de pago aceptas (Nequi, Daviplata, Efectivo, Tarjeta), cuáles son los horarios de atención y cómo se manejan los domicilios o reservaciones?`;
       } else {
-        aiResponseText = `¡Excelente aporte! He tomado nota y actualizado el **Prompt Definitivo** en tiempo real. 
+        aiResponseText = `¡Excelente aporte! He tomado nota y actualizado el **Prompt Definitivo** en tiempo real.
 
 Toda esta información le da un contexto completo y humano a la IA. El chatbot de WhatsApp ahora sabrá responder con la máxima precisión y empatía como si fueras tú o uno de tus mejores asesores comerciales.
 
@@ -1625,7 +1625,7 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
   const handleSaveFaqsToBackend = async () => {
     isFaqsEditedRef.current = false;
     try {
-      const formattedFaqsStr = faqs.map((f, i) => 
+      const formattedFaqsStr = faqs.map((f, i) =>
         `FAQ #${i+1}: ${f.question}\nRespuesta: ${f.answer}${f.attachments?.length ? `\nAdjuntos: ${f.attachments.map(a => a.name).join(', ')}` : ''}`
       ).join('\n---\n');
 
@@ -1654,11 +1654,11 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
       let keyToSave = activeProvider === 'openai' ? openAiKey : googleAiKey;
       if (providerStr === 'openai') keyToSave = openAiKey;
       if (providerStr === 'gemini') keyToSave = googleAiKey;
-      
+
       const res = await fetch('/api/backoffice/state', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           apiProvider: providerToSave,
           customApiKey: keyToSave,
           aiModel: activeModel
@@ -1885,7 +1885,7 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
   ]);
   const [showTagManagerModal, setShowTagManagerModal] = useState(false);
   const [showEditPipelineModal, setShowEditPipelineModal] = useState(false);
-  
+
   // Pipeline management states
   const [showNewPipelineModal, setShowNewPipelineModal] = useState(false);
   const [newPipelineName, setNewPipelineName] = useState('');
@@ -2001,7 +2001,7 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
       { sender: 'agent' as const, text: "Aquí tienes una foto real del Smartwatch X8 en color negro matte. ¡Se ve espectacular!", time: "10:06", attachment: { name: "smartwatch_x8_matte.jpg", type: "imagen" as const, url: "https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=600&q=80" } }
     ],
     '2': [
-      { sender: 'bot' as const, text: "¡Hola! Bienvenido a Expert 360° Store. ¿Buscas algún producto en especial?", time: "09:40" },
+      { sender: 'bot' as const, text: "¡Hola! Bienvenido a Xorbit 360 Store. ¿Buscas algún producto en especial?", time: "09:40" },
       { sender: 'client' as const, text: "Hola, me interesa la licuadora portátil. ¿Tienen contra entrega?", time: "09:42" },
       { sender: 'agent' as const, text: "Te adjunto la ficha técnica oficial con las especificaciones de batería y resistencia al agua en PDF.", time: "09:44", attachment: { name: "Ficha_Tecnica_Smartwatch_Ultra.pdf", type: "archivo" as const, url: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf", size: "1.4 MB" } }
     ],
@@ -2010,7 +2010,7 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
       { sender: 'bot' as const, text: "¡Excelente María! Dirección confirmada. Pedido generado en bodega Medellín para despacho hoy mismo con Pago Contra Entrega. El número de guía es CO-DRP-8823192. ¡Gracias por confiar en nosotros! 📦", time: "Ayer" }
     ],
     '4': [
-      { sender: 'bot' as const, text: "Hola, ¿cómo estás? Te asiste el bot virtual de Expert 360° Store. ¿En qué te puedo asesorar hoy?", time: "Ayer" },
+      { sender: 'bot' as const, text: "Hola, ¿cómo estás? Te asiste el bot virtual de Xorbit 360 Store. ¿En qué te puedo asesorar hoy?", time: "Ayer" },
       { sender: 'client' as const, text: "Revisando catálogo...", time: "Ayer" }
     ],
     '7': [
@@ -2163,7 +2163,7 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
   const checkAIRules = (text: string, chatId: string) => {
     const chat = chats.find(c => c.id === chatId);
     const chatName = chat ? chat.name : 'Cliente';
-    
+
     aiAutomationRules.forEach(rule => {
       if (!rule.active) return;
       const targetKeyword = rule.keyword || rule.phrase || '';
@@ -2398,7 +2398,7 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
         case 2: // Stage 2: Presenta la solución (Ajustada al dolor del cliente)
           const isForSport = textLower.includes('deporte') || textLower.includes('entrenar') || textLower.includes('correr') || textLower.includes('salud') || textLower.includes('gimnasio');
           const isForGift = textLower.includes('regalo') || textLower.includes('esposo') || textLower.includes('hijo') || textLower.includes('papá') || textLower.includes('mamá') || textLower.includes('amigo');
-          
+
           pieces.push("¡Súper! Te cuento rápido sobre el Ultra X8:");
           if (isForSport) {
             pieces.push("Viene equipado con sensores premium para monitorear tu ritmo cardíaco, oxígeno y pasos con total precisión. 🏃‍♂️");
@@ -2443,7 +2443,7 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
 
         case 4: // Stage 4: Cierra por asunción (Asumir la venta + combos/ofertas)
           const isCombo = textLower.includes('combo') || textLower.includes('promocion') || textLower.includes('promoción') || textLower.includes('dos') || textLower.includes('2') || textLower.includes('ambos');
-          
+
           pieces.push("¡Excelente elección! Separamos tu pedido de inmediato, ese color luce espectacular. ⌚");
           if (isCombo) {
             pieces.push("¡Súper! Aprovechas la promoción de Combo: 2 relojes completos por solo $200.000 COP (ahorras $40.000 extra).");
@@ -2458,13 +2458,13 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
 
         case 5: // Stage 5: Toma datos y confirma una vez (Directo, sin enredos)
           const hasDetails = textLower.includes('calle') || textLower.includes('carrera') || textLower.includes('barrio') || textLower.includes('avenida') || textLower.includes('cll') || textLower.includes('cra');
-          
+
           if (hasDetails) {
             pieces.push("¡Listo! Ya tomé tus datos de envío correctamente. Todo queda agendado.");
             pieces.push("Tu pedido sale hoy mismo a ruta de entrega.");
             pieces.push("Recuerda tener el efectivo a la mano al recibir. ¡Muchas gracias por tu compra! 😊");
             nextStage = 6;
-            
+
             // Auto add Venta Cerrada tag & Move to Kanban closed sales column if applicable
             setTimeout(() => {
               setChats(prev => prev.map(c => {
@@ -2643,10 +2643,10 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
     finalPieces.forEach((messageText, index) => {
       // Calculate typing time proportional to message size (e.g. 45ms per character), clamped between 800ms and 2400ms
       const typingTime = Math.min(2400, Math.max(800, messageText.length * 45));
-      
+
       const startTypingDelay = delayAccumulator;
       const sendDelay = delayAccumulator + typingTime;
-      
+
       // Update accumulator for the next message loop (leaving a realistic pause of 700ms before starting to type next)
       delayAccumulator = sendDelay + 700;
 
@@ -2691,7 +2691,7 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
       setMessageBuffers(prevBuffers => {
         const currentBuf = prevBuffers[chatId] || [];
         const updatedBuf = [...currentBuf, clientMessage];
-        
+
         // Return next state
         return {
           ...prevBuffers,
@@ -2967,9 +2967,9 @@ d) Nombre y teléfono de contacto.
 
     setPipelines(prev => prev.map(p => p.id === 'ventas' ? { ...p, name: template.funnelName } : p));
     setKanbanColumns(prev => [...template.columns, ...prev.filter(c => c.pipelineId !== 'ventas')]);
-    
+
     // Only update rules that don't conflict with existing ones or simply append/replace them
-    // For simplicity, we can prepend the template rules to any existing custom rules 
+    // For simplicity, we can prepend the template rules to any existing custom rules
     // that don't share the same IDs. In a real app we might want to replace them completely or ask.
     setAiAutomationRules(prev => {
       const templateRuleIds = template.rules.map((r: any) => r.id);
@@ -3052,7 +3052,7 @@ d) Nombre y teléfono de contacto.
     if (onNicheChange) {
       onNicheChange(type);
     }
-    
+
     return template.promptBase;
   };
 
@@ -3145,35 +3145,35 @@ ${parametersString}
 
       {activeTab === 'entrenamiento_chatbot' && (
         <div className="flex gap-2 border-b border-gray-800 overflow-x-auto pb-px">
-          <button 
+          <button
             onClick={() => setInternalTab('conexion')}
             className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${internalTab === 'conexion' ? 'border-green-500 text-green-400' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
           >
             <QrCode size={16} className="inline mr-2" />
             Conexión (Web)
           </button>
-          <button 
+          <button
             onClick={() => setInternalTab('training')}
             className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${internalTab === 'training' ? 'border-green-500 text-green-400' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
           >
             <Database size={16} className="inline mr-2" />
             Entrenamiento Base
           </button>
-          <button 
+          <button
             onClick={() => setInternalTab('integrations')}
             className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${internalTab === 'integrations' ? 'border-green-500 text-green-400' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
           >
             <Zap size={16} className="inline mr-2" />
             Integraciones
           </button>
-          <button 
+          <button
             onClick={() => setInternalTab('alertas')}
             className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${internalTab === 'alertas' ? 'border-green-500 text-green-400' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
           >
             <Bell size={16} className="inline mr-2" />
             Alertas
           </button>
-          <button 
+          <button
             onClick={() => setInternalTab('programaciones')}
             className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${internalTab === 'programaciones' ? 'border-green-500 text-green-400' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
           >
@@ -3222,7 +3222,7 @@ ${parametersString}
               type: 'Meta Graph API',
               status: isIgActive ? 'Conectado' : 'Disponible',
               isActive: isIgActive,
-              icon: <Instagram size={18} className="text-purple-400" />,
+              icon: <Instagram size={18} className="text-blue-400" />,
               accountId: igAccount?.id,
               actionType: 'instagram',
               date: isIgActive ? 'Sincronizado' : '-'
@@ -3395,7 +3395,7 @@ ${parametersString}
                     <span className="text-[11px] text-zinc-400 font-medium block mb-1">Instagram Direct</span>
                     <span className="text-2xl font-bold text-white tracking-tight">{isIgActive ? 1 : 0}</span>
                   </div>
-                  <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-purple-400">
+                  <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-blue-400">
                     <Instagram size={18} />
                   </div>
                 </div>
@@ -3621,7 +3621,7 @@ ${parametersString}
                       {/* Instagram Direct */}
                       <div className="p-4 rounded-xl bg-zinc-900/60 border border-zinc-800 flex items-center justify-between gap-4 hover:border-zinc-700 transition">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
+                          <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
                             <Instagram size={20} />
                           </div>
                           <div>
@@ -3633,7 +3633,7 @@ ${parametersString}
                           type="button"
                           onClick={() => handleConnectPlatform('instagram')}
                           disabled={isConnectingPlatform === 'instagram'}
-                          className="bg-purple-600 hover:bg-purple-500 text-white font-bold px-3.5 py-2 rounded-lg text-xs transition cursor-pointer flex items-center gap-1.5"
+                          className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-3.5 py-2 rounded-lg text-xs transition cursor-pointer flex items-center gap-1.5"
                         >
                           {isConnectingPlatform === 'instagram' ? <RefreshCw size={14} className="animate-spin" /> : <Instagram size={14} />}
                           Conectar Instagram
@@ -3850,7 +3850,7 @@ ${parametersString}
 
                 {viewMode === 'kanban' && (
                   <div className="flex gap-2 shrink-0">
-                     <button 
+                     <button
                        type="button"
                        onClick={() => {
                          const name = prompt('Escribe el nombre de la nueva columna (ej: En Negociación):');
@@ -3877,7 +3877,7 @@ ${parametersString}
                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
                .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
              `}</style>
-             
+
              {/* Sidebar / Chat List */}
              <div className={`w-full md:w-[350px] border-r border-gray-800 flex-col bg-[#111b21] shrink-0 ${mobileView === 'list' ? 'flex' : 'hidden md:flex'}`}>
                {/* Header */}
@@ -3889,7 +3889,7 @@ ${parametersString}
                    <span className="text-white font-semibold text-sm">Chats (IA & Humanos)</span>
                  </div>
                  <div className="flex text-[#aebac1] gap-2 items-center">
-                   <button 
+                   <button
                      type="button"
                      onClick={handleSyncRecentChats}
                      disabled={isSyncingChats}
@@ -3899,7 +3899,7 @@ ${parametersString}
                      <RefreshCw size={12} className={isSyncingChats ? "animate-spin text-green-400" : "text-green-400"} />
                      <span>{isSyncingChats ? 'Sincronizando...' : 'Sincronizar'}</span>
                    </button>
-                   <button 
+                   <button
                      type="button"
                      onClick={handleAddNewRealChat}
                      title="Añadir contacto real para iniciar chat por WhatsApp API"
@@ -3914,12 +3914,12 @@ ${parametersString}
                <div className="p-2 border-b border-gray-800 bg-[#111b21] shrink-0">
                   <div className="bg-[#202c33] rounded-lg flex items-center px-3 py-1.5 mb-2">
                     <Search size={16} className="text-[#8696a0] mr-3" />
-                    <input 
-                      type="text" 
-                      placeholder="Buscar o empezar un nuevo chat..." 
+                    <input
+                      type="text"
+                      placeholder="Buscar o empezar un nuevo chat..."
                       value={chatSearch}
                       onChange={(e) => setChatSearch(e.target.value)}
-                      className="bg-transparent border-none text-sm text-[#d1d7db] w-full focus:outline-none placeholder:text-[#8696a0]" 
+                      className="bg-transparent border-none text-sm text-[#d1d7db] w-full focus:outline-none placeholder:text-[#8696a0]"
                     />
                   </div>
 
@@ -3939,8 +3939,8 @@ ${parametersString}
                             type="button"
                             onClick={() => setChatFilterStatus(tab.id as any)}
                             className={`px-2 py-0.5 rounded-full shrink-0 transition font-medium border text-[10px] ${
-                              chatFilterStatus === tab.id 
-                                ? 'bg-green-600/20 text-green-400 border-green-500/40 font-semibold' 
+                              chatFilterStatus === tab.id
+                                ? 'bg-green-600/20 text-green-400 border-green-500/40 font-semibold'
                                 : 'bg-[#202c33] text-gray-400 border-transparent hover:text-white hover:bg-gray-800'
                             }`}
                           >
@@ -3983,7 +3983,7 @@ ${parametersString}
                   {chats
                     .filter(chat => {
                       // 1. Text search filter
-                      const matchesSearch = chat.name.toLowerCase().includes(chatSearch.toLowerCase()) || 
+                      const matchesSearch = chat.name.toLowerCase().includes(chatSearch.toLowerCase()) ||
                                             chat.msg.toLowerCase().includes(chatSearch.toLowerCase());
                       if (!matchesSearch) return false;
 
@@ -4002,8 +4002,8 @@ ${parametersString}
                       return true;
                     })
                     .map((chat) => (
-                    <div 
-                      key={chat.id} 
+                    <div
+                      key={chat.id}
                       onClick={() => {
                         setActiveChatId(chat.id);
                         setChats(prev => prev.map(c => c.id === chat.id ? { ...c, unread: 0 } : c));
@@ -4012,12 +4012,12 @@ ${parametersString}
                       className={`flex items-center px-3 py-3 cursor-pointer hover:bg-[#202c33] transition-colors ${chat.id === activeChatId ? 'bg-[#2a3942]' : ''}`}
                     >
                        <div className="mr-3 shrink-0">
-                          <ContactAvatar 
-                            name={chat.name} 
-                            phone={chat.phone} 
-                            avatar={chat.avatar} 
-                            size="w-12 h-12" 
-                            textSize="text-sm font-black" 
+                          <ContactAvatar
+                            name={chat.name}
+                            phone={chat.phone}
+                            avatar={chat.avatar}
+                            size="w-12 h-12"
+                            textSize="text-sm font-black"
                           />
                        </div>
                        <div className="flex-1 min-w-0 border-b border-gray-800 pb-2">
@@ -4038,12 +4038,12 @@ ${parametersString}
             {/* Chat Area */}
             <div className={`flex-1 flex-col bg-[#0b141a] relative ${mobileView === 'chat' ? 'flex' : 'hidden md:flex'}`}>
                <div className="absolute inset-0 opacity-5 bg-[url('https://static.whatsapp.net/rsrc.php/v3/yO/r/FsWUvqSpTE8.png')] bg-cover bg-center pointer-events-none"></div>
-               
+
                {/* Header */}
                <div className="h-16 bg-[#202c33] flex items-center justify-between px-4 z-10 shrink-0">
                   <div className="flex items-center gap-2 cursor-pointer min-w-0">
                     {/* Mobile Back Button */}
-                    <button 
+                    <button
                       type="button"
                       onClick={() => setMobileView('list')}
                       className="md:hidden text-gray-400 hover:text-white mr-1 p-1"
@@ -4053,12 +4053,12 @@ ${parametersString}
                     </button>
 
                     <div className="shrink-0">
-                       <ContactAvatar 
-                         name={chats.find(c => c.id === activeChatId)?.name || 'Conversación'} 
-                         phone={chats.find(c => c.id === activeChatId)?.phone} 
-                         avatar={chats.find(c => c.id === activeChatId)?.avatar} 
-                         size="w-10 h-10" 
-                         textSize="text-xs font-bold" 
+                       <ContactAvatar
+                         name={chats.find(c => c.id === activeChatId)?.name || 'Conversación'}
+                         phone={chats.find(c => c.id === activeChatId)?.phone}
+                         avatar={chats.find(c => c.id === activeChatId)?.avatar}
+                         size="w-10 h-10"
+                         textSize="text-xs font-bold"
                        />
                     </div>
                     <div className="truncate">
@@ -4104,7 +4104,7 @@ ${parametersString}
                         )}
                       </button>
                     )}
-                    <button 
+                    <button
                       type="button"
                       onClick={handleToggleBotForChat}
                       className="hidden sm:flex items-center gap-2 text-xs text-gray-400 bg-black/40 px-3 py-1 rounded-full border border-gray-800 transition cursor-pointer select-none hover:border-gray-700"
@@ -4161,9 +4161,9 @@ ${parametersString}
 
                   {activeChatMessages.map((msg, i) => {
                     const rawText = msg.text || '';
-                    
+
                     // Regex to catch embedded audio filename strings or tags like "🤖🔊 [nota_de_voz_1786134202654.ogg]" or "[nota_de_voz_...]"
-                    const audioRefMatch = rawText.match(/(?:🤖🔊\s*)?\[?(nota_de_voz_[^\]\s]+\.(?:ogg|mp3|wav|m4a)|nota_de_voz_[^\]\s]+)\]?/i) 
+                    const audioRefMatch = rawText.match(/(?:🤖🔊\s*)?\[?(nota_de_voz_[^\]\s]+\.(?:ogg|mp3|wav|m4a)|nota_de_voz_[^\]\s]+)\]?/i)
                       || rawText.match(/\[(audio:[^\]]+|nota_de_voz[^\]]+)\]/i);
 
                     // Clean text by stripping out raw audio bracket tags
@@ -4173,7 +4173,7 @@ ${parametersString}
                       .trim();
 
                     // If text is just a placeholder like "🎤 [Nota de voz enviada]" or "🎤 Nota de voz enviada", hide it when an audio attachment exists
-                    if ((msg.attachment?.type === 'audio' || audioRefMatch) && 
+                    if ((msg.attachment?.type === 'audio' || audioRefMatch) &&
                         (cleanText === '🎤 [Nota de voz enviada]' || cleanText === '🎤 Nota de voz enviada' || cleanText === '[Nota de voz enviada]')) {
                       cleanText = '';
                     }
@@ -4186,16 +4186,16 @@ ${parametersString}
                     } : undefined);
 
                     return (
-                      <div 
-                        key={i} 
+                      <div
+                        key={i}
                         className={`flex ${msg.sender === 'client' ? 'justify-end' : 'justify-start'} mb-1`}
                       >
-                         <div 
+                         <div
                            className={`text-[#e9edef] text-sm p-3 rounded-xl max-w-[75%] shadow-sm relative pb-6 ${
-                             msg.sender === 'client' 
-                               ? 'bg-[#005c4b] rounded-tr-none' 
-                               : msg.sender === 'agent' 
-                                 ? 'bg-indigo-950/90 border border-indigo-500/20 rounded-tl-none' 
+                             msg.sender === 'client'
+                               ? 'bg-[#005c4b] rounded-tr-none'
+                               : msg.sender === 'agent'
+                                 ? 'bg-blue-950/90 border border-blue-500/20 rounded-tl-none'
                                  : 'bg-[#202c33] rounded-tl-none border-l-4 border-green-500'
                            }`}
                          >
@@ -4208,21 +4208,21 @@ ${parametersString}
                                 <Sparkles size={10} /> ASISTENTE IA
                               </div>
                             ) : msg.sender === 'agent' ? (
-                              <div className="text-[10px] text-indigo-300 font-bold mb-1 flex items-center gap-1">
+                              <div className="text-[10px] text-blue-300 font-bold mb-1 flex items-center gap-1">
                                 <UserCircle size={10} /> HUMANO (CRM)
                               </div>
                             ) : null}
-                            
+
                             {/* Message Attachment Rendering */}
                             {effectiveAttachment && (
                               <div className="mb-2">
                                 {(effectiveAttachment.type === 'imagen' || effectiveAttachment.type === 'image') && (
                                   <div className="rounded-xl overflow-hidden border border-white/10 bg-black/60 max-w-sm shadow-lg group">
                                     <div className="relative cursor-pointer overflow-hidden" onClick={() => setSelectedImageLightbox({ url: effectiveAttachment.url, name: effectiveAttachment.name })}>
-                                      <img 
-                                        src={effectiveAttachment.url} 
-                                        alt={effectiveAttachment.name} 
-                                        className="w-full h-auto max-h-72 object-cover transition duration-200 group-hover:scale-[1.02]" 
+                                      <img
+                                        src={effectiveAttachment.url}
+                                        alt={effectiveAttachment.name}
+                                        className="w-full h-auto max-h-72 object-cover transition duration-200 group-hover:scale-[1.02]"
                                         referrerPolicy="no-referrer"
                                       />
                                       <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white font-medium text-xs gap-1.5 backdrop-blur-[2px]">
@@ -4231,7 +4231,7 @@ ${parametersString}
                                     </div>
                                     <div className="bg-[#111b21] px-3 py-2 text-xs text-gray-200 truncate flex items-center justify-between border-t border-gray-800">
                                       <span className="flex items-center gap-1.5 truncate">
-                                        <ImageIcon size={13} className="text-pink-400 shrink-0" />
+                                        <ImageIcon size={13} className="text-blue-400 shrink-0" />
                                         <span className="truncate">{effectiveAttachment.name}</span>
                                       </span>
                                       <button
@@ -4249,18 +4249,18 @@ ${parametersString}
                                 )}
                                 {effectiveAttachment.type === 'video' && (
                                   <div className="rounded-lg overflow-hidden border border-black/20 bg-black max-w-sm">
-                                    <video 
-                                      src={effectiveAttachment.url} 
-                                      controls 
-                                      className="w-full max-h-60" 
+                                    <video
+                                      src={effectiveAttachment.url}
+                                      controls
+                                      className="w-full max-h-60"
                                     />
                                     <div className="bg-black/30 px-2 py-1.5 text-[11px] text-gray-300 truncate flex items-center gap-1 border-t border-gray-800">
-                                      <Video size={12} className="text-purple-400" /> {effectiveAttachment.name}
+                                      <Video size={12} className="text-blue-400" /> {effectiveAttachment.name}
                                     </div>
                                   </div>
                                 )}
                                 {effectiveAttachment.type === 'audio' && (
-                                  <VoiceNotePlayer 
+                                  <VoiceNotePlayer
                                     src={effectiveAttachment.url || 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'}
                                     isPtt={true}
                                     title={effectiveAttachment.name || 'Nota de voz PTT'}
@@ -4279,9 +4279,9 @@ ${parametersString}
                                         <div className="text-[10px] text-gray-400 font-mono">{effectiveAttachment.size || '1.2 MB'} • Documento</div>
                                       </div>
                                     </div>
-                                    <a 
-                                      href={effectiveAttachment.url} 
-                                      download={effectiveAttachment.name} 
+                                    <a
+                                      href={effectiveAttachment.url}
+                                      download={effectiveAttachment.name}
                                       target="_blank"
                                       rel="noreferrer"
                                       className="text-gray-400 hover:text-white shrink-0 p-1.5 bg-[#202c33] hover:bg-[#2a3942] rounded-full border border-gray-800 transition"
@@ -4332,7 +4332,7 @@ ${parametersString}
                )}
 
                {/* Input Area */}
-               <form 
+               <form
                  onSubmit={(e) => {
                    e.preventDefault();
                    handleSendMessage();
@@ -4340,12 +4340,12 @@ ${parametersString}
                  className="min-h-[62px] bg-[#202c33] px-4 py-3 flex items-center gap-3 z-10 shrink-0 border-t border-[#2a3942]"
                >
                   {/* Hidden Real File Input */}
-                  <input 
-                    type="file" 
-                    ref={attachmentInputRef} 
-                    onChange={handleAttachmentFileChange} 
-                    className="hidden" 
-                    accept={attachmentAccept} 
+                  <input
+                    type="file"
+                    ref={attachmentInputRef}
+                    onChange={handleAttachmentFileChange}
+                    className="hidden"
+                    accept={attachmentAccept}
                   />
 
                   <button type="button" className="text-[#aebac1] hover:text-[#d1d7db] transition-colors p-1">
@@ -4357,35 +4357,35 @@ ${parametersString}
                      </button>
                      {/* Attachment Menu */}
                      <div className="absolute bottom-12 left-0 bg-[#233138] rounded-2xl shadow-xl p-2 hidden group-hover:flex flex-col w-48 border border-[#2a3942] z-50">
-                        <div 
+                        <div
                           onClick={() => triggerAttachmentUpload('imagen')}
                           className="flex items-center gap-3 p-2 hover:bg-[#111b21] rounded-xl cursor-pointer text-[#d1d7db] transition-colors"
                         >
-                           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-500 to-pink-700 flex items-center justify-center text-white"><ImageIcon size={16}/></div>
+                           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white"><ImageIcon size={16}/></div>
                            <span className="text-sm font-medium text-left">Foto / Imagen</span>
                         </div>
-                        <div 
+                        <div
                           onClick={() => triggerAttachmentUpload('video')}
                           className="flex items-center gap-3 p-2 hover:bg-[#111b21] rounded-xl cursor-pointer text-[#d1d7db] transition-colors"
                         >
-                           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center text-white"><Video size={16}/></div>
+                           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white"><Video size={16}/></div>
                            <span className="text-sm font-medium text-left">Video</span>
                         </div>
-                        <div 
+                        <div
                           onClick={() => triggerAttachmentUpload('audio')}
                           className="flex items-center gap-3 p-2 hover:bg-[#111b21] rounded-xl cursor-pointer text-[#d1d7db] transition-colors"
                         >
                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-white"><Headphones size={16}/></div>
                            <span className="text-sm font-medium text-left">Audio / Música</span>
                         </div>
-                        <div 
+                        <div
                           onClick={() => triggerAttachmentUpload('archivo')}
                           className="flex items-center gap-3 p-2 hover:bg-[#111b21] rounded-xl cursor-pointer text-[#d1d7db] transition-colors"
                         >
-                           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center text-white"><FileText size={16}/></div>
+                           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white"><FileText size={16}/></div>
                            <span className="text-sm font-medium text-left">Documento / PDF</span>
                         </div>
-                        <div 
+                        <div
                           onClick={() => setShowLiveRecorderInChat(true)}
                           className="flex items-center gap-3 p-2 hover:bg-[#111b21] rounded-xl cursor-pointer text-[#d1d7db] transition-colors"
                         >
@@ -4394,9 +4394,9 @@ ${parametersString}
                         </div>
                      </div>
                   </div>
-                  <input 
-                     type="text" 
-                     placeholder="Escribe un mensaje..." 
+                  <input
+                     type="text"
+                     placeholder="Escribe un mensaje..."
                      value={chatInput}
                      onChange={(e) => setChatInput(e.target.value)}
                      className="flex-1 bg-[#2a3942] text-[#d1d7db] text-sm rounded-lg px-4 py-2.5 focus:outline-none placeholder:text-[#8696a0]"
@@ -4406,9 +4406,9 @@ ${parametersString}
                        <Send size={24} />
                     </button>
                   ) : (
-                    <button 
-                      type="button" 
-                      onClick={() => setShowLiveRecorderInChat(!showLiveRecorderInChat)} 
+                    <button
+                      type="button"
+                      onClick={() => setShowLiveRecorderInChat(!showLiveRecorderInChat)}
                       className={`transition-colors p-1.5 rounded-full ${showLiveRecorderInChat ? 'text-emerald-400 bg-emerald-950 border border-emerald-500/50' : 'text-[#aebac1] hover:text-[#d1d7db]'}`}
                       title="Grabar nota de voz PTT en vivo"
                     >
@@ -4440,9 +4440,9 @@ ${parametersString}
                <div className="space-y-4 flex-1">
                   <div>
                      <label className="text-[9px] uppercase font-bold text-gray-500 block mb-1">Nombre Completo</label>
-                     <input 
-                       type="text" 
-                       value={captureName} 
+                     <input
+                       type="text"
+                       value={captureName}
                        onChange={(e) => setCaptureName(e.target.value)}
                        className="w-full bg-black border border-gray-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-green-500"
                      />
@@ -4451,18 +4451,18 @@ ${parametersString}
                   <div className="grid grid-cols-2 gap-2">
                      <div>
                         <label className="text-[9px] uppercase font-bold text-gray-500 block mb-1">Ciudad</label>
-                        <input 
-                          type="text" 
-                          value={captureCity} 
+                        <input
+                          type="text"
+                          value={captureCity}
                           onChange={(e) => setCaptureCity(e.target.value)}
                           className="w-full bg-black border border-gray-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-green-500"
                         />
                      </div>
                      <div>
                         <label className="text-[9px] uppercase font-bold text-gray-500 block mb-1">Depto</label>
-                        <input 
-                          type="text" 
-                          value={captureDept} 
+                        <input
+                          type="text"
+                          value={captureDept}
                           onChange={(e) => setCaptureDept(e.target.value)}
                           className="w-full bg-black border border-gray-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-green-500"
                         />
@@ -4471,9 +4471,9 @@ ${parametersString}
 
                   <div>
                      <label className="text-[9px] uppercase font-bold text-gray-500 block mb-1">Producto Interesado</label>
-                     <input 
-                       type="text" 
-                       value={captureProduct} 
+                     <input
+                       type="text"
+                       value={captureProduct}
                        onChange={(e) => setCaptureProduct(e.target.value)}
                        className="w-full bg-black border border-gray-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-green-500"
                      />
@@ -4481,9 +4481,9 @@ ${parametersString}
 
                   <div>
                      <label className="text-[9px] uppercase font-bold text-gray-500 block mb-1">Campaña / Anuncio</label>
-                     <input 
-                       type="text" 
-                       value={captureCampaign} 
+                     <input
+                       type="text"
+                       value={captureCampaign}
                        onChange={(e) => setCaptureCampaign(e.target.value)}
                        className="w-full bg-black border border-gray-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-green-500"
                      />
@@ -4492,15 +4492,15 @@ ${parametersString}
                   <div className="grid grid-cols-2 gap-2">
                      <div>
                         <label className="text-[9px] uppercase font-bold text-gray-500 block mb-1">Ticket Compra</label>
-                        <input 
-                          type="number" 
-                          value={captureTicket} 
+                        <input
+                          type="number"
+                          value={captureTicket}
                           onChange={(e) => setCaptureTicket(Number(e.target.value))}
                           className="w-full bg-black border border-gray-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-green-500"
                         />
                      </div>
                      <div className="flex flex-col justify-end pb-1">
-                        <div 
+                        <div
                           onClick={() => setCaptureIsRecurring(!captureIsRecurring)}
                           className="flex items-center gap-2 cursor-pointer text-[10px] text-gray-300 select-none"
                         >
@@ -4519,7 +4519,7 @@ ${parametersString}
                      <span className="text-[10px] uppercase font-bold text-gray-400 block">Etiquetas del Chat</span>
                      <span className="text-[9px] text-green-400 font-mono font-semibold">Conversación</span>
                   </div>
-                  
+
                   {/* Current Tags */}
                   <div className="flex flex-wrap gap-1.5 mb-3">
                      {(chats.find(c => c.id === activeChatId)?.tags || []).length === 0 ? (
@@ -4531,18 +4531,18 @@ ${parametersString}
                          const borderColor = tagObj ? `${tagObj.color}45` : '#374151';
                          const textColor = tagObj ? tagObj.color : '#d1d5db';
                          return (
-                           <span 
-                             key={idx} 
+                           <span
+                             key={idx}
                              style={{ backgroundColor: bgColor, borderColor: borderColor, color: textColor }}
                              className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium border ${
-                               t === 'Queja' || t === 'Mala Atención' 
-                                 ? 'font-bold animate-pulse' 
+                               t === 'Queja' || t === 'Mala Atención'
+                                 ? 'font-bold animate-pulse'
                                  : ''
                              }`}
                            >
                              {t}
-                             <button 
-                               type="button" 
+                             <button
+                               type="button"
                                onClick={() => handleRemoveTag(t)}
                                className="hover:text-white opacity-60 hover:opacity-100 font-bold ml-0.5 text-xs focus:outline-none"
                                title="Remover"
@@ -4557,9 +4557,9 @@ ${parametersString}
 
                   {/* Add Tag Inputs */}
                   <div className="flex gap-1.5 mb-3">
-                     <input 
-                       type="text" 
-                       placeholder="Nueva etiqueta..." 
+                     <input
+                       type="text"
+                       placeholder="Nueva etiqueta..."
                        value={newTagInput}
                        onChange={(e) => setNewTagInput(e.target.value)}
                        onKeyDown={(e) => {
@@ -4571,7 +4571,7 @@ ${parametersString}
                        }}
                        className="flex-1 bg-black border border-gray-800 rounded-lg px-2 py-1 text-xs text-white placeholder:text-gray-600 focus:outline-none focus:border-green-500"
                      />
-                     <button 
+                     <button
                        type="button"
                        onClick={() => {
                          handleAddTag(newTagInput);
@@ -4587,10 +4587,10 @@ ${parametersString}
                   <div className="space-y-1.5">
                      <div className="flex items-center justify-between mb-1">
                         <label className="text-[9px] uppercase font-bold text-gray-500 block">Accesos Rápidos</label>
-                        <button 
-                          type="button" 
+                        <button
+                          type="button"
                           onClick={() => setShowTagManagerModal(true)}
-                          className="text-[10px] text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-1 bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-500/20 transition-all"
+                          className="text-[10px] text-blue-400 hover:text-blue-300 font-bold flex items-center gap-1 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20 transition-all"
                         >
                           <Settings size={10} /> Gestionar
                         </button>
@@ -4601,7 +4601,7 @@ ${parametersString}
                           const bgColor = hasTag ? 'bg-gray-950/70' : 'bg-black';
                           const textColor = hasTag ? 'text-gray-600' : 'text-gray-200';
                           const borderColor = hasTag ? 'border-gray-900' : 'border-gray-850 hover:border-gray-700';
-                          
+
                           return (
                             <button
                               key={tagObj.id}
@@ -4620,7 +4620,7 @@ ${parametersString}
                </div>
 
                <div className="mt-6 pt-4 border-t border-gray-800 space-y-2 shrink-0">
-                  <button 
+                  <button
                     onClick={() => {
                        const stored = localStorage.getItem('crm_clients');
                        let clientList = [];
@@ -4647,7 +4647,7 @@ ${parametersString}
                   >
                      <CheckCircle2 size={14} /> Guardar en Clientes
                   </button>
-                  <button 
+                  <button
                     onClick={() => {
                        const stored = localStorage.getItem('crm_orders');
                        let orderList = [];
@@ -4690,7 +4690,7 @@ ${parametersString}
                             onClick={() => setActivePipelineId(pip.id)}
                             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 border ${
                               activePipelineId === pip.id
-                                ? 'bg-indigo-600/20 text-indigo-400 border-indigo-500/40 font-bold shadow-md'
+                                ? 'bg-blue-600/20 text-blue-400 border-blue-500/40 font-bold shadow-md'
                                 : 'bg-black text-gray-400 border-gray-850 hover:text-white hover:border-gray-700'
                             }`}
                           >
@@ -4737,7 +4737,7 @@ ${parametersString}
                       <button
                         type="button"
                         onClick={() => setShowEditPipelineModal(true)}
-                        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-950/40 hover:bg-indigo-900/45 text-indigo-400 border border-indigo-500/30 transition flex items-center gap-1 shrink-0"
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-950/40 hover:bg-blue-900/45 text-blue-400 border border-blue-500/30 transition flex items-center gap-1 shrink-0"
                         title="Editar nombre o propiedades del embudo activo"
                       >
                         <Edit3 size={13} /> Editar Embudo
@@ -4746,7 +4746,7 @@ ${parametersString}
 
                     {/* Right Action buttons */}
                     <div className="flex gap-2">
-                      <button 
+                      <button
                         type="button"
                         onClick={() => {
                           const name = prompt('Escribe el nombre de la nueva columna para este embudo (ej: En Negociación):');
@@ -4755,7 +4755,7 @@ ${parametersString}
                             setKanbanColumns([...kanbanColumns, { id, name, color: '#a855f7', pipelineId: activePipelineId }]);
                           }
                         }}
-                        className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition font-bold shadow-md"
+                        className="text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition font-bold shadow-md"
                       >
                         <Plus size={14} /> Nueva Columna
                       </button>
@@ -4797,8 +4797,8 @@ ${parametersString}
                   {showNewPipelineModal && (
                     <div className="absolute inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 z-50">
                       <div className="bg-[#181818] border border-gray-800 rounded-2xl w-full max-w-md p-6 text-left shadow-2xl relative">
-                        <button 
-                          type="button" 
+                        <button
+                          type="button"
                           onClick={() => setShowNewPipelineModal(false)}
                           className="absolute top-4 right-4 text-gray-500 hover:text-white font-bold text-lg"
                         >
@@ -4806,65 +4806,65 @@ ${parametersString}
                          </button>
                         <h3 className="text-white font-bold text-base mb-1 flex items-center gap-2">🎯 Crear Nuevo Embudo Kanban</h3>
                         <p className="text-xs text-gray-400 mb-5">Personaliza tu CRM creando un nuevo embudo de ventas o atención con su propia lógica de embudo.</p>
-                        
+
                         <div className="space-y-4 mb-6">
                           <div>
                             <label className="text-xs text-gray-300 font-semibold block mb-1.5">Nombre del Embudo / Canva</label>
-                            <input 
-                              type="text" 
-                              placeholder="Ej: Embudo VIP, Reclamos Mayoristas, etc..." 
+                            <input
+                              type="text"
+                              placeholder="Ej: Embudo VIP, Reclamos Mayoristas, etc..."
                               value={newPipelineName}
                               onChange={(e) => setNewPipelineName(e.target.value)}
-                              className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 placeholder:text-gray-600"
+                              className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-blue-500 placeholder:text-gray-600"
                             />
                           </div>
 
                           <div className="space-y-4">
                             <div>
                                 <label className="text-xs text-gray-300 font-semibold block mb-1.5">Instrucciones de la IA</label>
-                                <textarea 
+                                <textarea
                                   value={newPipelineInstructions}
                                   onChange={(e) => setNewPipelineInstructions(e.target.value)}
                                   placeholder="Qué debe pasar para que pase en este embudo..."
-                                  className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 h-24"
+                                  className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-blue-500 h-24"
                                 />
                             </div>
                             <div>
                                 <label className="text-xs text-gray-300 font-semibold block mb-1.5">Columnas y Automatización</label>
-                                <textarea 
+                                <textarea
                                   value={newPipelineAutomation}
                                   onChange={(e) => setNewPipelineAutomation(e.target.value)}
                                   placeholder="Define las columnas y sus reglas..."
-                                  className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 h-32"
+                                  className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-blue-500 h-32"
                                 />
                             </div>
                           </div>
                         </div>
 
                         <div className="flex gap-2 justify-end">
-                          <button 
+                          <button
                             type="button"
                             onClick={() => setShowNewPipelineModal(false)}
                             className="px-4 py-2 rounded-lg text-xs font-semibold text-gray-400 hover:text-white hover:bg-gray-900 transition"
                           >
                             Cancelar
                           </button>
-                          <button 
+                          <button
                             type="button"
                             onClick={() => {
                               const trimmed = newPipelineName.trim();
                               if (!trimmed) return;
                               const id = trimmed.toLowerCase().replace(/\s+/g, '_') + '_' + Date.now();
-                              
+
                               const newPip = {
                                 id,
                                 name: trimmed,
                                 isNestComplaints: newPipelineNest,
                                 isNestLogistics: newPipelineLogistics
                               };
-                              
+
                               setPipelines(prev => [...prev, newPip]);
-                              
+
                               if (newPipelineLogistics) {
                                 setKanbanColumns(prev => [
                                   ...prev,
@@ -4882,7 +4882,7 @@ ${parametersString}
                                   { id: col2Id, name: 'Completado / Listo', color: '#10b981', pipelineId: id }
                                 ]);
                               }
-                              
+
                               setActivePipelineId(id);
                               setNewPipelineName('');
                               setNewPipelineNest(false);
@@ -4903,8 +4903,8 @@ ${parametersString}
                   {showTagManagerModal && (
                     <div className="absolute inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 z-50">
                       <div className="bg-[#181818] border border-gray-800 rounded-2xl w-full max-w-md p-6 text-left shadow-2xl relative flex flex-col max-h-[85%]">
-                        <button 
-                          type="button" 
+                        <button
+                          type="button"
                           onClick={() => setShowTagManagerModal(false)}
                           className="absolute top-4 right-4 text-gray-500 hover:text-white font-bold text-lg"
                         >
@@ -4912,16 +4912,16 @@ ${parametersString}
                         </button>
                         <h3 className="text-white font-bold text-base mb-1 flex items-center gap-2">🏷️ Administrar Etiquetas</h3>
                         <p className="text-xs text-gray-400 mb-4">Crea, edita o elimina las etiquetas globales del sistema.</p>
-                        
+
                         {/* Form to create tag */}
                         <div className="bg-black/40 p-3 rounded-xl border border-gray-850 mb-4 shrink-0">
-                          <span className="text-[10px] uppercase font-bold text-indigo-400 block mb-2">Nueva Etiqueta</span>
+                          <span className="text-[10px] uppercase font-bold text-blue-400 block mb-2">Nueva Etiqueta</span>
                           <div className="flex gap-2">
-                            <input 
+                            <input
                               type="text"
                               id="new-tag-name-input"
                               placeholder="Nombre de la etiqueta..."
-                              className="flex-1 bg-black border border-gray-800 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder:text-gray-600 focus:outline-none focus:border-indigo-500"
+                              className="flex-1 bg-black border border-gray-800 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder:text-gray-600 focus:outline-none focus:border-blue-500"
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
                                   e.preventDefault();
@@ -4934,7 +4934,7 @@ ${parametersString}
                                 }
                               }}
                             />
-                            <input 
+                            <input
                               type="color"
                               id="new-tag-color-input"
                               defaultValue="#3b82f6"
@@ -4963,18 +4963,18 @@ ${parametersString}
                           {availableTags.map((tag) => (
                             <div key={tag.id} className="flex items-center justify-between p-2 bg-black/20 rounded-lg border border-gray-850/60 hover:border-gray-800 transition">
                               <div className="flex items-center gap-2 flex-1 min-w-0">
-                                <input 
+                                <input
                                   type="color"
                                   value={tag.color}
                                   onChange={(e) => handleEditTag(tag.id, tag.name, e.target.value)}
                                   className="w-5 h-5 rounded border-none cursor-pointer p-0 bg-transparent shrink-0"
                                   title="Cambiar color"
                                 />
-                                <input 
+                                <input
                                   type="text"
                                   value={tag.name}
                                   onChange={(e) => handleEditTag(tag.id, e.target.value, tag.color)}
-                                  className="bg-transparent border-none text-xs text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 rounded px-1.5 py-0.5 flex-1 min-w-0 font-medium"
+                                  className="bg-transparent border-none text-xs text-white focus:outline-none focus:ring-1 focus:ring-blue-500 rounded px-1.5 py-0.5 flex-1 min-w-0 font-medium"
                                 />
                               </div>
                               <button
@@ -4990,10 +4990,10 @@ ${parametersString}
                         </div>
 
                         <div className="flex justify-end pt-2 border-t border-gray-800 shrink-0">
-                          <button 
+                          <button
                             type="button"
                             onClick={() => setShowTagManagerModal(false)}
-                            className="px-4 py-2 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white transition shadow-md"
+                            className="px-4 py-2 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white transition shadow-md"
                           >
                             Listo
                           </button>
@@ -5006,8 +5006,8 @@ ${parametersString}
                   {showEditPipelineModal && (
                     <div className="absolute inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 z-50">
                       <div className="bg-[#181818] border border-gray-800 rounded-2xl w-full max-w-md p-6 text-left shadow-2xl relative">
-                        <button 
-                          type="button" 
+                        <button
+                          type="button"
                           onClick={() => setShowEditPipelineModal(false)}
                           className="absolute top-4 right-4 text-gray-500 hover:text-white font-bold text-lg"
                         >
@@ -5015,49 +5015,49 @@ ${parametersString}
                         </button>
                         <h3 className="text-white font-bold text-base mb-1 flex items-center gap-2">⚙️ Editar Embudo Activo</h3>
                         <p className="text-xs text-gray-400 mb-5">Modifica los detalles, nombre o configuración del embudo seleccionado.</p>
-                        
+
                         {(() => {
                           const activePip = pipelines.find(p => p.id === activePipelineId);
                           if (!activePip) return <p className="text-xs text-red-400">Embudo no encontrado.</p>;
-                          
+
                           return (
                             <div className="space-y-4 mb-6">
                               <div>
                                 <label className="text-xs text-gray-300 font-semibold block mb-1.5">Nombre del Embudo / Canva</label>
-                                 
-                                  <input type="text" 
+
+                                  <input type="text"
                                   value={activePip.name}
                                   onChange={(e) => {
                                     const val = e.target.value;
                                     setPipelines(prev => prev.map(p => p.id === activePipelineId ? { ...p, name: val } : p));
                                   }}
-                                  className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                                  className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
                                 />
                               </div>
 
                               <div className="space-y-4">
                                 <div>
                                     <label className="text-xs text-gray-300 font-semibold block mb-1.5">Instrucciones de la IA</label>
-                                    <textarea 
+                                    <textarea
                                       value={activePip.instructions || ''}
                                       onChange={(e) => {
                                         const val = e.target.value;
                                         setPipelines(prev => prev.map(p => p.id === activePipelineId ? { ...p, instructions: val } : p));
                                       }}
                                       placeholder="Qué debe pasar para que pase en este embudo..."
-                                      className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 h-24"
+                                      className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-blue-500 h-24"
                                     />
                                 </div>
                                 <div>
                                     <label className="text-xs text-gray-300 font-semibold block mb-1.5">Columnas y Automatización</label>
-                                    <textarea 
+                                    <textarea
                                       value={activePip.automation || ''}
                                       onChange={(e) => {
                                         const val = e.target.value;
                                         setPipelines(prev => prev.map(p => p.id === activePipelineId ? { ...p, automation: val } : p));
                                       }}
                                       placeholder="Define las columnas y sus reglas..."
-                                      className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 h-32"
+                                      className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-blue-500 h-32"
                                     />
                                 </div>
                               </div>
@@ -5086,10 +5086,10 @@ ${parametersString}
                         })()}
 
                         <div className="flex justify-end gap-2 shrink-0">
-                          <button 
+                          <button
                             type="button"
                             onClick={() => setShowEditPipelineModal(false)}
-                            className="px-4 py-2 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white transition shadow-md"
+                            className="px-4 py-2 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white transition shadow-md"
                           >
                             Guardar y Cerrar
                           </button>
@@ -5110,7 +5110,7 @@ ${parametersString}
                         // Get chats for this column with nesting filters applied!
                         const colChats = chats.filter(c => {
                           const hasActiveComplaint = c.tags.includes('Queja') || c.tags.includes('Mala Atención');
-                          const hasActiveLogistic = c.tags.some(t => ['Logística', 'Despachado', 'Entregado', 'Novedad', 'Envío'].includes(t)) || 
+                          const hasActiveLogistic = c.tags.some(t => ['Logística', 'Despachado', 'Entregado', 'Novedad', 'Envío'].includes(t)) ||
                                                      (c.msg && /guía|despacho|envío|entrega|retraso|paquete|transportadora/i.test(c.msg));
 
                           if (isComplaintsNest) {
@@ -5157,28 +5157,28 @@ ${parametersString}
                             <div className="p-3 border-b border-gray-800 flex items-center justify-between sticky top-0 bg-[#161616] rounded-t-xl z-10">
                               <div className="flex items-center gap-2 min-w-0">
                                 <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: col.color }}></span>
-                                <input 
-                                  type="text" 
-                                  value={col.name} 
+                                <input
+                                  type="text"
+                                  value={col.name}
                                   onChange={(e) => {
                                     setKanbanColumns(prev => prev.map(c => c.id === col.id ? { ...c, name: e.target.value } : c));
                                   }}
-                                  className="bg-transparent border-none text-sm font-semibold text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 rounded px-1 w-40 truncate" 
+                                  className="bg-transparent border-none text-sm font-semibold text-white focus:outline-none focus:ring-1 focus:ring-blue-500 rounded px-1 w-40 truncate"
                                   title="Editar nombre de columna"
                                 />
                               </div>
                               <div className="flex items-center gap-1.5 shrink-0 ml-1">
-                                <input 
-                                  type="color" 
-                                  value={col.color} 
+                                <input
+                                  type="color"
+                                  value={col.color}
                                   onChange={(e) => {
                                     setKanbanColumns(prev => prev.map(c => c.id === col.id ? { ...c, color: e.target.value } : c));
                                   }}
                                   className="w-4 h-4 rounded-full border-none cursor-pointer p-0 bg-transparent shrink-0"
                                   title="Cambiar color de columna"
                                 />
-                                <button 
-                                  type="button" 
+                                <button
+                                  type="button"
                                   onClick={() => {
                                     if (confirm(`¿Estás seguro de que deseas eliminar la columna "${col.name}"? Los chats correspondientes volverán a Leads Nuevos.`)) {
                                       setChats(prev => prev.map(c => c.columnId === col.id ? { ...c, columnId: 'leads_nuevos' } : c));
@@ -5193,37 +5193,37 @@ ${parametersString}
                                 <span className="bg-gray-800 text-gray-400 text-[10px] px-2 py-0.5 rounded-full font-bold font-mono">{colChats.length}</span>
                               </div>
                             </div>
-                            
+
                             <div className="p-3 space-y-3 overflow-y-auto flex-1 custom-scrollbar min-h-[350px]">
                               {colChats.map((lead) => {
                                 const hasComplaint = lead.tags.includes('Queja') || lead.tags.includes('Mala Atención');
                                 return (
-                                  <div 
-                                    key={lead.id} 
+                                  <div
+                                    key={lead.id}
                                     className={`p-3 rounded-lg hover:border-gray-500 transition group relative border ${
-                                      hasComplaint 
-                                        ? 'bg-red-950/25 border-red-900/40 hover:bg-red-950/35' 
+                                      hasComplaint
+                                        ? 'bg-red-950/25 border-red-900/40 hover:bg-red-950/35'
                                         : 'bg-[#1f1f1f] border-gray-700/50'
                                     }`}
                                   >
                                      <div className="flex items-start justify-between mb-1 gap-1">
                                         <span className="text-xs font-bold text-gray-200 flex items-center gap-1 truncate max-w-[170px]">
-                                          <UserCircle size={14} className={hasComplaint ? "text-red-400 shrink-0" : "text-gray-400 shrink-0"} /> 
+                                          <UserCircle size={14} className={hasComplaint ? "text-red-400 shrink-0" : "text-gray-400 shrink-0"} />
                                           {lead.name}
                                         </span>
                                         <span className="text-[9px] text-gray-500 font-mono shrink-0">{lead.time}</span>
                                      </div>
                                      <p className="text-xs text-gray-400 mb-3 truncate font-medium text-left" title={lead.msg}>{lead.msg}</p>
-                                     
+
                                      {lead.tags && lead.tags.length > 0 && (
                                        <div className="flex flex-wrap gap-1 mb-3">
                                          {lead.tags.map((tag, tIdx) => (
-                                           <span 
-                                             key={tIdx} 
+                                           <span
+                                             key={tIdx}
                                              className={`text-[9px] px-1.5 py-0.5 rounded font-medium border ${
                                                tag === 'Queja' || tag === 'Mala Atención'
                                                  ? 'bg-red-500/10 text-red-300 border-red-500/20 animate-pulse'
-                                                 : 'bg-indigo-500/10 text-indigo-300 border-indigo-500/20'
+                                                 : 'bg-blue-500/10 text-blue-300 border-blue-500/20'
                                              }`}
                                            >
                                              {tag}
@@ -5231,25 +5231,25 @@ ${parametersString}
                                          ))}
                                        </div>
                                      )}
-                                     
+
                                      <div className="flex items-center justify-between gap-2 border-t border-gray-850 pt-2.5 mt-2">
-                                        <select 
-                                          value={lead.columnId || 'leads_nuevos'} 
+                                        <select
+                                          value={lead.columnId || 'leads_nuevos'}
                                           onChange={(e) => {
                                             setChats(prev => prev.map(c => c.id === lead.id ? { ...c, columnId: e.target.value } : c));
                                           }}
-                                          className="bg-black/60 border border-gray-800 text-[10px] rounded px-1.5 py-1 text-gray-300 w-32 focus:outline-none focus:border-indigo-500 cursor-pointer font-medium text-left"
+                                          className="bg-black/60 border border-gray-800 text-[10px] rounded px-1.5 py-1 text-gray-300 w-32 focus:outline-none focus:border-blue-500 cursor-pointer font-medium text-left"
                                         >
                                           {kanbanColumns.map(colOpt => (
                                             <option key={colOpt.id} value={colOpt.id}>{colOpt.name}</option>
                                           ))}
                                         </select>
-                                        <button 
+                                        <button
                                           type="button"
                                           onClick={() => {
                                             setActiveChatId(lead.id);
                                             setViewMode('chat');
-                                          }} 
+                                          }}
                                           className="text-[10px] bg-gray-800 hover:bg-gray-700 hover:text-white text-gray-300 px-2 py-1 rounded transition font-semibold shrink-0"
                                         >
                                           Ver chat
@@ -5404,8 +5404,8 @@ ${parametersString}
                         <tbody className="divide-y divide-gray-850">
                           {chats
                             .filter(c => {
-                              const matchesSearch = c.name.toLowerCase().includes(chatSearch.toLowerCase()) || 
-                                                    c.phone.includes(chatSearch) || 
+                              const matchesSearch = c.name.toLowerCase().includes(chatSearch.toLowerCase()) ||
+                                                    c.phone.includes(chatSearch) ||
                                                     (c.msg && c.msg.toLowerCase().includes(chatSearch.toLowerCase()));
                               if (leadFilter === 'todos') return matchesSearch;
                               return matchesSearch && (c.leadStatus || 'frío') === leadFilter;
@@ -5472,8 +5472,8 @@ ${parametersString}
                                             <span
                                               key={tIdx}
                                               className={`text-[9px] px-1.5 py-0.5 rounded-full font-semibold border ${
-                                                isComplaint 
-                                                  ? 'bg-red-500/10 text-red-400 border-red-500/20' 
+                                                isComplaint
+                                                  ? 'bg-red-500/10 text-red-400 border-red-500/20'
                                                   : 'bg-[#182229] text-gray-300 border-gray-800'
                                               }`}
                                             >
@@ -5521,8 +5521,8 @@ ${parametersString}
                             })}
 
                           {chats.filter(c => {
-                            const matchesSearch = c.name.toLowerCase().includes(chatSearch.toLowerCase()) || 
-                                                  c.phone.includes(chatSearch) || 
+                            const matchesSearch = c.name.toLowerCase().includes(chatSearch.toLowerCase()) ||
+                                                  c.phone.includes(chatSearch) ||
                                                   (c.msg && c.msg.toLowerCase().includes(chatSearch.toLowerCase()));
                             if (leadFilter === 'todos') return matchesSearch;
                             return matchesSearch && (c.leadStatus || 'frío') === leadFilter;
@@ -5660,7 +5660,7 @@ ${parametersString}
           <div className="space-y-6 animate-fade-in">
             {/* Secondary navigation tab bar for training sub-modules */}
             <div className="flex gap-2 border-b border-gray-800 overflow-x-auto pb-px mb-6">
-              <button 
+              <button
                 type="button"
                 onClick={() => setTrainingSubTab('base')}
                 className={`px-4 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-colors ${trainingSubTab === 'base' ? 'border-green-500 text-green-400' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
@@ -5668,7 +5668,7 @@ ${parametersString}
                 <Database size={14} className="inline mr-1.5" />
                 Configuración Base
               </button>
-              <button 
+              <button
                 type="button"
                 onClick={() => setTrainingSubTab('greeting')}
                 className={`px-4 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-colors ${trainingSubTab === 'greeting' ? 'border-green-500 text-green-400' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
@@ -5676,7 +5676,7 @@ ${parametersString}
                 <MessageCircle size={14} className="inline mr-1.5" />
                 Saludo Inicial
               </button>
-              <button 
+              <button
                 type="button"
                 onClick={() => setTrainingSubTab('faqs')}
                 className={`px-4 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-colors ${trainingSubTab === 'faqs' ? 'border-green-500 text-green-400' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
@@ -5684,7 +5684,7 @@ ${parametersString}
                 <FileText size={14} className="inline mr-1.5" />
                 Preguntas Frecuentes
               </button>
-              <button 
+              <button
                 type="button"
                 onClick={() => setTrainingSubTab('ai_rules')}
                 className={`px-4 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-colors ${trainingSubTab === 'ai_rules' ? 'border-green-500 text-green-400' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
@@ -5692,15 +5692,15 @@ ${parametersString}
                 <Sparkles size={14} className="inline mr-1.5 text-yellow-400" />
                 Reglas y Alertas IA
               </button>
-              <button 
+              <button
                 type="button"
                 onClick={() => setTrainingSubTab('memory')}
-                className={`px-4 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-colors ${trainingSubTab === 'memory' ? 'border-purple-500 text-purple-400 font-bold' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
+                className={`px-4 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-colors ${trainingSubTab === 'memory' ? 'border-blue-500 text-blue-400 font-bold' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
               >
-                <Bot size={14} className="inline mr-1.5 text-purple-400" />
+                <Bot size={14} className="inline mr-1.5 text-blue-400" />
                 Memoria del Bot
               </button>
-              <button 
+              <button
                 type="button"
                 onClick={() => setTrainingSubTab('remarketing')}
                 className={`px-4 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-colors ${trainingSubTab === 'remarketing' ? 'border-emerald-500 text-emerald-400 font-bold' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
@@ -5708,7 +5708,7 @@ ${parametersString}
                 <RefreshCw size={14} className="inline mr-1.5 text-emerald-400 animate-spin-slow" />
                 Remarketing Automatizado
               </button>
-              <button 
+              <button
                 type="button"
                 onClick={() => setTrainingSubTab('ai_models')}
                 className={`px-4 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-colors ${trainingSubTab === 'ai_models' ? 'border-blue-500 text-blue-400 font-bold' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
@@ -5716,7 +5716,7 @@ ${parametersString}
                 <Database size={14} className="inline mr-1.5 text-blue-400" />
                 Consultor IA / Modelos
               </button>
-              <button 
+              <button
                 type="button"
                 onClick={() => setTrainingSubTab('debug')}
                 className={`px-4 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-colors ${trainingSubTab === 'debug' ? 'border-cyan-500 text-cyan-400 font-bold' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
@@ -5724,7 +5724,7 @@ ${parametersString}
                 <Terminal size={14} className="inline mr-1.5 text-cyan-400 animate-pulse" />
                 Depuración OpenAI & Tokens
               </button>
-              <button 
+              <button
                 type="button"
                 onClick={() => setTrainingSubTab('recargas')}
                 className={`px-4 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-colors ${trainingSubTab === 'recargas' ? 'border-red-500 text-red-400 font-bold shadow-[0_2px_10px_rgba(239,68,68,0.2)]' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
@@ -5756,14 +5756,14 @@ ${parametersString}
                     </p>
                   </div>
                   <div className="flex flex-col sm:flex-row gap-2 shrink-0 w-full sm:w-auto">
-                    <button 
+                    <button
                       type="button"
                       onClick={() => setIsWizardOpen(true)}
-                      className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 transition shadow-lg active:scale-95"
+                      className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 transition shadow-lg active:scale-95"
                     >
                       <Wand2 size={14} /> Asistente IA (Auto-Configurar)
                     </button>
-                    <button 
+                    <button
                       type="button"
                       onClick={async () => {
                         try {
@@ -5773,14 +5773,14 @@ ${parametersString}
                           const res = await fetch('/api/backoffice/state', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ 
-                              botPrompt, 
+                            body: JSON.stringify({
+                              botPrompt,
                               customGreeting: greetingMessage,
                               greetingAttachments,
                               faqsList: faqs,
                               rules,
                               businessType,
-                              lastTrainingUpdate: Date.now() 
+                              lastTrainingUpdate: Date.now()
                             })
                           });
                           if (res.ok) {
@@ -5807,7 +5807,7 @@ ${parametersString}
                   <p className="text-xs text-gray-400 mb-3">
                     Selecciona tu Nicho para aplicar una plantilla optimizada de prompt y reglas base para tu modelo de negocio.
                   </p>
-                  <select 
+                  <select
                     className="w-full bg-[#161616] border border-gray-800 rounded-xl p-3 text-sm text-white focus:border-emerald-500 outline-none font-semibold cursor-pointer"
                     value={businessType}
                     onChange={(e) => handleApplyNicheTemplate(e.target.value)}
@@ -5847,7 +5847,7 @@ ${parametersString}
                         <Shield size={14} className="shrink-0 mt-0.5 text-amber-400" />
                         <span><strong>Restricción Estricta:</strong> Escribe aquí la información completa de tu negocio (productos, precios, horarios, flujo de atención). La IA no responderá nada fuera de lo aquí redactado.</span>
                       </div>
-                      <textarea 
+                      <textarea
                         className="w-full bg-[#141414] border border-gray-800 rounded-xl p-3 text-xs text-gray-200 h-64 focus:border-emerald-500 outline-none leading-relaxed font-mono"
                         placeholder="Escribe aquí el entrenamiento del bot..."
                         value={botPrompt}
@@ -5869,7 +5869,7 @@ ${parametersString}
                           Mensaje de bienvenida automático que la IA enviará al primer contacto de cada cliente.
                         </p>
                       </div>
-                      <textarea 
+                      <textarea
                         className="w-full bg-[#141414] border border-gray-800 rounded-xl p-3 text-xs text-gray-200 h-28 focus:border-blue-500 outline-none leading-relaxed"
                         placeholder="¡Hola! Gracias por escribirnos..."
                         value={greetingMessage}
@@ -5899,10 +5899,10 @@ ${parametersString}
                             <label className="border border-gray-800 border-dashed rounded-xl p-2.5 flex items-center justify-center gap-2 text-gray-400 hover:border-emerald-500/50 hover:bg-emerald-500/5 transition cursor-pointer text-xs font-medium">
                               <UploadCloud size={16} className="text-emerald-400" />
                               <span>Subir Archivo/Imagen</span>
-                              <input 
-                                type="file" 
+                              <input
+                                type="file"
                                 accept="image/*,video/*,audio/*,application/pdf"
-                                className="hidden" 
+                                className="hidden"
                                 onChange={(e) => {
                                   const file = e.target.files?.[0];
                                   if (file) {
@@ -5918,7 +5918,7 @@ ${parametersString}
                                 }}
                               />
                             </label>
-                            <button 
+                            <button
                               type="button"
                               onClick={() => setIsRecordingGreetingAudio(true)}
                               className="border border-gray-800 border-dashed rounded-xl p-2.5 flex items-center justify-center gap-2 text-gray-400 hover:border-emerald-500/50 hover:bg-emerald-500/5 transition cursor-pointer text-xs font-medium"
@@ -5937,7 +5937,7 @@ ${parametersString}
                                   {att.type === 'audio' ? <Mic size={12} className="text-emerald-400" /> : <Paperclip size={12} className="text-blue-400" />}
                                   {att.name}
                                 </span>
-                                <button 
+                                <button
                                   type="button"
                                   onClick={() => {
                                     const newAtts = greetingAttachments.filter((_, i) => i !== idx);
@@ -5968,7 +5968,7 @@ ${parametersString}
                             Respuestas directas que la IA utilizará prioritariamente.
                           </p>
                         </div>
-                        <button 
+                        <button
                           type="button"
                           onClick={() => {
                             const q = prompt('Escribe la Pregunta Frecuente (ej: ¿Cuáles son los métodos de pago?):');
@@ -5996,8 +5996,8 @@ ${parametersString}
                               <div className="flex items-start justify-between gap-2">
                                 <span className="text-xs font-bold text-amber-400 flex items-center gap-1">
                                   <span>Q{i+1}:</span>
-                                  <input 
-                                    type="text" 
+                                  <input
+                                    type="text"
                                     className="bg-transparent border-none text-white font-semibold focus:outline-none w-full text-xs"
                                     value={faq.question}
                                     onChange={(e) => {
@@ -6008,7 +6008,7 @@ ${parametersString}
                                     }}
                                   />
                                 </span>
-                                <button 
+                                <button
                                   type="button"
                                   onClick={() => {
                                     const updated = faqs.filter((_, idx) => idx !== i);
@@ -6021,7 +6021,7 @@ ${parametersString}
                                   &times;
                                 </button>
                               </div>
-                              <textarea 
+                              <textarea
                                 className="w-full bg-[#1a1a1a] border border-gray-800 rounded-lg p-2 text-xs text-gray-300 focus:border-amber-500 outline-none"
                                 rows={2}
                                 value={faq.answer}
@@ -6042,15 +6042,15 @@ ${parametersString}
                     <div className="panel p-5 rounded-2xl bg-[#0e0e0e] border border-gray-800 space-y-3">
                       <div className="flex items-center justify-between">
                         <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                          <Shield size={16} className="text-purple-400" /> 4. Reglas y Límites de la IA
+                          <Shield size={16} className="text-blue-400" /> 4. Reglas y Límites de la IA
                         </h3>
-                        <button 
+                        <button
                           type="button"
                           onClick={() => {
                             const r = prompt('Escribe una nueva regla de comportamiento (ej: No ofrecer descuentos mayores al 10% sin autorización):');
                             if (r) setRules([...rules, r]);
                           }}
-                          className="text-xs text-purple-400 hover:text-purple-300 font-bold flex items-center gap-1"
+                          className="text-xs text-blue-400 hover:text-blue-300 font-bold flex items-center gap-1"
                         >
                           <Plus size={14} /> Añadir Regla
                         </button>
@@ -6060,11 +6060,11 @@ ${parametersString}
                         {rules.map((rule, i) => (
                           <div key={i} className="flex items-center justify-between gap-2 bg-[#141414] border border-gray-800 p-2.5 rounded-lg text-xs text-gray-300">
                             <div className="flex items-center gap-2 truncate">
-                              <div className="w-1.5 h-1.5 rounded-full bg-purple-400 shrink-0"></div>
+                              <div className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0"></div>
                               <span className="truncate">{rule}</span>
                             </div>
-                            <button 
-                              type="button" 
+                            <button
+                              type="button"
                               onClick={() => setRules(prev => prev.filter((_, idx) => idx !== i))}
                               className="text-red-400 hover:text-red-300 text-xs px-1.5 shrink-0"
                             >
@@ -6081,7 +6081,7 @@ ${parametersString}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
                   <div className="panel p-5 rounded-2xl bg-[#0e0e0e] border border-gray-800 space-y-3">
                     <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                      <MessageCircle size={16} className="text-emerald-400 animate-pulse" /> 
+                      <MessageCircle size={16} className="text-emerald-400 animate-pulse" />
                       Búfer de Consolidador de Mensajes
                     </h3>
                     <p className="text-xs text-gray-400">
@@ -6089,7 +6089,7 @@ ${parametersString}
                     </p>
                     <div className="flex items-center justify-between pt-1">
                       <span className="text-xs text-gray-300">Activar Búfer de Consolidación</span>
-                      <div 
+                      <div
                         onClick={() => setIsBufferEnabled(!isBufferEnabled)}
                         className={`w-10 h-5 rounded-full p-0.5 transition-colors duration-200 cursor-pointer ${isBufferEnabled ? "bg-emerald-600" : "bg-gray-700"}`}
                       >
@@ -6101,13 +6101,13 @@ ${parametersString}
                         <label className="block text-[11px] text-gray-400 mb-1">
                           Segundos de espera: <strong className="text-emerald-400 font-mono">{bufferSeconds}s</strong>
                         </label>
-                        <input 
-                          type="range" 
-                          min="3" 
-                          max="20" 
-                          value={bufferSeconds} 
+                        <input
+                          type="range"
+                          min="3"
+                          max="20"
+                          value={bufferSeconds}
                           onChange={(e) => setBufferSeconds(Number(e.target.value))}
-                          className="w-full accent-emerald-500 cursor-pointer" 
+                          className="w-full accent-emerald-500 cursor-pointer"
                         />
                       </div>
                     )}
@@ -6115,7 +6115,7 @@ ${parametersString}
 
                   <div className="panel p-5 rounded-2xl bg-[#0e0e0e] border border-gray-800 space-y-3">
                     <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                      <Database size={16} className="text-blue-400" /> 
+                      <Database size={16} className="text-blue-400" />
                       Documentos y Material de Soporte (PDFs)
                     </h3>
                     <p className="text-xs text-gray-400">
@@ -6131,7 +6131,7 @@ ${parametersString}
                         ))}
                       </div>
                     )}
-                    <button 
+                    <button
                       type="button"
                       onClick={() => {
                         const f = prompt('Escribe el nombre del archivo (ej: Menu_2026.pdf):');
@@ -6150,7 +6150,7 @@ ${parametersString}
                     <CheckCircle size={18} className="text-emerald-400" />
                     <span>Los cambios se aplicarán inmediatamente al bot de WhatsApp al guardar.</span>
                   </div>
-                  <button 
+                  <button
                     type="button"
                     onClick={async () => {
                       try {
@@ -6160,14 +6160,14 @@ ${parametersString}
                         const res = await fetch('/api/backoffice/state', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ 
-                            botPrompt, 
+                          body: JSON.stringify({
+                            botPrompt,
                             customGreeting: greetingMessage,
                             greetingAttachments,
                             faqsList: faqs,
                             rules,
                             businessType,
-                            lastTrainingUpdate: Date.now() 
+                            lastTrainingUpdate: Date.now()
                           })
                         });
                         if (res.ok) {
@@ -6195,7 +6195,7 @@ ${parametersString}
               <div>
                 <h3 className="text-sm font-semibold text-white mb-2">Mensaje de Saludo</h3>
                 <p className="text-xs text-gray-500 mb-3">El primer mensaje automático que se envía al cliente cuando inicia conversación.</p>
-                <textarea 
+                <textarea
                   className="w-full bg-[#111] border border-gray-800 rounded-xl p-3 text-sm text-gray-300 h-24 focus:border-green-500 outline-none"
                   value={greetingMessage}
                   onChange={(e) => { setGreetingMessage(e.target.value); isGreetingEditedRef.current = true; }}
@@ -6203,10 +6203,10 @@ ${parametersString}
                   onBlur={() => { isGreetingFocusedRef.current = false; }}
                 />
               </div>
-              
+
               <div>
                 <h3 className="text-sm font-semibold text-white mb-3">Adjuntos Multimedia Iniciales (Imágenes, Videos, Notas de Voz)</h3>
-                
+
                 {/* Live Recorder or File Upload Controls */}
                 {isRecordingGreetingAudio ? (
                   <div className="mb-4">
@@ -6228,10 +6228,10 @@ ${parametersString}
                     <label className="border border-gray-800 border-dashed rounded-xl p-4 flex flex-col items-center justify-center text-gray-400 hover:border-green-500/50 hover:bg-green-500/5 transition cursor-pointer">
                       <UploadCloud size={20} className="mb-2 text-green-400" />
                       <span className="text-xs font-semibold text-center">Subir Archivo / Imagen</span>
-                      <input 
-                        type="file" 
+                      <input
+                        type="file"
                         accept="image/*,video/*,audio/*,application/pdf"
-                        className="hidden" 
+                        className="hidden"
                         onChange={(e) => {
                           const file = e.target.files?.[0];
                           if (file) {
@@ -6248,7 +6248,7 @@ ${parametersString}
                       />
                     </label>
 
-                    <button 
+                    <button
                       type="button"
                       onClick={() => setIsRecordingGreetingAudio(true)}
                       className="border border-gray-800 border-dashed rounded-xl p-4 flex flex-col items-center justify-center text-gray-400 hover:border-green-500/50 hover:bg-green-500/5 transition cursor-pointer"
@@ -6269,7 +6269,7 @@ ${parametersString}
                           {att.type === 'audio' ? <Mic size={14} className="text-emerald-400" /> : <Paperclip size={14} className="text-blue-400" />}
                           <span className="text-xs text-gray-300 font-medium truncate">{att.name}</span>
                         </div>
-                        <button 
+                        <button
                           type="button"
                           onClick={() => {
                             const newAtts = greetingAttachments.filter((_, i) => i !== idx);
@@ -6284,7 +6284,7 @@ ${parametersString}
                   </div>
                 )}
 
-                <button 
+                <button
                   type="button"
                   onClick={() => handleSaveGreeting(greetingMessage, greetingAttachments)}
                   className="w-full bg-green-600 hover:bg-green-500 text-white font-bold text-xs py-3 rounded-xl transition shadow-lg shadow-green-600/20"
@@ -6319,7 +6319,7 @@ ${parametersString}
                     )}
                   </div>
                 ))}
-                
+
                 <div className="self-end bg-[#dcf8c6] p-2.5 rounded-lg text-sm text-black max-w-[85%] shadow-sm relative">
                   {greetingMessage}
                   <span className="text-[9px] text-gray-500 block text-right mt-1">10:45 AM</span>
@@ -6345,7 +6345,7 @@ ${parametersString}
                 </p>
               </div>
 
-              <button 
+              <button
                 type="button"
                 onClick={() => {
                   const newFaqs = [
@@ -6357,7 +6357,7 @@ ${parametersString}
                   handleUpdateFaqs(newFaqs);
                   alert("✨ Se han auto-generado 3 FAQs de ejemplo con respuestas profesionales para tu tienda.");
                 }}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition"
+                className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition"
               >
                 <Wand2 size={14} /> Auto-Generar Ejemplos
               </button>
@@ -6368,8 +6368,8 @@ ${parametersString}
                 <div key={idx} className="bg-[#111] border border-gray-800 rounded-xl p-4">
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-[10px] text-gray-500 uppercase font-bold font-mono">Pregunta #{idx + 1}</span>
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={() => {
                         const newFaqs = faqs.filter((_, i) => i !== idx);
                         handleUpdateFaqs(newFaqs);
@@ -6383,19 +6383,19 @@ ${parametersString}
                     const newFaqs = [...faqs];
                     newFaqs[idx].question = e.target.value;
                     handleUpdateFaqs(newFaqs);
-                  }} className="w-full bg-transparent text-sm font-semibold text-white mb-2 outline-none border-b border-gray-850 pb-1 focus:border-indigo-500" placeholder="Escribe la pregunta del cliente..." />
+                  }} className="w-full bg-transparent text-sm font-semibold text-white mb-2 outline-none border-b border-gray-850 pb-1 focus:border-blue-500" placeholder="Escribe la pregunta del cliente..." />
                   <textarea value={faq.answer} onFocus={() => { isFaqsFocusedRef.current = true; }} onBlur={() => { isFaqsFocusedRef.current = false; }} onChange={(e) => {
                     const newFaqs = [...faqs];
                     newFaqs[idx].answer = e.target.value;
                     handleUpdateFaqs(newFaqs);
-                  }} className="w-full bg-[#161616] p-2 rounded text-xs text-gray-400 mb-3 outline-none border border-gray-800 focus:border-indigo-500" placeholder="Escribe la respuesta automática de la IA..." />
+                  }} className="w-full bg-[#161616] p-2 rounded text-xs text-gray-400 mb-3 outline-none border border-gray-800 focus:border-blue-500" placeholder="Escribe la respuesta automática de la IA..." />
                   <div className="mt-3 border-t border-gray-850 pt-3">
                     <div className="flex items-center justify-between mb-2">
                       <h5 className="text-[11px] font-bold text-gray-400 flex items-center gap-1">
                         <Paperclip size={12} className="text-gray-500" /> Archivos Adjuntos Autopilot ({faq.attachments?.length || 0})
                       </h5>
                     </div>
-                    
+
                     {faq.attachments && faq.attachments.length > 0 ? (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
                         {faq.attachments.map((att, aIdx) => {
@@ -6431,7 +6431,7 @@ ${parametersString}
                                 <IconComp size={12} className={`${iconColor} shrink-0`} />
                                 <span className="truncate">{att.name}</span>
                               </span>
-                              <button 
+                              <button
                                 type="button"
                                 onClick={() => {
                                   const updated = [...faqs];
@@ -6482,7 +6482,7 @@ ${parametersString}
                         <Mic size={11} /> 🎤 Grabar / Subir Nota de Voz PTT
                       </button>
 
-                      <label className="text-[10px] bg-indigo-900/60 hover:bg-indigo-600 text-indigo-200 hover:text-white px-2.5 py-1 rounded flex items-center gap-1 transition cursor-pointer font-semibold border border-indigo-500/30">
+                      <label className="text-[10px] bg-blue-900/60 hover:bg-blue-600 text-blue-200 hover:text-white px-2.5 py-1 rounded flex items-center gap-1 transition cursor-pointer font-semibold border border-blue-500/30">
                         <UploadCloud size={11} /> 📁 Subir Adjunto (Imagen, Video, PDF)
                         <input
                           type="file"
@@ -6538,7 +6538,7 @@ ${parametersString}
                 </div>
               ))}
               <div className="bg-gray-900/50 border border-dashed border-gray-800 hover:border-gray-600 transition cursor-pointer rounded-xl p-4 flex justify-center text-gray-500 hover:text-white" onClick={() => handleUpdateFaqs([...faqs, {question: '', answer: ''}])}>+ Añadir FAQ manualmente</div>
-              <button 
+              <button
                 type="button"
                 onClick={handleSaveFaqsToBackend}
                 className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs py-3 rounded-xl transition shadow-lg shadow-emerald-600/20 mt-4 flex justify-center items-center gap-2"
@@ -6553,25 +6553,25 @@ ${parametersString}
         {currentViewTab === 'training' && trainingSubTab === 'ai_rules' && (
           <div className="space-y-6">
             {/* Multi-User Bot Profile Configurator */}
-            <div className="panel p-6 rounded-2xl bg-[#0e0e11] border border-indigo-500/20 space-y-4">
+            <div className="panel p-6 rounded-2xl bg-[#0e0e11] border border-blue-500/20 space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <h3 className="text-base font-bold text-white flex items-center gap-2">
-                    <Users size={18} className="text-indigo-400" /> Configuración de Bots Independientes por Usuario
+                    <Users size={18} className="text-blue-400" /> Configuración de Bots Independientes por Usuario
                   </h3>
                   <p className="text-xs text-gray-400">Cada miembro del equipo o usuario puede tener su propia IA configurada independientemente.</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <select 
-                    value={activeBotProfileId} 
+                  <select
+                    value={activeBotProfileId}
                     onChange={(e) => setActiveBotProfileId(e.target.value)}
-                    className="bg-black border border-gray-800 text-xs font-bold text-indigo-300 rounded-lg px-3 py-2 outline-none cursor-pointer"
+                    className="bg-black border border-gray-800 text-xs font-bold text-blue-300 rounded-lg px-3 py-2 outline-none cursor-pointer"
                   >
                     {botProfiles.map(p => (
                       <option key={p.id} value={p.id}>{p.name} ({p.role})</option>
                     ))}
                   </select>
-                  <button 
+                  <button
                     type="button"
                     onClick={() => {
                       const name = prompt('Nombre del nuevo usuario / Bot:', 'Bot Asesor 3');
@@ -6587,7 +6587,7 @@ ${parametersString}
                       setActiveBotProfileId(newId);
                       alert(`✅ Bot asignado a "${name}" creado exitosamente.`);
                     }}
-                    className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-2 rounded-lg flex items-center gap-1 transition"
+                    className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-3 py-2 rounded-lg flex items-center gap-1 transition"
                   >
                     <Plus size={14} /> Crear Bot Usuario
                   </button>
@@ -6624,11 +6624,11 @@ ${parametersString}
                     Si un agente responde manualmente desde la App oficial de WhatsApp, la IA se desactiva. Escribe el emoji o carácter exacto que, al enviarse al chat, reactivará la IA automáticamente:
                   </p>
                   <div className="flex items-center gap-3 pt-1">
-                    <input 
-                      type="text" 
-                      value={reactivationTrigger} 
+                    <input
+                      type="text"
+                      value={reactivationTrigger}
                       onChange={(e) => setReactivationTrigger(e.target.value)}
-                      className="bg-black border border-gray-700 text-center font-mono font-bold text-green-400 text-base rounded-lg p-2.5 w-24 outline-none focus:border-green-500" 
+                      className="bg-black border border-gray-700 text-center font-mono font-bold text-green-400 text-base rounded-lg p-2.5 w-24 outline-none focus:border-green-500"
                       placeholder="🤖"
                     />
                     <span className="text-xs text-gray-500 italic">Ejemplos: 🤖, a, #bot, #reactivar</span>
@@ -6644,8 +6644,8 @@ ${parametersString}
                   <p className="text-xs text-gray-400">
                     Ingresa los números de teléfono (uno por línea o separados por coma) a los cuales la IA NUNCA debe responder:
                   </p>
-                  <textarea 
-                    value={blacklistedNumbersText} 
+                  <textarea
+                    value={blacklistedNumbersText}
                     onChange={(e) => setBlacklistedNumbersText(e.target.value)}
                     placeholder="+573001234567&#10;+573112223344"
                     className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-xs text-gray-300 font-mono h-20 outline-none focus:border-red-500"
@@ -6663,17 +6663,17 @@ ${parametersString}
                   </h3>
                   <p className="text-xs text-gray-500">Configura la IA para analizar mensajes de clientes, auto-categorizar chats en el Kanban, asignar etiquetas o generar alertas de prioridad.</p>
                 </div>
-                <button 
+                <button
                   type="button"
                   onClick={() => {
                     const keyword = prompt('Escribe la palabra clave o frase que activará la regla (ej: "garantía", "precio", "pago contra entrega"):');
                     if (!keyword) return;
                     const actionType = prompt('Elige tipo de acción:\n1. Mover a columna Kanban\n2. Añadir etiqueta\n3. Generar Alerta IA\n4. Agendar Cita\nIngresa el número (1, 2, 3 o 4):');
                     if (!actionType) return;
-                    
+
                     let action = '';
                     let actionValue = '';
-                    
+
                     if (actionType === '1') {
                       action = 'move_kanban';
                       const colNames = kanbanColumns.map((c, i) => `${i + 1}. ${c.name}`).join('\n');
@@ -6735,13 +6735,13 @@ ${parametersString}
                   } else if (rule.action === 'agendar_cita') {
                     actionDesc = `Agendar cita automáticamente`;
                   }
-                  
+
                   return (
                     <div key={rule.id} className="bg-[#111] border border-gray-800 rounded-xl p-4 flex flex-col gap-3">
                       <div className="flex items-center justify-between gap-4">
                         <div>
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="text-[10px] bg-indigo-500/15 text-indigo-400 border border-indigo-500/25 px-2 py-0.5 rounded font-mono font-bold uppercase">Regla #{idx + 1}</span>
+                            <span className="text-[10px] bg-blue-500/15 text-blue-400 border border-blue-500/25 px-2 py-0.5 rounded font-mono font-bold uppercase">Regla #{idx + 1}</span>
                             <span className="text-xs text-gray-400 font-medium">Si el cliente dice algo con la palabra clave:</span>
                           </div>
                           <p className="text-sm font-semibold text-white mb-2 italic">"{ruleKw}"</p>
@@ -6769,7 +6769,7 @@ ${parametersString}
                             <Paperclip size={12} className="text-gray-500" /> Archivos Adjuntos a Regla ({rule.attachments?.length || 0})
                           </h5>
                         </div>
-                        
+
                         {rule.attachments && rule.attachments.length > 0 ? (
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
                             {rule.attachments.map((att, aIdx) => {
@@ -6805,7 +6805,7 @@ ${parametersString}
                                     <IconComp size={12} className={`${iconColor} shrink-0`} />
                                     <span className="truncate">{att.name}</span>
                                   </span>
-                                  <button 
+                                  <button
                                     type="button"
                                     onClick={() => {
                                       const updated = [...aiAutomationRules];
@@ -6855,7 +6855,7 @@ ${parametersString}
                             <Mic size={11} /> 🎤 Grabar / Subir Nota de Voz PTT
                           </button>
 
-                          <label className="text-[10px] bg-indigo-900/60 hover:bg-indigo-600 text-indigo-200 hover:text-white px-2.5 py-1 rounded flex items-center gap-1 transition cursor-pointer font-semibold border border-indigo-500/30">
+                          <label className="text-[10px] bg-blue-900/60 hover:bg-blue-600 text-blue-200 hover:text-white px-2.5 py-1 rounded flex items-center gap-1 transition cursor-pointer font-semibold border border-blue-500/30">
                             <UploadCloud size={11} /> 📁 Subir Adjunto (Imagen, Video, PDF)
                             <input
                               type="file"
@@ -6927,7 +6927,7 @@ ${parametersString}
                   <p className="text-xs text-gray-500">Notificaciones en tiempo real producidas cuando un cliente menciona temas críticos o de urgencia.</p>
                 </div>
                 {systemAlerts.length > 0 && (
-                  <button 
+                  <button
                     type="button"
                     onClick={() => {
                       setSystemAlerts([]);
@@ -6979,10 +6979,10 @@ ${parametersString}
         {/* Memoria Module */}
         {currentViewTab === 'training' && trainingSubTab === 'memory' && (
           <div className="space-y-6">
-            <div className="panel p-6 rounded-2xl bg-black border border-purple-500/20 space-y-6">
+            <div className="panel p-6 rounded-2xl bg-black border border-blue-500/20 space-y-6">
               <div className="flex items-center justify-between pb-4 border-b border-gray-800">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
                     <Bot size={24} />
                   </div>
                   <div>
@@ -7016,13 +7016,13 @@ ${parametersString}
 
                 <div className="bg-[#111] border border-gray-800 rounded-xl p-4">
                   <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider block mb-1">Último Borrado de Memoria</span>
-                  <span className="text-sm font-bold text-purple-400 mt-1 block">{lastMemoryClearTime || 'Ninguno en esta sesión'}</span>
+                  <span className="text-sm font-bold text-blue-400 mt-1 block">{lastMemoryClearTime || 'Ninguno en esta sesión'}</span>
                 </div>
               </div>
 
               <div className="bg-[#111] border border-gray-800 rounded-xl p-5 space-y-4">
                 <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                  <RefreshCw size={16} className="text-purple-400" /> Reiniciar Conversaciones Específicas
+                  <RefreshCw size={16} className="text-blue-400" /> Reiniciar Conversaciones Específicas
                 </h4>
                 <p className="text-xs text-gray-400">
                   Selecciona una conversación de cliente para borrar su historial de mensajes y forzar a la IA a reiniciar el flujo desde cero con el saludo inicial y entrenamiento actual.
@@ -7033,7 +7033,7 @@ ${parametersString}
                     <div className="flex-1 w-full space-y-1.5">
                       <label className="text-[10px] text-gray-500 uppercase font-bold">Seleccionar Chat:</label>
                       <select
-                        className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-xs text-white focus:border-purple-500 outline-none cursor-pointer"
+                        className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-xs text-white focus:border-blue-500 outline-none cursor-pointer"
                         onChange={(e) => setSelectedChatIdToReset(e.target.value)}
                         value={selectedChatIdToReset}
                       >
@@ -7052,7 +7052,7 @@ ${parametersString}
                           setSelectedChatIdToReset("");
                         }
                       }}
-                      className="w-full sm:w-auto bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition shrink-0 cursor-pointer"
+                      className="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition shrink-0 cursor-pointer"
                     >
                       Reiniciar Conversación
                     </button>
@@ -7062,8 +7062,8 @@ ${parametersString}
                 )}
               </div>
 
-              <div className="bg-purple-950/20 border border-purple-500/30 p-5 rounded-xl space-y-2">
-                <h4 className="text-sm font-bold text-purple-300 flex items-center gap-2">
+              <div className="bg-blue-950/20 border border-blue-500/30 p-5 rounded-xl space-y-2">
+                <h4 className="text-sm font-bold text-blue-300 flex items-center gap-2">
                   <Sparkles size={16} /> ¿Para qué sirve borrar las conversaciones?
                 </h4>
                 <p className="text-xs text-gray-300 leading-relaxed">
@@ -7095,7 +7095,7 @@ ${parametersString}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-[#111] border border-gray-800 rounded-xl p-5 space-y-2">
                   <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider">Cantidad de Seguimientos</label>
-                  <select 
+                  <select
                     className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-sm text-white focus:border-emerald-500 outline-none cursor-pointer"
                     value={remarketingCount}
                     onChange={(e) => setRemarketingCount(Number(e.target.value))}
@@ -7110,7 +7110,7 @@ ${parametersString}
 
                 <div className="bg-[#111] border border-gray-800 rounded-xl p-5 space-y-2">
                   <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider">Intervalo de Espera (Inactividad)</label>
-                  <select 
+                  <select
                     className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-sm text-white focus:border-emerald-500 outline-none cursor-pointer"
                     value={remarketingInterval}
                     onChange={(e) => setRemarketingInterval(e.target.value)}
@@ -7126,7 +7126,7 @@ ${parametersString}
                 <div className="bg-[#111] border border-gray-800 rounded-xl p-5 space-y-3">
                   <div className="flex items-center justify-between">
                     <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider">Evitar Spam Inteligente</label>
-                    <div 
+                    <div
                       onClick={() => setRemarketingAvoidSpam(!remarketingAvoidSpam)}
                       className={`w-10 h-5 rounded-full p-0.5 transition-colors duration-200 cursor-pointer ${remarketingAvoidSpam ? "bg-emerald-600" : "bg-gray-700"}`}
                     >
@@ -7161,7 +7161,7 @@ ${parametersString}
                               </span>
                               Mensaje de Seguimiento #{stepIdx + 1}
                             </h5>
-                            
+
                             <div className="flex items-center gap-4 bg-black/40 border border-gray-855 p-1 rounded-lg">
                               <button
                                 type="button"
@@ -7201,7 +7201,7 @@ ${parametersString}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                               <div className="space-y-2">
                                 <label className="block text-xs font-bold text-gray-400">Texto del Mensaje</label>
-                                <textarea 
+                                <textarea
                                   className="w-full bg-black border border-gray-855 rounded-lg p-3 text-sm text-gray-300 h-28 focus:border-emerald-500 outline-none"
                                   placeholder="Escribe el mensaje de seguimiento (Ej: Hola! Quería saber si pudiste revisar la propuesta, avísame si tienes dudas...)"
                                   value={msgText}
@@ -7215,15 +7215,15 @@ ${parametersString}
 
                               <div className="space-y-3">
                                 <label className="block text-xs font-bold text-gray-400">Adjuntos Multimedia (Imágenes, Archivos o Grabador de Audio Real)</label>
-                                
+
                                 <div className="grid grid-cols-2 gap-3">
                                   <label className="border border-gray-855 border-dashed rounded-lg p-3 flex flex-col items-center justify-center text-gray-400 hover:border-emerald-500/50 hover:bg-emerald-500/5 transition cursor-pointer text-center">
                                     <UploadCloud size={18} className="mb-1 text-emerald-400" />
                                     <span className="text-[10px] font-semibold">Subir Archivo o Audio</span>
-                                    <input 
-                                      type="file" 
+                                    <input
+                                      type="file"
                                       accept="image/*,video/*,audio/*,application/pdf"
-                                      className="hidden" 
+                                      className="hidden"
                                       onChange={(e) => {
                                         const file = e.target.files?.[0];
                                         if (file) {
@@ -7241,7 +7241,7 @@ ${parametersString}
                                     />
                                   </label>
 
-                                  <button 
+                                  <button
                                     type="button"
                                     onClick={() => {
                                       // Toggle custom key for live recorder of this specific step
@@ -7362,8 +7362,8 @@ ${parametersString}
                   <button
                     onClick={() => setAutoRefreshDebugLogs(!autoRefreshDebugLogs)}
                     className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all border ${
-                      autoRefreshDebugLogs 
-                        ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' 
+                      autoRefreshDebugLogs
+                        ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
                         : 'bg-gray-800/80 text-gray-400 border-gray-700'
                     }`}
                   >
@@ -7416,9 +7416,9 @@ ${parametersString}
                 </div>
                 {/* Progress bar */}
                 <div className="w-full bg-gray-800 rounded-full h-1.5 mb-2 overflow-hidden">
-                  <div 
-                    className="bg-gradient-to-r from-yellow-500 to-amber-400 h-1.5 rounded-full transition-all" 
-                    style={{ width: `${Math.min(100, ((debugTokens.total / debugMaxTokens) * 100)).toFixed(1)}%` }} 
+                  <div
+                    className="bg-gradient-to-r from-yellow-500 to-amber-400 h-1.5 rounded-full transition-all"
+                    style={{ width: `${Math.min(100, ((debugTokens.total / debugMaxTokens) * 100)).toFixed(1)}%` }}
                   />
                 </div>
                 <div className="flex justify-between text-[10px] text-gray-400 font-mono">
@@ -7475,10 +7475,10 @@ ${parametersString}
             </div>
 
             {/* Interactive Live Connection Test Box */}
-            <div className="panel p-6 rounded-2xl bg-[#0e1017] border border-indigo-500/20 space-y-4">
+            <div className="panel p-6 rounded-2xl bg-[#0e1017] border border-blue-500/20 space-y-4">
               <div className="flex items-center justify-between border-b border-gray-800/80 pb-3">
                 <div className="flex items-center gap-2">
-                  <Zap size={18} className="text-indigo-400" />
+                  <Zap size={18} className="text-blue-400" />
                   <h4 className="font-semibold text-white text-sm">Prueba Directa de API (Live Connection Tester)</h4>
                 </div>
                 <span className="text-[11px] text-gray-400">Verifica tu API Key sin enviar mensajes de WhatsApp</span>
@@ -7490,12 +7490,12 @@ ${parametersString}
                   value={testPrompt}
                   onChange={(e) => setTestPrompt(e.target.value)}
                   placeholder="Escribe una pregunta para probar la API de OpenAI..."
-                  className="flex-1 bg-black/60 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:border-indigo-500 outline-none font-mono"
+                  className="flex-1 bg-black/60 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:border-blue-500 outline-none font-mono"
                 />
                 <button
                   onClick={handleTestAiConnection}
                   disabled={isTestingAi}
-                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shrink-0 shadow-[0_0_15px_rgba(79,70,229,0.3)]"
+                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shrink-0 shadow-[0_0_15px_rgba(79,70,229,0.3)]"
                 >
                   {isTestingAi ? (
                     <>
@@ -7513,8 +7513,8 @@ ${parametersString}
 
               {testResult && (
                 <div className={`p-4 rounded-xl border text-xs font-mono transition-all ${
-                  testResult.success 
-                    ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-200' 
+                  testResult.success
+                    ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-200'
                     : 'bg-red-950/20 border-red-500/30 text-red-200'
                 }`}>
                   <div className="flex items-center justify-between mb-2 pb-2 border-b border-white/10">
@@ -7612,7 +7612,7 @@ ${parametersString}
                   <p className="text-xs text-gray-400">Aún no hay llamadas API registradas en esta sesión.</p>
                   <button
                     onClick={handleTestAiConnection}
-                    className="px-4 py-2 bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 rounded-xl text-xs font-semibold hover:bg-indigo-600/30 transition-colors"
+                    className="px-4 py-2 bg-blue-600/20 text-blue-300 border border-blue-500/30 rounded-xl text-xs font-semibold hover:bg-blue-600/30 transition-colors"
                   >
                     Haz clic aquí para realizar la primera llamada de prueba
                   </button>
@@ -7634,7 +7634,7 @@ ${parametersString}
                           }`}
                         >
                           {/* Item Header */}
-                          <div 
+                          <div
                             onClick={() => setExpandedLogId(isExpanded ? null : log.id)}
                             className="p-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3 cursor-pointer select-none"
                           >
@@ -7747,7 +7747,7 @@ ${parametersString}
         {currentViewTab === 'training' && trainingSubTab === 'ai_models' && (
           <div className="space-y-6">
             <h3 className="text-lg font-bold text-white mb-4">Integraciones de IA y Plataformas</h3>
-            
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* OpenAI Integration */}
               <div className="panel p-6 rounded-2xl flex flex-col space-y-4">
@@ -7760,12 +7760,12 @@ ${parametersString}
                     <p className="text-[10px] text-gray-500">Modelos GPT-4o, GPT-3.5</p>
                   </div>
                 </div>
-                
+
                 <div>
                   <label className="text-[10px] text-gray-400 uppercase tracking-widest mb-1 block">API Key</label>
                   <input type="password" placeholder="sk-..." value={openAiKey} onChange={(e) => setOpenAiKey(e.target.value)} className="w-full bg-[#111] border border-gray-800 rounded-xl p-2 text-xs text-white focus:border-green-500 outline-none" />
                 </div>
-                
+
                 <div className="flex gap-2">
                   <button onClick={() => handleSaveAIConfig('openai')} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white text-xs font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
                     <Shield size={14} /> Guardar
@@ -7787,12 +7787,12 @@ ${parametersString}
                     <p className="text-[10px] text-gray-500">Modelos Gemini 1.5 Pro, Flash</p>
                   </div>
                 </div>
-                
+
                 <div>
                   <label className="text-[10px] text-gray-400 uppercase tracking-widest mb-1 block">API Key</label>
                   <input type="password" placeholder="AIzaSy..." value={googleAiKey} onChange={(e) => setGoogleAiKey(e.target.value)} className="w-full bg-[#111] border border-gray-800 rounded-xl p-2 text-xs text-white focus:border-blue-500 outline-none" />
                 </div>
-                
+
                 <div className="flex gap-2">
                   <button onClick={() => handleSaveAIConfig('gemini')} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white text-xs font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
                     <Shield size={14} /> Guardar
@@ -7831,7 +7831,7 @@ ${parametersString}
                  <Database size={100} />
                </div>
                <h4 className="font-semibold text-white mb-6 flex items-center gap-2"><Zap size={18} className="text-yellow-500" /> Consumo y Tokens</h4>
-               
+
                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 relative z-10">
                   <div className="bg-[#111] border border-gray-800 rounded-xl p-4">
                     <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Tokens Entrada (Mes)</p>
@@ -7845,7 +7845,7 @@ ${parametersString}
                   </div>
                   <div className="bg-[#111] border border-gray-800 rounded-xl p-4">
                     <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Total Tokens</p>
-                    <p className="text-xl font-bold font-mono text-indigo-400">{(apiTokens?.total || 0).toLocaleString()}</p>
+                    <p className="text-xl font-bold font-mono text-blue-400">{(apiTokens?.total || 0).toLocaleString()}</p>
                   </div>
                   <div className="bg-[#111] border border-gray-800 rounded-xl p-4 flex flex-col justify-between">
                     <div>
@@ -7888,7 +7888,7 @@ ${parametersString}
                   </div>
                 </div>
               ))}
-              
+
               <div className="col-span-1 sm:col-span-2 lg:col-span-4 panel p-6 rounded-2xl bg-gradient-to-r from-[#111] to-black border-gray-800 mt-4">
                  <h3 className="text-sm font-bold text-white mb-2 flex items-center gap-2"><Zap size={16} className="text-green-500" /> Webhooks Dinámicos</h3>
                  <p className="text-xs text-gray-400 mb-4">Conecta eventos y pedidos del bot hacia cualquier CRM, Google Sheets, o plataforma de fulfillment mediante HTTP POST.</p>
@@ -7921,7 +7921,7 @@ ${parametersString}
 
             {/* Connection Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              
+
               {/* WhatsApp Cloud API Connection Block */}
               <div className="lg:col-span-2 panel p-6 rounded-2xl space-y-4 text-left border border-gray-800">
                 <div className="flex items-center justify-between border-b border-gray-800 pb-3">
@@ -7940,11 +7940,11 @@ ${parametersString}
                     {/* Quick Mode Options Selection */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       {/* Coexistente */}
-                      <button 
+                      <button
                         onClick={() => setWhatsappMode('coexistente')}
                         className={`p-4 rounded-xl border text-left transition-all ${
-                          whatsappMode === 'coexistente' 
-                            ? 'bg-green-500/5 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.1)]' 
+                          whatsappMode === 'coexistente'
+                            ? 'bg-green-500/5 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.1)]'
                             : 'bg-[#111] border-gray-800 hover:border-gray-700'
                         }`}
                       >
@@ -7958,11 +7958,11 @@ ${parametersString}
                       </button>
 
                       {/* Nuevo */}
-                      <button 
+                      <button
                         onClick={() => setWhatsappMode('nuevo')}
                         className={`p-4 rounded-xl border text-left transition-all ${
-                          whatsappMode === 'nuevo' 
-                            ? 'bg-green-500/5 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.1)]' 
+                          whatsappMode === 'nuevo'
+                            ? 'bg-green-500/5 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.1)]'
                             : 'bg-[#111] border-gray-800 hover:border-gray-700'
                         }`}
                       >
@@ -7976,11 +7976,11 @@ ${parametersString}
                       </button>
 
                       {/* Transferir */}
-                      <button 
+                      <button
                         onClick={() => setWhatsappMode('transferir')}
                         className={`p-4 rounded-xl border text-left transition-all ${
-                          whatsappMode === 'transferir' 
-                            ? 'bg-green-500/5 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.1)]' 
+                          whatsappMode === 'transferir'
+                            ? 'bg-green-500/5 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.1)]'
                             : 'bg-[#111] border-gray-800 hover:border-gray-700'
                         }`}
                       >
@@ -8000,7 +8000,7 @@ ${parametersString}
                         <h5 className="text-xs font-bold text-white">Método Recomendado: Embedded Signup</h5>
                         <p className="text-[10px] text-gray-400">Inicia sesión en Facebook, elige tu portafolio y listo. Meta genera las llaves automáticamente.</p>
                       </div>
-                      <button 
+                      <button
                         onClick={() => {
                           const w = 550, h = 680;
                           const left = window.screen.width / 2 - w / 2;
@@ -8022,33 +8022,33 @@ ${parametersString}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3 pl-3">
                           <div className="md:col-span-2">
                             <label className="text-[9px] text-gray-500 uppercase tracking-wider mb-1 block">Token de Acceso Permanente (System User Token)</label>
-                            <input 
-                              type="password" 
+                            <input
+                              type="password"
                               value={apiToken}
                               onChange={(e) => setApiToken(e.target.value)}
-                              className="w-full bg-black border border-gray-800 rounded-xl p-3 text-xs text-white focus:border-green-500 outline-none font-mono" 
+                              className="w-full bg-black border border-gray-800 rounded-xl p-3 text-xs text-white focus:border-green-500 outline-none font-mono"
                             />
                           </div>
                           <div>
                             <label className="text-[9px] text-gray-500 uppercase tracking-wider mb-1 block">Phone Number ID</label>
-                            <input 
-                              type="text" 
+                            <input
+                              type="text"
                               value={phoneNumberId}
                               onChange={(e) => setPhoneNumberId(e.target.value)}
-                              className="w-full bg-black border border-gray-800 rounded-xl p-3 text-xs text-white focus:border-green-500 outline-none font-mono" 
+                              className="w-full bg-black border border-gray-800 rounded-xl p-3 text-xs text-white focus:border-green-500 outline-none font-mono"
                             />
                           </div>
                           <div>
                             <label className="text-[9px] text-gray-500 uppercase tracking-wider mb-1 block">WABA ID (ID de Cuenta Comercial)</label>
-                            <input 
-                              type="text" 
+                            <input
+                              type="text"
                               value={wabaId}
                               onChange={(e) => setWabaId(e.target.value)}
-                              className="w-full bg-black border border-gray-800 rounded-xl p-3 text-xs text-white focus:border-green-500 outline-none font-mono" 
+                              className="w-full bg-black border border-gray-800 rounded-xl p-3 text-xs text-white focus:border-green-500 outline-none font-mono"
                             />
                           </div>
                           <div className="md:col-span-2">
-                            <button 
+                            <button
                               onClick={() => {
                                 setIsOfficialConnected(true);
                                 setWhatsappConnectedNumber('+57 300 000 0000');
@@ -8081,7 +8081,7 @@ ${parametersString}
                         </div>
                       </div>
 
-                      <button 
+                      <button
                         onClick={() => {
                           setIsOfficialConnected(false);
                           setWhatsappConnectedNumber('');
@@ -8138,7 +8138,7 @@ ${parametersString}
                         <p className="text-[10px] text-gray-400">{facebookConnected ? 'Conectado a Página Real' : 'Desconectado'}</p>
                       </div>
                     </div>
-                    <button 
+                    <button
                       onClick={() => {
                         if (facebookConnected) {
                           setFacebookConnected(false);
@@ -8150,8 +8150,8 @@ ${parametersString}
                         }
                       }}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-                        facebookConnected 
-                          ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20' 
+                        facebookConnected
+                          ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20'
                           : 'bg-blue-600 hover:bg-blue-500 text-white shadow-sm'
                       }`}
                     >
@@ -8162,7 +8162,7 @@ ${parametersString}
                   {/* Instagram Direct */}
                   <div className="bg-[#111] border border-gray-850 rounded-xl p-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-pink-600/10 border border-pink-600/20 flex items-center justify-center text-pink-500">
+                      <div className="w-9 h-9 rounded-lg bg-blue-600/10 border border-blue-600/20 flex items-center justify-center text-blue-500">
                         <Instagram size={18} />
                       </div>
                       <div className="text-left">
@@ -8170,7 +8170,7 @@ ${parametersString}
                         <p className="text-[10px] text-gray-400">{instagramConnected ? 'Conectado a Cuenta IG Real' : 'Desconectado'}</p>
                       </div>
                     </div>
-                    <button 
+                    <button
                       onClick={() => {
                         if (instagramConnected) {
                           setInstagramConnected(false);
@@ -8182,9 +8182,9 @@ ${parametersString}
                         }
                       }}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-                        instagramConnected 
-                          ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20' 
-                          : 'bg-pink-600 hover:bg-pink-500 text-white shadow-sm'
+                        instagramConnected
+                          ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20'
+                          : 'bg-blue-600 hover:bg-blue-500 text-white shadow-sm'
                       }`}
                     >
                       {instagramConnected ? 'Desconectar' : 'Conectar'}
@@ -8194,7 +8194,7 @@ ${parametersString}
                   {/* TikTok DM */}
                   <div className="bg-[#111] border border-gray-850 rounded-xl p-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-purple-600/10 border border-purple-600/20 flex items-center justify-center text-purple-400">
+                      <div className="w-9 h-9 rounded-lg bg-blue-600/10 border border-blue-600/20 flex items-center justify-center text-blue-400">
                         <Video size={18} />
                       </div>
                       <div className="text-left">
@@ -8202,7 +8202,7 @@ ${parametersString}
                         <p className="text-[10px] text-gray-400">{tiktokConnected ? 'Conectado a TikTok API Real' : 'Desconectado'}</p>
                       </div>
                     </div>
-                    <button 
+                    <button
                       onClick={() => {
                         if (tiktokConnected) {
                           setTiktokConnected(false);
@@ -8214,9 +8214,9 @@ ${parametersString}
                         }
                       }}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-                        tiktokConnected 
-                          ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20' 
-                          : 'bg-purple-600 hover:bg-purple-500 text-white shadow-sm'
+                        tiktokConnected
+                          ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20'
+                          : 'bg-blue-600 hover:bg-blue-500 text-white shadow-sm'
                       }`}
                     >
                       {tiktokConnected ? 'Desconectar' : 'Conectar'}
@@ -8228,7 +8228,7 @@ ${parametersString}
 
             {/* Template management and testing section (WhatsApp Cloud API specific) */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              
+
               {/* Plantillas oficiales columns */}
               <div className="lg:col-span-7 panel p-6 rounded-2xl space-y-6 border border-gray-800 text-left">
                 <div className="flex items-center justify-between border-b border-gray-800 pb-3">
@@ -8246,15 +8246,15 @@ ${parametersString}
                   {templates.map((tpl: any) => {
                     const isSelected = selectedTemplate === tpl.name;
                     return (
-                      <div 
-                        key={tpl.id} 
+                      <div
+                        key={tpl.id}
                         onClick={() => {
                           setSelectedTemplate(tpl.name);
                           setTemplateFormMode('edit');
                         }}
                         className={`border rounded-xl p-3.5 space-y-2 text-left transition-all cursor-pointer relative group ${
-                          isSelected 
-                            ? 'bg-green-500/5 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.08)]' 
+                          isSelected
+                            ? 'bg-green-500/5 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.08)]'
                             : 'bg-[#111] border-gray-850 hover:border-gray-700 hover:bg-[#141414]'
                         }`}
                       >
@@ -8275,7 +8275,7 @@ ${parametersString}
                           <span className="text-gray-500 flex items-center gap-1">
                             {tpl.headerType === 'NONE' && <span className="text-gray-600">❌ Sin multimedia</span>}
                             {tpl.headerType === 'IMAGE' && <span className="text-blue-400 flex items-center gap-1"><ImageIcon size={10} /> 🖼️ Imagen</span>}
-                            {tpl.headerType === 'VIDEO' && <span className="text-purple-400 flex items-center gap-1"><Video size={10} /> 🎥 Video</span>}
+                            {tpl.headerType === 'VIDEO' && <span className="text-blue-400 flex items-center gap-1"><Video size={10} /> 🎥 Video</span>}
                             {tpl.headerType === 'DOCUMENT' && <span className="text-red-400 flex items-center gap-1"><FileText size={10} /> 📄 Documento</span>}
                           </span>
                           <span className="text-[9px] text-gray-500 font-mono group-hover:text-green-400 transition-colors">
@@ -8289,7 +8289,7 @@ ${parametersString}
 
                 {/* Form and Drag & Drop Workspace */}
                 <div className="border-t border-gray-800 pt-5 space-y-4">
-                  
+
                   {/* Mode Toggles */}
                   <div className="flex bg-black/40 p-1 rounded-xl border border-gray-850">
                     <button
@@ -8322,18 +8322,18 @@ ${parametersString}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="text-[10px] text-gray-400 block mb-1 font-bold uppercase tracking-wider">Nombre de la Plantilla</label>
-                          <input 
-                            type="text" 
-                            placeholder="ej: confirmacion_entrega" 
-                            value={newTemplateName} 
+                          <input
+                            type="text"
+                            placeholder="ej: confirmacion_entrega"
+                            value={newTemplateName}
                             onChange={(e) => setNewTemplateName(e.target.value)}
                             className="w-full bg-[#111] border border-gray-800 rounded-xl p-2.5 text-xs text-white focus:border-green-500 outline-none font-mono"
                           />
                         </div>
                         <div>
                           <label className="text-[10px] text-gray-400 block mb-1 font-bold uppercase tracking-wider">Categoría Meta HSM</label>
-                          <select 
-                            value={newTemplateCategory} 
+                          <select
+                            value={newTemplateCategory}
                             onChange={(e) => setNewTemplateCategory(e.target.value)}
                             className="w-full bg-[#111] border border-gray-800 rounded-xl p-2.5 text-xs text-white focus:border-green-500 outline-none"
                           >
@@ -8382,7 +8382,7 @@ ${parametersString}
                               <img src={newTemplateHeaderUrl} alt="New Thumbnail" className="w-10 h-10 rounded object-cover border border-gray-800" referrerPolicy="no-referrer" />
                             )}
                             {newTemplateHeaderType === 'VIDEO' && (
-                              <div className="w-10 h-10 rounded bg-purple-500/10 flex items-center justify-center text-purple-400 border border-purple-500/20">
+                              <div className="w-10 h-10 rounded bg-blue-500/10 flex items-center justify-center text-blue-400 border border-blue-500/20">
                                 <Video size={16} />
                               </div>
                             )}
@@ -8439,9 +8439,9 @@ ${parametersString}
                                 </button>
                               ))}
                             </div>
-                            <input 
-                              type="text" 
-                              placeholder="Pega la URL de tu archivo (ej: https://...)" 
+                            <input
+                              type="text"
+                              placeholder="Pega la URL de tu archivo (ej: https://...)"
                               value={newTemplateHeaderUrl}
                               onChange={(e) => {
                                 setNewTemplateHeaderUrl(e.target.value);
@@ -8465,15 +8465,15 @@ ${parametersString}
 
                       <div>
                         <label className="text-[10px] text-gray-400 block mb-1 font-bold uppercase tracking-wider">Cuerpo del Mensaje (Soporta variables con {"{{1}}"}, {"{{2}}"})</label>
-                        <textarea 
-                          placeholder="Ej: Hola {{1}}! Tu orden de {{2}} fue aprobada con éxito. Código: {{3}}." 
+                        <textarea
+                          placeholder="Ej: Hola {{1}}! Tu orden de {{2}} fue aprobada con éxito. Código: {{3}}."
                           value={newTemplateBody}
                           onChange={(e) => setNewTemplateBody(e.target.value)}
                           className="w-full bg-[#111] border border-gray-800 rounded-xl p-3 text-xs text-white focus:border-green-500 outline-none h-20 resize-none font-sans"
                         />
                       </div>
 
-                      <button 
+                      <button
                         type="button"
                         onClick={() => {
                           if (!newTemplateName || !newTemplateBody) {
@@ -8527,9 +8527,9 @@ ${parametersString}
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                               <label className="text-[10px] text-gray-400 block mb-1 font-bold uppercase tracking-wider">Nombre de Plantilla (Meta ID)</label>
-                              <input 
-                                type="text" 
-                                value={activeTpl.name} 
+                              <input
+                                type="text"
+                                value={activeTpl.name}
                                 onChange={(e) => {
                                   const updatedVal = e.target.value.toLowerCase().replace(/\s+/g, '_');
                                   setTemplates(prev => prev.map(t => t.id === activeTpl.id ? { ...t, name: updatedVal } : t));
@@ -8540,8 +8540,8 @@ ${parametersString}
                             </div>
                             <div>
                               <label className="text-[10px] text-gray-400 block mb-1 font-bold uppercase tracking-wider">Categoría Meta HSM</label>
-                              <select 
-                                value={activeTpl.category} 
+                              <select
+                                value={activeTpl.category}
                                 onChange={(e) => {
                                   const updatedVal = e.target.value;
                                   setTemplates(prev => prev.map(t => t.id === activeTpl.id ? { ...t, category: updatedVal } : t));
@@ -8593,7 +8593,7 @@ ${parametersString}
                                   <img src={activeTpl.headerUrl} alt="Active Thumbnail" className="w-10 h-10 rounded object-cover border border-gray-800" referrerPolicy="no-referrer" />
                                 )}
                                 {activeTpl.headerType === 'VIDEO' && (
-                                  <div className="w-10 h-10 rounded bg-purple-500/10 flex items-center justify-center text-purple-400 border border-purple-500/20">
+                                  <div className="w-10 h-10 rounded bg-blue-500/10 flex items-center justify-center text-blue-400 border border-blue-500/20">
                                     <Video size={16} />
                                   </div>
                                 )}
@@ -8625,7 +8625,7 @@ ${parametersString}
 
                           <div>
                             <label className="text-[10px] text-gray-400 block mb-1 font-bold uppercase tracking-wider">Cuerpo del Mensaje (Actualización en tiempo real)</label>
-                            <textarea 
+                            <textarea
                               value={activeTpl.body}
                               onChange={(e) => {
                                 const updatedVal = e.target.value;
@@ -8636,7 +8636,7 @@ ${parametersString}
                           </div>
 
                           <div className="flex gap-3">
-                            <button 
+                            <button
                               type="button"
                               onClick={() => {
                                 // Simulate saving to backend or just show beautiful toast simulation
@@ -8646,7 +8646,7 @@ ${parametersString}
                             >
                               Sincronizar Cambios con Meta
                             </button>
-                            <button 
+                            <button
                               type="button"
                               onClick={() => {
                                 if (templates.length <= 1) {
@@ -8673,17 +8673,17 @@ ${parametersString}
 
               {/* Chat smartphone visual preview */}
               <div className="lg:col-span-5 flex flex-col justify-between space-y-4">
-                
+
                 {/* Test Options Box */}
                 <div className="panel p-5 rounded-2xl border border-gray-800 text-left space-y-4">
                   <h4 className="font-bold text-white flex items-center gap-2 text-sm border-b border-gray-800 pb-3">
                     <Send size={16} className="text-green-500" /> Consola de Prueba (API Cloud)
                   </h4>
-                  
+
                   <div className="space-y-3">
                     <div>
                       <label className="text-[10px] text-gray-400 uppercase tracking-widest block font-bold mb-1">Elegir Plantilla</label>
-                      <select 
+                      <select
                         value={selectedTemplate}
                         onChange={(e) => setSelectedTemplate(e.target.value)}
                         className="w-full bg-[#111] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none focus:border-green-500"
@@ -8696,27 +8696,27 @@ ${parametersString}
 
                     <div>
                       <label className="text-[10px] text-gray-400 uppercase tracking-widest block font-bold mb-1">Destinatario</label>
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         value={testRecipient}
                         onChange={(e) => setTestRecipient(e.target.value)}
-                        className="w-full bg-[#111] border border-gray-800 rounded-xl p-2.5 text-xs text-white focus:border-green-500 outline-none font-mono" 
+                        className="w-full bg-[#111] border border-gray-800 rounded-xl p-2.5 text-xs text-white focus:border-green-500 outline-none font-mono"
                       />
                     </div>
 
                     <div>
                       <label className="text-[10px] text-gray-400 uppercase tracking-widest block font-bold mb-1">Variables (Separadas por Comas)</label>
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         value={testVariables}
                         onChange={(e) => setTestVariables(e.target.value)}
                         placeholder="Juan, Smartwatch Ultra, COL-9821"
-                        className="w-full bg-[#111] border border-gray-800 rounded-xl p-2.5 text-xs text-white focus:border-green-500 outline-none" 
+                        className="w-full bg-[#111] border border-gray-800 rounded-xl p-2.5 text-xs text-white focus:border-green-500 outline-none"
                       />
                     </div>
                   </div>
 
-                  <button 
+                  <button
                     onClick={() => {
                       if (!isOfficialConnected) {
                         setTemplateSendingStatus('error');
@@ -8757,7 +8757,7 @@ ${parametersString}
 
                   {/* WhatsApp screen mock */}
                   <div className="flex-1 bg-[#0b141a] rounded-[24px] overflow-hidden flex flex-col relative pt-5">
-                    
+
                     {/* Top bar */}
                     <div className="bg-[#075e54] p-3 text-white flex items-center gap-2.5 shrink-0 select-none">
                       <div className="w-8 h-8 rounded-full bg-emerald-700 flex items-center justify-center font-bold text-xs">
@@ -8765,7 +8765,7 @@ ${parametersString}
                       </div>
                       <div className="text-left">
                         <p className="text-xs font-bold flex items-center gap-1">
-                          Experto 360° <span className="text-[10px] text-sky-400">●</span>
+                          Xorbit 360 <span className="text-[10px] text-sky-400">●</span>
                         </p>
                         <p className="text-[8px] text-gray-200">En línea / Canal de Pruebas</p>
                       </div>
@@ -8773,21 +8773,21 @@ ${parametersString}
 
                     {/* Chat Area */}
                     <div className="flex-1 p-3 overflow-y-auto space-y-3 bg-[url('https://user-images.githubusercontent.com/15075759/28719144-86dc2214-75b6-11e7-8118-ef4cd70659cb.png')] bg-repeat bg-contain">
-                      
+
                       {/* Interactive Bubble */}
                       <div className="max-w-[85%] bg-[#056162] text-white p-2 rounded-2xl rounded-tl-none shadow-sm ml-1 text-left relative space-y-2">
-                        
+
                         {/* Render Header media type if any */}
                         {(() => {
                           const activeTpl = templates.find((t: any) => t.name === selectedTemplate) || templates[0];
                           if (!activeTpl.headerType || activeTpl.headerType === 'NONE') return null;
-                          
+
                           if (activeTpl.headerType === 'IMAGE') {
                             return (
                               <div className="rounded-xl overflow-hidden bg-black/25 relative aspect-video border border-[#0d7375]">
-                                <img 
-                                  src={activeTpl.headerUrl || "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=400&q=80"} 
-                                  alt="Preview Header" 
+                                <img
+                                  src={activeTpl.headerUrl || "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=400&q=80"}
+                                  alt="Preview Header"
                                   className="w-full h-full object-cover"
                                   referrerPolicy="no-referrer"
                                 />
@@ -8795,7 +8795,7 @@ ${parametersString}
                               </div>
                             );
                           }
-                          
+
                           if (activeTpl.headerType === 'VIDEO') {
                             return (
                               <div className="rounded-xl overflow-hidden bg-black/40 aspect-video relative flex flex-col items-center justify-center border border-[#0d7375]">
@@ -8806,7 +8806,7 @@ ${parametersString}
                               </div>
                             );
                           }
-                          
+
                           if (activeTpl.headerType === 'DOCUMENT') {
                             return (
                               <div className="bg-black/30 p-2 rounded-xl flex items-center gap-3 border border-[#0d7375]">
@@ -8820,7 +8820,7 @@ ${parametersString}
                               </div>
                             );
                           }
-                          
+
                           return null;
                         })()}
 
@@ -8830,23 +8830,23 @@ ${parametersString}
                             const activeTpl = templates.find((t: any) => t.name === selectedTemplate) || templates[0];
                             const vars = testVariables.split(',').map(v => v.trim());
                             let bodyText = activeTpl.body;
-                            
+
                             // Replaces variables with high-contrast colored markers
                             const parts: React.ReactNode[] = [];
                             let lastIdx = 0;
                             const regex = /\{\{(\d+)\}\}/g;
                             let match;
-                            
+
                             while ((match = regex.exec(bodyText)) !== null) {
                               const matchIndex = match.index;
                               const varNum = parseInt(match[1]);
                               const varVal = vars[varNum - 1] || `{{${varNum}}}`;
-                              
+
                               // Push static text before variable
                               if (matchIndex > lastIdx) {
                                 parts.push(bodyText.substring(lastIdx, matchIndex));
                               }
-                              
+
                               // Push variable wrapper
                               parts.push(
                                 <span key={matchIndex} className="bg-[#1877f2] text-white font-bold px-1 rounded mx-0.5 shadow-sm border border-blue-400/20">
@@ -8855,11 +8855,11 @@ ${parametersString}
                               );
                               lastIdx = regex.lastIndex;
                             }
-                            
+
                             if (lastIdx < bodyText.length) {
                               parts.push(bodyText.substring(lastIdx));
                             }
-                            
+
                             return parts.length > 0 ? parts : bodyText;
                           })()}
                         </p>
@@ -8899,13 +8899,13 @@ ${parametersString}
             {/* Top Modal Bar */}
             <div className="p-2 sm:p-3.5 border-b border-gray-800 flex items-center justify-between bg-[#111] shrink-0">
               <div className="flex items-center gap-2 min-w-0 flex-1">
-                <Wand2 size={16} className="text-indigo-400 shrink-0" />
+                <Wand2 size={16} className="text-blue-400 shrink-0" />
                 <div className="min-w-0">
                   <h3 className="text-xs sm:text-sm font-bold text-white truncate">Chat Interactivo de Entrenamiento IA</h3>
                   <p className="text-[10px] sm:text-[11px] text-gray-400 truncate hidden xs:block">Entrena a la IA conversando con voz, texto, imágenes o archivos.</p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setIsWizardOpen(false)}
                 className="text-gray-400 hover:text-white p-1.5 rounded-lg bg-[#222] shrink-0 ml-1.5 active:scale-95 transition"
                 title="Cerrar Chat"
@@ -8913,14 +8913,14 @@ ${parametersString}
                 <X size={18} />
               </button>
             </div>
-            
+
             <div className="flex-1 overflow-hidden p-0 sm:p-3 bg-[#070a0d] flex flex-col min-h-0 flex-grow h-[80vh] sm:h-full">
               <div className="bg-[#0b141a] border-0 sm:border sm:border-gray-800 rounded-none sm:rounded-2xl overflow-hidden shadow-2xl flex flex-col h-full min-h-0 w-full">
                 {/* Chat Header */}
                 <div className="bg-[#202c33] p-2 sm:p-3 text-white flex items-center justify-between border-b border-gray-800 shrink-0 gap-2">
                   <div className="flex items-center gap-2 min-w-0">
                     <div className="relative shrink-0">
-                      <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center font-bold text-white shadow-lg border border-white/10">
+                      <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-gradient-to-tr from-blue-600 to-blue-600 flex items-center justify-center font-bold text-white shadow-lg border border-white/10">
                         <Bot size={15} className="sm:w-[18px] sm:h-[18px]" />
                       </div>
                       <span className="absolute bottom-0 right-0 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-emerald-500 border-2 border-[#202c33] rounded-full"></span>
@@ -8932,8 +8932,8 @@ ${parametersString}
                       <p className="text-[9px] sm:text-[10px] text-emerald-400 font-medium truncate">Capacita tu bot</p>
                     </div>
                   </div>
-                  
-                  <button 
+
+                  <button
                     onClick={async () => {
                       try {
                         localStorage.setItem('whatsapp_bot_prompt_v1', botPrompt);
@@ -8994,11 +8994,11 @@ ${parametersString}
                 {/* Chat Body */}
                 <div className="flex-1 p-3 sm:p-4 overflow-y-auto space-y-3 bg-[url('https://user-images.githubusercontent.com/15075759/28719144-86dc2214-75b6-11e7-8118-ef4cd70659cb.png')] bg-repeat bg-contain">
                   {trainerMessages.map((msg) => (
-                    <div 
+                    <div
                       key={msg.id}
                       className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}
                     >
-                      <div 
+                      <div
                         className={`max-w-[88%] sm:max-w-[85%] rounded-2xl p-3 shadow-md text-xs relative ${
                           msg.sender === 'user'
                             ? 'bg-[#005c4b] text-white rounded-tr-none'
@@ -9016,7 +9016,7 @@ ${parametersString}
                               />
                             ) : msg.attachment.type === 'imagen' ? (
                               <div className="flex items-center gap-2 truncate p-1">
-                                <ImageIcon size={18} className="text-purple-400 shrink-0" />
+                                <ImageIcon size={18} className="text-blue-400 shrink-0" />
                                 <span className="text-[11px] text-gray-200 font-semibold truncate">{msg.attachment.name}</span>
                               </div>
                             ) : msg.attachment.type === 'video' ? (
@@ -9042,7 +9042,7 @@ ${parametersString}
                   {isTrainerThinking && (
                     <div className="flex justify-start">
                       <div className="bg-[#202c33] p-3 rounded-2xl rounded-tl-none border border-gray-700/50 text-xs text-gray-400 flex items-center gap-2">
-                        <div className="w-2 h-2 bg-indigo-400 rounded-full animate-ping shrink-0"></div>
+                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-ping shrink-0"></div>
                         Analizando indicación e integrando al Prompt Definitivo...
                       </div>
                     </div>
@@ -9071,7 +9071,7 @@ ${parametersString}
                 {/* Input Bar */}
                 <div className="bg-[#202c33] p-2 sm:p-3 border-t border-gray-800 shrink-0">
                   {trainerAttachment && (
-                    <div className="mb-2 p-1.5 bg-black/40 rounded-lg flex items-center justify-between text-xs text-indigo-300 border border-indigo-500/20">
+                    <div className="mb-2 p-1.5 bg-black/40 rounded-lg flex items-center justify-between text-xs text-blue-300 border border-blue-500/20">
                       <span className="truncate max-w-[200px]">📎 Adjunto: {trainerAttachment.name}</span>
                       <button onClick={() => setTrainerAttachment(null)} className="text-gray-400 hover:text-white p-0.5">
                         <X size={14} />
@@ -9081,12 +9081,12 @@ ${parametersString}
 
                   <div className="flex items-center gap-1.5 sm:gap-2">
                     <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
-                      <label className="p-1.5 sm:p-2 text-gray-400 hover:text-indigo-400 hover:bg-[#2a3942] rounded-full cursor-pointer transition" title="Adjuntar Imagen">
+                      <label className="p-1.5 sm:p-2 text-gray-400 hover:text-blue-400 hover:bg-[#2a3942] rounded-full cursor-pointer transition" title="Adjuntar Imagen">
                         <ImageIcon size={18} />
-                        <input 
-                          type="file" 
-                          accept="image/*" 
-                          className="hidden" 
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
                           onChange={(e) => {
                             if (e.target.files?.[0]) {
                               const file = e.target.files[0];
@@ -9095,12 +9095,12 @@ ${parametersString}
                           }}
                         />
                       </label>
-                      <label className="p-1.5 sm:p-2 text-gray-400 hover:text-indigo-400 hover:bg-[#2a3942] rounded-full cursor-pointer transition" title="Adjuntar Video">
+                      <label className="p-1.5 sm:p-2 text-gray-400 hover:text-blue-400 hover:bg-[#2a3942] rounded-full cursor-pointer transition" title="Adjuntar Video">
                         <Video size={18} />
-                        <input 
-                          type="file" 
-                          accept="video/*" 
-                          className="hidden" 
+                        <input
+                          type="file"
+                          accept="video/*"
+                          className="hidden"
                           onChange={(e) => {
                             if (e.target.files?.[0]) {
                               const file = e.target.files[0];
@@ -9109,12 +9109,12 @@ ${parametersString}
                           }}
                         />
                       </label>
-                      <label className="p-1.5 sm:p-2 text-gray-400 hover:text-indigo-400 hover:bg-[#2a3942] rounded-full cursor-pointer transition" title="Adjuntar Archivo o PDF">
+                      <label className="p-1.5 sm:p-2 text-gray-400 hover:text-blue-400 hover:bg-[#2a3942] rounded-full cursor-pointer transition" title="Adjuntar Archivo o PDF">
                         <Paperclip size={18} />
-                        <input 
-                          type="file" 
-                          accept="*" 
-                          className="hidden" 
+                        <input
+                          type="file"
+                          accept="*"
+                          className="hidden"
                           onChange={(e) => {
                             if (e.target.files?.[0]) {
                               const file = e.target.files[0];
@@ -9128,7 +9128,7 @@ ${parametersString}
                     <input
                       type="text"
                       placeholder="Escribe instrucciones, preguntas frecuentes o bienvenida..."
-                      className="flex-1 min-w-0 bg-[#2a3942] border border-gray-700/50 rounded-xl px-2.5 sm:px-3 py-2 text-xs text-white placeholder-gray-400 focus:outline-none focus:border-indigo-500"
+                      className="flex-1 min-w-0 bg-[#2a3942] border border-gray-700/50 rounded-xl px-2.5 sm:px-3 py-2 text-xs text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
                       value={trainerInput}
                       onChange={(e) => setTrainerInput(e.target.value)}
                       onKeyDown={(e) => {
@@ -9152,7 +9152,7 @@ ${parametersString}
                     <button
                       type="button"
                       onClick={() => handleSendTrainerMessage()}
-                      className="bg-indigo-600 hover:bg-indigo-500 text-white p-2 rounded-xl transition shadow-md shrink-0"
+                      className="bg-blue-600 hover:bg-blue-500 text-white p-2 rounded-xl transition shadow-md shrink-0"
                       title="Enviar mensaje"
                     >
                       <Send size={18} />
@@ -9197,7 +9197,7 @@ ${parametersString}
 
       {/* Lightbox Modal for Fullscreen Image Viewing */}
       {selectedImageLightbox && (
-        <div 
+        <div
           className="fixed inset-0 z-[99999] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-fade-in"
           onClick={() => setSelectedImageLightbox(null)}
         >

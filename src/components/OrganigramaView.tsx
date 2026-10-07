@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { 
-  Users, BarChart3, Bot, Lightbulb, Image as ImageIcon, Megaphone, 
-  Smartphone, Network, Link, GraduationCap, Package, Share2, 
-  ShieldCheck, HelpCircle, Briefcase, TrendingUp, ShoppingCart, 
-  Settings, CheckCircle, ClipboardCheck, Scale, Compass, Cpu, 
-  Truck, ArrowRight, Sparkles, Radio 
+import {
+  Users, BarChart3, Bot, Lightbulb, Image as ImageIcon, Megaphone,
+  Smartphone, Network, Link, GraduationCap, Package, Share2,
+  ShieldCheck, HelpCircle, Briefcase, TrendingUp, ShoppingCart,
+  Settings, CheckCircle, ClipboardCheck, Scale, Compass, Cpu,
+  Truck, ArrowRight, Sparkles, Radio
 } from 'lucide-react';
 
 interface OrganigramaViewProps {
@@ -143,7 +143,7 @@ export default function OrganigramaView({ onNavigateModule, onNavigateWhatsappTa
       aiPower: "Directorio interactivo de proveedores certificados, estimación de costos de importación y plantillas de cotización.",
       suggestedPrompt: "Muéstrame el listado de proveedores recomendados en el sector de hogar y sus datos de contacto",
       linkedModuleId: "proveedores",
-      icon: <ClipboardCheck className="text-purple-400" size={24} />
+      icon: <ClipboardCheck className="text-blue-400" size={24} />
     },
     importacion: {
       title: "Importación y Aduanas",
@@ -152,7 +152,7 @@ export default function OrganigramaView({ onNavigateModule, onNavigateWhatsappTa
       aiPower: "Asesoría automatizada en partidas arancelarias, cálculo estimado de nacionalización y seguimiento de contenedores.",
       suggestedPrompt: "¿Qué documentos legales necesito típicamente para importar tecnología de consumo a Colombia?",
       linkedModuleId: "proveedores",
-      icon: <Share2 className="text-purple-400" size={24} />
+      icon: <Share2 className="text-blue-400" size={24} />
     },
     calidad: {
       title: "Control de Calidad",
@@ -161,7 +161,7 @@ export default function OrganigramaView({ onNavigateModule, onNavigateWhatsappTa
       aiPower: "Cuestionarios interactivos de verificación de calidad y listado de reporte de inconformidades de clientes.",
       suggestedPrompt: "Genera una plantilla de control de calidad para inspeccionar un lote de productos electrónicos",
       linkedModuleId: "branding",
-      icon: <ShieldCheck className="text-purple-400" size={24} />
+      icon: <ShieldCheck className="text-blue-400" size={24} />
     },
 
     // TECNOLOGIA
@@ -213,21 +213,21 @@ export default function OrganigramaView({ onNavigateModule, onNavigateWhatsappTa
           </span>
           <h3 className="text-xl font-bold text-white mb-2">Alineación Estratégica Organizacional</h3>
           <p className="text-gray-400 text-sm leading-relaxed">
-            Hemos mapeado la estructura departamental óptima basada en tu organigrama de <strong>Gerencia General</strong>. 
+            Hemos mapeado la estructura departamental óptima basada en tu organigrama de <strong>Gerencia General</strong>.
             Haz clic en cualquiera de las divisiones del diagrama interactivo abajo para ver qué herramientas de Inteligencia Artificial la respaldan en esta plataforma.
           </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start">
-        
+
         {/* Diagram Area */}
         <div className="xl:col-span-3 bg-[#0d0d0d] border border-gray-800 rounded-2xl p-6 overflow-x-auto">
           <div className="min-w-[850px] space-y-6 text-center py-4">
-            
+
             {/* CEO & General Manager */}
             <div className="flex flex-col items-center">
-              <div 
+              <div
                 onClick={() => setSelectedNode({
                   title: "Gerencia General",
                   department: "Corporativo",
@@ -238,15 +238,15 @@ export default function OrganigramaView({ onNavigateModule, onNavigateWhatsappTa
                   icon: <Briefcase className="text-gold" size={24} />
                 })}
                 className={`px-8 py-3 rounded-xl border cursor-pointer transition-all ${
-                  selectedNode?.title === "Gerencia General" 
-                    ? 'bg-gold text-black border-gold font-bold shadow-[0_0_15px_rgba(212,175,55,0.4)] scale-105' 
+                  selectedNode?.title === "Gerencia General"
+                    ? 'bg-gold text-black border-gold font-bold shadow-[0_0_15px_rgba(212,175,55,0.4)] scale-105'
                     : 'bg-red-950/20 text-red-400 border-red-500/30 hover:border-red-400/80 font-medium'
                 }`}
               >
                 <p className="text-[10px] uppercase tracking-wider opacity-85">C-Level</p>
                 <p className="text-sm">CEO - GERENCIA GENERAL</p>
               </div>
-              
+
               {/* Connecting line down */}
               <div className="w-0.5 h-6 bg-gray-800"></div>
             </div>
@@ -258,7 +258,7 @@ export default function OrganigramaView({ onNavigateModule, onNavigateWhatsappTa
 
             {/* Departments Row */}
             <div className="grid grid-cols-5 gap-4 relative pt-6">
-              
+
               {/* Connecting vertical lines */}
               <div className="absolute -top-6 left-[10%] w-0.5 h-6 bg-gray-800"></div>
               <div className="absolute -top-6 left-[30%] w-0.5 h-6 bg-gray-800"></div>
@@ -347,7 +347,7 @@ export default function OrganigramaView({ onNavigateModule, onNavigateWhatsappTa
 
               {/* Department 4: PRODUCCION / IMPORTACION */}
               <div className="space-y-4">
-                <div className="bg-gray-900 border border-purple-500/20 px-3 py-2 rounded-xl text-purple-400 font-bold text-xs uppercase tracking-wider line-clamp-1">
+                <div className="bg-gray-900 border border-blue-500/20 px-3 py-2 rounded-xl text-blue-400 font-bold text-xs uppercase tracking-wider line-clamp-1">
                   Producción
                 </div>
                 <div className="space-y-2 flex flex-col items-center">
@@ -361,7 +361,7 @@ export default function OrganigramaView({ onNavigateModule, onNavigateWhatsappTa
                       onClick={() => handleNodeClick(item.key)}
                       className={`w-full py-2.5 px-3 rounded-lg text-xs font-medium border transition-all text-center ${
                         selectedNode?.title.toLowerCase().includes(item.key.substring(0,4)) || (item.key === 'compras' && selectedNode?.title.includes('Compras')) || (item.key === 'importacion' && selectedNode?.title.includes('Importación'))
-                          ? 'bg-purple-500/15 text-purple-300 border-purple-400 shadow-[0_0_8px_rgba(168,85,247,0.3)] scale-102 font-semibold'
+                          ? 'bg-blue-500/15 text-blue-300 border-blue-400 shadow-[0_0_8px_rgba(168,85,247,0.3)] scale-102 font-semibold'
                           : 'bg-black/40 text-gray-400 border-gray-800 hover:border-gray-700 hover:text-gray-200 text-ellipsis overflow-hidden whitespace-nowrap'
                       }`}
                       title={item.label}

@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Zap, 
-  CreditCard, 
-  Check, 
-  History, 
-  Sparkles, 
-  Bot, 
-  Volume2, 
-  ShieldCheck, 
-  MessageSquare, 
-  X, 
-  ArrowRight, 
-  Clock, 
+import {
+  Zap,
+  CreditCard,
+  Check,
+  History,
+  Sparkles,
+  Bot,
+  Volume2,
+  ShieldCheck,
+  MessageSquare,
+  X,
+  ArrowRight,
+  Clock,
   Download,
   AlertCircle,
   TrendingUp,
@@ -185,7 +185,7 @@ export function RecargasView() {
   // Load Company Payment Gateway Credentials from localStorage
   const [gatewayConfig, setGatewayConfig] = useState<any>(() => {
     try {
-      const saved = localStorage.getItem('EXPERT360_PAYMENT_CONFIG');
+      const saved = localStorage.getItem('XORBIT 360_PAYMENT_CONFIG');
       if (saved) return JSON.parse(saved);
     } catch (e) {}
     return null;
@@ -194,7 +194,7 @@ export function RecargasView() {
   useEffect(() => {
     const reloadConfig = () => {
       try {
-        const saved = localStorage.getItem('EXPERT360_PAYMENT_CONFIG');
+        const saved = localStorage.getItem('XORBIT 360_PAYMENT_CONFIG');
         if (saved) setGatewayConfig(JSON.parse(saved));
       } catch (e) {}
     };
@@ -284,7 +284,7 @@ export function RecargasView() {
 
       if (boldTxStatus && (boldTxStatus.toLowerCase() === 'approved' || boldTxStatus.toLowerCase() === 'successful')) {
         let pkg = selectedPackage;
-        const pendingRaw = localStorage.getItem('EXPERT360_PENDING_BOLD_ORDER');
+        const pendingRaw = localStorage.getItem('XORBIT 360_PENDING_BOLD_ORDER');
         if (pendingRaw) {
           try {
             const pending = JSON.parse(pendingRaw);
@@ -311,7 +311,7 @@ export function RecargasView() {
             status: 'Completado',
           };
           setTransactions(prev => [newTx, ...prev]);
-          localStorage.removeItem('EXPERT360_PENDING_BOLD_ORDER');
+          localStorage.removeItem('XORBIT 360_PENDING_BOLD_ORDER');
 
           setPurchaseSuccessToast(`¡Pago Aprobado por Bold! Se acreditaron tus créditos de ${pkg.name}.`);
           setTimeout(() => setPurchaseSuccessToast(null), 7000);
@@ -331,7 +331,7 @@ export function RecargasView() {
       const data = event.data;
       if (data?.type === 'BOLD_CHECKOUT_EVENT' && (data?.status === 'APPROVED' || data?.status === 'approved')) {
         let pkg = selectedPackage;
-        const pendingRaw = localStorage.getItem('EXPERT360_PENDING_BOLD_ORDER');
+        const pendingRaw = localStorage.getItem('XORBIT 360_PENDING_BOLD_ORDER');
         if (pendingRaw) {
           try {
             const pending = JSON.parse(pendingRaw);
@@ -358,7 +358,7 @@ export function RecargasView() {
             status: 'Completado',
           };
           setTransactions(prev => [newTx, ...prev]);
-          localStorage.removeItem('EXPERT360_PENDING_BOLD_ORDER');
+          localStorage.removeItem('XORBIT 360_PENDING_BOLD_ORDER');
 
           setPurchaseSuccessToast(`¡Pago Aprobado por Bold! Se acreditaron tus créditos.`);
           setTimeout(() => setPurchaseSuccessToast(null), 7000);
@@ -381,7 +381,7 @@ export function RecargasView() {
 
     // Save pending order for automatic approval detection
     try {
-      localStorage.setItem('EXPERT360_PENDING_BOLD_ORDER', JSON.stringify({
+      localStorage.setItem('XORBIT 360_PENDING_BOLD_ORDER', JSON.stringify({
         orderId,
         pkg,
         timestamp: Date.now()
@@ -420,7 +420,7 @@ export function RecargasView() {
         })
       });
       const data = await res.json();
-      
+
       if (typeof (window as any).BoldCheckout === 'function' && data.apiKey && (data.integritySignature || data.signature)) {
         try {
           const boldCheckout = new (window as any).BoldCheckout({
@@ -463,7 +463,7 @@ export function RecargasView() {
 
   return (
     <div className="space-y-6 w-full pb-16 animate-fade-in text-gray-100">
-      
+
       {/* Toast Notification */}
       {purchaseSuccessToast && (
         <div className="fixed top-6 right-6 z-50 bg-emerald-500 text-black font-bold p-4 rounded-2xl shadow-2xl flex items-center gap-3 animate-bounce border border-emerald-300">
@@ -748,7 +748,7 @@ export function RecargasView() {
               </label>
 
               {/* Bold Payments Card */}
-              <div 
+              <div
                 className="p-4 rounded-2xl border border-red-500 bg-gradient-to-r from-red-950/40 via-gray-900 to-black shadow-xl shadow-red-500/10 ring-1 ring-red-500/30 flex items-center justify-between gap-4"
               >
                 <div className="flex items-center gap-3">

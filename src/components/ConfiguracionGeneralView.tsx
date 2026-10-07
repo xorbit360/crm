@@ -218,8 +218,8 @@ export default function ConfiguracionGeneralView({
             onClick={() => setActiveTab('mcp_api')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap cursor-pointer ${
               activeTab === 'mcp_api'
-                ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/20 font-bold'
-                : 'text-purple-400 hover:text-white hover:bg-purple-950/40 border border-purple-500/20'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20 font-bold'
+                : 'text-blue-400 hover:text-white hover:bg-blue-950/40 border border-blue-500/20'
             }`}
           >
             <Terminal size={16} />
@@ -233,7 +233,7 @@ export default function ConfiguracionGeneralView({
         <ProyectosView />
       )}
       {activeTab === 'personalizacion' && (
-        <PersonalizacionPlataformaView 
+        <PersonalizacionPlataformaView
           currentUser={currentUser}
           hiddenItems={hiddenItems}
           onToggleVisibility={toggleVisibility}
@@ -258,8 +258,8 @@ export default function ConfiguracionGeneralView({
       )}
 
       {activeTab === 'usuarios' && (
-        <UsuariosView 
-          hiddenItems={hiddenItems} 
+        <UsuariosView
+          hiddenItems={hiddenItems}
           toggleVisibility={toggleVisibility}
           currentUser={currentUser}
         />
@@ -298,7 +298,7 @@ export default function ConfiguracionGeneralView({
 
           {/* Grid of Settings */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            
+
             {/* Language Box */}
             <div className="panel p-6 rounded-2xl border border-gray-800 space-y-5">
               <div className="flex items-center gap-3 border-b border-gray-800/80 pb-4">
@@ -422,7 +422,7 @@ export default function ConfiguracionGeneralView({
           {/* Preferences Section */}
           <div className="panel p-6 rounded-2xl border border-gray-800 space-y-6">
             <div className="flex items-center gap-3 border-b border-gray-800/80 pb-4">
-              <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
+              <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
                 <Sparkles size={20} />
               </div>
               <div>

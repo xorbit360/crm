@@ -1,22 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  ShoppingCart, 
-  Plus, 
-  Image as ImageIcon, 
-  MessageCircle, 
-  Package, 
-  AlertCircle, 
-  CheckCircle2, 
-  RotateCcw, 
-  Clock, 
-  Bot, 
-  Sparkles, 
-  Send, 
-  Smartphone, 
-  Trash2, 
-  Check, 
-  X, 
-  DollarSign, 
+import {
+  ShoppingCart,
+  Plus,
+  Image as ImageIcon,
+  MessageCircle,
+  Package,
+  AlertCircle,
+  CheckCircle2,
+  RotateCcw,
+  Clock,
+  Bot,
+  Sparkles,
+  Send,
+  Smartphone,
+  Trash2,
+  Check,
+  X,
+  DollarSign,
   ExternalLink,
   ThumbsUp,
   Sliders
@@ -241,7 +241,7 @@ export default function CatalogoView() {
     localStorage.setItem('crm_products', JSON.stringify(updated));
     setProducts(updated);
     setIsAddProductOpen(false);
-    
+
     // Reset fields
     setNewProdName('');
     setNewProdPrice(0);
@@ -278,7 +278,7 @@ export default function CatalogoView() {
   const handleEditOptionText = (qId: string, optIdx: number, newText: string) => {
     const updated = questions.map(q => {
       if (q.id === qId) {
-        const updatedOpts = q.options.map((opt, oIdx) => 
+        const updatedOpts = q.options.map((opt, oIdx) =>
           oIdx === optIdx ? { ...opt, text: newText } : opt
         );
         return { ...q, options: updatedOpts };
@@ -291,7 +291,7 @@ export default function CatalogoView() {
   const handleEditOptionPointsTo = (qId: string, optIdx: number, pointsToProdId: string) => {
     const updated = questions.map(q => {
       if (q.id === qId) {
-        const updatedOpts = q.options.map((opt, oIdx) => 
+        const updatedOpts = q.options.map((opt, oIdx) =>
           oIdx === optIdx ? { ...opt, pointsTo: pointsToProdId } : opt
         );
         return { ...q, options: updatedOpts };
@@ -400,11 +400,11 @@ export default function CatalogoView() {
 
   const createOrderFromRecommendation = () => {
     if (!recommendedProduct) return;
-    
+
     // Prompt for client name
     const nameInput = prompt("Ingresa el nombre del cliente para registrar el pedido:", "Cliente Nuevo");
     if (nameInput === null) return; // cancelled
-    
+
     const newOrder: Order = {
       id: `PED-${Math.floor(1000 + Math.random() * 9000)}`,
       clientName: nameInput || 'Cliente Recomendador',
@@ -421,7 +421,7 @@ export default function CatalogoView() {
     setOrders(updatedOrders);
 
     // Decrement stock
-    const updatedProducts = products.map(p => 
+    const updatedProducts = products.map(p =>
       p.id === recommendedProduct.id ? { ...p, stock: Math.max(0, p.stock - 1) } : p
     );
     localStorage.setItem('crm_products', JSON.stringify(updatedProducts));
@@ -477,7 +477,7 @@ export default function CatalogoView() {
             activeTab === 'recomendador' ? 'border-amber-500 text-amber-500 font-bold' : 'border-transparent text-gray-400 hover:text-gray-200'
           }`}
         >
-          <Sparkles size={14} className="text-purple-400 animate-pulse" /> Multirecomendador Conversacional IA
+          <Sparkles size={14} className="text-blue-400 animate-pulse" /> Multirecomendador Conversacional IA
         </button>
       </div>
 
@@ -494,14 +494,14 @@ export default function CatalogoView() {
                  <option>Odoo Connector</option>
                </select>
              </div>
-             <button 
+             <button
                onClick={() => setIsAddProductOpen(true)}
                className="bg-amber-600 text-white text-xs px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 hover:bg-amber-500 transition w-full sm:w-auto justify-center"
              >
                 <Plus size={16} /> Nuevo Producto
              </button>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {products.map((prod) => (
               <div key={prod.id} className="bg-[#111] rounded-xl overflow-hidden border border-gray-800 flex flex-col hover:border-gray-700 transition">
@@ -512,14 +512,14 @@ export default function CatalogoView() {
                   <ImageIcon size={36} className="text-gray-700 mb-1" />
                   <span className="text-[10px] uppercase font-bold tracking-wider text-gray-500">{prod.category}</span>
                 </div>
-                
+
                 <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
                   <div>
                     <div className="flex justify-between items-start mb-1">
                       <h3 className="font-bold text-gray-100 text-sm leading-tight">{prod.name}</h3>
                       <span className={`border text-[9px] px-2 py-0.5 rounded font-bold uppercase tracking-wider shrink-0 ${
-                        prod.stock > 10 
-                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
+                        prod.stock > 10
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                           : 'bg-red-500/10 text-red-400 border-red-500/20'
                       }`}>
                         {prod.stock} stock
@@ -533,21 +533,21 @@ export default function CatalogoView() {
 
                   <div className="space-y-2 pt-2 border-t border-gray-850">
                     <div className="bg-black/40 p-2.5 rounded-lg border border-gray-850 text-[11px]">
-                      <span className="text-purple-400 font-bold block mb-0.5 flex items-center gap-1">
+                      <span className="text-blue-400 font-bold block mb-0.5 flex items-center gap-1">
                         <Bot size={12} /> Criterio Recomendador IA:
                       </span>
                       <p className="text-gray-400 italic">"{prod.matchReason}"</p>
                     </div>
 
                     <div className="flex gap-1.5 pt-1">
-                      <button 
+                      <button
                         onClick={() => handleDeleteProduct(prod.id)}
                         className="p-2 text-xs font-semibold bg-red-950/25 hover:bg-red-900/30 text-red-400 rounded-lg border border-red-900/10 transition"
                         title="Eliminar producto"
                       >
                         <Trash2 size={13} />
                       </button>
-                      <button 
+                      <button
                         onClick={() => {
                           alert('Función de edición rápida. Puedes configurar más características o sincronizar con tu Shopify en producción.');
                         }}
@@ -605,14 +605,14 @@ export default function CatalogoView() {
               <p className="text-2xl font-mono font-bold text-white">{abandonedCount}</p>
             </div>
           </div>
-          
+
           {/* Orders Table */}
           <div className="bg-[#111] rounded-xl border border-gray-800 overflow-hidden">
              <div className="p-4 border-b border-gray-800 bg-black/40 flex justify-between items-center">
                 <h3 className="font-bold text-white text-sm">Listado General de Despachos y Pedidos</h3>
                 <span className="text-[10px] text-gray-500 font-mono">Persistencia Local (crm_orders)</span>
              </div>
-             
+
              {orders.length > 0 ? (
                <div className="overflow-x-auto">
                  <table className="w-full text-left border-collapse text-xs">
@@ -652,8 +652,8 @@ export default function CatalogoView() {
                            </span>
                          </td>
                          <td className="p-3.5 text-center">
-                           <select 
-                             value={o.status} 
+                           <select
+                             value={o.status}
                              onChange={(e) => updateOrderStatus(o.id, e.target.value as Order['status'])}
                              className="bg-black border border-gray-800 text-[11px] text-gray-300 rounded px-2 py-1 outline-none focus:border-amber-500 cursor-pointer"
                            >
@@ -680,7 +680,7 @@ export default function CatalogoView() {
       {/* TAB 3: RECOMMENDATION ENGINE (CONVERSATIONAL MOCK WHATSAPP) */}
       {activeTab === 'recomendador' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          
+
           {/* Left: Explanatory Column / Question Manager */}
           <div className="lg:col-span-5 space-y-6">
             <div className="bg-[#111] border border-gray-800 rounded-xl p-5 space-y-4">
@@ -700,8 +700,8 @@ export default function CatalogoView() {
                 <button
                   onClick={() => setRecommenderSubTab('visualizar')}
                   className={`flex-1 text-center py-1.5 rounded-lg text-xs font-semibold transition ${
-                    recommenderSubTab === 'visualizar' 
-                      ? 'bg-amber-600/20 border border-amber-600/30 text-amber-400 font-bold' 
+                    recommenderSubTab === 'visualizar'
+                      ? 'bg-amber-600/20 border border-amber-600/30 text-amber-400 font-bold'
                       : 'text-gray-400 hover:text-gray-200'
                   }`}
                 >
@@ -710,8 +710,8 @@ export default function CatalogoView() {
                 <button
                   onClick={() => setRecommenderSubTab('editar')}
                   className={`flex-1 text-center py-1.5 rounded-lg text-xs font-semibold transition ${
-                    recommenderSubTab === 'editar' 
-                      ? 'bg-amber-600/20 border border-amber-600/30 text-amber-400 font-bold' 
+                    recommenderSubTab === 'editar'
+                      ? 'bg-amber-600/20 border border-amber-600/30 text-amber-400 font-bold'
                       : 'text-gray-400 hover:text-gray-200'
                   }`}
                 >
@@ -723,7 +723,7 @@ export default function CatalogoView() {
                 <div className="space-y-3 pt-1">
                   <div className="flex justify-between items-center">
                     <span className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Esquema Actual</span>
-                    <button 
+                    <button
                       onClick={() => setRecommenderSubTab('editar')}
                       className="text-amber-500 hover:text-amber-400 text-xs font-bold"
                     >
@@ -792,10 +792,10 @@ export default function CatalogoView() {
 
                           <div className="space-y-2 pt-1">
                             <div className="flex justify-between items-center">
-                              <span className="text-[9px] text-purple-400 font-bold uppercase tracking-wider">Opciones de Respuesta</span>
+                              <span className="text-[9px] text-blue-400 font-bold uppercase tracking-wider">Opciones de Respuesta</span>
                             </div>
 
-                            <div className="space-y-2 pl-2 border-l border-purple-900/30">
+                            <div className="space-y-2 pl-2 border-l border-blue-900/30">
                               {q.options.map((opt, oIdx) => (
                                 <div key={oIdx} className="bg-black/30 p-2.5 rounded-lg border border-gray-850 space-y-1.5">
                                   <div className="flex justify-between items-center text-[9px] text-gray-500">
@@ -856,7 +856,7 @@ export default function CatalogoView() {
           {/* Right: WhatsApp Phone Simulator */}
           <div className="lg:col-span-7 flex justify-center">
             <div className="w-full max-w-md bg-[#090e11] border border-gray-800 rounded-[32px] overflow-hidden shadow-2xl relative flex flex-col h-[580px] text-xs">
-              
+
               {/* Phone Header / WhatsApp bar */}
               <div className="bg-[#075e54] p-4 text-white flex items-center justify-between shadow">
                 <div className="flex items-center gap-2.5">
@@ -877,7 +877,7 @@ export default function CatalogoView() {
 
               {/* Chat Canvas (Messages Area) */}
               <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-[#0b141a]">
-                
+
                 {/* Intro welcome message */}
                 <div className="bg-[#1f2c34] text-gray-200 p-3 rounded-xl rounded-tl-none max-w-[85%] self-start border border-gray-800/20 shadow">
                   <p className="font-bold text-amber-400 text-[10px] mb-1">¡Hola! Bienvenido a nuestra tienda inteligente 👋</p>
@@ -887,7 +887,7 @@ export default function CatalogoView() {
                 {/* If simulation not started */}
                 {currentQuestionIdx === -1 && (
                   <div className="flex justify-center py-6">
-                    <button 
+                    <button
                       onClick={startRecommendation}
                       className="bg-emerald-500 hover:bg-emerald-400 text-black font-bold px-6 py-2.5 rounded-full shadow-lg text-xs uppercase tracking-wider flex items-center gap-2 animate-bounce"
                     >
@@ -916,7 +916,7 @@ export default function CatalogoView() {
                 {/* Current Active Question */}
                 {currentQuestionIdx >= 0 && currentQuestionIdx < questions.length && (
                   <div className="bg-[#1f2c34] text-gray-200 p-3 rounded-xl rounded-tl-none max-w-[85%] self-start border border-gray-800/20 shadow animate-fade-in">
-                    <p className="font-bold text-purple-400 text-[10px] mb-1">Pregunta del Asesor de IA:</p>
+                    <p className="font-bold text-blue-400 text-[10px] mb-1">Pregunta del Asesor de IA:</p>
                     <p className="leading-relaxed">{questions[currentQuestionIdx].text}</p>
                   </div>
                 )}
@@ -924,24 +924,24 @@ export default function CatalogoView() {
                 {/* Analyzing Loader */}
                 {isAnalyzing && (
                   <div className="bg-[#1f2c34] text-gray-200 p-4 rounded-xl rounded-tl-none max-w-[85%] self-start border border-gray-800/20 shadow space-y-2 animate-pulse">
-                    <div className="flex items-center gap-2 text-purple-400 font-bold">
+                    <div className="flex items-center gap-2 text-blue-400 font-bold">
                       <Bot size={14} className="animate-spin" />
                       <span>IA Procesando Perfil...</span>
                     </div>
                     <p className="text-[10px] text-gray-500 leading-none">Mapeando preferencias del cliente...</p>
                     <div className="h-1 w-full bg-gray-800 rounded-full overflow-hidden">
-                      <div className="h-full bg-purple-500 animate-[loading_1.5s_ease-in-out_infinite]"></div>
+                      <div className="h-full bg-blue-500 animate-[loading_1.5s_ease-in-out_infinite]"></div>
                     </div>
                   </div>
                 )}
 
                 {/* Final Recommendation Result Card inside WhatsApp */}
                 {recommendedProduct && (
-                  <div className="bg-[#1f2c34] text-gray-100 p-4 rounded-xl border border-purple-900/30 shadow-xl space-y-4 animate-scale-up">
-                    <div className="flex items-center gap-1.5 text-amber-400 font-bold text-xs uppercase tracking-wider bg-purple-950/40 p-1.5 rounded border border-purple-900/20 justify-center">
+                  <div className="bg-[#1f2c34] text-gray-100 p-4 rounded-xl border border-blue-900/30 shadow-xl space-y-4 animate-scale-up">
+                    <div className="flex items-center gap-1.5 text-amber-400 font-bold text-xs uppercase tracking-wider bg-blue-950/40 p-1.5 rounded border border-blue-900/20 justify-center">
                       <Sparkles size={13} className="animate-pulse" /> Recomendación Ideal Calculada
                     </div>
-                    
+
                     <div className="bg-black/50 border border-gray-850 p-3 rounded-lg space-y-3">
                       <div className="flex justify-between items-start">
                         <div>
@@ -955,8 +955,8 @@ export default function CatalogoView() {
                       <p className="text-[11px] text-gray-400 leading-relaxed">{recommendedProduct.description}</p>
                     </div>
 
-                    <div className="bg-[#0b141a] p-3 rounded-lg border border-purple-950/20">
-                      <span className="text-[10px] font-bold text-purple-400 block mb-1">¿Por qué este producto?</span>
+                    <div className="bg-[#0b141a] p-3 rounded-lg border border-blue-950/20">
+                      <span className="text-[10px] font-bold text-blue-400 block mb-1">¿Por qué este producto?</span>
                       <p className="text-gray-300 italic text-[11px] leading-relaxed">"{recommendedProduct.matchReason}"</p>
                     </div>
 
@@ -981,7 +981,7 @@ export default function CatalogoView() {
 
               {/* Chat Input Options (WhatsApp Keyboard Replacer) */}
               <div className="p-4 border-t border-gray-850 bg-[#1f2c34] space-y-2.5">
-                
+
                 {/* If questions are active, show options as clickable bubbles */}
                 {currentQuestionIdx >= 0 && currentQuestionIdx < questions.length ? (
                   <div className="space-y-2">
@@ -1001,7 +1001,7 @@ export default function CatalogoView() {
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 text-gray-500 italic py-2 justify-center">
-                    {currentQuestionIdx === -1 ? 'Inicia la prueba para habilitar respuestas.' : 
+                    {currentQuestionIdx === -1 ? 'Inicia la prueba para habilitar respuestas.' :
                      recommendedProduct ? 'Recomendación completada. Puedes iniciar una nueva consulta.' : 'Procesando consulta...'}
                   </div>
                 )}
@@ -1017,13 +1017,13 @@ export default function CatalogoView() {
       {isAddProductOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-[#0c0c0c] border border-gray-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-scale-up relative text-left">
-            <button 
+            <button
               onClick={() => setIsAddProductOpen(false)}
               className="absolute top-4 right-4 text-gray-500 hover:text-white transition"
             >
               <X size={18} />
             </button>
-            
+
             <div className="p-6 border-b border-gray-800 bg-[#111]">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <ShoppingCart size={18} className="text-amber-500" />
@@ -1038,11 +1038,11 @@ export default function CatalogoView() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
                   <label className="text-[10px] uppercase font-bold text-gray-500 block mb-1.5">Nombre del Producto</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={newProdName}
                     onChange={(e) => setNewProdName(e.target.value)}
-                    placeholder="Ej: Parlante Portátil Bose" 
+                    placeholder="Ej: Parlante Portátil Bose"
                     className="w-full bg-black border border-gray-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-amber-500 font-medium"
                     required
                   />
@@ -1050,11 +1050,11 @@ export default function CatalogoView() {
 
                 <div>
                   <label className="text-[10px] uppercase font-bold text-gray-500 block mb-1.5">Precio de Venta (COP)</label>
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     value={newProdPrice || ''}
                     onChange={(e) => setNewProdPrice(Number(e.target.value))}
-                    placeholder="Ej: 150000" 
+                    placeholder="Ej: 150000"
                     className="w-full bg-black border border-gray-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-amber-500 font-mono"
                     required
                   />
@@ -1062,8 +1062,8 @@ export default function CatalogoView() {
 
                 <div>
                   <label className="text-[10px] uppercase font-bold text-gray-500 block mb-1.5">Stock Inicial</label>
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     value={newProdStock}
                     onChange={(e) => setNewProdStock(Number(e.target.value))}
                     className="w-full bg-black border border-gray-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-amber-500 font-mono"
@@ -1073,7 +1073,7 @@ export default function CatalogoView() {
 
                 <div>
                   <label className="text-[10px] uppercase font-bold text-gray-500 block mb-1.5">Categoría</label>
-                  <select 
+                  <select
                     value={newProdCat}
                     onChange={(e) => setNewProdCat(e.target.value)}
                     className="w-full bg-black border border-gray-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-amber-500 cursor-pointer"
@@ -1096,37 +1096,37 @@ export default function CatalogoView() {
 
               <div>
                 <label className="text-[10px] uppercase font-bold text-gray-500 block mb-1.5">Descripción del Producto</label>
-                <textarea 
+                <textarea
                   value={newProdDesc}
                   onChange={(e) => setNewProdDesc(e.target.value)}
-                  placeholder="Detalles del producto, características clave, etc." 
+                  placeholder="Detalles del producto, características clave, etc."
                   className="w-full bg-black border border-gray-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-amber-500 h-20 resize-none"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] uppercase font-bold text-purple-400 block mb-1.5 flex items-center gap-1">
+                <label className="text-[10px] uppercase font-bold text-blue-400 block mb-1.5 flex items-center gap-1">
                   <Bot size={12} /> Criterio de Recomendación de IA
                 </label>
-                <textarea 
+                <textarea
                   value={newProdReason}
                   onChange={(e) => setNewProdReason(e.target.value)}
-                  placeholder="Ej: Buscas un gadget deportivo, que tenga buen monitoreo y que sea resistente al agua." 
-                  className="w-full bg-black border border-gray-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 h-16 resize-none italic placeholder:text-gray-600"
+                  placeholder="Ej: Buscas un gadget deportivo, que tenga buen monitoreo y que sea resistente al agua."
+                  className="w-full bg-black border border-gray-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-blue-500 h-16 resize-none italic placeholder:text-gray-600"
                 />
                 <p className="text-[9px] text-gray-500 mt-1">Este criterio se mostrará al cliente en la conversación de WhatsApp como justificación de la IA para recomendar este artículo.</p>
               </div>
 
               <div className="flex gap-2 pt-4 border-t border-gray-850">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setIsAddProductOpen(false)}
                   className="flex-1 bg-gray-900 hover:bg-gray-850 text-gray-400 hover:text-white transition font-bold py-2.5 rounded-xl text-xs"
                 >
                   Cancelar
                 </button>
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   className="flex-1 bg-amber-600 hover:bg-amber-500 text-white transition font-bold py-2.5 rounded-xl text-xs"
                 >
                   Registrar Producto

@@ -1,26 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Database, 
-  Link, 
-  Check, 
-  RefreshCw, 
-  AlertCircle, 
-  Sparkles, 
-  Sliders, 
-  ShieldAlert, 
-  Wifi, 
-  WifiOff, 
-  Globe, 
-  Key, 
-  Settings, 
-  MessageSquare, 
-  Clipboard, 
-  ExternalLink, 
-  Activity, 
-  Play, 
-  Send, 
-  CheckCircle2, 
-  UserCheck, 
+import {
+  Database,
+  Link,
+  Check,
+  RefreshCw,
+  AlertCircle,
+  Sparkles,
+  Sliders,
+  ShieldAlert,
+  Wifi,
+  WifiOff,
+  Globe,
+  Key,
+  Settings,
+  MessageSquare,
+  Clipboard,
+  ExternalLink,
+  Activity,
+  Play,
+  Send,
+  CheckCircle2,
+  UserCheck,
   Zap,
   Flame
 } from 'lucide-react';
@@ -355,12 +355,12 @@ export default function IntegracionesView() {
       if (!origin.endsWith('.run.app') && !origin.includes('localhost')) {
         return;
       }
-      
+
       if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
         fetchConfig(); // Reload from the server
       }
     };
-    
+
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, []);
@@ -409,7 +409,7 @@ export default function IntegracionesView() {
     const height = 700;
     const left = window.screenX + (window.outerWidth - width) / 2;
     const top = window.screenY + (window.outerHeight - height) / 2;
-    
+
     window.open(
       `${window.location.origin}/auth/${provider}`,
       `${provider}_auth_popup`,
@@ -492,7 +492,7 @@ export default function IntegracionesView() {
   // Simulate active Lead incoming webhook payload (proves it works in real-time)
   const handleSimulateWebhook = async (provider: 'meta' | 'tiktok') => {
     setSimulatingLogId(provider);
-    
+
     let url = provider === 'meta' ? '/api/webhooks/meta' : '/api/webhooks/tiktok';
     let payload: any = {};
 
@@ -548,7 +548,7 @@ export default function IntegracionesView() {
 
   return (
     <div className="animate-fade-in space-y-6 text-gray-200">
-      
+
       {/* View Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-800 pb-5">
         <div className="flex items-center gap-4">
@@ -727,7 +727,7 @@ export default function IntegracionesView() {
       {/* --- TAB 2: META & TIKTOK SOCIAL ADS CONNECTIONS --- */}
       {activeTab === 'social_ads' && (
         <div className="space-y-6">
-          
+
           {/* Top informational Alert */}
           <div className="bg-gold/5 border border-gold/20 rounded-2xl p-5 flex flex-col md:flex-row gap-4 items-start md:items-center justify-between shadow-lg">
             <div className="flex gap-4 items-start">
@@ -749,10 +749,10 @@ export default function IntegracionesView() {
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-            
+
             {/* Meta & TikTok Platform Panels */}
             <div className="xl:col-span-8 space-y-6">
-              
+
               {/* --- META INTEGRATION MANAGER --- */}
               <div className="bg-[#090909] border border-gray-800 rounded-2xl overflow-hidden shadow-xl">
                 {/* Panel Header */}
@@ -766,7 +766,7 @@ export default function IntegracionesView() {
                       <p className="text-[10px] text-gray-400">Automatizaciones de Anuncios, Leads y Messenger</p>
                     </div>
                   </div>
-                  
+
                   {/* Status Badge */}
                   <span
                     className={`text-[10px] px-2.5 py-1 rounded-full border font-bold flex items-center gap-1.5 ${
@@ -781,7 +781,7 @@ export default function IntegracionesView() {
                 </div>
 
                 <div className="p-6 space-y-6">
-                  
+
                   {/* Sync Controls */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-[#0c0c0c] border border-gray-800/80 p-5 rounded-2xl items-center">
                     <div>
@@ -794,9 +794,9 @@ export default function IntegracionesView() {
                       {metaTiktokConfig.metaConnected ? (
                         <div className="w-full flex flex-col sm:flex-row items-center gap-3 justify-end">
                           <div className="flex items-center gap-3 bg-[#111] px-4 py-2 rounded-xl border border-gray-800">
-                            <img 
-                              src={metaTiktokConfig.metaConnectedUser?.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&h=80&q=80"} 
-                              alt="Meta User" 
+                            <img
+                              src={metaTiktokConfig.metaConnectedUser?.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&h=80&q=80"}
+                              alt="Meta User"
                               className="w-7 h-7 rounded-full border border-gold/40 shrink-0"
                             />
                             <div className="text-left">
@@ -963,8 +963,8 @@ export default function IntegracionesView() {
                                     key={ev}
                                     onClick={() => handleToggleEvent('meta', ev)}
                                     className={`text-[9px] px-2 py-1 rounded border font-mono font-bold transition ${
-                                      active 
-                                        ? 'bg-blue-950/40 border-blue-500/40 text-blue-400' 
+                                      active
+                                        ? 'bg-blue-950/40 border-blue-500/40 text-blue-400'
                                         : 'bg-transparent border-gray-800 text-gray-500 hover:border-gray-700'
                                     }`}
                                   >
@@ -984,7 +984,7 @@ export default function IntegracionesView() {
                         type="button"
                         disabled={simulatingLogId !== null}
                         onClick={() => handleSimulateWebhook('meta')}
-                        className="px-4 py-2 bg-gradient-to-r from-blue-900/30 to-indigo-900/30 hover:from-blue-900/50 hover:to-indigo-900/50 border border-blue-500/30 text-blue-400 rounded-xl text-xs font-bold transition flex items-center gap-1.5"
+                        className="px-4 py-2 bg-gradient-to-r from-blue-900/30 to-blue-900/30 hover:from-blue-900/50 hover:to-blue-900/50 border border-blue-500/30 text-blue-400 rounded-xl text-xs font-bold transition flex items-center gap-1.5"
                       >
                         {simulatingLogId === 'meta' ? (
                           <>
@@ -1057,9 +1057,9 @@ export default function IntegracionesView() {
                       {metaTiktokConfig.tiktokConnected ? (
                         <div className="w-full flex flex-col sm:flex-row items-center gap-3 justify-end">
                           <div className="flex items-center gap-3 bg-[#111] px-4 py-2 rounded-xl border border-gray-800">
-                            <img 
-                              src={metaTiktokConfig.tiktokConnectedUser?.avatar || "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=80&h=80&q=80"} 
-                              alt="TikTok User" 
+                            <img
+                              src={metaTiktokConfig.tiktokConnectedUser?.avatar || "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=80&h=80&q=80"}
+                              alt="TikTok User"
                               className="w-7 h-7 rounded-full border border-gold/40 shrink-0"
                             />
                             <div className="text-left">
@@ -1205,8 +1205,8 @@ export default function IntegracionesView() {
                                     key={ev}
                                     onClick={() => handleToggleEvent('tiktok', ev)}
                                     className={`text-[9px] px-2 py-1 rounded border font-mono font-bold transition ${
-                                      active 
-                                        ? 'bg-red-950/40 border-red-500/40 text-red-400' 
+                                      active
+                                        ? 'bg-red-950/40 border-red-500/40 text-red-400'
                                         : 'bg-transparent border-gray-800 text-gray-500 hover:border-gray-700'
                                     }`}
                                   >
@@ -1226,7 +1226,7 @@ export default function IntegracionesView() {
                         type="button"
                         disabled={simulatingLogId !== null}
                         onClick={() => handleSimulateWebhook('tiktok')}
-                        className="px-4 py-2 bg-gradient-to-r from-red-950/20 to-pink-950/20 hover:from-red-950/40 hover:to-pink-950/40 border border-red-500/30 text-red-400 rounded-xl text-xs font-bold transition flex items-center gap-1.5"
+                        className="px-4 py-2 bg-gradient-to-r from-red-950/20 to-blue-950/20 hover:from-red-950/40 hover:to-blue-950/40 border border-red-500/30 text-red-400 rounded-xl text-xs font-bold transition flex items-center gap-1.5"
                       >
                         {simulatingLogId === 'tiktok' ? (
                           <>
@@ -1261,7 +1261,7 @@ export default function IntegracionesView() {
 
             {/* Sidebar with Live Webhook Logs and instructions */}
             <div className="xl:col-span-4 space-y-6">
-              
+
               {/* Live Webhook Monitoring console */}
               <div className="bg-black border border-gray-800 rounded-2xl overflow-hidden shadow-2xl">
                 <div className="border-b border-gray-800 px-5 py-4 flex items-center justify-between bg-[#070707]">
@@ -1269,7 +1269,7 @@ export default function IntegracionesView() {
                     <Activity size={15} className="text-emerald-400 animate-pulse" />
                     <span className="text-xs font-bold text-white uppercase tracking-wider">Consola Webhook Realtime</span>
                   </div>
-                  <button 
+                  <button
                     onClick={fetchConfig}
                     className="p-1.5 rounded bg-gray-900 border border-gray-800 hover:bg-gray-800 text-gray-400 hover:text-white transition"
                     title="Actualizar Logs"
@@ -1298,9 +1298,9 @@ export default function IntegracionesView() {
                             </span>
                             <span className="text-gray-500 text-[9px]">{new Date(log.timestamp).toLocaleTimeString()}</span>
                           </div>
-                          
+
                           <p className="text-gray-300 font-sans font-bold leading-relaxed">{log.summary}</p>
-                          
+
                           <div className="bg-[#050505] p-2.5 rounded border border-gray-900 text-[9px] text-gray-400 overflow-x-auto select-all max-h-[150px]">
                             <pre>{JSON.stringify(log.payload, null, 2)}</pre>
                           </div>
@@ -1423,7 +1423,7 @@ export default function IntegracionesView() {
 
           {/* Configuration & Diagnostics Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            
+
             {/* Left Column: Diagnostics & Environment Info */}
             <div className="lg:col-span-6 space-y-4">
               <div className="bg-[#0d0d0d] border border-gray-800 rounded-2xl p-5 space-y-4">
@@ -1462,7 +1462,7 @@ export default function IntegracionesView() {
 
                   <div className="flex items-center justify-between p-3 rounded-xl bg-[#050505] border border-gray-800">
                     <span className="text-gray-400">Dominio de Producción Cloud Run:</span>
-                    <span className="font-mono text-gold text-[11px]">https://expert360.ai.studio</span>
+                    <span className="font-mono text-gold text-[11px]">https://crm.xorbit360.com</span>
                   </div>
                 </div>
 
@@ -1545,7 +1545,7 @@ export default function IntegracionesView() {
                   <h4 className="text-xs font-bold uppercase tracking-wider">Persistencia Permanente en Producción</h4>
                 </div>
                 <p className="text-xs text-gray-400 leading-relaxed">
-                  Cada vez que guardas configuraciones, agregas una regla de chatbot o actualizas credenciales, el backend actualiza automáticamente la fila en Supabase. Al desplegar una nueva versión en Cloud Run (<code className="text-emerald-400">https://expert360.ai.studio</code>), los datos se cargan al instante sin pérdidas.
+                  Cada vez que guardas configuraciones, agregas una regla de chatbot o actualizas credenciales, el backend actualiza automáticamente la fila en Supabase. Al desplegar una nueva versión en Cloud Run (<code className="text-emerald-400">https://crm.xorbit360.com</code>), los datos se cargan al instante sin pérdidas.
                 </p>
               </div>
             </div>

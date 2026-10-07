@@ -45,7 +45,7 @@ export default function FidelizacionView() {
              <Plus size={14} /> Nueva Regla
            </button>
         </div>
-        
+
         <div className="space-y-3">
            <div className="bg-gray-900 p-4 rounded-lg border border-gray-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
@@ -61,7 +61,7 @@ export default function FidelizacionView() {
                  <button className="text-xs text-gold hover:underline">Editar</button>
               </div>
            </div>
-           
+
            <div className="bg-gray-900 p-4 rounded-lg border border-gray-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                  <p className="font-bold text-sm text-white flex items-center gap-2">

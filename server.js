@@ -1268,7 +1268,7 @@ function setupZernioRoutes(app, onIncomingMessage) {
     const protocol = req.headers["x-forwarded-proto"] || req.protocol;
     const host = req.headers["x-forwarded-host"] || req.get("host");
     const dynamicUrl = `${protocol}://${host}/api/zernio/webhook`;
-    const defaultUrl = process.env.APP_BASE_URL ? `${process.env.APP_BASE_URL.replace(/\/+$/, "")}/api/zernio/webhook` : "https://expert360.ai.studio/api/zernio/webhook";
+    const defaultUrl = process.env.APP_BASE_URL ? `${process.env.APP_BASE_URL.replace(/\/+$/, "")}/api/zernio/webhook` : "https://crm.xorbit360.com/api/zernio/webhook";
     const targetUrl = req.body.url || defaultUrl || dynamicUrl;
     const result = await registerOrUpdateZernioWebhook(targetUrl, req.body.name);
     res.json(result);
@@ -1345,7 +1345,7 @@ var BOLD_PRODUCTION_CONFIG = {
   apiKey: process.env.BOLD_API_KEY || "l_5Wz-8KQmld8Vb_iyy05KWBQ0A3zz5LOtAgMmCjfbk",
   secretKey: process.env.BOLD_SECRET_KEY || "53nBWst7REiVw9So1Zf5aQ",
   checkoutUrl: "https://checkout.bold.co",
-  webhookUrl: "https://expert360.ai.studio/api/integrations/bold/webhook",
+  webhookUrl: "https://crm.xorbit360.com/api/integrations/bold/webhook",
   environment: "production"
 };
 var inMemoryTransactions = /* @__PURE__ */ new Map();
@@ -1884,7 +1884,7 @@ async function getMediaBuffer(url) {
 }
 var DEFAULT_EVOLUTION_API_URL = process.env.EVOLUTION_API_URL || "https://whatsapp.xorbit360.com";
 var DEFAULT_EVOLUTION_API_KEY = process.env.EVOLUTION_API_KEY || "06mqaBYA1qN3PA9LejyAUe8YHG3A0YWh";
-var DEFAULT_EVOLUTION_WEBHOOK_BASE = "https://expert360.ai.studio";
+var DEFAULT_EVOLUTION_WEBHOOK_BASE = "https://crm.xorbit360.com";
 function getEvolutionConfig() {
   const dbUrl = typeof currentDB !== "undefined" && currentDB.evolutionApiUrl ? currentDB.evolutionApiUrl : "";
   const dbKey = typeof currentDB !== "undefined" && currentDB.evolutionApiKey ? currentDB.evolutionApiKey : "";
@@ -1951,7 +1951,7 @@ async function ensureEvolutionInstance(instanceName, number, qrcode = true) {
 async function setupEvolutionWebhook(instanceName, appHostUrl) {
   try {
     const evoConfig = getEvolutionConfig();
-    const cleanHost = (appHostUrl || evoConfig.webhookBaseUrl || "https://expert360.ai.studio").replace(/\/+$/, "");
+    const cleanHost = (appHostUrl || evoConfig.webhookBaseUrl || "https://crm.xorbit360.com").replace(/\/+$/, "");
     const webhookUrl = `${cleanHost}/api/whatsapp/evolution-webhook`;
     const encoded = encodeURIComponent(instanceName);
     const res = await evolutionRequest(`/webhook/set/${encoded}`, {
@@ -2869,12 +2869,12 @@ async function createServer() {
       }
       const normUser = String(username).trim().toLowerCase();
       const pass = String(password).trim();
-      if ((normUser === "admin" || normUser === "oscar@expert360.ai") && pass === "Colombia1") {
+      if ((normUser === "admin" || normUser === "admin@xorbit360.com") && pass === "Colombia1") {
         return res.json({
           success: true,
           user: {
             name: "Oscar Molina",
-            email: "oscar@expert360.ai",
+            email: "admin@xorbit360.com",
             role: "superadmin",
             username: "admin",
             phone: "573192392853",
@@ -2927,7 +2927,7 @@ async function createServer() {
         return res.status(400).json({ success: false, error: "Correo de Google no proporcionado." });
       }
       const normEmail = String(email).trim().toLowerCase();
-      if (normEmail === "oscar@expert360.ai" || normEmail === "admin@xorbit360.com") {
+      if (normEmail === "admin@xorbit360.com" || normEmail === "admin@xorbit360.com") {
         return res.json({
           success: true,
           user: {
@@ -3093,7 +3093,7 @@ async function createServer() {
         saveDBData(currentDB);
       }
       const evoConfig = getEvolutionConfig();
-      const cleanHost = (customBaseUrl || evoConfig.webhookBaseUrl || "https://expert360.ai.studio").replace(/\/+$/, "");
+      const cleanHost = (customBaseUrl || evoConfig.webhookBaseUrl || "https://crm.xorbit360.com").replace(/\/+$/, "");
       const fullWebhook = `${cleanHost}/api/whatsapp/evolution-webhook`;
       const listRes = await evolutionRequest("/instance/fetchInstances", { timeoutMs: 6e3 });
       const results = [];
@@ -3577,9 +3577,9 @@ async function createServer() {
         }
       }
       const isApex = !isSubdomain;
-      const targetCname = "cname.expert360.live";
+      const targetCname = "crm.xorbit360.com";
       const appHost = req.headers.host || "";
-      const targetMatch = !!cnameFound && (cnameFound.toLowerCase().includes("expert360") || cnameFound.toLowerCase().includes("run.app") || cnameFound.toLowerCase() === targetCname || appHost && cnameFound.toLowerCase().includes(appHost.split(":")[0]));
+      const targetMatch = !!cnameFound && (cnameFound.toLowerCase().includes('xorbit360') || cnameFound.toLowerCase().includes("run.app") || cnameFound.toLowerCase() === targetCname || appHost && cnameFound.toLowerCase().includes(appHost.split(":")[0]));
       const hasA = recordsFound.some((r) => r.startsWith("A:"));
       const isConfigured = isSubdomain ? targetMatch || recordsFound.length > 0 : hasA || recordsFound.length > 0;
       res.json({
@@ -3911,7 +3911,7 @@ async function createServer() {
       const {
         amount,
         currency = "COP",
-        description = "Recarga Saldo Expert 360 AI",
+        description = "Recarga Saldo Xorbit 360 AI",
         orderId = `REC-BOLD-${Date.now()}`,
         apiKey = "l_5Wz-8KQmld8Vb_iyy05KWBQ0A3zz5LOtagMmCjfbk",
         secretKey = "53nBWst7REiVw9So1Zf5aQ",
@@ -3963,7 +3963,7 @@ async function createServer() {
     if (req.method === "GET") {
       return res.status(200).json({
         status: "active",
-        service: "Comunidad Expert 360 Dropi Webhook Service",
+        service: "Xorbit 360 Dropi Webhook Service",
         ready: true,
         timestamp: (/* @__PURE__ */ new Date()).toISOString()
       });
@@ -6347,7 +6347,7 @@ ${currentDB.products.map((p) => `- ${p.name}: ${p.stock > 0 ? p.stock + " dispon
               return res.json({
                 success: true,
                 realCreated: false,
-                info: "No se pudo crear en Meta directamente (ver error). Se cre\xF3 de manera local en Expert 360\xB0.",
+                info: "No se pudo crear en Meta directamente (ver error). Se cre\xF3 de manera local en Xorbit 360.",
                 metaError: fbResult.error,
                 campaign: newCamp
               });
@@ -7291,7 +7291,7 @@ ${currentDB.products.map((p) => `- ${p.name}: ${p.stock > 0 ? p.stock + " dispon
               </div>
               <div class="space-y-1">
                 <h2 class="font-bold text-gray-100 text-lg">Sincronizar TikTok Ads</h2>
-                <p class="text-xs text-gray-400">Permite que Expert 360\xB0 acceda de forma segura a tus leads de Lead Generation instant forms y recupere informes publicitarios de TikTok.</p>
+                <p class="text-xs text-gray-400">Permite que Xorbit 360 acceda de forma segura a tus leads de Lead Generation instant forms y recupere informes publicitarios de TikTok.</p>
               </div>
             </div>
 
@@ -7546,7 +7546,7 @@ ${currentDB.products.map((p) => `- ${p.name}: ${p.stock > 0 ? p.stock + " dispon
             const invoiceId = param.substring(4);
             const invoice = currentDB.telegramInvoices ? currentDB.telegramInvoices[invoiceId] : null;
             if (invoice) {
-              const messageText = `\u{1F4E6} *FACTURA ENCONTRADA EN EXPERT360*
+              const messageText = `\u{1F4E6} *FACTURA ENCONTRADA EN XORBIT 360*
 
 \u{1F4B3} *Plan:* _${invoice.planName}_
 \u{1F4B0} *Monto:* _$${invoice.planValue} USD_
@@ -7569,7 +7569,7 @@ La referencia de pago \`${invoiceId}\` no pudo ser localizada en la base de dato
             }
           } else if (param.startsWith("ref_")) {
             const refereeWallet = param.substring(4);
-            const messageText = `\u{1F44B} *\xA1BIENVENIDO A EXPERT360!*
+            const messageText = `\u{1F44B} *\xA1BIENVENIDO A XORBIT 360!*
 
 \u{1F517} Has sido referido mediante el Smart Contract de Telegram por el sponsor:
 \`${refereeWallet}\`
@@ -7577,7 +7577,7 @@ La referencia de pago \`${invoiceId}\` no pudo ser localizada en la base de dato
 \xA1Felicidades! Ahora est\xE1s conectado a su red. Puedes proceder a activar tu suscripci\xF3n desde la plataforma y armar tu propia red Droshipper.`;
             await sendTelegramMessage(token, chatId, messageText);
           } else {
-            const messageText = `\u{1F44B} *\xA1HOLA! BIENVENIDO AL ASISTENTE DE EXPERT360 Y COMUNIDAD DROSHIPPER*
+            const messageText = `\u{1F44B} *\xA1HOLA! BIENVENIDO AL ASISTENTE DE XORBIT 360 Y COMUNIDAD DROSHIPPER*
 
 Este bot permite procesar pagos y referidos on-chain de manera descentralizada con USDT/TON.
 
@@ -7710,7 +7710,7 @@ Este bot permite procesar pagos y referidos on-chain de manera descentralizada c
 \xA1Gracias por tu pago! Ya puedes ver tu estado activo en la plataforma principal.`;
             await sendTelegramMessage(token, chatId, successMessage);
             await answerTelegramCallback(token, callbackId, "\xA1Pago verificado y procesado con \xE9xito!");
-            await editTelegramMessage(token, chatId, messageId, `\u{1F4E6} *FACTURA PAGADA - EXPERT360*
+            await editTelegramMessage(token, chatId, messageId, `\u{1F4E6} *FACTURA PAGADA - XORBIT 360*
 
 \u{1F4B3} *Plan:* _${invoice.planName}_
 \u{1F4B0} *Monto:* _$${invoice.planValue} USD_

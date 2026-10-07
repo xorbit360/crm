@@ -100,7 +100,7 @@ export default function App() {
     currentQuestionIdx: number;
     answers: { [qId: string]: string };
   } | null>(null);
-  
+
   const [user, setUser] = useState<{name: string, role: string, email: string, plan?: string, username?: string, phone?: string} | null>(() => {
     try {
       const searchParams = new URLSearchParams(window.location.search);
@@ -160,7 +160,7 @@ export default function App() {
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['herramientas', 'configuracion']);
 
   const toggleGroup = (groupName: string) => {
-    setExpandedGroups(prev => 
+    setExpandedGroups(prev =>
       prev.includes(groupName) ? prev.filter(g => g !== groupName) : [...prev, groupName]
     );
   };
@@ -185,7 +185,7 @@ export default function App() {
       } else if (niche === 'Hotel / Hospedaje') {
         newHidden.push('pedidos', 'catalogo');
       }
-      
+
       // Only update if there's an actual difference to prevent infinite loops
       if (currentHidden.length === newHidden.length && currentHidden.every(v => newHidden.includes(v))) {
         return prev;
@@ -208,7 +208,7 @@ export default function App() {
     marketInsights: [],
     contents: []
   });
-  
+
 type ChatMessage = {
   role: 'user'|'assistant';
   text: string;
@@ -221,7 +221,7 @@ type ChatMessage = {
 };
 
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    { role: 'assistant', text: '¡Hola! Soy tu Agente Expert 360°, tu Mentor & Copiloto IA. 🚀\n\nEstoy aquí para ayudarte a configurar y escalar tu negocio paso a paso. ¿Qué quieres configurar o lanzar hoy?\n\n• "Quiero configurar mi Bot de WhatsApp para automatizar respuestas"\n• "Ayúdame a estructurar una Landing Page de ventas"\n• "Lanzar campaña en Meta Ads"' }
+    { role: 'assistant', text: '¡Hola! Soy tu Agente Xorbit 360, tu Mentor & Copiloto IA. 🚀\n\nEstoy aquí para ayudarte a configurar y escalar tu negocio paso a paso. ¿Qué quieres configurar o lanzar hoy?\n\n• "Quiero configurar mi Bot de WhatsApp para automatizar respuestas"\n• "Ayúdame a estructurar una Landing Page de ventas"\n• "Lanzar campaña en Meta Ads"' }
   ]);
   const [chatInput, setChatInput] = useState('');
   const [pendingAttachment, setPendingAttachment] = useState<ChatMessage['attachment'] | undefined>(undefined);
@@ -237,7 +237,7 @@ type ChatMessage = {
       recognition.continuous = false;
       recognition.lang = 'es-ES';
       recognition.interimResults = false;
-      
+
       recognition.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
         setChatInput(transcript);
@@ -245,11 +245,11 @@ type ChatMessage = {
         // Process the transcript directly
         processVoiceCommand(transcript);
       };
-      
+
       recognition.onend = () => {
         setIsListening(false);
       };
-      
+
       recognitionRef.current = recognition;
     }
   }, []);
@@ -283,7 +283,7 @@ type ChatMessage = {
           return { module: activeModule, response: '✅ ¡Hecho! He vuelto a activar el módulo de **Llamadas e IA de Voz** en tu barra lateral.' };
         }
       }
-      
+
       if (lowerInput.includes('configurar negocio') || lowerInput.includes('personalizar negocio') || lowerInput.includes('propósito') || lowerInput.includes('tipo de negocio')) {
         return { module: activeModule, response: 'Iniciando asistente de configuración de negocio...', formType: 'business' };
       }
@@ -297,27 +297,27 @@ type ChatMessage = {
       }
 
       const foundModule = allModules.find(m => lowerInput.includes(m.label.toLowerCase()));
-      
+
       if (foundModule) {
           return { module: foundModule.id, response: `¡Claro! Te llevo al módulo de ${foundModule.label}.` };
-      } 
-      
+      }
+
       if (lowerInput.includes('automatizar') || lowerInput.includes('flujo') || lowerInput.includes('tarea')) {
           return { module: 'automatizaciones', response: 'Vamos al módulo de Automatizaciones para configurar tus flujos.' };
-      } 
-      
+      }
+
       if (lowerInput.includes('whatsapp') || lowerInput.includes('chatbot') || lowerInput.includes('bot')) {
           return { module: 'whatsapp', response: 'Llevándote al módulo de WhatsApp Bot para configurar tus reglas y prompts.' };
-      } 
-      
+      }
+
       if (lowerInput.includes('landing') || lowerInput.includes('página')) {
           return { module: 'landing', response: 'Llevándote al constructor de Landing Pages.' };
-      } 
-      
+      }
+
       if (lowerInput.includes('contenido') || lowerInput.includes('publicación')) {
           return { module: 'contenido', response: 'Vamos a crear contenido increíble en el módulo de Contenido.' };
       }
-      
+
       if (lowerInput.includes('video') || lowerInput.includes('editar')) {
           return { module: 'contenido', response: 'Llevándote al Editor de Video.' };
       }
@@ -337,10 +337,10 @@ type ChatMessage = {
     const { module: nextModule, response: aiResponseText, formType } = getNextModule(text);
 
     setChatMessages(prev => [...prev, {
-       role: 'user', 
+       role: 'user',
        text: text
     }, {
-       role: 'assistant', 
+       role: 'assistant',
        text: aiResponseText,
        isSetupForm: formType
     }]);
@@ -404,13 +404,13 @@ type ChatMessage = {
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim() && !pendingAttachment) return;
-    
+
     const userMsgText = chatInput;
     const newChat: ChatMessage[] = [...chatMessages, { role: 'user' as const, text: userMsgText, attachment: pendingAttachment }];
     setChatMessages(newChat);
     setChatInput('');
     setPendingAttachment(undefined);
-    
+
     // Simulate AI thinking and filling modules or processing multi-recommender questionnaire
     setTimeout(() => {
       // 1. Is there an active recommender questionnaire session?
@@ -420,38 +420,38 @@ type ChatMessage = {
         if (storedRecs) {
           try { recommendersList = JSON.parse(storedRecs); } catch(err) {}
         }
-        
+
         const rec = recommendersList.find(r => r.id === recommenderChatSession.recommenderId);
         if (rec && rec.questions && rec.questions.length > 0) {
           const qIdx = recommenderChatSession.currentQuestionIdx;
           const currentQuestion = rec.questions[qIdx];
           const inputLower = userMsgText.toLowerCase().trim();
-          
+
           // Match input to option
           let matchedOpt = currentQuestion.options.find((opt: any, oIdx: number) => {
             const numStr = (oIdx + 1).toString();
-            return inputLower === numStr || 
-                   inputLower.startsWith(numStr + ".") || 
+            return inputLower === numStr ||
+                   inputLower.startsWith(numStr + ".") ||
                    inputLower.startsWith(numStr + ")") ||
-                   inputLower.includes("opción " + numStr) || 
+                   inputLower.includes("opción " + numStr) ||
                    inputLower.includes("opcion " + numStr);
           });
-          
+
           if (!matchedOpt) {
             matchedOpt = currentQuestion.options.find((opt: any) => {
               const words = opt.text.toLowerCase().replace(/[^a-záéíóúñ\s]/g, '').split(/\s+/).filter((w: string) => w.length > 2);
               return words.some((word: string) => inputLower.includes(word));
             });
           }
-          
+
           if (!matchedOpt) {
             matchedOpt = currentQuestion.options.find((opt: any) => opt.text.toLowerCase().includes(inputLower) || inputLower.includes(opt.text.toLowerCase()));
           }
-          
+
           if (matchedOpt) {
             const newAnswers = { ...recommenderChatSession.answers, [currentQuestion.id]: matchedOpt.id };
             const nextIdx = qIdx + 1;
-            
+
             if (nextIdx < rec.questions.length) {
               // Ask next question
               const nextQuestion = rec.questions[nextIdx];
@@ -460,7 +460,7 @@ type ChatMessage = {
                 currentQuestionIdx: nextIdx,
                 answers: newAnswers
               });
-              
+
               setChatMessages(prev => [...prev, {
                 role: 'assistant',
                 text: `¡Entendido! Selección registrada: **"${matchedOpt.text}"**.\n\nSiguiente pregunta:\n\n👉 **${nextQuestion.text}**\n\nResponde indicando el número:\n${nextQuestion.options.map((opt: any, oIdx: number) => `${oIdx + 1}. **${opt.text}**`).join('\n')}`
@@ -468,7 +468,7 @@ type ChatMessage = {
             } else {
               // End of session! Evaluate rule
               setRecommenderChatSession(null);
-              
+
               let matchedProduct: any = null;
               let isExactMatch = false;
               for (const rule of rec.rules) {
@@ -489,7 +489,7 @@ type ChatMessage = {
                   break;
                 }
               }
-              
+
               if (isExactMatch && matchedProduct) {
                 setChatMessages(prev => [...prev, {
                   role: 'assistant',
@@ -525,14 +525,14 @@ type ChatMessage = {
           });
         } catch(err) {}
       }
-      
+
       if (matchedRec && matchedRec.questions && matchedRec.questions.length > 0) {
         setRecommenderChatSession({
           recommenderId: matchedRec.id,
           currentQuestionIdx: 0,
           answers: {}
         });
-        
+
         setChatMessages(prev => [...prev, {
           role: 'assistant',
           text: `👋 ¡Hola! He detectado tu interés en **${matchedRec.name}**.\n\nPara asesorarte de manera experta y recomendarte la variante ideal del inventario, por favor responde esta primera pregunta:\n\n👉 **${matchedRec.questions[0].text}**\n\nResponde con el número de tu opción (ej. **1**):\n${matchedRec.questions[0].options.map((opt: any, oIdx: number) => `${oIdx + 1}. **${opt.text}**`).join('\n')}`
@@ -543,7 +543,7 @@ type ChatMessage = {
       // 3. Fallback to normal navigation / assistance
       const { module: nextModule, response: aiResponseText, formType } = getNextModule(userMsgText);
       setChatMessages(prev => [...prev, {
-         role: 'assistant', 
+         role: 'assistant',
          text: aiResponseText,
          isSetupForm: formType
       }]);
@@ -561,14 +561,14 @@ type ChatMessage = {
 
   if (!user || currentView === 'login') {
     return (
-      <LoginView 
-        onLogin={(loggedInUser) => { 
-          setUser(loggedInUser); 
-          setCurrentView('app'); 
-        }} 
+      <LoginView
+        onLogin={(loggedInUser) => {
+          setUser(loggedInUser);
+          setCurrentView('app');
+        }}
         onGoToRegister={() => {
           window.open('https://xorbit360.com', '_blank');
-        }} 
+        }}
       />
     );
   }
@@ -577,38 +577,38 @@ type ChatMessage = {
     const searchParams = new URLSearchParams(window.location.search);
     const initialRef = searchParams.get('ref') || '';
     return (
-      <RegisterView 
+      <RegisterView
         initialReferral={initialRef}
-        onRegisterSuccess={(registeredUser) => { 
-          setUser(registeredUser); 
-          setCurrentView('app'); 
-          setActiveModule('dashboard'); if (window.innerWidth < 768) setIsSidebarOpen(false); 
-        }} 
-        onGoToLogin={() => setCurrentView('login')} 
+        onRegisterSuccess={(registeredUser) => {
+          setUser(registeredUser);
+          setCurrentView('app');
+          setActiveModule('dashboard'); if (window.innerWidth < 768) setIsSidebarOpen(false);
+        }}
+        onGoToLogin={() => setCurrentView('login')}
       />
     );
   }
 
   return (
     <div className="flex h-screen bg-black text-gray-100 overflow-hidden font-sans">
-      
+
       {/* Sidebar Mobile Backdrop */}
       {isSidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-20 md:hidden" 
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-20 md:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <aside className={`fixed z-30 md:relative flex-shrink-0 w-64 h-full panel border-r transition-all duration-300 ${isSidebarOpen ? 'translate-x-0 md:ml-0' : '-translate-x-full md:-ml-64'} flex flex-col`}>
-        <div className="p-6 border-b border-gray-800 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2.5 overflow-hidden flex-1 mr-2">
+        <div className="p-4 border-b border-gray-800 flex items-center justify-between gap-2 shrink-0">
+          <div className="flex items-center gap-2 overflow-hidden flex-1 min-w-0">
             {whiteLabel.logoUrl ? (
-              <img 
-                src={whiteLabel.logoUrl} 
-                alt="Logo" 
-                className="w-8 h-8 rounded object-contain bg-black/40 border border-gold/30 p-0.5 shrink-0 shadow-md shadow-gold/10" 
+              <img
+                src={whiteLabel.logoUrl}
+                alt="Logo"
+                className="w-8 h-8 rounded object-contain bg-black/40 border border-gold/30 p-0.5 shrink-0 shadow-md shadow-gold/10"
               />
             ) : (
               <div className="w-8 h-8 rounded bg-gold flex items-center justify-center font-bold text-black font-display shadow-lg shadow-gold/20 shrink-0">
@@ -616,8 +616,8 @@ type ChatMessage = {
               </div>
             )}
             <div className="overflow-hidden min-w-0">
-              <h1 className="font-bold text-base text-gold leading-tight truncate">
-                {whiteLabel.brandName || 'Expert 360°'}
+              <h1 className="font-bold text-sm text-gold leading-tight whitespace-nowrap">
+                {whiteLabel.brandName || 'Xorbit 360'}
               </h1>
               <p className="text-[10px] text-gray-500 uppercase tracking-widest truncate">
                 {whiteLabel.tagline || 'Marketing & Ventas AI'}
@@ -625,12 +625,12 @@ type ChatMessage = {
             </div>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
-            <button className="text-gray-400 hover:text-white text-xs font-semibold px-2 py-1 rounded-lg hover:bg-gray-800 transition" onClick={() => setIsEditingSidebar(!isEditingSidebar)}>
+            <button className="text-gray-400 hover:text-white text-[10px] font-semibold px-1 py-1 rounded-lg hover:bg-gray-800 transition" onClick={() => setIsEditingSidebar(!isEditingSidebar)}>
               {isEditingSidebar ? 'Guardar' : 'Editar'}
             </button>
-            <button 
-              type="button" 
-              className="text-gray-400 hover:text-white p-1.5 rounded-lg bg-gray-900 hover:bg-gray-800 border border-gray-800 transition cursor-pointer flex items-center justify-center" 
+            <button
+              type="button"
+              className="text-gray-400 hover:text-white p-1.5 rounded-lg bg-gray-900 hover:bg-gray-800 border border-gray-800 transition cursor-pointer flex items-center justify-center"
               onClick={() => setIsSidebarOpen(false)}
               title="Ocultar menú lateral"
             >
@@ -638,12 +638,12 @@ type ChatMessage = {
             </button>
           </div>
         </div>
-        
+
         <nav className="p-4 space-y-2 flex-1 overflow-y-auto scrollbar-none">
           <div className="space-y-4">
             <div className="space-y-2">
               {!isInsideTool && (
-                <button 
+                <button
                   onClick={() => {
                     setActiveModule('dashboard'); if (window.innerWidth < 768) setIsSidebarOpen(false);
                   }}
@@ -654,7 +654,7 @@ type ChatMessage = {
               )}
 
               {isInsideTool ? (
-                <button 
+                <button
                   onClick={() => {
                     setActiveModule('herramientas');
                     if (window.innerWidth < 768) setIsSidebarOpen(false);
@@ -670,7 +670,7 @@ type ChatMessage = {
               ) : (
                 <>
                   {/* Group 1: Herramientas */}
-                  <button 
+                  <button
                     onClick={() => {
                       setActiveModule('herramientas');
                       if (window.innerWidth < 768) setIsSidebarOpen(false);
@@ -681,7 +681,7 @@ type ChatMessage = {
                         : 'text-gray-400 hover:bg-gray-900/60 hover:text-gray-200 border border-transparent'
                     }`}
                   >
-                    <Bot size={18} className="text-gold" /> 
+                    <Bot size={18} className="text-gold" />
                     <span className="flex-1 text-left font-bold">Herramientas</span>
                     <ChevronRight size={14} className="text-gray-500" />
                   </button>
@@ -719,12 +719,12 @@ type ChatMessage = {
                           <span className="flex items-center gap-3 truncate">{tab.icon} {tab.label}</span>
                         </button>
                         {isEditingSidebar && (
-                          <button 
+                          <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               toggleVisibility(tab.id);
-                            }} 
+                            }}
                             className="absolute right-2 p-1 text-red-500 hover:text-red-400 cursor-pointer z-10"
                             title="Ocultar"
                           >
@@ -758,12 +758,12 @@ type ChatMessage = {
                           <span className="flex items-center gap-3 truncate">{tab.icon} {tab.label}</span>
                         </button>
                         {isEditingSidebar && (
-                          <button 
+                          <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               toggleVisibility(tab.id);
-                            }} 
+                            }}
                             className="absolute right-2 p-1 text-red-500 hover:text-red-400 cursor-pointer z-10"
                             title="Ocultar"
                           >
@@ -794,12 +794,12 @@ type ChatMessage = {
                           <span className="flex items-center gap-3 truncate">{tab.icon} {tab.label}</span>
                         </button>
                         {isEditingSidebar && (
-                          <button 
+                          <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               toggleVisibility(tab.id);
-                            }} 
+                            }}
                             className="absolute right-2 p-1 text-red-500 hover:text-red-400 cursor-pointer z-10"
                             title="Ocultar"
                           >
@@ -841,7 +841,7 @@ type ChatMessage = {
                   </div>
                 </div>
               )}
-              
+
               {activeModule === 'branding' && (
                 <div className="pt-2 animate-fade-in space-y-4">
                   <div>
@@ -870,7 +870,7 @@ type ChatMessage = {
                   </div>
                 </div>
               )}
-              
+
               {activeModule === 'mercado' && (
                 <div className="pt-2 animate-fade-in space-y-4">
                   <div>
@@ -902,7 +902,7 @@ type ChatMessage = {
                   </div>
                 </div>
               )}
-              
+
               {activeModule === 'landing' && (
                 <div className="pt-2 animate-fade-in space-y-4">
                   <div>
@@ -929,7 +929,7 @@ type ChatMessage = {
                   </div>
                 </div>
               )}
-              
+
               {activeModule === 'ads' && (
                 <div className="pt-2 animate-fade-in space-y-4">
                   <div>
@@ -956,11 +956,11 @@ type ChatMessage = {
                   </div>
                 </div>
               )}
-              
+
           </div>
           </div>
         </nav>
-        
+
         {!isInsideTool && (
           <div className="p-4 border-t border-gray-800 shrink-0 space-y-2">
             {user && (
@@ -978,7 +978,7 @@ type ChatMessage = {
               </div>
             )}
             <div className="space-y-1">
-              <button 
+              <button
                 onClick={() => {
                   setActiveModule('configuracion_general');
                   if (window.innerWidth < 768) setIsSidebarOpen(false);
@@ -1102,7 +1102,7 @@ type ChatMessage = {
                   />
                   <Search className="absolute left-3 top-3.5 text-gray-500" size={18} />
                 </div>
-                {/* Agente Expert 360° Mentor & Copiloto Banner */}
+                {/* Agente Xorbit 360 Mentor & Copiloto Banner */}
                 <div className="panel p-6 sm:p-8 rounded-2xl relative overflow-hidden bg-gradient-to-r from-gray-900 via-gray-900/90 to-amber-950/25 border border-amber-500/20 shadow-2xl">
                   <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none"></div>
 
@@ -1124,16 +1124,16 @@ type ChatMessage = {
                             <span className="text-[10px] text-emerald-400 font-semibold uppercase">En línea</span>
                           </div>
                           <h3 className="text-2xl font-black text-white mt-1">
-                            ¡Hola! Soy tu Agente Expert 360° 🚀
+                            ¡Hola! Soy tu Agente Xorbit 360 🚀
                           </h3>
                         </div>
                       </div>
 
-                      <button 
-                        onClick={() => setChatOpen(true)} 
+                      <button
+                        onClick={() => setChatOpen(true)}
                         className="px-5 py-3 bg-amber-500 hover:bg-amber-400 text-black font-black text-xs rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 hover:scale-[1.02] cursor-pointer shrink-0"
                       >
-                        <Bot size={18} /> 
+                        <Bot size={18} />
                         <span>Hablar con mi Mentor 360°</span>
                       </button>
                     </div>
@@ -1189,13 +1189,13 @@ type ChatMessage = {
                       {!hiddenItems.includes('branding') && (
                       <button
                         onClick={() => setActiveModule('branding')}
-                        className="p-3 rounded-xl bg-gray-900/80 hover:bg-purple-950/40 border border-purple-500/30 hover:border-purple-500/60 text-purple-400 transition-all text-left flex flex-col justify-between space-y-2 group cursor-pointer shadow-sm"
+                        className="p-3 rounded-xl bg-gray-900/80 hover:bg-blue-950/40 border border-blue-500/30 hover:border-blue-500/60 text-blue-400 transition-all text-left flex flex-col justify-between space-y-2 group cursor-pointer shadow-sm"
                       >
                         <div className="flex items-center justify-between">
-                          <Sparkles size={18} className="text-purple-400 group-hover:scale-110 transition-transform" />
-                          <span className="text-[9px] font-bold uppercase bg-purple-500/20 text-purple-300 px-1.5 py-0.5 rounded">Marca</span>
+                          <Sparkles size={18} className="text-blue-400 group-hover:scale-110 transition-transform" />
+                          <span className="text-[9px] font-bold uppercase bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded">Marca</span>
                         </div>
-                        <span className="text-xs font-bold text-white group-hover:text-purple-300">Diseñar Branding</span>
+                        <span className="text-xs font-bold text-white group-hover:text-blue-300">Diseñar Branding</span>
                       </button>
                       )}
 
@@ -1255,15 +1255,15 @@ type ChatMessage = {
 
                 {dashboardTab === 'metrics' ? (
                   <div className="pt-4">
-                    <DashboardMetrics 
-                      currentUser={user} 
-                      onNavigateToRecargas={() => setActiveModule('recargas')} 
+                    <DashboardMetrics
+                      currentUser={user}
+                      onNavigateToRecargas={() => setActiveModule('recargas')}
                       hiddenItems={hiddenItems}
                     />
                   </div>
                 ) : (
                   <div className="pt-4">
-                    <OrganigramaView 
+                    <OrganigramaView
                       onNavigateModule={(mId) => setActiveModule(mId as any)}
                       onNavigateWhatsappTab={(tabId) => {
                         setActiveWhatsappTab(tabId);
@@ -1276,21 +1276,21 @@ type ChatMessage = {
 
               </div>
             )}
-            
+
             {activeModule === 'branding' && <BrandingView activeTab={activeBrandingTab} />}
             {activeModule === 'mercado' && <MercadoView activeTab={activeMercadoTab} />}
             {activeModule === 'contenido' && (
-              <ContenidoView 
-                activeTab={activeContenidoTab} 
-                setActiveTab={(tab: string) => setActiveContenidoTab(tab as any)} 
+              <ContenidoView
+                activeTab={activeContenidoTab}
+                setActiveTab={(tab: string) => setActiveContenidoTab(tab as any)}
               />
             )}
             {activeModule === 'landing' && <LandingView activeTab={activeLandingTab} />}
             {activeModule === 'ads' && <AdsView activeTab={activeAdsTab} onNavigate={(mId) => setActiveModule(mId as any)} />}
             {activeModule === 'live_selling' && <LiveSellingView />}
             {activeModule === 'whatsapp' && (
-              <WhatsappView 
-                activeTab={activeWhatsappTab} 
+              <WhatsappView
+                activeTab={activeWhatsappTab}
                 onNicheChange={handleNicheChange}
                 currentUser={user}
                 isSidebarOpen={isSidebarOpen}
@@ -1303,10 +1303,10 @@ type ChatMessage = {
             {activeModule === 'entrenamiento' && <EntrenamientoView onOpenSidebar={() => setIsSidebarOpen(true)} />}
             {activeModule === 'proveedores' && <ProveedoresView />}
             {activeModule === 'automatizaciones' && (
-              <ConfiguracionGeneralView 
-                currentLanguage={language} 
-                onLanguageChange={setLanguage} 
-                currentTheme={theme} 
+              <ConfiguracionGeneralView
+                currentLanguage={language}
+                onLanguageChange={setLanguage}
+                currentTheme={theme}
                 onThemeChange={setTheme}
                 hiddenItems={hiddenItems}
                 toggleVisibility={toggleVisibility}
@@ -1314,10 +1314,10 @@ type ChatMessage = {
               />
             )}
             {activeModule === 'integraciones' && (
-              <ConfiguracionGeneralView 
-                currentLanguage={language} 
-                onLanguageChange={setLanguage} 
-                currentTheme={theme} 
+              <ConfiguracionGeneralView
+                currentLanguage={language}
+                onLanguageChange={setLanguage}
+                currentTheme={theme}
                 onThemeChange={setTheme}
                 hiddenItems={hiddenItems}
                 toggleVisibility={toggleVisibility}
@@ -1325,10 +1325,10 @@ type ChatMessage = {
               />
             )}
             {activeModule === 'usuarios' && (
-              <ConfiguracionGeneralView 
-                currentLanguage={language} 
-                onLanguageChange={setLanguage} 
-                currentTheme={theme} 
+              <ConfiguracionGeneralView
+                currentLanguage={language}
+                onLanguageChange={setLanguage}
+                currentTheme={theme}
                 onThemeChange={setTheme}
                 hiddenItems={hiddenItems}
                 toggleVisibility={toggleVisibility}
@@ -1336,10 +1336,10 @@ type ChatMessage = {
               />
             )}
             {activeModule === 'recargas' && (
-              <ConfiguracionGeneralView 
-                currentLanguage={language} 
-                onLanguageChange={setLanguage} 
-                currentTheme={theme} 
+              <ConfiguracionGeneralView
+                currentLanguage={language}
+                onLanguageChange={setLanguage}
+                currentTheme={theme}
                 onThemeChange={setTheme}
                 hiddenItems={hiddenItems}
                 toggleVisibility={toggleVisibility}
@@ -1347,10 +1347,10 @@ type ChatMessage = {
               />
             )}
             {activeModule === 'referidos' && (
-              <ConfiguracionGeneralView 
-                currentLanguage={language} 
-                onLanguageChange={setLanguage} 
-                currentTheme={theme} 
+              <ConfiguracionGeneralView
+                currentLanguage={language}
+                onLanguageChange={setLanguage}
+                currentTheme={theme}
                 onThemeChange={setTheme}
                 hiddenItems={hiddenItems}
                 toggleVisibility={toggleVisibility}
@@ -1359,10 +1359,10 @@ type ChatMessage = {
               />
             )}
             {activeModule === 'dominio' && (
-              <ConfiguracionGeneralView 
-                currentLanguage={language} 
-                onLanguageChange={setLanguage} 
-                currentTheme={theme} 
+              <ConfiguracionGeneralView
+                currentLanguage={language}
+                onLanguageChange={setLanguage}
+                currentTheme={theme}
                 onThemeChange={setTheme}
                 hiddenItems={hiddenItems}
                 toggleVisibility={toggleVisibility}
@@ -1370,10 +1370,10 @@ type ChatMessage = {
               />
             )}
             {activeModule === 'mcp_api' && (
-              <ConfiguracionGeneralView 
-                currentLanguage={language} 
-                onLanguageChange={setLanguage} 
-                currentTheme={theme} 
+              <ConfiguracionGeneralView
+                currentLanguage={language}
+                onLanguageChange={setLanguage}
+                currentTheme={theme}
                 onThemeChange={setTheme}
                 hiddenItems={hiddenItems}
                 toggleVisibility={toggleVisibility}
@@ -1381,7 +1381,7 @@ type ChatMessage = {
               />
             )}
             {activeModule === 'herramientas' && (
-              <HerramientasTarjetasView 
+              <HerramientasTarjetasView
                 onSelectTool={(toolId) => {
                   setActiveModule(toolId as any);
                   if (window.innerWidth < 768) setIsSidebarOpen(false);
@@ -1390,10 +1390,10 @@ type ChatMessage = {
               />
             )}
             {activeModule === 'proyectos' && (
-              <ConfiguracionGeneralView 
-                currentLanguage={language} 
-                onLanguageChange={setLanguage} 
-                currentTheme={theme} 
+              <ConfiguracionGeneralView
+                currentLanguage={language}
+                onLanguageChange={setLanguage}
+                currentTheme={theme}
                 onThemeChange={setTheme}
                 hiddenItems={hiddenItems}
                 toggleVisibility={toggleVisibility}
@@ -1401,10 +1401,10 @@ type ChatMessage = {
               />
             )}
             {activeModule === 'configuracion_general' && (
-              <ConfiguracionGeneralView 
-                currentLanguage={language} 
-                onLanguageChange={setLanguage} 
-                currentTheme={theme} 
+              <ConfiguracionGeneralView
+                currentLanguage={language}
+                onLanguageChange={setLanguage}
+                currentTheme={theme}
                 onThemeChange={setTheme}
                 hiddenItems={hiddenItems}
                 toggleVisibility={toggleVisibility}
@@ -1414,7 +1414,7 @@ type ChatMessage = {
           </div>
         </div>
       </main>
-      
+
       {/* Integrated Chatbot Panel */}
       <aside className={`fixed right-0 top-0 h-full w-full sm:w-80 panel border-l z-30 transform transition-transform duration-300 ease-out flex flex-col ${chatOpen ? 'translate-x-0 shadow-2xl' : 'translate-x-full'}`}>
         <div className="p-4 border-b border-gray-800 flex items-center justify-between bg-black shrink-0 relative overflow-hidden">
@@ -1424,7 +1424,7 @@ type ChatMessage = {
               <Bot size={18} />
             </div>
             <div>
-              <h3 className="font-bold text-sm text-white">Agente Expert 360°</h3>
+              <h3 className="font-bold text-sm text-white">Agente Xorbit 360</h3>
               <p className="text-[10px] text-amber-400 font-semibold uppercase tracking-wider">Mentor & Copiloto IA</p>
             </div>
           </div>
@@ -1432,13 +1432,13 @@ type ChatMessage = {
             <X size={18} />
           </button>
         </div>
-        
+
         <div className="flex-1 overflow-y-auto p-4 space-y-5 bg-[#0a0a0a]">
           {chatMessages.map((msg, i) => (
             <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[85%] p-3.5 text-sm leading-relaxed shadow-sm ${
-                msg.role === 'user' 
-                  ? 'bg-gold text-black rounded-2xl rounded-tr-sm font-medium' 
+                msg.role === 'user'
+                  ? 'bg-gold text-black rounded-2xl rounded-tr-sm font-medium'
                   : 'bg-[#1a1a1a] text-gray-200 rounded-2xl rounded-tl-sm border border-gray-800'
               }`}>
                 {msg.attachment && (
@@ -1476,7 +1476,7 @@ type ChatMessage = {
             </div>
           ))}
         </div>
-        
+
         <div className="p-4 border-t border-gray-800 bg-[#0d0d0d] shrink-0">
           {pendingAttachment && (
             <div className="mb-3 p-2 bg-[#1a1a1a] border border-gray-800 rounded-lg flex items-center justify-between">
@@ -1487,8 +1487,8 @@ type ChatMessage = {
                 {pendingAttachment.type === 'document' && <Paperclip size={14} />}
                 <span className="truncate">{pendingAttachment.name}</span>
               </div>
-              <button 
-                onClick={() => setPendingAttachment(undefined)} 
+              <button
+                onClick={() => setPendingAttachment(undefined)}
                 className="text-gray-500 hover:text-red-400 p-1"
               >
                 <X size={14} />
@@ -1496,39 +1496,39 @@ type ChatMessage = {
             </div>
           )}
           <form onSubmit={handleSendMessage} className="relative">
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              className="hidden" 
-              accept="image/*,video/*,audio/*,.pdf,.doc,.docx" 
-              onChange={handleFileUpload} 
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
+              onChange={handleFileUpload}
             />
             <div className="absolute inset-y-0 left-2 flex items-center gap-1 z-10">
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="p-1.5 text-gray-500 hover:text-gold hover:bg-gray-800 rounded transition-colors" 
+                className="p-1.5 text-gray-500 hover:text-gold hover:bg-gray-800 rounded transition-colors"
                 title="Adjuntar multimedia"
               >
                 <Paperclip size={16} />
               </button>
-              <button 
-                type="button" 
-                className={`p-1.5 rounded transition-colors ${isListening ? 'text-red-500 bg-red-900/20' : 'text-gray-500 hover:text-gold hover:bg-gray-800'}`} 
+              <button
+                type="button"
+                className={`p-1.5 rounded transition-colors ${isListening ? 'text-red-500 bg-red-900/20' : 'text-gray-500 hover:text-gold hover:bg-gray-800'}`}
                 title={isListening ? "Detener grabación" : "Grabar voz para navegar"}
                 onClick={toggleListening}
               >
                 <Mic size={16} />
               </button>
             </div>
-            <input 
-              type="text" 
+            <input
+              type="text"
               value={chatInput}
               onChange={e => setChatInput(e.target.value)}
-              placeholder={pendingAttachment ? "Añade un mensaje o presiona Enter..." : "Escribe tu idea, o sube archivos..."} 
+              placeholder={pendingAttachment ? "Añade un mensaje o presiona Enter..." : "Escribe tu idea, o sube archivos..."}
               className="w-full bg-[#161616] border border-gray-700/80 rounded-xl py-3 pl-16 pr-12 text-sm text-white focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all placeholder-gray-600 relative"
             />
-            <button 
+            <button
               type="submit"
               className="absolute right-1.5 top-1.5 bottom-1.5 aspect-square rounded-lg bg-gold text-black hover:bg-yellow-400 transition-colors flex items-center justify-center disabled:opacity-50 disabled:hover:bg-gold z-10"
               disabled={!chatInput.trim() && !pendingAttachment}
@@ -1537,21 +1537,21 @@ type ChatMessage = {
             </button>
           </form>
           <div className="text-center mt-3">
-             <span className="text-[10px] text-gray-600 font-mono tracking-wide">EXPERT 360 AI • POWERED BY LLMs</span>
+             <span className="text-[10px] text-gray-600 font-mono tracking-wide">XORBIT 360 AI • POWERED BY LLMs</span>
           </div>
         </div>
       </aside>
-      
+
       {/* Floating Chat Trigger (Visible mostly on mobile or when closed on desktop) */}
       {!chatOpen && activeModule !== 'whatsapp' && (
-        <button 
+        <button
           onClick={() => setChatOpen(true)}
           className="fixed bottom-6 right-6 w-12 h-12 bg-zinc-900 hover:bg-zinc-800 text-gold border border-gold/30 rounded-full shadow-lg flex items-center justify-center hover:scale-105 transition-all z-20 group"
         >
           <Bot size={20} className="group-hover:animate-pulse" />
         </button>
       )}
-      
+
     </div>
   );
 }

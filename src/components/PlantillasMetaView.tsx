@@ -1,26 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Plus, 
-  RefreshCw, 
-  MessageSquare, 
-  Zap, 
-  Package, 
-  AlertTriangle, 
-  Search, 
-  Check, 
-  X, 
-  Edit3, 
-  Trash2, 
-  Image as ImageIcon, 
-  Smile, 
-  Paperclip, 
-  Send, 
-  CornerDownRight, 
-  Clock, 
-  FileText, 
-  ArrowLeft, 
-  Save, 
-  Sliders, 
+import {
+  Plus,
+  RefreshCw,
+  MessageSquare,
+  Zap,
+  Package,
+  AlertTriangle,
+  Search,
+  Check,
+  X,
+  Edit3,
+  Trash2,
+  Image as ImageIcon,
+  Smile,
+  Paperclip,
+  Send,
+  CornerDownRight,
+  Clock,
+  FileText,
+  ArrowLeft,
+  Save,
+  Sliders,
   Sparkles,
   ExternalLink,
   ChevronRight,
@@ -452,7 +452,7 @@ export default function PlantillasMetaView({ onBackToCampaigns }: { onBackToCamp
   const [activeTab, setActiveTab] = useState<'meta' | 'rapidas' | 'seguimiento'>('meta');
   const [templates, setTemplates] = useState<MetaTemplate[]>(() => {
     try {
-      const saved = localStorage.getItem('EXPERT360_META_TEMPLATES');
+      const saved = localStorage.getItem('XORBIT 360_META_TEMPLATES');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length >= DEFAULT_TEMPLATES.length) {
@@ -467,7 +467,7 @@ export default function PlantillasMetaView({ onBackToCampaigns }: { onBackToCamp
 
   const [triggers, setTriggers] = useState<TrackingTrigger[]>(() => {
     try {
-      const saved = localStorage.getItem('EXPERT360_TRACKING_TRIGGERS');
+      const saved = localStorage.getItem('XORBIT 360_TRACKING_TRIGGERS');
       return saved ? JSON.parse(saved) : DEFAULT_TRACKING_TRIGGERS;
     } catch {
       return DEFAULT_TRACKING_TRIGGERS;
@@ -492,14 +492,14 @@ export default function PlantillasMetaView({ onBackToCampaigns }: { onBackToCamp
   // Save templates on change
   useEffect(() => {
     try {
-      localStorage.setItem('EXPERT360_META_TEMPLATES', JSON.stringify(templates));
+      localStorage.setItem('XORBIT 360_META_TEMPLATES', JSON.stringify(templates));
     } catch (_) {}
   }, [templates]);
 
   // Save triggers on change
   useEffect(() => {
     try {
-      localStorage.setItem('EXPERT360_TRACKING_TRIGGERS', JSON.stringify(triggers));
+      localStorage.setItem('XORBIT 360_TRACKING_TRIGGERS', JSON.stringify(triggers));
     } catch (_) {}
   }, [triggers]);
 
@@ -612,7 +612,7 @@ export default function PlantillasMetaView({ onBackToCampaigns }: { onBackToCamp
               .replace('instruccion_cliente', 'Instruccion al cliente');
 
             return (
-              <span 
+              <span
                 key={index}
                 className="inline-block px-1.5 py-0.5 mx-0.5 rounded-md bg-[#005c4b]/90 text-[#25d366] font-semibold text-[11px] select-none align-middle"
               >
@@ -628,10 +628,10 @@ export default function PlantillasMetaView({ onBackToCampaigns }: { onBackToCamp
 
   // Filter templates
   const filteredTemplates = templates.filter(t => {
-    const matchesSearch = t.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    const matchesSearch = t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           t.slug.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           t.bodyText.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     if (!matchesSearch) return false;
 
     if (statusFilter === 'Todas') return true;
@@ -658,8 +658,8 @@ export default function PlantillasMetaView({ onBackToCampaigns }: { onBackToCamp
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800/80 pb-4">
           <div>
             <div className="flex items-center gap-2 text-xs text-zinc-500 mb-1">
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => setIsCreatingNew(false)}
                 className="hover:text-zinc-300 transition cursor-pointer"
               >
@@ -780,8 +780,8 @@ export default function PlantillasMetaView({ onBackToCampaigns }: { onBackToCamp
                         type="button"
                         onClick={() => setFormHasImage(!formHasImage)}
                         className={`px-2.5 py-1.5 rounded-lg border text-xs font-medium flex items-center gap-1.5 transition cursor-pointer ${
-                          formHasImage 
-                            ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-400' 
+                          formHasImage
+                            ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-400'
                             : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
                         }`}
                       >
@@ -927,7 +927,7 @@ export default function PlantillasMetaView({ onBackToCampaigns }: { onBackToCamp
               {formButtons.length > 0 && (
                 <div className="space-y-1.5 mt-2">
                   {formButtons.map((b) => (
-                    <div 
+                    <div
                       key={b.id}
                       className="bg-[#1f2c34]/90 hover:bg-[#1f2c34] border border-zinc-800/80 rounded-xl py-2.5 text-center text-xs font-semibold text-[#25d366] flex items-center justify-center gap-1.5 shadow-md"
                     >
@@ -1053,8 +1053,8 @@ export default function PlantillasMetaView({ onBackToCampaigns }: { onBackToCamp
                     type="button"
                     onClick={() => setStatusFilter(st)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition cursor-pointer flex items-center gap-1.5 ${
-                      isActive 
-                        ? 'bg-zinc-800 text-white border-b-2 border-emerald-400' 
+                      isActive
+                        ? 'bg-zinc-800 text-white border-b-2 border-emerald-400'
                         : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
                     }`}
                   >
@@ -1082,7 +1082,7 @@ export default function PlantillasMetaView({ onBackToCampaigns }: { onBackToCamp
           {/* Templates Grid (2 Columns as shown in Image 1 & 2) */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             {filteredTemplates.map((tpl) => (
-              <div 
+              <div
                 key={tpl.id}
                 className="bg-zinc-950 rounded-2xl border border-zinc-800/90 p-5 flex flex-col justify-between shadow-xl space-y-4 hover:border-zinc-700 transition"
               >
@@ -1097,9 +1097,9 @@ export default function PlantillasMetaView({ onBackToCampaigns }: { onBackToCamp
                     <div className="flex flex-col items-end gap-1 shrink-0">
                       <div className="flex items-center gap-1.5">
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                          tpl.category === 'Utilidad' 
-                            ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' 
-                            : 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+                          tpl.category === 'Utilidad'
+                            ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                            : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
                         }`}>
                           {tpl.category}
                         </span>
@@ -1141,7 +1141,7 @@ export default function PlantillasMetaView({ onBackToCampaigns }: { onBackToCamp
                     {tpl.buttons && tpl.buttons.length > 0 && (
                       <div className="space-y-1.5 pt-1">
                         {tpl.buttons.map((b) => (
-                          <div 
+                          <div
                             key={b.id}
                             className="w-full py-2 px-3 rounded-lg bg-[#111b21] hover:bg-[#1a2730] border border-zinc-800 text-center text-xs font-semibold text-[#25d366] flex items-center justify-center gap-1.5 transition select-none"
                           >
@@ -1212,7 +1212,7 @@ export default function PlantillasMetaView({ onBackToCampaigns }: { onBackToCamp
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
               {[
-                { cmd: '/catalogo', label: 'Catálogo de Productos', text: '¡Hola! Aquí tienes nuestro catálogo digital con fotos y precios actualizados: https://expert360.store' },
+                { cmd: '/catalogo', label: 'Catálogo de Productos', text: '¡Hola! Aquí tienes nuestro catálogo digital con fotos y precios actualizados.' },
                 { cmd: '/precio', label: 'Precios y Descuentos', text: 'El valor de la unidad es de $85.000 COP. Si llevas la promoción de 2 unidades te queda en $139.900 con envío gratis.' },
                 { cmd: '/pago', label: 'Cuentas y Contra Entrega', text: 'Puedes pagar en efectivo al recibir en tu casa o transferir por Nequi / Bancolombia al 315 888 9900.' },
                 { cmd: '/guia', label: 'Consulta de Guía Dropi', text: 'Tu pedido ya fue despachado. Puedes rastrear tu paquete en ServiEntrega con tu número de guía.' }
@@ -1246,7 +1246,7 @@ export default function PlantillasMetaView({ onBackToCampaigns }: { onBackToCamp
           {/* Trigger list items with switches & selector (Image 4) */}
           <div className="space-y-3">
             {triggers.map((trig) => (
-              <div 
+              <div
                 key={trig.id}
                 className="p-4 bg-zinc-950 rounded-2xl border border-zinc-800/90 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-md hover:border-zinc-700 transition"
               >
@@ -1259,10 +1259,10 @@ export default function PlantillasMetaView({ onBackToCampaigns }: { onBackToCamp
                       trig.enabled ? 'bg-[#00c950]' : 'bg-zinc-800'
                     }`}
                   >
-                    <div 
+                    <div
                       className={`w-5 h-5 rounded-full bg-white transition-transform duration-200 shadow-md ${
                         trig.enabled ? 'translate-x-5' : 'translate-x-0'
-                      }`} 
+                      }`}
                     />
                   </button>
 

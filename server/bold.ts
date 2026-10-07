@@ -16,7 +16,7 @@ export const BOLD_PRODUCTION_CONFIG: BoldConfig = {
   apiKey: process.env.BOLD_API_KEY || 'l_5Wz-8KQmld8Vb_iyy05KWBQ0A3zz5LOtAgMmCjfbk',
   secretKey: process.env.BOLD_SECRET_KEY || '53nBWst7REiVw9So1Zf5aQ',
   checkoutUrl: 'https://checkout.bold.co',
-  webhookUrl: 'https://expert360.ai.studio/api/integrations/bold/webhook',
+  webhookUrl: 'https://crm.xorbit360.com/api/integrations/bold/webhook',
   environment: 'production'
 };
 

@@ -20,13 +20,13 @@ export interface WhiteLabelConfig {
 }
 
 export const DEFAULT_WHITELABEL: WhiteLabelConfig = {
-  brandName: 'Expert 360°',
+  brandName: 'Xorbit 360',
   tagline: 'Marketing & Ventas AI',
   logoUrl: '',
   customDomain: '',
-  officialDomain: 'https://expert360.ai.studio/',
+  officialDomain: 'https://crm.xorbit360.com/',
   primaryColor: '#d4af37',
-  supportEmail: 'soporte@expert360.ai.studio',
+  supportEmail: 'admin@xorbit360.com',
   supportPhone: '+57 300 000 0000',
   dnsVerified: false,
   hideDashboard: false,
@@ -35,11 +35,11 @@ export const DEFAULT_WHITELABEL: WhiteLabelConfig = {
   scope: 'global'
 };
 
-const STORAGE_KEY = 'expert360_whitelabel_config';
+const STORAGE_KEY = 'xorbit360_whitelabel_config';
 
 export function getUserStorageKey(userEmail?: string): string {
   if (userEmail && userEmail.trim()) {
-    return `expert360_whitelabel_user_${userEmail.trim().toLowerCase()}`;
+    return `xorbit360_whitelabel_user_${userEmail.trim().toLowerCase()}`;
   }
   return STORAGE_KEY;
 }
@@ -123,11 +123,11 @@ export async function saveWhiteLabelConfig(config: WhiteLabelConfig, userEmail?:
  * Returns the effective public base URL for links and referrals.
  * Prioritizes the reseller's customDomain (e.g. https://xorbit360.com),
  * or current window.location.origin (if not localhost),
- * and falls back to https://expert360.ai.studio/
+ * and falls back to https://crm.xorbit360.com/
  */
 export function getEffectiveDomain(config?: Partial<WhiteLabelConfig>): string {
   const currentConfig = config || getCachedWhiteLabel();
-  
+
   if (currentConfig.customDomain && currentConfig.customDomain.trim().length > 0) {
     const clean = currentConfig.customDomain.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '');
     if (clean) {
@@ -142,7 +142,7 @@ export function getEffectiveDomain(config?: Partial<WhiteLabelConfig>): string {
     }
   }
 
-  return 'https://expert360.ai.studio';
+  return 'https://crm.xorbit360.com';
 }
 
 /**

@@ -1,29 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  FolderKanban, 
-  FolderPlus, 
-  Folder, 
-  Plus, 
-  Search, 
-  Filter, 
-  MoreVertical, 
-  ExternalLink, 
-  Bot, 
-  Megaphone, 
-  Layout, 
-  MessageSquare, 
-  Globe, 
-  FileText, 
-  CheckCircle2, 
-  Clock, 
-  Building2, 
-  Edit3, 
-  Trash2, 
-  ChevronRight, 
-  Sparkles, 
-  Layers, 
-  Briefcase, 
-  Tag, 
+import {
+  FolderKanban,
+  FolderPlus,
+  Folder,
+  Plus,
+  Search,
+  Filter,
+  MoreVertical,
+  ExternalLink,
+  Bot,
+  Megaphone,
+  Layout,
+  MessageSquare,
+  Globe,
+  FileText,
+  CheckCircle2,
+  Clock,
+  Building2,
+  Edit3,
+  Trash2,
+  ChevronRight,
+  Sparkles,
+  Layers,
+  Briefcase,
+  Tag,
   Calendar,
   Share2,
   Copy,
@@ -277,7 +277,7 @@ export default function ProyectosView({ onNavigateToModule }: ProyectosViewProps
   };
 
   const filteredProjects = projects.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           p.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           p.category.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = categoryFilter === 'all' || p.category === categoryFilter;
@@ -289,7 +289,7 @@ export default function ProyectosView({ onNavigateToModule }: ProyectosViewProps
 
   return (
     <div className="space-y-8 w-full pb-16 animate-fade-in text-gray-100">
-      
+
       {/* Header Banner */}
       <div className="panel p-6 sm:p-8 rounded-2xl border border-gray-800 bg-gradient-to-r from-gray-900 via-gray-900/90 to-amber-950/20 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none"></div>
@@ -350,18 +350,18 @@ export default function ProyectosView({ onNavigateToModule }: ProyectosViewProps
           </div>
 
           {/* Active Project Banner */}
-          <div 
+          <div
             className="panel p-6 sm:p-8 rounded-2xl border bg-gray-900/90 relative overflow-hidden"
             style={{ borderColor: `${selectedProject.color}40` }}
           >
-            <div 
+            <div
               className="absolute top-0 right-0 w-80 h-80 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none opacity-20"
               style={{ backgroundColor: selectedProject.color }}
             ></div>
 
             <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="flex items-start gap-4">
-                <div 
+                <div
                   className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shrink-0 shadow-lg border border-white/10"
                   style={{ backgroundColor: `${selectedProject.color}25` }}
                 >
@@ -369,7 +369,7 @@ export default function ProyectosView({ onNavigateToModule }: ProyectosViewProps
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span 
+                    <span
                       className="text-[10px] font-black uppercase px-2 py-0.5 rounded text-white"
                       style={{ backgroundColor: selectedProject.color }}
                     >
@@ -463,8 +463,8 @@ export default function ProyectosView({ onNavigateToModule }: ProyectosViewProps
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {selectedProject.assignedTools.map((tool) => (
-                  <div 
-                    key={tool.id} 
+                  <div
+                    key={tool.id}
                     className="panel p-5 rounded-2xl border border-gray-800 bg-gray-900/70 hover:border-gray-700 transition-all flex items-start justify-between gap-4 group"
                   >
                     <div className="flex items-start gap-3.5">
@@ -472,8 +472,8 @@ export default function ProyectosView({ onNavigateToModule }: ProyectosViewProps
                         {tool.type === 'whatsapp' && <Bot size={20} className="text-green-400" />}
                         {tool.type === 'landing' && <Globe size={20} className="text-blue-400" />}
                         {tool.type === 'ads' && <Megaphone size={20} className="text-amber-400" />}
-                        {tool.type === 'branding' && <Sparkles size={20} className="text-purple-400" />}
-                        {tool.type === 'contenido' && <FileText size={20} className="text-pink-400" />}
+                        {tool.type === 'branding' && <Sparkles size={20} className="text-blue-400" />}
+                        {tool.type === 'contenido' && <FileText size={20} className="text-blue-400" />}
                         {tool.type === 'email' && <MessageSquare size={20} className="text-cyan-400" />}
                       </div>
                       <div>
@@ -511,7 +511,7 @@ export default function ProyectosView({ onNavigateToModule }: ProyectosViewProps
       ) : (
         /* PROJECTS GRID VIEW */
         <div className="space-y-6">
-          
+
           {/* Controls: Search & Category Filters */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
             <div className="relative flex-1 max-w-md">
@@ -561,7 +561,7 @@ export default function ProyectosView({ onNavigateToModule }: ProyectosViewProps
                 className="panel p-6 rounded-2xl border border-gray-800/80 bg-gray-900/60 hover:bg-gray-900 hover:border-gray-700 transition-all duration-200 cursor-pointer group relative overflow-hidden flex flex-col justify-between space-y-4"
               >
                 {/* Accent Top Border */}
-                <div 
+                <div
                   className="absolute top-0 left-0 right-0 h-1"
                   style={{ backgroundColor: project.color }}
                 ></div>
@@ -569,14 +569,14 @@ export default function ProyectosView({ onNavigateToModule }: ProyectosViewProps
                 <div className="space-y-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div 
+                      <div
                         className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0 border border-white/10"
                         style={{ backgroundColor: `${project.color}20` }}
                       >
                         {project.emoji}
                       </div>
                       <div>
-                        <span 
+                        <span
                           className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded text-white inline-block"
                           style={{ backgroundColor: project.color }}
                         >

@@ -260,7 +260,7 @@ function generateSimulatedWaveform(length = 64): Uint8Array {
 async function convertAudioToOggOpus(inputBuffer: Buffer, originalUrlOrMime?: string): Promise<Buffer> {
   const tmpDir = os.tmpdir();
   const randId = Math.random().toString(36).substring(2, 9);
-  
+
   // Try to detect the correct extension to help ffmpeg parse the container correctly
   let ext = 'tmp';
   if (originalUrlOrMime) {
@@ -278,11 +278,11 @@ async function convertAudioToOggOpus(inputBuffer: Buffer, originalUrlOrMime?: st
 
   try {
     await fs.promises.writeFile(inputPath, inputBuffer);
-    
+
     // Command to convert to OGG OPUS (WhatsApp native PTT voice note format)
     // -ac 1 (mono), -ar 48000 (48kHz sample rate), -c:a libopus -b:a 32k
     const cmd = `ffmpeg -i "${inputPath}" -c:a libopus -b:a 32k -ac 1 -ar 48000 "${outputPath}" -y`;
-    
+
     await new Promise<void>((resolve, reject) => {
       exec(cmd, (error, stdout, stderr) => {
         if (error) {
@@ -337,7 +337,7 @@ async function getMediaBuffer(url: string): Promise<Buffer | null> {
 // ==========================================
 const DEFAULT_EVOLUTION_API_URL = process.env.EVOLUTION_API_URL || "https://whatsapp.xorbit360.com";
 const DEFAULT_EVOLUTION_API_KEY = process.env.EVOLUTION_API_KEY || "06mqaBYA1qN3PA9LejyAUe8YHG3A0YWh";
-const DEFAULT_EVOLUTION_WEBHOOK_BASE = "https://expert360.ai.studio";
+const DEFAULT_EVOLUTION_WEBHOOK_BASE = "https://crm.xorbit360.com";
 
 function getEvolutionConfig() {
   const dbUrl = (typeof currentDB !== 'undefined' && currentDB.evolutionApiUrl) ? currentDB.evolutionApiUrl : '';
@@ -411,7 +411,7 @@ async function ensureEvolutionInstance(instanceName: string, number?: string, qr
 async function setupEvolutionWebhook(instanceName: string, appHostUrl?: string) {
   try {
     const evoConfig = getEvolutionConfig();
-    const cleanHost = (appHostUrl || evoConfig.webhookBaseUrl || "https://expert360.ai.studio").replace(/\/+$/, '');
+    const cleanHost = (appHostUrl || evoConfig.webhookBaseUrl || "https://crm.xorbit360.com").replace(/\/+$/, '');
     const webhookUrl = `${cleanHost}/api/whatsapp/evolution-webhook`;
     const encoded = encodeURIComponent(instanceName);
     const res = await evolutionRequest(`/webhook/set/${encoded}`, {
@@ -449,8 +449,8 @@ async function resolveActualEvolutionInstance(instanceName: string): Promise<str
       const cleanPhoneMatch = instanceName.match(/(\d{8,15})/);
       if (cleanPhoneMatch) {
         const phone = cleanPhoneMatch[1];
-        const matchByPhone = listRes.data.find((i: any) => 
-          i.connectionStatus === 'open' && 
+        const matchByPhone = listRes.data.find((i: any) =>
+          i.connectionStatus === 'open' &&
           ((i.ownerJid && i.ownerJid.includes(phone)) || (i.number && i.number.includes(phone)))
         );
         if (matchByPhone) {
@@ -491,8 +491,8 @@ async function getEvolutionConnectionState(instanceName: string) {
             if (exact.ownerJid) phone = exact.ownerJid.split('@')[0].replace(/\D/g, '');
             else if (exact.number) phone = exact.number.replace(/\D/g, '');
           } else if (targetPhone) {
-            const aliasInst = listRes.data.find((i: any) => 
-              (i.connectionStatus === 'open') && 
+            const aliasInst = listRes.data.find((i: any) =>
+              (i.connectionStatus === 'open') &&
               ((i.ownerJid && i.ownerJid.includes(targetPhone)) || (i.number && i.number.includes(targetPhone)))
             );
             if (aliasInst) {
@@ -561,7 +561,7 @@ async function getEvolutionPairingCode(instanceName: string, phoneNumber: string
     try {
       await evolutionRequest(`/instance/delete/${encoded}`, { method: 'DELETE', timeoutMs: 5000 });
     } catch(e) {}
-    
+
     await evolutionRequest('/instance/create', {
       method: 'POST',
       body: {
@@ -601,11 +601,11 @@ async function sendEvolutionTextMessage(instanceName: string, number: string, te
 }
 
 async function sendEvolutionMediaMessage(
-  instanceName: string, 
-  number: string, 
-  mediatype: string, 
-  media: string, 
-  caption = '', 
+  instanceName: string,
+  number: string,
+  mediatype: string,
+  media: string,
+  caption = '',
   fileName = 'archivo',
   mimetype?: string
 ) {
@@ -733,7 +733,7 @@ async function sendWhatsAppBotReplies(
   const incomingLower = (userIncomingText || '').toLowerCase().trim();
   const faqsList = Array.isArray(currentDB.faqsList) ? currentDB.faqsList : (Array.isArray(currentDB.faqs) ? currentDB.faqs : []);
   if (faqsList.length > 0) {
-    
+
     // 1. Try quick exact or near-exact match first to minimize latency
     for (const f of faqsList) {
       if (!f.question) continue;
@@ -758,7 +758,7 @@ async function sendWhatsAppBotReplies(
           const matchingPrompt = `Analiza detalladamente la intención de la siguiente frase recibida de un cliente en WhatsApp:
 "${userIncomingText}"
 
-Determina si el cliente está expresando exactamente la misma duda, solicitud, pregunta o intención que alguna de las siguientes preguntas predefinidas en la lista. 
+Determina si el cliente está expresando exactamente la misma duda, solicitud, pregunta o intención que alguna de las siguientes preguntas predefinidas en la lista.
 Ignora variaciones menores de palabras, sinónimos, faltas de ortografía, inclusión o exclusión de saludos (ej: "Hola, ¿cómo te llamas?" vs "Como te llamas ?") u otras formas coloquiales de expresar exactamente la misma idea (ej: "Cuál es tu nombre", "cómo te llamas", "cómo te puedo llamar", "dime tu nombre" tienen exactamente la misma intención).
 
 Lista de preguntas predefinidas:
@@ -897,9 +897,9 @@ Responde ÚNICAMENTE con un objeto JSON en el siguiente formato, sin bloques de 
 
   for (let idx = 0; idx < effectiveReplies.length; idx++) {
     const r = effectiveReplies[idx];
-    
+
     // Check if reply text contains embedded audio tag or reference
-    const audioRefMatch = r.match(/(?:🤖🔊\s*)?\[?(nota_de_voz_[^\]\s]+\.(?:ogg|mp3|wav|m4a)|nota_de_voz_[^\]\s]+)\]?/i) 
+    const audioRefMatch = r.match(/(?:🤖🔊\s*)?\[?(nota_de_voz_[^\]\s]+\.(?:ogg|mp3|wav|m4a)|nota_de_voz_[^\]\s]+)\]?/i)
       || r.match(/\[(audio:[^\]]+|nota_de_voz[^\]]+)\]/i);
 
     // Clean reply text of bracketed audio tags
@@ -911,14 +911,14 @@ Responde ÚNICAMENTE con un objeto JSON en el siguiente formato, sin bloques de 
     // If an audio tag was matched, look for the matching attachment across all FAQs
     if (audioRefMatch) {
       const tagAudioName = (audioRefMatch[1] || 'Nota_de_voz_PTT.ogg').trim().toLowerCase();
-      
+
       // Look for exact named attachment first!
       let foundByName: any = null;
       for (const f of faqsList) {
         if (f.attachments && Array.isArray(f.attachments)) {
-          const found = f.attachments.find((att: any) => 
-            att.type === 'audio' && 
-            att.name && 
+          const found = f.attachments.find((att: any) =>
+            att.type === 'audio' &&
+            att.name &&
             (att.name.toLowerCase().includes(tagAudioName) || tagAudioName.includes(att.name.toLowerCase()))
           );
           if (found) {
@@ -962,7 +962,7 @@ Responde ÚNICAMENTE con un objeto JSON en el siguiente formato, sin bloques de 
       } else {
         await sendEvolutionTextMessage(channelId, phone, cleanReplyText);
       }
-      
+
       if (!currentDB.messagesHistory) currentDB.messagesHistory = {};
       if (!currentDB.messagesHistory[phone]) currentDB.messagesHistory[phone] = [];
       currentDB.messagesHistory[phone].push({
@@ -974,7 +974,7 @@ Responde ÚNICAMENTE con un objeto JSON en el siguiente formato, sin bloques de 
       if (currentDB.messagesHistory[phone].length > 15) {
         currentDB.messagesHistory[phone].shift();
       }
-      
+
       if (idx < effectiveReplies.length - 1 || attachedMedia) {
         await new Promise(res => setTimeout(res, 1200));
       }
@@ -997,9 +997,9 @@ Responde ÚNICAMENTE con un objeto JSON en el siguiente formato, sin bloques de 
             console.log(`[WhatsApp Real] Enviando NOTA DE VOZ PTT REAL para +${phone}...`);
             const oggBuffer = await convertAudioToOggOpus(mediaBuffer, attachedMedia.url || attachedMedia.name);
             if (clientSock) {
-              await clientSock.sendMessage(senderJid, { 
-                audio: oggBuffer, 
-                ptt: true, 
+              await clientSock.sendMessage(senderJid, {
+                audio: oggBuffer,
+                ptt: true,
                 mimetype: 'audio/ogg; codecs=opus',
                 waveform: generateSimulatedWaveform(64)
               });
@@ -1007,7 +1007,7 @@ Responde ÚNICAMENTE con un objeto JSON en el siguiente formato, sin bloques de 
               const base64Audio = `data:audio/ogg;base64,${oggBuffer.toString('base64')}`;
               await sendEvolutionMediaMessage(channelId, phone, 'audio', base64Audio, '', attachedMedia.name || 'Nota_de_voz_PTT.ogg');
             }
-            
+
             if (!currentDB.messagesHistory[phone]) currentDB.messagesHistory[phone] = [];
             currentDB.messagesHistory[phone].push({
               role: 'assistant',
@@ -1065,14 +1065,14 @@ async function processBufferedMessages(senderJid: string, messages: any[]) {
 
     for (const msg of messages) {
         let text = msg.message?.conversation || msg.message?.extendedTextMessage?.text || "";
-        
+
         // Handle Quoted Messages
         if (msg.message?.extendedTextMessage?.contextInfo?.quotedMessage) {
             const quoted = msg.message.extendedTextMessage.contextInfo.quotedMessage;
             const quotedText = quoted.conversation || quoted.extendedTextMessage?.text || "[Media]";
             text = `[Respuesta al mensaje: "${quotedText}"] \n${text}`;
         }
-        
+
         combinedText += text + "\n";
     }
 
@@ -1104,7 +1104,7 @@ function generateInvoiceString(order: any): string {
   let matchedItems = (order.items || []).map((item: string) => {
     let qty = 1;
     let name = item.trim();
-    
+
     // Check if starts with e.g. "1x", "2x"
     const qtyMatch = name.match(/^(\d+)\s*[xX]\s*(.+)$/);
     if (qtyMatch) {
@@ -1135,7 +1135,7 @@ function generateInvoiceString(order: any): string {
   // Determine delivery fee
   let deliveryFee = 0;
   let possibleDeliveryFee = total - itemsSum;
-  
+
   if (possibleDeliveryFee > 0) {
     deliveryFee = possibleDeliveryFee;
   } else {
@@ -1485,9 +1485,10 @@ function buildSystemPrompt(params: {
   const antiHallucinationDirective = `
 =========================================
 🚨 REGLA ABSOLUTA DE INFORMACIÓN Y ENTRENAMIENTO BASE (MÁXIMA PRIORIDAD):
-1. Responde ÚNICAMENTE Y EXCLUSIVAMENTE utilizando la información especificada en el Entrenamiento Base, Saludo Inicial, Preguntas Frecuentes (FAQs) y Reglas provistas a continuación.
-2. Está ESTRICTAMENTE PROHIBIDO inventar, asumir, alucinar o proporcionar datos (precios, horarios, ubicaciones, servicios o promociones) que NO se encuentren explícitamente escritos en este entrenamiento.
-3. Si el cliente solicita o pregunta por algo que NO está detallado en este Entrenamiento Base, responde educadamente:
+1. Para productos, precios, inventario, características y promociones, usa ÚNICAMENTE el CATÁLOGO OFICIAL sincronizado en Xorbit 360.
+2. Para políticas y atención, responde únicamente con la configuración interna provista a continuación.
+3. Está ESTRICTAMENTE PROHIBIDO consultar, completar o enriquecer respuestas con información de internet o fuentes externas.
+4. Si el cliente solicita algo que no está en el Catálogo o la configuración interna, responde educadamente:
    "En este momento no dispongo de esa información específica en mi entrenamiento base, pero con gusto te conectaré con un asesor humano para ayudarte."
 =========================================
 `;
@@ -1522,8 +1523,8 @@ function buildSystemPrompt(params: {
   const greetingAttsFormatted = (currentDB.greetingAttachments && Array.isArray(currentDB.greetingAttachments) && currentDB.greetingAttachments.length > 0)
     ? `\n  - ARCHIVOS Y NOTAS DE VOZ ADJUNTOS EN EL SALUDO: ${currentDB.greetingAttachments.map((a: any) => `"${a.name}" (tipo: ${a.type})`).join(', ')}`
     : '';
-  const customGreetingStr = currentDB.customGreeting 
-    ? `\n=========================================\n🚨 SALUDO INICIAL BASE CONFIGURADO (MÁXIMA PRIORIDAD DE INICIO):\n"${currentDB.customGreeting}"${greetingAttsFormatted}\nREGLA DE SALUDO: Si es la primera interacción o el historial de mensajes está vacío (0 o 1 mensaje del cliente), saluda obligatoriamente usando como plantilla directa este saludo configurado junto con sus archivos o notas de voz adjuntos si los tiene. Si ya saludaste antes en la conversación, NO repitas el saludo inicial.\n=========================================\n` 
+  const customGreetingStr = currentDB.customGreeting
+    ? `\n=========================================\n🚨 SALUDO INICIAL BASE CONFIGURADO (MÁXIMA PRIORIDAD DE INICIO):\n"${currentDB.customGreeting}"${greetingAttsFormatted}\nREGLA DE SALUDO: Si es la primera interacción o el historial de mensajes está vacío (0 o 1 mensaje del cliente), saluda obligatoriamente usando como plantilla directa este saludo configurado junto con sus archivos o notas de voz adjuntos si los tiene. Si ya saludaste antes en la conversación, NO repitas el saludo inicial.\n=========================================\n`
     : '';
 
   const aiAutomationRulesList = currentDB.aiAutomationRules || [];
@@ -1545,8 +1546,14 @@ function buildSystemPrompt(params: {
   // 5. Products / Services / Catalogs if present in currentDB
   let catalogStr = "";
   if (currentDB.products && Array.isArray(currentDB.products) && currentDB.products.length > 0) {
-    catalogStr += `\nINVENTARIO Y PRODUCTOS / SERVICIOS DISPONIBLES:\n` + 
-      currentDB.products.map((p: any) => `- ${p.name}: $${p.basePrice || p.price || 0} COP (${p.stock > 0 ? (p.stock + ' disponibles') : '¡AGOTADO!'})`).join('\n') + '\n';
+    const availableProducts = currentDB.products.filter((p: any) => p?.isActive !== false && p?.isAvailableForBot !== false);
+    catalogStr += `\nCATÁLOGO OFICIAL SINCRONIZADO (ÚNICA FUENTE PARA INFORMACIÓN DE PRODUCTOS):\n` +
+      availableProducts.map((p: any) => {
+        const controlledStock = typeof p.stock === 'number' || /^\d+$/.test(String(p.stock || '').trim());
+        const stock = controlledStock ? (Number(p.stock) > 0 ? `${Number(p.stock)} disponibles` : '¡AGOTADO!') : 'Disponible';
+        const details = [p.basicDescription || p.description, p.features, p.benefits, p.differentiators].filter(Boolean).join(' | ');
+        return `- ${p.name}: $${p.offerPrice || p.price || p.basePrice || 0} COP (${stock})${details ? ` — ${details}` : ''}`;
+      }).join('\n') + '\nPROHIBIDO agregar información tomada de internet o inferida fuera de este catálogo.\n';
   }
 
   // 6. Active menu (if configured)
@@ -1622,9 +1629,9 @@ async function createServer() {
   initDB().catch(err => console.error('initDB async error:', err));
   const app = express();
   const port = Number(process.env.PORT) || 3000;
-  
+
   // Set json limit to 15mb and preserve rawBody for HMAC verification (Zernio Webhook)
-  app.use(express.json({ 
+  app.use(express.json({
     limit: '15mb',
     verify: (req: any, res, buf) => {
       req.rawBody = buf.toString('utf8');
@@ -1654,12 +1661,12 @@ async function createServer() {
       const pass = String(password).trim();
 
       // 1. Superadmin master accounts
-      if ((normUser === 'admin' || normUser === 'oscar@expert360.ai') && pass === 'Colombia1') {
+      if ((normUser === 'admin' || normUser === 'admin@xorbit360.com') && pass === 'Colombia1') {
         return res.json({
           success: true,
           user: {
             name: 'Oscar Molina',
-            email: 'oscar@expert360.ai',
+            email: 'admin@xorbit360.com',
             role: 'superadmin',
             username: 'admin',
             phone: '573192392853',
@@ -1670,7 +1677,7 @@ async function createServer() {
 
       // 2. Search in active database users (registered / paid via landing)
       const users = Array.isArray(currentDB.users) ? currentDB.users : [];
-      const matchedUser = users.find((u: any) => 
+      const matchedUser = users.find((u: any) =>
         (u.email && u.email.trim().toLowerCase() === normUser) ||
         (u.username && u.username.trim().toLowerCase() === normUser)
       );
@@ -1725,7 +1732,7 @@ async function createServer() {
       const normEmail = String(email).trim().toLowerCase();
 
       // Master admin check
-      if (normEmail === 'oscar@expert360.ai' || normEmail === 'admin@xorbit360.com') {
+      if (normEmail === 'admin@xorbit360.com') {
         return res.json({
           success: true,
           user: {
@@ -1855,8 +1862,8 @@ async function createServer() {
           saveDBData(currentDB);
         }
       } else if (
-        event === 'messages.upsert' || 
-        event === 'messages.update' || 
+        event === 'messages.upsert' ||
+        event === 'messages.update' ||
         event === 'send.message' ||
         event.startsWith('messages') ||
         event.startsWith('chats')
@@ -1865,7 +1872,7 @@ async function createServer() {
           const items: any[] = Array.isArray(data)
             ? data
             : (data?.messages && Array.isArray(data.messages) ? data.messages : (data ? [data] : []));
-          
+
           for (const item of items) {
             await onEvolutionIncomingMessage(instance, item);
           }
@@ -1923,7 +1930,7 @@ async function createServer() {
         saveDBData(currentDB);
       }
       const evoConfig = getEvolutionConfig();
-      const cleanHost = (customBaseUrl || evoConfig.webhookBaseUrl || "https://expert360.ai.studio").replace(/\/+$/, "");
+      const cleanHost = (customBaseUrl || evoConfig.webhookBaseUrl || "https://crm.xorbit360.com").replace(/\/+$/, "");
       const fullWebhook = `${cleanHost}/api/whatsapp/evolution-webhook`;
 
       const listRes = await evolutionRequest('/instance/fetchInstances', { timeoutMs: 6000 });
@@ -1987,7 +1994,7 @@ async function createServer() {
     try {
       const { chatId, phone } = req.body;
       const cleanPhone = phone ? phone.replace(/\D/g, '') : '';
-      
+
       if (currentDB.messagesHistory) {
         if (cleanPhone && currentDB.messagesHistory[cleanPhone]) {
           delete currentDB.messagesHistory[cleanPhone];
@@ -2043,7 +2050,7 @@ async function createServer() {
       }
 
       const inputBuffer = Buffer.from(base64Data, "base64");
-      
+
       // Convert to OGG Opus PTT format using our existing converter!
       const outputBuffer = await convertAudioToOggOpus(inputBuffer, mimeType);
 
@@ -2076,29 +2083,29 @@ async function createServer() {
       if (!cleanPhone) {
         return res.status(400).json({ success: false, error: "Falta número de teléfono" });
       }
-      
+
       if (!currentDB.messagesHistory) currentDB.messagesHistory = {};
       const history = currentDB.messagesHistory[cleanPhone] || [];
       const chatObj = (currentDB.chats || []).find((c: any) => c.phone && c.phone.replace(/\D/g, '') === cleanPhone);
       const senderName = chatObj?.sender || `+${cleanPhone}`;
-      
+
       // Get last client message text or fallback
       const lastClientMsg = [...history].reverse().find((m: any) => m.role === 'client' || m.sender === 'client');
       const textToProcess = customPrompt || (lastClientMsg ? lastClientMsg.text : "Hola, ¿en qué me puedes colaborar hoy?");
-      
+
       console.log(`[Trigger AI Reply] Generando respuesta manual para +${cleanPhone} con mensaje: "${textToProcess}"`);
-      
+
       const extractedText = await processWithAgents({
         phone: cleanPhone,
         senderName,
         text: textToProcess,
         history
       });
-      
+
       if (!extractedText) {
         return res.status(500).json({ success: false, error: "La IA no generó respuesta." });
       }
-      
+
       const parsed = safeParseJSON(extractedText);
       let replies: string[] = [];
       if (parsed && Array.isArray(parsed.replies) && parsed.replies.length > 0) {
@@ -2110,11 +2117,11 @@ async function createServer() {
       } else {
         replies = ["¡Hola! ¿En qué te podemos colaborar hoy con La Mona?"];
       }
-      
+
       const activeId = channelId || 'channel-default';
       const clientSock = activeSockets[activeId] || getAnyConnectedSock();
       const senderJid = `${cleanPhone}@s.whatsapp.net`;
-      
+
       await sendWhatsAppBotReplies(
         clientSock,
         senderJid,
@@ -2123,9 +2130,9 @@ async function createServer() {
         cleanPhone,
         activeId
       );
-      
+
       saveDBData(currentDB);
-      
+
       res.json({
         success: true,
         replies,
@@ -2199,9 +2206,9 @@ async function createServer() {
       const activeId = channelId || 'channel-default';
       const clientSock = activeSockets[activeId] || getAnyConnectedSock();
 
-      const normalizedType = type === 'imagen' || type === 'image' ? 'imagen' : 
-                             (type === 'audio' ? 'audio' : 
-                             (type === 'video' ? 'video' : 
+      const normalizedType = type === 'imagen' || type === 'image' ? 'imagen' :
+                             (type === 'audio' ? 'audio' :
+                             (type === 'video' ? 'video' :
                              (type === 'archivo' || type === 'document' ? 'archivo' : type)));
 
       let detectedMime = '';
@@ -2210,8 +2217,8 @@ async function createServer() {
         if (match) detectedMime = match[1];
       }
 
-      const effectiveFileName = fileName || (normalizedType === 'audio' ? 'Nota_de_voz.ogg' : 
-                                            (normalizedType === 'imagen' ? 'foto.jpg' : 
+      const effectiveFileName = fileName || (normalizedType === 'audio' ? 'Nota_de_voz.ogg' :
+                                            (normalizedType === 'imagen' ? 'foto.jpg' :
                                             (normalizedType === 'video' ? 'video.mp4' : 'archivo.pdf')));
 
       let attachmentObj: any = undefined;
@@ -2341,10 +2348,10 @@ async function createServer() {
       delete reconnectTimers[channelId];
     }
     conflictRetries[channelId] = 0;
-    
+
     // Automatically purge broken/desynced session ratchets while preserving login credentials (creds.json)
     purgeSessionFilesOnDisk(channelId === 'channel-default' ? undefined : channelId);
-    
+
     if (channelId === 'channel-default') {
       currentDB.whatsappError = undefined;
     }
@@ -2430,7 +2437,7 @@ async function createServer() {
     try {
       const config = req.body;
       if (!currentDB.userWhiteLabels) currentDB.userWhiteLabels = {};
-      
+
       const email = config.userEmail ? config.userEmail.trim().toLowerCase() : '';
       const isGlobal = !!config.isGlobal;
 
@@ -2484,11 +2491,11 @@ async function createServer() {
       }
 
       const isApex = !isSubdomain;
-      const targetCname = 'cname.expert360.live';
+      const targetCname = 'crm.xorbit360.com';
       const appHost = req.headers.host || '';
 
       const targetMatch = !!cnameFound && (
-        cnameFound.toLowerCase().includes('expert360') ||
+        cnameFound.toLowerCase().includes('xorbit360') ||
         cnameFound.toLowerCase().includes('run.app') ||
         cnameFound.toLowerCase() === targetCname ||
         (appHost && cnameFound.toLowerCase().includes(appHost.split(':')[0]))
@@ -2506,7 +2513,7 @@ async function createServer() {
         cnameFound,
         targetMatch,
         sslStatus: isConfigured ? 'Activo (SSL Let\'s Encrypt / Cloudflare)' : 'Pendiente de propagación DNS',
-        details: isConfigured 
+        details: isConfigured
           ? `¡Dominio ${cleanDomain} verificado correctamente! Los registros apuntan a la infraestructura.`
           : `El dominio ${cleanDomain} aún no tiene los registros DNS propagados. Asegúrate de configurar el registro CNAME o A en tu proveedor (Cloudflare, GoDaddy, Namecheap, etc.).`
       });
@@ -2607,7 +2614,7 @@ async function createServer() {
               .replace(/{{nombre}}/g, req.body.customerName || 'Cliente')
               .replace(/{{producto}}/g, req.body.productName || 'Producto en Vivo')
               .replace(/{{link_checkout}}/g, req.body.checkoutLink || `https://${req.headers.host || 'app'}/checkout/${newOrder.id}`);
-            
+
             defaultSock.sendMessage(jid, { text }).catch((err: any) => console.warn('Live order WA notification warning:', err));
           }
         } catch (waErr) {
@@ -2627,7 +2634,7 @@ async function createServer() {
       channelId = `+${channelId.trim()}`;
     }
     const phoneNumber = req.body.phoneNumber?.replace(/\D/g, '');
-    
+
     if (!phoneNumber) {
       return res.status(400).json({ success: false, error: "Phone number required" });
     }
@@ -2740,8 +2747,8 @@ async function createServer() {
 
     const hasQr = !!(channelId === 'channel-default' ? currentQrCode : qrCodesMap[channelId]);
     const hasWASock = !!activeSockets[channelId] || !!isConnecting[channelId];
-    res.json({ 
-        whatsappConnected: !!currentDB.whatsappConnected, 
+    res.json({
+        whatsappConnected: !!currentDB.whatsappConnected,
         hasQr,
         hasWASock,
         whatsappError: currentDB.whatsappError || null,
@@ -2749,7 +2756,7 @@ async function createServer() {
     });
   });
 
-  
+
   // Debug & Log Endpoints for OpenAI and AI Providers
   app.get("/api/backoffice/ai-debug-logs", (req, res) => {
     res.json({
@@ -2814,7 +2821,7 @@ async function createServer() {
         ...currentDB,
         ...req.body
       };
-      
+
       // save state without resetting messagesHistory
       console.log("[WhatsApp API] Estado de configuración actualizado con éxito.");
 
@@ -2874,10 +2881,10 @@ async function createServer() {
   // Real Bold Payments Colombia: Create Payment / Get Checkout URL
   app.post("/api/integrations/bold/create-payment", (req, res) => {
     try {
-      const { 
-        amount, 
-        currency = 'COP', 
-        description = 'Recarga Saldo Expert 360 AI', 
+      const {
+        amount,
+        currency = 'COP',
+        description = 'Recarga Saldo Xorbit 360 AI',
         orderId = `REC-BOLD-${Date.now()}`,
         apiKey = 'l_5Wz-8KQmld8Vb_iyy05KWBQ0A3zz5LOtagMmCjfbk',
         secretKey = '53nBWst7REiVw9So1Zf5aQ',
@@ -2939,7 +2946,7 @@ async function createServer() {
     if (req.method === 'GET') {
       return res.status(200).json({
         status: "active",
-        service: "Comunidad Expert 360 Dropi Webhook Service",
+        service: "Xorbit 360 Dropi Webhook Service",
         ready: true,
         timestamp: new Date().toISOString()
       });
@@ -2959,7 +2966,7 @@ async function createServer() {
       processedAt: new Date().toISOString()
     });
   });
-  
+
   // Initialize Default AI Client
   const defaultGeminiApiKey = process.env.GEMINI_API_KEY;
   let aiInstance: GoogleGenAI | null = null;
@@ -3060,7 +3067,7 @@ async function createServer() {
         const openai = new OpenAI({ apiKey: customKey });
         const messages: any[] = [];
         const contentPart: any[] = [{ type: 'text', text: promptText }];
-        
+
         if (mediaBase64 && mediaMimeType) {
           if (mediaMimeType.startsWith('image/')) {
              contentPart.push({
@@ -3090,7 +3097,7 @@ async function createServer() {
           messages,
           ...(expectsJSON ? { response_format: { type: "json_object" } } : {})
         });
-        
+
         const durationMs = Date.now() - startTime;
         let tokenInfo = { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
         if (response.usage) {
@@ -3212,7 +3219,7 @@ async function createServer() {
 
       const client = getAiClient(customKey);
       const parts: any[] = [{ text: promptText }];
-      
+
       if (mediaBase64 && mediaMimeType) {
         parts.push({
           inlineData: {
@@ -3239,9 +3246,9 @@ async function createServer() {
           retries--;
           const errMsg = typeof error === 'string' ? error : (error?.message || JSON.stringify(error));
           console.error(`Gemini generateContent Error (Retries left: ${retries}):`, errMsg);
-          
+
           const isRetryable = errMsg.includes('503') || errMsg.includes('UNAVAILABLE') || errMsg.includes('429');
-          
+
           if (retries === 0 || !isRetryable) {
             const durationMs = Date.now() - startTime;
             logAiCall({
@@ -3258,7 +3265,7 @@ async function createServer() {
           delay *= 2;
         }
       }
-      
+
       const durationMs = Date.now() - startTime;
       let tokenInfo = { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
       if (res.usageMetadata) {
@@ -3283,7 +3290,7 @@ async function createServer() {
         tokens: tokenInfo,
         response: res.text
       });
-      
+
       return res.text;
     }
   }
@@ -3401,19 +3408,19 @@ async function createServer() {
     const parts = command.trim().split(/\s+/);
     if (parts.length === 0) return false;
     const cmd = parts[0].toLowerCase();
-    
+
     // Pausar IA global
     if (cmd === 'pausa' || cmd === 'pausar') {
       currentDB.isAiGlobalActive = false;
       return true;
     }
-    
+
     // Activar IA global
     if (cmd === 'activar' || cmd === 'iniciar') {
       currentDB.isAiGlobalActive = true;
       return true;
     }
-    
+
     // Cambiar precio del menú del día
     if ((cmd === 'menu' || cmd === 'menú') && parts[1]?.toLowerCase() === 'precio') {
       const val = parseInt(parts[2]);
@@ -3449,7 +3456,7 @@ async function createServer() {
 
     return false;
   }
-  
+
   async function processWithAgents(params: {
     phone: string;
     senderName: string;
@@ -3489,12 +3496,12 @@ Responde ÚNICAMENTE con una sola palabra de la categoría: MENU, SOPORTE, SALUD
 
     // 2. Agente de Recuperación de Contexto (Context Retrieval Tool/Agent - Sincronizado)
     const contextRetrieved = buildSystemPrompt({ phone, senderName, text, history, mediaInfo });
-    
+
     // 3. Agente de Respuesta
     const responsePrompt = `=========================================
 ERES EL 'AGENTE DE RESPUESTA FINAL' DE "${currentDB.businessName || 'Nuestra Empresa'}".
 =========================================
-DATOS DEL CLIENTE: 
+DATOS DEL CLIENTE:
 - Nombre: ${cleanSenderName ? `"${cleanSenderName}"` : 'Nombre no especificado'}. Teléfono: +${phone}
 - REGLA: Dirígete al cliente por su nombre SÓLO si es un nombre propio natural claro. NO inventes nombres ni uses apodos de conversaciones pasadas.
 
@@ -3962,7 +3969,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
       }
 
       console.log(`Iniciando conexión con WhatsApp Web real para canal: ${channelId}...`);
-      
+
       if (!currentDB.channels) {
         currentDB.channels = [{
           id: 'channel-default',
@@ -3994,12 +4001,12 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
       }
 
       const { state: authState, saveCreds } = await useMultiFileAuthState(authSessionPath);
-      
+
       if (channelId === 'channel-default' && currentDB.whatsappError) {
         currentDB.whatsappError = undefined;
         saveDBData(currentDB);
       }
-      
+
       let version = [2, 3000, 1015901307];
       if (typeof fetchLatestBaileysVersion === 'function') {
         try {
@@ -4012,8 +4019,8 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
         }
       }
 
-      const browserOption = Browsers && typeof Browsers.ubuntu === 'function' 
-        ? Browsers.ubuntu('Chrome') 
+      const browserOption = Browsers && typeof Browsers.ubuntu === 'function'
+        ? Browsers.ubuntu('Chrome')
         : ['Ubuntu', 'Chrome', '22.04.4'];
 
       if (activeSockets[channelId]) {
@@ -4110,7 +4117,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
       clientSock.ev.on('connection.update', async (update: any) => {
         console.log(`[WhatsApp Real] Update received:`, JSON.stringify(update, (key, value) => (key === 'qr' ? '***' : value)));
         const { connection, lastDisconnect, qr } = update;
-        
+
         if (qr) {
           try {
             const qrDataUrl = await QRCode.toDataURL(qr);
@@ -4123,13 +4130,13 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
             console.error("Error generating QR Data URL:", e);
           }
         }
-        
+
         if (connection === 'close') {
           isConnecting[channelId] = false;
           const reason = (lastDisconnect?.error)?.output?.statusCode;
           const logoutCode = DisconnectReason?.loggedOut || 401;
           const conflictCode = DisconnectReason?.connectionReplaced || 440;
-          
+
           const isConflict = reason === conflictCode || reason === 440 ||
                              lastDisconnect?.error?.data?.tag === 'conflict' ||
                              lastDisconnect?.error?.data?.attrs?.type === 'replaced';
@@ -4148,11 +4155,11 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
             }
             clientSock.end(undefined);
           } catch(e) {}
-          
+
           // Do not auto-reconnect standard timer if session was replaced (conflict 440) or logged out
           const shouldReconnect = !isLogout && !isConflict;
           console.log(`Conexión con WhatsApp cerrada para canal ${channelId}. Razón: ${reason || 'desconocida'}. Reconectando: ${shouldReconnect}`);
-          
+
           if (activeSockets[channelId] === clientSock) {
             delete activeSockets[channelId];
           }
@@ -4203,7 +4210,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
             }
           }
           saveDBData(currentDB);
-          
+
           if (shouldReconnect) {
             if (reconnectTimers[channelId]) {
               clearTimeout(reconnectTimers[channelId]);
@@ -4252,7 +4259,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
         if (m.type !== 'notify') return;
         for (const msg of m.messages) {
           if (msg.key.fromMe) continue;
-          
+
           const msgTimestamp = msg.messageTimestamp;
           // Ignorar mensajes con más de 30 minutos de antigüedad (1800 segundos) para evitar procesar historial viejo pero sin ignorar mensajes recientes
           if (msgTimestamp && Math.floor(Date.now() / 1000) - Number(msgTimestamp) > 1800) {
@@ -4262,14 +4269,14 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
 
           const senderJid = msg.key.remoteJid;
           const altJid = msg.key.remoteJidAlt || senderJid;
-          
+
           if (!senderJid) continue;
           if (!senderJid.endsWith('@s.whatsapp.net') && !senderJid.endsWith('@lid')) continue;
 
           const isImage = !!msg.message?.imageMessage;
           const isAudio = !!msg.message?.audioMessage;
           let text = msg.message?.conversation || msg.message?.extendedTextMessage?.text || "";
-          
+
           let mediaBase64: string | null = null;
           let mediaMimeType: string | null = null;
 
@@ -4279,7 +4286,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
                 msg,
                 'buffer',
                 {},
-                { 
+                {
                   logger: pino({ level: 'silent' }),
                   reuploadRequest: clientSock.updateMediaMessage
                 }
@@ -4342,11 +4349,11 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
 
             const textLower = text.toLowerCase().trim();
             const customTrigger = (currentDB.reactivationTrigger || '🤖').toLowerCase().trim();
-            
+
             // Acepta la casilla/carácter de reactivación personalizada configurada por el usuario
             const reenableEmojis = ['🤖', '🔄', '⭐', '✅'];
             const reenablePhrases = [
-              'activar bot', 'activar ia', 'iniciar bot', 'iniciar ia', 
+              'activar bot', 'activar ia', 'iniciar bot', 'iniciar ia',
               'móna actívate', 'mona activate', 'activar asistente', 'modo bot',
               'a', 'activa'
             ];
@@ -4369,12 +4376,12 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
               currentDB.disabledBots = (currentDB.disabledBots || []).filter((p: string) => p.replace(/\D/g, '') !== cleanPhoneToEnable);
               console.log(`[WhatsApp Real] [RE-ACTIVADO] Bot reactivado para +${phone} por mensaje o emoji de reactivación ("${customTrigger}").`);
               saveDBData(currentDB);
-              
+
               // Disparar la respuesta de la IA en segundo plano basada en el último mensaje
               (async () => {
                 try {
                   await new Promise(r => setTimeout(r, 1500));
-                  
+
                   const history = currentDB.messagesHistory?.[phone] || [];
                   if (history.length === 0) return;
 
@@ -4445,7 +4452,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
 
           if (isGlobalAiDisabled || isBlacklisted || isBotDisabledForThisPhone) {
             console.log(`[WhatsApp Real] Mensaje de +${phone} recibido pero omitido. (isGlobalDisabled=${isGlobalAiDisabled}, isBlacklisted=${isBlacklisted}, isDisabledForPhone=${isBotDisabledForThisPhone}).`);
-            
+
             // Registramos el mensaje igualmente en la lista de chats para visibilidad en el panel
             let avatarUrl = currentDB.profilePictures?.[phone];
             if (!avatarUrl && clientSock && typeof clientSock.profilePictureUrl === 'function') {
@@ -4516,14 +4523,14 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
 - Postres: ${menu.postres ? menu.postres.join(', ') : ''}
 - Precio general: $${menu.precio} COP`;
 
-            const inventoryStr = currentDB.products ? 
-              `Inventario actual (Avisa si algo está AGOTADO):\n${currentDB.products.map((p: any) => `- ${p.name}: ${p.stock > 0 ? (p.stock + ' disponibles') : '¡AGOTADO!'}`).join('\n')}` 
+            const inventoryStr = currentDB.products ?
+              `Inventario actual (Avisa si algo está AGOTADO):\n${currentDB.products.map((p: any) => `- ${p.name}: ${p.stock > 0 ? (p.stock + ' disponibles') : '¡AGOTADO!'}`).join('\n')}`
               : '';
 
             // Prepare history
             if (!currentDB.messagesHistory) currentDB.messagesHistory = {};
             if (!currentDB.messagesHistory[phone]) currentDB.messagesHistory[phone] = [];
-            
+
             // Append the new message to history first
             const nowClientTime = new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
             currentDB.messagesHistory[phone].push({ role: 'client', text, time: nowClientTime, timestamp: Date.now() });
@@ -4623,7 +4630,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
           // Spawn order
           const randId = `ORD-${Math.floor(100 + Math.random() * 900)}`;
           const itemsList = details.items && details.items.length > 0 ? details.items : ["1x Almuerzo Ejecutivo"];
-          
+
           spawnedOrder = {
             id: randId,
             customerName: details.customerName,
@@ -4657,7 +4664,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
             };
             currentDB.customers = [...currentDB.customers, newCust];
           } else {
-            currentDB.customers = currentDB.customers.map((c: any) => 
+            currentDB.customers = currentDB.customers.map((c: any) =>
               c.phone === clientPhoneClean ? { ...c, ordersCount: c.ordersCount + 1 } : c
             );
           }
@@ -4666,7 +4673,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
           parsedOutput.createdOrder = spawnedOrder;
         }
       }
-      
+
       let finalMenuImg = null;
       if (wantsMenuImage) {
          if (currentDB.menuImage) {
@@ -4727,7 +4734,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
     });
   });
 
-  
+
   app.get('/api/admin/config', (req, res) => {
     res.json({
       telegramBotUsername: currentDB.telegramBotUsername || '',
@@ -5049,7 +5056,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
       tiktokConnected: false,
       tiktokConnectedUser: null
     };
-    
+
     // Ensure the webhook URLs are up to date with the current hosting host dynamically
     config.metaWebhookUrl = `${req.protocol}://${req.get('host')}/api/webhooks/meta`;
     config.tiktokWebhookUrl = `${req.protocol}://${req.get('host')}/api/webhooks/tiktok`;
@@ -5449,9 +5456,9 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
     try {
       const { reqId, email, approved } = req.body;
       if (!currentDB.leaderRequests) currentDB.leaderRequests = [];
-      currentDB.leaderRequests = currentDB.leaderRequests.map((r: any) => 
-        r.id === reqId || r.userEmail === email 
-          ? { ...r, status: approved ? 'Aprobado' : 'Rechazado' } 
+      currentDB.leaderRequests = currentDB.leaderRequests.map((r: any) =>
+        r.id === reqId || r.userEmail === email
+          ? { ...r, status: approved ? 'Aprobado' : 'Rechazado' }
           : r
       );
       saveDBData(currentDB);
@@ -5513,7 +5520,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
   app.get('/api/ads/campaigns', async (req, res) => {
     try {
       const config = currentDB.metaAndTiktokConfig;
-      
+
       // Initialize campaigns in DB if not present
       if (!currentDB.campaigns) {
         currentDB.campaigns = getSimulatedCampaigns();
@@ -5545,7 +5552,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
       try {
         const cleanId = adAccountId.replace('act_', '');
         const url = `https://graph.facebook.com/v18.0/act_${cleanId}/campaigns?fields=name,status,objective,buying_type,insights{impressions,clicks,spend,ctr,cpc}&access_token=${accessToken}`;
-        
+
         const fbRes = await fetch(url, { signal: AbortSignal.timeout(3000) });
         const fbData = await fbRes.json() as any;
 
@@ -5645,7 +5652,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
           try {
             const cleanId = adAccountId.replace('act_', '');
             const fbUrl = `https://graph.facebook.com/v18.0/act_${cleanId}/campaigns`;
-            
+
             const bodyData = new URLSearchParams();
             bodyData.append('name', name);
             bodyData.append('objective', objective || 'OUTCOME_SALES');
@@ -5677,7 +5684,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
               return res.json({
                 success: true,
                 realCreated: false,
-                info: "No se pudo crear en Meta directamente (ver error). Se creó de manera local en Expert 360°.",
+                info: "No se pudo crear en Meta directamente (ver error). Se creó de manera local en Xorbit 360.",
                 metaError: fbResult.error,
                 campaign: newCamp
               });
@@ -5710,7 +5717,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
       if (!currentDB.campaigns) {
         currentDB.campaigns = getSimulatedCampaigns();
       }
-      
+
       const index = currentDB.campaigns.findIndex((c: any) => c.id === id);
       if (index !== -1) {
         if (status !== undefined) currentDB.campaigns[index].status = status;
@@ -5728,7 +5735,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
           currentDB.campaigns[index].metrics.spend = parseFloat(spend);
         }
         if (name !== undefined) currentDB.campaigns[index].name = name;
-        
+
         saveDBData(currentDB);
         return res.json({ success: true, campaign: currentDB.campaigns[index] });
       } else {
@@ -5756,7 +5763,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
       </head>
       <body class="bg-[#f0f2f5] min-h-screen flex items-center justify-center p-4">
         <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden border border-gray-200">
-          
+
           <!-- Meta Header -->
           <div class="bg-[#1877f2] px-6 py-4 flex items-center justify-between text-white">
             <div class="flex items-center gap-2">
@@ -5792,7 +5799,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
 
             <div class="border border-gray-200 rounded-xl p-4 space-y-3 bg-gray-50">
               <p class="text-xs font-bold text-gray-600 uppercase tracking-wider">Cuentas simuladas a conectar:</p>
-              
+
               <div class="space-y-2">
                 <label class="flex items-center justify-between p-2.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 cursor-pointer">
                   <div class="flex items-center gap-2.5">
@@ -5853,27 +5860,27 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
             <div class="space-y-3 bg-gray-50 p-4 border border-gray-200 rounded-xl">
               <div>
                 <label class="block text-[10px] text-gray-600 font-bold uppercase tracking-wider mb-1">System User / Page Access Token (Meta Graph API):</label>
-                <input 
-                  type="password" 
-                  id="real_token" 
-                  placeholder="EAAbx... Pegue su token de acceso aquí" 
-                  class="w-full bg-white border border-gray-200 rounded-lg p-2.5 text-xs text-gray-800 outline-none focus:ring-2 focus:ring-blue-500" 
+                <input
+                  type="password"
+                  id="real_token"
+                  placeholder="EAAbx... Pegue su token de acceso aquí"
+                  class="w-full bg-white border border-gray-200 rounded-lg p-2.5 text-xs text-gray-800 outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               <div>
                 <label class="block text-[10px] text-gray-600 font-bold uppercase tracking-wider mb-1">ID de Cuenta Publicitaria de Preferencia (Opcional):</label>
-                <input 
-                  type="text" 
-                  id="real_ad_account" 
-                  placeholder="ej. act_1234567890123" 
-                  class="w-full bg-white border border-gray-200 rounded-lg p-2 text-xs text-gray-800 outline-none focus:ring-2 focus:ring-blue-500" 
+                <input
+                  type="text"
+                  id="real_ad_account"
+                  placeholder="ej. act_1234567890123"
+                  class="w-full bg-white border border-gray-200 rounded-lg p-2 text-xs text-gray-800 outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
-              <button 
-                type="button" 
-                onclick="verifyRealToken()" 
+              <button
+                type="button"
+                onclick="verifyRealToken()"
                 class="w-full bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 rounded-lg text-xs transition"
               >
                 🔍 Validar y Cargar Datos Reales de Meta
@@ -5914,10 +5921,10 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
               <button onclick="window.close()" class="px-4 py-2 text-xs font-semibold text-gray-500 hover:bg-gray-100 rounded-lg">
                 Cancelar
               </button>
-              <button 
-                id="real_submit_btn" 
-                disabled 
-                onclick="submitRealConnection()" 
+              <button
+                id="real_submit_btn"
+                disabled
+                onclick="submitRealConnection()"
                 class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Permitir Acceso Real
@@ -5958,7 +5965,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
               alert('Por favor ingrese su Token de Acceso de Meta.');
               return;
             }
-            
+
             const statusDiv = document.getElementById('real_status');
             statusDiv.classList.remove('hidden');
             statusDiv.innerHTML = '<span class="text-blue-600 font-semibold animate-pulse">Conectando con Meta Graph API...</span>';
@@ -5984,7 +5991,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
 
               // Render loaded data
               let userAvatar = meData.picture?.data?.url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80';
-              
+
               // Update live profile info
               document.getElementById('real_user_name').innerText = meData.name;
               document.getElementById('real_user_id').innerText = 'ID de Usuario: ' + meData.id;
@@ -6031,7 +6038,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
 
               statusDiv.innerHTML = '<span class="text-emerald-600 font-bold">✓ ¡Meta Graph API Conectada Exitosamente!</span>';
               statusDiv.className = "p-3 rounded-lg bg-emerald-50 text-xs border border-emerald-200";
-              
+
               window.realConnectedData = {
                 me: meData,
                 pages: pagesList,
@@ -6053,7 +6060,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
             const adAccount = document.getElementById('ad_account_select').value;
             const p1 = document.getElementById('chk_page_1').checked;
             const p2 = document.getElementById('chk_page_2').checked;
-            
+
             const pages = [];
             if (p1) pages.push({ name: 'La Mona de Yumbo', id: '102948281042', type: 'Facebook' });
             if (p2) pages.push({ name: '@LaMonaYumboOficial', id: '99284102914', type: 'Instagram' });
@@ -6076,7 +6083,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
           function submitRealConnection() {
             if (!window.realConnectedData) return;
             const data = window.realConnectedData;
-            
+
             // Get selected pages
             const pages = [];
             const chks = document.querySelectorAll('.real-page-chk:checked');
@@ -6150,7 +6157,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
       </head>
       <body class="bg-[#f0f2f5] min-h-screen flex items-center justify-center p-4">
         <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden border border-gray-200">
-          
+
           <!-- Meta Header -->
           <div class="bg-[#1877f2] px-6 py-4 flex items-center justify-between text-white">
             <div class="flex items-center gap-2">
@@ -6261,31 +6268,31 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
             <div class="space-y-3 bg-gray-50 p-4 border border-gray-200 rounded-xl">
               <div>
                 <label class="block text-[10px] text-gray-600 font-bold uppercase tracking-wider mb-1">System User Access Token (Larga Duración):</label>
-                <input 
-                  type="password" 
-                  id="real_waba_token" 
-                  placeholder="EAAbx... Pegue el token de acceso permanente de Meta" 
-                  class="w-full bg-white border border-gray-200 rounded-lg p-2 text-xs text-gray-800 outline-none focus:ring-2 focus:ring-blue-500" 
+                <input
+                  type="password"
+                  id="real_waba_token"
+                  placeholder="EAAbx... Pegue el token de acceso permanente de Meta"
+                  class="w-full bg-white border border-gray-200 rounded-lg p-2 text-xs text-gray-800 outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               <div class="grid grid-cols-2 gap-2">
                 <div>
                   <label class="block text-[10px] text-gray-600 font-bold uppercase tracking-wider mb-1">WhatsApp Phone ID:</label>
-                  <input 
-                    type="text" 
-                    id="real_waba_phone_id" 
-                    placeholder="ej. 109283..." 
-                    class="w-full bg-white border border-gray-200 rounded-lg p-2 text-xs text-gray-800 outline-none focus:ring-2 focus:ring-blue-500" 
+                  <input
+                    type="text"
+                    id="real_waba_phone_id"
+                    placeholder="ej. 109283..."
+                    class="w-full bg-white border border-gray-200 rounded-lg p-2 text-xs text-gray-800 outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
                   <label class="block text-[10px] text-gray-600 font-bold uppercase tracking-wider mb-1">WhatsApp Business ID:</label>
-                  <input 
-                    type="text" 
-                    id="real_waba_account_id" 
-                    placeholder="ej. 982349..." 
-                    class="w-full bg-white border border-gray-200 rounded-lg p-2 text-xs text-gray-800 outline-none focus:ring-2 focus:ring-blue-500" 
+                  <input
+                    type="text"
+                    id="real_waba_account_id"
+                    placeholder="ej. 982349..."
+                    class="w-full bg-white border border-gray-200 rounded-lg p-2 text-xs text-gray-800 outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
@@ -6293,18 +6300,18 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
               <div class="grid grid-cols-1 gap-2 pt-1">
                 <div>
                   <label class="block text-[10px] text-gray-600 font-bold uppercase tracking-wider mb-1">Número de Teléfono Real (con indicativo):</label>
-                  <input 
-                    type="text" 
-                    id="real_waba_phone_number" 
-                    placeholder="ej. +573001234567" 
-                    class="w-full bg-white border border-gray-200 rounded-lg p-2 text-xs text-gray-800 outline-none focus:ring-2 focus:ring-blue-500" 
+                  <input
+                    type="text"
+                    id="real_waba_phone_number"
+                    placeholder="ej. +573001234567"
+                    class="w-full bg-white border border-gray-200 rounded-lg p-2 text-xs text-gray-800 outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
 
-              <button 
-                type="button" 
-                onclick="verifyRealWaba()" 
+              <button
+                type="button"
+                onclick="verifyRealWaba()"
                 class="w-full bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 rounded-lg text-xs transition"
               >
                 🔍 Validar Conexión de WhatsApp con Meta
@@ -6324,10 +6331,10 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
               <button onclick="window.close()" class="px-4 py-2 text-xs font-semibold text-gray-500 hover:bg-gray-100 rounded-lg">
                 Cancelar
               </button>
-              <button 
-                id="real_waba_submit_btn" 
-                disabled 
-                onclick="submitRealWabaConnection()" 
+              <button
+                id="real_waba_submit_btn"
+                disabled
+                onclick="submitRealWabaConnection()"
                 class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Vincular Cuenta Real
@@ -6464,10 +6471,10 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
             .then(res => res.json())
             .then(data => {
               if (window.opener) {
-                window.opener.postMessage({ 
-                  type: 'OAUTH_AUTH_SUCCESS', 
-                  provider: 'meta-whatsapp', 
-                  data: payload.connectedUser 
+                window.opener.postMessage({
+                  type: 'OAUTH_AUTH_SUCCESS',
+                  provider: 'meta-whatsapp',
+                  data: payload.connectedUser
                 }, '*');
                 window.close();
               }
@@ -6643,13 +6650,13 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
               </div>
               <div class="space-y-1">
                 <h2 class="font-bold text-gray-100 text-lg">Sincronizar TikTok Ads</h2>
-                <p class="text-xs text-gray-400">Permite que Expert 360° acceda de forma segura a tus leads de Lead Generation instant forms y recupere informes publicitarios de TikTok.</p>
+                <p class="text-xs text-gray-400">Permite que Xorbit 360 acceda de forma segura a tus leads de Lead Generation instant forms y recupere informes publicitarios de TikTok.</p>
               </div>
             </div>
 
             <div class="border-t border-b border-gray-800 py-4 space-y-3">
               <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Cuenta Publicitaria de TikTok:</p>
-              
+
               <div class="space-y-2">
                 <label class="flex items-center justify-between p-3 rounded-lg border border-gray-800 bg-[#161616] hover:bg-[#222] cursor-pointer">
                   <div class="flex items-center gap-3">
@@ -6679,7 +6686,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
         <script>
           function submitConnection() {
             const isChecked = document.getElementById('chk_tt_1').checked;
-            
+
             const adAccounts = [];
             if (isChecked) {
               adAccounts.push({ id: 'act_10283811', name: 'oscar_ads_agency' });
@@ -6751,7 +6758,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
     const token = req.query['hub.verify_token'];
     const challenge = req.query['hub.challenge'] || req.query['challenge'] || req.query['zernio.challenge'];
     const configToken = currentDB.metaAndTiktokConfig?.metaWebhookVerifyToken || 'mona_meta_verify_token';
-    
+
     if (mode === 'subscribe' && token === configToken) {
       console.log('✓ Meta Webhook Verificado Correctamente!');
       return res.status(200).send(challenge);
@@ -6812,7 +6819,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
     if (!currentDB.webhookLogs) {
       currentDB.webhookLogs = [];
     }
-    
+
     // Simulate real parsed info for UI display
     let summary = 'Evento Meta recibido';
     if (req.body.entry?.[0]?.changes?.[0]?.value) {
@@ -6829,7 +6836,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
       summary,
       payload: req.body
     });
-    
+
     if (currentDB.webhookLogs.length > 50) {
       currentDB.webhookLogs = currentDB.webhookLogs.slice(0, 50);
     }
@@ -6882,7 +6889,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
       if (replyMarkup) {
         payload.reply_markup = JSON.stringify(replyMarkup);
       }
-      
+
       await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -6931,23 +6938,23 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
         const msg = update.message;
         const chatId = msg.chat?.id;
         const text = msg.text || '';
-        
+
         if (text.startsWith('/start')) {
           const parts = text.split(' ');
           const param = parts.length > 1 ? parts[1] : '';
-          
+
           if (param.startsWith('pay_')) {
             const invoiceId = param.substring(4); // pay_TG-INV-XXXXXX
             const invoice = currentDB.telegramInvoices ? currentDB.telegramInvoices[invoiceId] : null;
-            
+
             if (invoice) {
-              const messageText = `📦 *FACTURA ENCONTRADA EN EXPERT360*\n\n` +
+              const messageText = `📦 *FACTURA ENCONTRADA EN XORBIT 360*\n\n` +
                 `💳 *Plan:* _${invoice.planName}_\n` +
                 `💰 *Monto:* _$${invoice.planValue} USD_\n` +
                 `🔑 *Referencia:* \`${invoiceId}\`\n` +
                 `👛 *Wallet Recibidora:* \`${invoice.superAdminWallet}\`\n\n` +
                 `Por favor, confirma el pago a continuación. Una vez confirmado, el Smart Contract distribuirá de manera inmediata las comisiones a la red.`;
-                
+
               const inlineKeyboard = {
                 inline_keyboard: [
                   [
@@ -6956,23 +6963,23 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
                   ]
                 ]
               };
-              
+
               await sendTelegramMessage(token, chatId, messageText, inlineKeyboard);
             } else {
               await sendTelegramMessage(token, chatId, `❌ *Factura Expirada o No Encontrada*\nLa referencia de pago \`${invoiceId}\` no pudo ser localizada en la base de datos.`);
             }
           } else if (param.startsWith('ref_')) {
             const refereeWallet = param.substring(4);
-            const messageText = `👋 *¡BIENVENIDO A EXPERT360!*\n\n` +
+            const messageText = `👋 *¡BIENVENIDO A XORBIT 360!*\n\n` +
               `🔗 Has sido referido mediante el Smart Contract de Telegram por el sponsor:\n\`${refereeWallet}\`\n\n` +
               `¡Felicidades! Ahora estás conectado a su red. Puedes proceder a activar tu suscripción desde la plataforma y armar tu propia red Droshipper.`;
-              
+
             await sendTelegramMessage(token, chatId, messageText);
           } else {
-            const messageText = `👋 *¡HOLA! BIENVENIDO AL ASISTENTE DE EXPERT360 Y COMUNIDAD DROSHIPPER*\n\n` +
+            const messageText = `👋 *¡HOLA! BIENVENIDO AL ASISTENTE DE XORBIT 360 Y COMUNIDAD DROSHIPPER*\n\n` +
               `Este bot permite procesar pagos y referidos on-chain de manera descentralizada con USDT/TON.\n\n` +
               `💻 Visita nuestra plataforma para activar tu plan y empezar a ganar comisiones instantáneas por cada referido.`;
-              
+
             await sendTelegramMessage(token, chatId, messageText);
           }
         }
@@ -6982,14 +6989,14 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
         const chatId = cb.message?.chat?.id;
         const messageId = cb.message?.message_id;
         const data = cb.data || '';
-        
+
         if (data.startsWith('confirm_pay_')) {
           const invoiceId = data.replace('confirm_pay_', '');
-          
+
           if (currentDB.telegramInvoices && currentDB.telegramInvoices[invoiceId]) {
             const invoice = currentDB.telegramInvoices[invoiceId];
             invoice.status = 'COMPLETED';
-            
+
             const superAdminWallet = currentDB.superAdminWallet || process.env.SUPERADMIN_WALLET || 'UQCL7H-UGIwxtwONsAaSWdBECdXLOZJbJkXK4qjatvXNqKNI';
             const sponsorWallet = invoice.sponsorWallet || '';
             const hasSponsors = !!sponsorWallet;
@@ -6997,7 +7004,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
             const u1_share = invoice.planValue * 0.50;
             const u2_share = invoice.planValue * 0.10;
             const admin_share = invoice.planValue * 0.25;
-            
+
             const newTxs = [];
             if (hasSponsors) {
               newTxs.push(
@@ -7089,28 +7096,28 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
                 timestamp: 'Hace unos instantes'
               });
             }
-            
+
             if (!currentDB.telegramTransactions) {
               currentDB.telegramTransactions = [];
             }
             currentDB.telegramTransactions = [...newTxs, ...currentDB.telegramTransactions];
-            
+
             if (!currentDB.userPlans) {
               currentDB.userPlans = {};
             }
             const targetEmail = invoice.email || 'usuario@email.com';
             currentDB.userPlans[targetEmail] = invoice.planName;
-            
+
             saveDBData(currentDB);
-            
+
             const successMessage = `🥳 *¡PAGO CONFIRMADO CON ÉXITO!*\n\n` +
               `✅ El Smart Contract ha sido ejecutado de manera óptima en la red de Telegram.\n` +
               `💰 El split de comisiones se distribuyó instantáneamente a las wallets de la comunidad.\n\n` +
               `¡Gracias por tu pago! Ya puedes ver tu estado activo en la plataforma principal.`;
-              
+
             await sendTelegramMessage(token, chatId, successMessage);
             await answerTelegramCallback(token, callbackId, "¡Pago verificado y procesado con éxito!");
-            await editTelegramMessage(token, chatId, messageId, `📦 *FACTURA PAGADA - EXPERT360*\n\n` +
+            await editTelegramMessage(token, chatId, messageId, `📦 *FACTURA PAGADA - XORBIT 360*\n\n` +
               `💳 *Plan:* _${invoice.planName}_\n` +
               `💰 *Monto:* _$${invoice.planValue} USD_\n` +
               `🔑 *Referencia:* \`${invoiceId}\`\n\n` +
@@ -7181,7 +7188,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
             throw new Error(`HTTP error! status: ${response.status}`);
           }
           const data = await response.json();
-          
+
           if (data.ok && data.result) {
             for (const update of data.result) {
               lastTelegramUpdateId = update.update_id || update.updateId;
@@ -7195,7 +7202,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
     };
-    
+
     runPoll();
   }
 
@@ -7206,7 +7213,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
     try {
       const count = currentDB.remarketingCount !== undefined ? Number(currentDB.remarketingCount) : 0;
       if (count === 0) return; // Remarketing is disabled
-      
+
       const intervalStr = currentDB.remarketingInterval || '2 horas';
       let intervalMs = 2 * 60 * 60 * 1000; // Default 2 hours
       if (intervalStr.includes('15 min') || intervalStr.includes('15 minutos')) intervalMs = 15 * 60 * 1000;
@@ -7215,7 +7222,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
       else if (intervalStr.includes('24 horas')) intervalMs = 24 * 60 * 60 * 1000;
 
       const avoidSpam = currentDB.remarketingAvoidSpam !== undefined ? !!currentDB.remarketingAvoidSpam : true;
-      
+
       if (!currentDB.remarketingStatus) {
         currentDB.remarketingStatus = {};
       }
@@ -7234,7 +7241,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
         if (lastMsg.role !== 'assistant' && lastMsg.role !== 'agent') continue;
 
         // Condition 2: Last message timestamp is valid and exceeds interval
-        const lastMsgTime = lastMsg.timestamp || (now - intervalMs - 1000); 
+        const lastMsgTime = lastMsg.timestamp || (now - intervalMs - 1000);
         if (now - lastMsgTime < intervalMs) continue;
 
         // Check how many remarketings we have sent
@@ -7267,8 +7274,8 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
         let msgText = "";
         let attachment: any = null;
 
-        const useAI = currentDB.remarketingUseAI && currentDB.remarketingUseAI[currentSequenceIndex] !== undefined 
-          ? !!currentDB.remarketingUseAI[currentSequenceIndex] 
+        const useAI = currentDB.remarketingUseAI && currentDB.remarketingUseAI[currentSequenceIndex] !== undefined
+          ? !!currentDB.remarketingUseAI[currentSequenceIndex]
           : true;
 
         if (useAI) {
@@ -7278,7 +7285,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
 Historial de chat:
 ${history.slice(-6).map((h: any) => `${h.role === 'client' ? 'Cliente' : 'IA'}: ${h.text}`).join('\n')}
 Respuesta de remarketing (sin etiquetas JSON, solo texto plano):`;
-            
+
             const aiResponse = await executeAIInternal(prompt);
             msgText = aiResponse || "¡Hola! ¿Quedó alguna duda sobre tu solicitud? Quedo a tu disposición.";
           } catch (err) {
@@ -7287,7 +7294,7 @@ Respuesta de remarketing (sin etiquetas JSON, solo texto plano):`;
         } else {
           const customMessages = currentDB.remarketingMessages || [];
           msgText = customMessages[currentSequenceIndex] || "¡Hola! Quería saber si pudiste revisar la información. Quedo a tu disposición.";
-          
+
           const customAtts = currentDB.remarketingAttachments || [];
           const attList = customAtts[currentSequenceIndex] || [];
           if (attList.length > 0) {
@@ -7304,9 +7311,9 @@ Respuesta de remarketing (sin etiquetas JSON, solo texto plano):`;
                 await clientSock.sendMessage(targetJid, { image: buffer, caption: msgText });
               } else if (attachment.type === 'audio') {
                 const converted = await convertAudioToOggOpus(buffer, attachment.url || attachment.name);
-                await clientSock.sendMessage(targetJid, { 
-                  audio: converted, 
-                  ptt: true, 
+                await clientSock.sendMessage(targetJid, {
+                  audio: converted,
+                  ptt: true,
                   mimetype: 'audio/ogg; codecs=opus',
                   waveform: generateSimulatedWaveform(64)
                 });
@@ -7346,7 +7353,7 @@ Respuesta de remarketing (sin etiquetas JSON, solo texto plano):`;
   // Ejecutar el checker de remarketing cada 60 segundos
   setInterval(checkAndSendRemarketing, 60000);
 
-  
+
   // Auto-connect WhatsApp if it was previously connected or if saved credentials exist
   const defaultCredsPath = path.join(path.resolve(wAuthBaseDir, 'baileys_auth_info'), 'creds.json');
   const hasSavedCreds = fs.existsSync(defaultCredsPath) || (currentDB.whatsappSessionData && currentDB.whatsappSessionData['channel-default']);

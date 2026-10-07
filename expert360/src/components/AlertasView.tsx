@@ -12,7 +12,7 @@ export default function AlertasView() {
   const handleAddAlert = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newAlert.target) return;
-    
+
     setAlerts([...alerts, {
       id: Date.now(),
       trigger: newAlert.trigger,
@@ -42,7 +42,7 @@ export default function AlertasView() {
           Configuración de Alertas
         </h2>
         {!isAdding && (
-          <button 
+          <button
             onClick={() => setIsAdding(true)}
             className="bg-yellow-500 hover:bg-yellow-400 text-black px-4 py-2 rounded-lg text-sm font-bold transition-colors flex items-center gap-2"
           >
@@ -63,7 +63,7 @@ export default function AlertasView() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Evento (Trigger)</label>
-                <select 
+                <select
                   value={newAlert.trigger}
                   onChange={e => setNewAlert({...newAlert, trigger: e.target.value})}
                   className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-yellow-500 focus:outline-none"
@@ -76,7 +76,7 @@ export default function AlertasView() {
               </div>
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Acción</label>
-                <select 
+                <select
                   value={newAlert.action}
                   onChange={e => setNewAlert({...newAlert, action: e.target.value})}
                   className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-yellow-500 focus:outline-none"
@@ -88,24 +88,24 @@ export default function AlertasView() {
               </div>
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Destinatario</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={newAlert.target}
                   onChange={e => setNewAlert({...newAlert, target: e.target.value})}
-                  placeholder={newAlert.action === 'Email' ? 'ejemplo@correo.com' : '+573001234567'} 
+                  placeholder={newAlert.action === 'Email' ? 'ejemplo@correo.com' : '+573001234567'}
                   className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-yellow-500 focus:outline-none"
                 />
               </div>
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => setIsAdding(false)}
                 className="px-4 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white transition-colors border border-gray-700 hover:bg-gray-800"
               >
                 Cancelar
               </button>
-              <button 
+              <button
                 type="submit"
                 className="bg-yellow-500 hover:bg-yellow-400 text-black px-4 py-2 rounded-lg text-sm font-bold transition-colors flex items-center gap-2"
               >
@@ -122,11 +122,11 @@ export default function AlertasView() {
             <p className="text-gray-400">No tienes alertas configuradas.</p>
           </div>
         )}
-        
+
         {alerts.map(alert => (
           <div key={alert.id} className="bg-[#111] border border-gray-800 p-4 rounded-xl flex items-center justify-between group">
             <div className="flex items-center gap-4">
-              <button 
+              <button
                 onClick={() => toggleAlert(alert.id)}
                 className={`w-10 h-6 rounded-full transition-colors relative ${alert.active ? 'bg-yellow-500' : 'bg-gray-700'}`}
               >
@@ -144,7 +144,7 @@ export default function AlertasView() {
                 </div>
               </div>
             </div>
-            <button 
+            <button
               onClick={() => removeAlert(alert.id)}
               className="text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-red-400/10 rounded-lg"
             >

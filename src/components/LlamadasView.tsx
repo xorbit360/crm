@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { 
-  PhoneCall, PhoneOutgoing, PhoneIncoming, Mic, Volume2, Play, Pause, 
-  Settings, Bot, Sparkles, CheckCircle2, XCircle, AlertCircle, RefreshCw, 
-  Plus, Search, UserCheck, Calendar, Clock, ArrowUpRight, Zap, ShieldCheck, 
+import {
+  PhoneCall, PhoneOutgoing, PhoneIncoming, Mic, Volume2, Play, Pause,
+  Settings, Bot, Sparkles, CheckCircle2, XCircle, AlertCircle, RefreshCw,
+  Plus, Search, UserCheck, Calendar, Clock, ArrowUpRight, Zap, ShieldCheck,
   MessageSquareText, BarChart3, Radio, FileText, Download, Sliders, Smartphone, Check
 } from 'lucide-react';
 
@@ -32,7 +32,7 @@ interface VoiceAgent {
 
 export default function LlamadasView() {
   const [activeTab, setActiveTab] = useState<'simulador' | 'campanas' | 'agentes' | 'historial' | 'telefonia'>('simulador');
-  
+
   // Call Simulator States
   const [simState, setSimState] = useState<'idle' | 'calling' | 'connected' | 'ended'>('idle');
   const [simDuration, setSimDuration] = useState<number>(0);
@@ -164,11 +164,11 @@ export default function LlamadasView() {
 
   return (
     <div className="p-4 sm:p-6 bg-[#0c0c0e] text-white min-h-screen space-y-6">
-      
+
       {/* Top Banner & Title */}
-      <div className="bg-gradient-to-r from-indigo-950 via-[#121216] to-purple-950 border border-indigo-800/40 rounded-2xl p-5 sm:p-6 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="bg-gradient-to-r from-blue-950 via-[#121216] to-blue-950 border border-blue-800/40 rounded-2xl p-5 sm:p-6 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="space-y-1">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-500/20 border border-indigo-500/30 rounded-full text-indigo-300 text-xs font-bold uppercase tracking-wider">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/20 border border-blue-500/30 rounded-full text-blue-300 text-xs font-bold uppercase tracking-wider">
             <Radio size={14} className="animate-pulse text-emerald-400" /> Agente Telefónico de Voz IA 24/7
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
@@ -180,9 +180,9 @@ export default function LlamadasView() {
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
-          <button 
+          <button
             onClick={() => setActiveTab('simulador')}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-xs transition-colors flex items-center gap-2 shadow-lg shadow-indigo-950"
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-xs transition-colors flex items-center gap-2 shadow-lg shadow-blue-950"
           >
             <PhoneCall size={16} /> Probar Simulador de Voz
           </button>
@@ -193,7 +193,7 @@ export default function LlamadasView() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="bg-[#121215] border border-gray-800 rounded-2xl p-4 space-y-1">
           <span className="text-xs text-gray-400 font-medium flex items-center justify-between">
-            Llamadas Realizadas <PhoneOutgoing size={16} className="text-indigo-400" />
+            Llamadas Realizadas <PhoneOutgoing size={16} className="text-blue-400" />
           </span>
           <p className="text-2xl font-black text-white">1,428</p>
           <span className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
@@ -211,7 +211,7 @@ export default function LlamadasView() {
 
         <div className="bg-[#121215] border border-gray-800 rounded-2xl p-4 space-y-1">
           <span className="text-xs text-gray-400 font-medium flex items-center justify-between">
-            Duración Promedio <Clock size={16} className="text-purple-400" />
+            Duración Promedio <Clock size={16} className="text-blue-400" />
           </span>
           <p className="text-2xl font-black text-white">0:52 min</p>
           <span className="text-[11px] text-gray-400">Optimizado para ahorro de minutos</span>
@@ -243,7 +243,7 @@ export default function LlamadasView() {
               onClick={() => setActiveTab(tab.id as any)}
               className={`py-2.5 px-4 rounded-xl font-bold text-xs flex items-center gap-2 transition-all whitespace-nowrap ${
                 isActive
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-950'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-950'
                   : 'bg-[#141418] text-gray-400 hover:text-white border border-gray-800'
               }`}
             >
@@ -256,20 +256,20 @@ export default function LlamadasView() {
       {/* TAB 1: SIMULADOR DE LLAMADA EN VIVO */}
       {activeTab === 'simulador' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
+
           {/* Phone Screen Mockup */}
           <div className="bg-[#121215] border border-gray-800 rounded-3xl p-6 shadow-2xl flex flex-col items-center justify-between min-h-[520px] relative overflow-hidden">
             {/* Background Glow */}
-            <div className="absolute -top-20 -left-20 w-48 h-48 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -top-20 -left-20 w-48 h-48 bg-blue-600/20 rounded-full blur-3xl pointer-events-none" />
 
             {/* Top Phone Info */}
             <div className="text-center space-y-2 z-10 w-full pt-4">
-              <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 p-1 shadow-xl shadow-indigo-950/60 flex items-center justify-center">
+              <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-tr from-blue-600 to-blue-600 p-1 shadow-xl shadow-blue-950/60 flex items-center justify-center">
                 <Bot size={40} className="text-white" />
               </div>
               <div>
                 <h3 className="text-xl font-black text-white">{selectedAgent.name}</h3>
-                <p className="text-xs text-indigo-400 font-semibold">{selectedAgent.accent}</p>
+                <p className="text-xs text-blue-400 font-semibold">{selectedAgent.accent}</p>
               </div>
 
               {/* Status Indicator */}
@@ -303,11 +303,11 @@ export default function LlamadasView() {
             {/* Audio Waveform Graphic */}
             <div className="w-full py-8 flex items-center justify-center gap-1.5 z-10">
               {[40, 65, 25, 90, 45, 80, 30, 100, 50, 70, 35, 85].map((h, i) => (
-                <div 
-                  key={i} 
-                  style={{ height: simState === 'connected' ? `${h}%` : '8px' }} 
+                <div
+                  key={i}
+                  style={{ height: simState === 'connected' ? `${h}%` : '8px' }}
                   className={`w-1.5 rounded-full transition-all duration-300 ${
-                    simState === 'connected' ? 'bg-indigo-500 animate-pulse' : 'bg-gray-800'
+                    simState === 'connected' ? 'bg-blue-500 animate-pulse' : 'bg-gray-800'
                   }`}
                 />
               ))}
@@ -316,7 +316,7 @@ export default function LlamadasView() {
             {/* Phone Call Controls */}
             <div className="w-full z-10 pb-2">
               {simState === 'idle' && (
-                <button 
+                <button
                   onClick={handleStartSimCall}
                   className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-bold text-sm shadow-xl shadow-emerald-950 flex items-center justify-center gap-2 transition-transform active:scale-95"
                 >
@@ -325,7 +325,7 @@ export default function LlamadasView() {
               )}
 
               {simState === 'calling' && (
-                <button 
+                <button
                   onClick={handleEndSimCall}
                   className="w-full py-3.5 bg-rose-600 hover:bg-rose-500 text-white rounded-2xl font-bold text-sm shadow-xl flex items-center justify-center gap-2"
                 >
@@ -335,7 +335,7 @@ export default function LlamadasView() {
 
               {simState === 'connected' && (
                 <div className="flex items-center justify-center gap-4">
-                  <button 
+                  <button
                     onClick={() => setIsMuted(!isMuted)}
                     className={`p-4 rounded-full border transition-all ${
                       isMuted ? 'bg-amber-600 text-white border-amber-500' : 'bg-gray-800 text-gray-300 border-gray-700'
@@ -344,7 +344,7 @@ export default function LlamadasView() {
                     <Mic size={20} />
                   </button>
 
-                  <button 
+                  <button
                     onClick={handleEndSimCall}
                     className="p-5 bg-rose-600 hover:bg-rose-500 text-white rounded-full shadow-xl shadow-rose-950 transition-transform active:scale-95"
                   >
@@ -354,7 +354,7 @@ export default function LlamadasView() {
               )}
 
               {simState === 'ended' && (
-                <button 
+                <button
                   onClick={() => { setSimState('idle'); setSimMessages([]); }}
                   className="w-full py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-2xl font-bold text-xs flex items-center justify-center gap-2"
                 >
@@ -370,7 +370,7 @@ export default function LlamadasView() {
             <div>
               <div className="flex items-center justify-between pb-3 border-b border-gray-800">
                 <h3 className="font-bold text-white text-base flex items-center gap-2">
-                  <MessageSquareText size={18} className="text-indigo-400" /> Transcripción en Tiempo Real (IA Voice Log)
+                  <MessageSquareText size={18} className="text-blue-400" /> Transcripción en Tiempo Real (IA Voice Log)
                 </h3>
                 <span className="text-xs text-gray-400 bg-gray-800 px-2.5 py-1 rounded-md">
                   Latencia: <strong className="text-emerald-400">320ms</strong>
@@ -380,20 +380,20 @@ export default function LlamadasView() {
               {/* Chat-like Transcript Feed */}
               <div className="mt-4 space-y-3 max-h-[340px] overflow-y-auto pr-1 no-scrollbar">
                 {simMessages.map((msg, index) => (
-                  <div 
-                    key={index} 
+                  <div
+                    key={index}
                     className={`flex items-start gap-3 ${msg.sender === 'user' ? 'flex-row-reverse' : ''}`}
                   >
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${
-                      msg.sender === 'bot' ? 'bg-indigo-600 text-white' : 'bg-purple-600 text-white'
+                      msg.sender === 'bot' ? 'bg-blue-600 text-white' : 'bg-blue-600 text-white'
                     }`}>
                       {msg.sender === 'bot' ? <Bot size={16} /> : 'Tú'}
                     </div>
 
                     <div className={`max-w-[80%] rounded-2xl p-3.5 text-xs leading-relaxed ${
-                      msg.sender === 'bot' 
-                        ? 'bg-[#18181d] text-gray-200 border border-gray-800' 
-                        : 'bg-indigo-600 text-white'
+                      msg.sender === 'bot'
+                        ? 'bg-[#18181d] text-gray-200 border border-gray-800'
+                        : 'bg-blue-600 text-white'
                     }`}>
                       <p>{msg.text}</p>
                       <span className="text-[10px] opacity-60 block text-right mt-1 font-mono">{msg.time}</span>
@@ -405,18 +405,18 @@ export default function LlamadasView() {
 
             {/* Text Input Simulation for testing AI voice responses */}
             <form onSubmit={handleSendSimUserResponse} className="pt-2 border-t border-gray-800 flex gap-2">
-              <input 
+              <input
                 type="text"
                 disabled={simState !== 'connected'}
                 value={simUserInput}
                 onChange={(e) => setSimUserInput(e.target.value)}
                 placeholder={simState === 'connected' ? "Responde como si fueras el cliente (ej: Sí confirmo mi dirección...)" : "Conecta la llamada para simular voz..."}
-                className="flex-1 px-4 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 disabled:opacity-50"
               />
-              <button 
+              <button
                 type="submit"
                 disabled={simState !== 'connected'}
-                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold disabled:opacity-50 transition-colors shadow-md shadow-indigo-950"
+                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold disabled:opacity-50 transition-colors shadow-md shadow-blue-950"
               >
                 Responder
               </button>
@@ -429,24 +429,24 @@ export default function LlamadasView() {
       {/* TAB 2: AGENTES & ENTRENAMIENTO DE VOZ */}
       {activeTab === 'agentes' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
+
           {/* Agent Selection List */}
           <div className="bg-[#121215] border border-gray-800 rounded-3xl p-5 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-white text-sm">Tus Agentes de Voz</h3>
-              <button className="p-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold flex items-center gap-1">
+              <button className="p-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold flex items-center gap-1">
                 <Plus size={14} /> Nuevo
               </button>
             </div>
 
             <div className="space-y-3">
               {agents.map(ag => (
-                <div 
+                <div
                   key={ag.id}
                   onClick={() => setSelectedAgent(ag)}
                   className={`p-4 rounded-2xl border cursor-pointer transition-all ${
-                    selectedAgent.id === ag.id 
-                      ? 'bg-indigo-950/40 border-indigo-500' 
+                    selectedAgent.id === ag.id
+                      ? 'bg-blue-950/40 border-blue-500'
                       : 'bg-[#18181c] border-gray-800 hover:border-gray-700'
                   }`}
                 >
@@ -466,7 +466,7 @@ export default function LlamadasView() {
           <div className="lg:col-span-2 bg-[#121215] border border-gray-800 rounded-3xl p-6 space-y-5">
             <div>
               <h3 className="font-bold text-white text-base flex items-center gap-2">
-                <Sliders size={18} className="text-indigo-400" /> Ajustes del Agente: {selectedAgent.name}
+                <Sliders size={18} className="text-blue-400" /> Ajustes del Agente: {selectedAgent.name}
               </h3>
               <p className="text-xs text-gray-400">Personaliza el todo, acento y las instrucciones clave para la llamada.</p>
             </div>
@@ -500,14 +500,14 @@ export default function LlamadasView() {
                   <span>Velocidad de Habla</span>
                   <span>{speed}x</span>
                 </div>
-                <input 
-                  type="range" 
-                  min="0.8" 
-                  max="1.3" 
-                  step="0.05" 
+                <input
+                  type="range"
+                  min="0.8"
+                  max="1.3"
+                  step="0.05"
                   value={speed}
                   onChange={(e) => setSpeed(parseFloat(e.target.value))}
-                  className="w-full accent-indigo-500" 
+                  className="w-full accent-blue-500"
                 />
               </div>
 
@@ -516,14 +516,14 @@ export default function LlamadasView() {
                   <span>Tono / Tono Vocal</span>
                   <span>{pitch}x</span>
                 </div>
-                <input 
-                  type="range" 
-                  min="0.8" 
-                  max="1.2" 
-                  step="0.05" 
+                <input
+                  type="range"
+                  min="0.8"
+                  max="1.2"
+                  step="0.05"
                   value={pitch}
                   onChange={(e) => setPitch(parseFloat(e.target.value))}
-                  className="w-full accent-indigo-500" 
+                  className="w-full accent-blue-500"
                 />
               </div>
             </div>
@@ -531,16 +531,16 @@ export default function LlamadasView() {
             {/* System Prompt for the Voice Agent */}
             <div>
               <label className="block text-xs font-bold text-gray-300 mb-1">Prompt / Instrucciones Base para la IA</label>
-              <textarea 
+              <textarea
                 rows={4}
                 value={customPrompt}
                 onChange={(e) => setCustomPrompt(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 leading-relaxed font-mono"
+                className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 leading-relaxed font-mono"
               />
             </div>
 
             <div className="flex justify-end gap-3 pt-2">
-              <button className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-950">
+              <button className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-950">
                 Guardar Cambios del Agente
               </button>
             </div>
@@ -558,19 +558,19 @@ export default function LlamadasView() {
                 <h3 className="font-bold text-white text-base">Campañas de Llamadas Automatizadas</h3>
                 <p className="text-xs text-gray-400">Configura triggers automáticos cuando un pedido se crea en Shopify, WooCommerce o Dropi.</p>
               </div>
-              <button className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5">
+              <button className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5">
                 <Plus size={16} /> Crear Campaña
               </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
-              
+
               <div className="bg-[#18181c] border border-gray-800 rounded-2xl p-5 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                     Activa • Auto Trigger
                   </span>
-                  <Bot size={18} className="text-indigo-400" />
+                  <Bot size={18} className="text-blue-400" />
                 </div>
                 <h4 className="font-bold text-white text-base">Confirmación COD Inmediata</h4>
                 <p className="text-xs text-gray-400">Llama automáticamente 5 minutos después de recibir un pedido con método 'Pago Contra Entrega'.</p>
@@ -600,13 +600,13 @@ export default function LlamadasView() {
                   <span className="text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-md bg-gray-700 text-gray-300">
                     Pausada
                   </span>
-                  <Calendar size={18} className="text-purple-400" />
+                  <Calendar size={18} className="text-blue-400" />
                 </div>
                 <h4 className="font-bold text-white text-base">Re-agendamiento de Pedidos Rechazados</h4>
                 <p className="text-xs text-gray-400">Llama cuando la transportadora reporta 'Dirección Errónea' para coordinar entrega.</p>
                 <div className="pt-2 border-t border-gray-800/80 flex items-center justify-between text-xs">
                   <span className="text-gray-400">Llamadas realizadas: <strong>198</strong></span>
-                  <span className="text-indigo-400 font-bold">68% Reagendados</span>
+                  <span className="text-blue-400 font-bold">68% Reagendados</span>
                 </div>
               </div>
 
@@ -622,7 +622,7 @@ export default function LlamadasView() {
             <h3 className="font-bold text-white text-base">Registro & Transcripciones de Llamadas</h3>
             <div className="relative w-full sm:w-64">
               <Search size={16} className="absolute left-3 top-2.5 text-gray-500" />
-              <input 
+              <input
                 type="text"
                 placeholder="Buscar por cliente o teléfono..."
                 className="w-full pl-9 pr-3 py-1.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white focus:outline-none"
@@ -649,12 +649,12 @@ export default function LlamadasView() {
                       <strong className="text-white block">{c.clientName}</strong>
                       <span className="text-[11px] text-gray-500 font-mono">{c.phone}</span>
                     </td>
-                    <td className="py-3 px-4 font-semibold text-indigo-300">{c.type}</td>
+                    <td className="py-3 px-4 font-semibold text-blue-300">{c.type}</td>
                     <td className="py-3 px-4">
                       <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                        c.status.includes('Confirmado') 
-                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
-                          : c.status.includes('Cancelado') 
+                        c.status.includes('Confirmado')
+                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                          : c.status.includes('Cancelado')
                           ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
                           : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
                       }`}>
@@ -666,7 +666,7 @@ export default function LlamadasView() {
                       <span className="text-[11px] text-gray-300">{c.sentiment}</span>
                     </td>
                     <td className="py-3 px-4">
-                      <button 
+                      <button
                         onClick={() => alert(`Transcripción completa:\n\n${c.transcriptSnippet}`)}
                         className="px-3 py-1 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-[11px] font-bold flex items-center gap-1"
                       >
@@ -685,7 +685,7 @@ export default function LlamadasView() {
       {activeTab === 'telefonia' && (
         <div className="bg-[#121215] border border-gray-800 rounded-3xl p-6 space-y-5">
           <h3 className="font-bold text-white text-base flex items-center gap-2">
-            <Settings size={18} className="text-indigo-400" /> Configuración de SIP & Números Virtuales
+            <Settings size={18} className="text-blue-400" /> Configuración de SIP & Números Virtuales
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

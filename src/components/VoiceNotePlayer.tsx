@@ -45,11 +45,11 @@ export const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({
         const parts = src.split(',');
         const header = parts[0] || '';
         const b64Data = parts[1] || '';
-        
+
         if (b64Data && b64Data.length > 20) {
           let mimeMatch = header.match(/:(.*?);/);
           let mime = mimeMatch ? mimeMatch[1] : 'audio/ogg';
-          
+
           const byteCharacters = atob(b64Data);
           const byteNumbers = new Array(byteCharacters.length);
           for (let i = 0; i < byteCharacters.length; i++) {
@@ -215,8 +215,8 @@ export const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({
 
   return (
     <div className={`p-3 rounded-2xl border transition-all ${
-      isGreenTheme 
-        ? 'bg-[#005c4b]/90 border-[#007a63] text-white shadow-md' 
+      isGreenTheme
+        ? 'bg-[#005c4b]/90 border-[#007a63] text-white shadow-md'
         : 'bg-[#1f2937] border-gray-700 text-gray-100'
     } ${className}`}>
       <audio ref={audioRef} src={activeSrc} preload="metadata" />
@@ -230,7 +230,7 @@ export const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({
             className={`w-11 h-11 rounded-full flex items-center justify-center transition shadow-md active:scale-95 ${
               isGreenTheme
                 ? 'bg-emerald-400 hover:bg-emerald-300 text-slate-950'
-                : 'bg-indigo-500 hover:bg-indigo-400 text-white'
+                : 'bg-blue-500 hover:bg-blue-400 text-white'
             }`}
             title={isPlaying ? 'Pausar' : 'Reproducir'}
           >
@@ -278,8 +278,8 @@ export const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({
                     handleSeek(i);
                   }}
                   className={`flex-1 rounded-full transition-all duration-150 ${
-                    isPlayed 
-                      ? (isGreenTheme ? 'bg-emerald-300 scale-y-105' : 'bg-indigo-400 scale-y-105') 
+                    isPlayed
+                      ? (isGreenTheme ? 'bg-emerald-300 scale-y-105' : 'bg-blue-400 scale-y-105')
                       : (isGreenTheme ? 'bg-emerald-800/60 hover:bg-emerald-700' : 'bg-gray-600/60 hover:bg-gray-500')
                   }`}
                   style={{ height: `${Math.max(15, h)}%` }}

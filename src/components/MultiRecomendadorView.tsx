@@ -1,23 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Bot, 
-  Sparkles, 
-  Sliders, 
-  Settings, 
-  Save, 
-  Play, 
-  Eye, 
-  AlertCircle, 
-  CheckCircle2, 
-  Trash2, 
-  Plus, 
-  Terminal, 
-  RefreshCw, 
-  Layers, 
-  Database, 
-  Link, 
-  Search, 
-  ArrowRight, 
+import {
+  Bot,
+  Sparkles,
+  Sliders,
+  Settings,
+  Save,
+  Play,
+  Eye,
+  AlertCircle,
+  CheckCircle2,
+  Trash2,
+  Plus,
+  Terminal,
+  RefreshCw,
+  Layers,
+  Database,
+  Link,
+  Search,
+  ArrowRight,
   HelpCircle,
   Package,
   ShoppingCart,
@@ -67,10 +67,10 @@ export default function MultiRecomendadorView() {
   const [recommenders, setRecommenders] = useState<MultiRecommender[]>([]);
   const [selectedId, setSelectedId] = useState<string>('');
   const [products, setProducts] = useState<Product[]>([]);
-  
+
   // Tab within recommender settings
   const [settingsTab, setSettingsTab] = useState<'questions' | 'rules' | 'api'>('questions');
-  
+
   // Form and active state values
   const [activeRecommender, setActiveRecommender] = useState<MultiRecommender | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
@@ -317,7 +317,7 @@ export default function MultiRecomendadorView() {
   const handleSaveActiveConfig = () => {
     if (!activeRecommender) return;
     setSaveStatus('saving');
-    
+
     setTimeout(() => {
       const index = recommenders.findIndex(r => r.id === activeRecommender.id);
       let updated = [...recommenders];
@@ -521,7 +521,7 @@ export default function MultiRecomendadorView() {
     if (!activeRecommender) return;
     setApiTesting(true);
     setApiSuccess(null);
-    
+
     const platform = activeRecommender.externalPlatform || 'mastershop';
     const endpoint = activeRecommender.apiEndpoint || `https://api.${platform}.com/v1/catalog`;
     const token = activeRecommender.apiToken || 'N/A';
@@ -529,7 +529,7 @@ export default function MultiRecomendadorView() {
     setApiTestLogs([
       { type: 'info', text: `Iniciando consulta de diagnóstico a través del túnel MCP...` },
       { type: 'sent', text: `GET ${endpoint}` },
-      { type: 'sent', text: `Headers: {\n  "Authorization": "Bearer ${token.substring(0, 10)}...",\n  "Content-Type": "application/json",\n  "X-Integration-Source": "Expert360-MCP-Hub"\n}` }
+      { type: 'sent', text: `Headers: {\n  "Authorization": "Bearer ${token.substring(0, 10)}...",\n  "Content-Type": "application/json",\n  "X-Integration-Source": "Xorbit 360-MCP-Hub"\n}` }
     ]);
 
     setTimeout(() => {
@@ -550,7 +550,7 @@ export default function MultiRecomendadorView() {
         setApiTesting(false);
       } else {
         // Success payload matching the selected platform
-        const mockProducts = platform === 'shopify' 
+        const mockProducts = platform === 'shopify'
           ? [
               { title: "Shampoo Anticaída Cafeína Orgánica", price: "48000", inventory: 240 },
               { title: "Suero Revitalizador Capilar Pro", price: "55000", inventory: 110 }
@@ -573,7 +573,7 @@ export default function MultiRecomendadorView() {
 
   return (
     <div className="space-y-6 animate-fade-in text-gray-200">
-      
+
       {/* Intro block */}
       <div className="panel p-6 rounded-2xl bg-gradient-to-r from-orange-500/10 to-transparent border border-orange-500/20 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/10 rounded-full blur-2xl pointer-events-none"></div>
@@ -592,7 +592,7 @@ export default function MultiRecomendadorView() {
 
       {/* Main Split Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
+
         {/* Left Column - Recommender Selector */}
         <div className="lg:col-span-4 space-y-4">
           <div className="flex justify-between items-center">
@@ -611,12 +611,12 @@ export default function MultiRecomendadorView() {
             {recommenders.map(rec => {
               const isSelected = selectedId === rec.id;
               return (
-                <div 
+                <div
                   key={rec.id}
                   onClick={() => handleSelectRecommender(rec.id)}
                   className={`p-4 rounded-xl border text-left cursor-pointer transition relative group ${
-                    isSelected 
-                      ? 'bg-orange-500/10 border-orange-500/40 shadow-md' 
+                    isSelected
+                      ? 'bg-orange-500/10 border-orange-500/40 shadow-md'
                       : 'bg-[#121212] border-gray-800 hover:border-gray-700'
                   }`}
                 >
@@ -630,12 +630,12 @@ export default function MultiRecomendadorView() {
                     </button>
                   </div>
                   <p className="text-xs text-gray-400 mt-1.5 line-clamp-2 leading-relaxed">{rec.description}</p>
-                  
+
                   <div className="flex items-center justify-between gap-2 mt-3 pt-2.5 border-t border-gray-900/60 text-[10px] font-mono">
                     <span className="text-gray-500">Activación: <span className="text-orange-400 font-bold bg-black px-1.5 py-0.5 rounded border border-gray-800">"{rec.keyword}"</span></span>
                     <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
-                      rec.queryType === 'external_api' 
-                        ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' 
+                      rec.queryType === 'external_api'
+                        ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
                         : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                     }`}>
                       {rec.queryType === 'external_api' ? '🔌 API / Token' : '📦 Catálogo'}
@@ -653,14 +653,14 @@ export default function MultiRecomendadorView() {
         <div className="lg:col-span-8">
           {activeRecommender ? (
             <div className="panel p-6 rounded-2xl bg-[#0e0e0e] border border-gray-800 space-y-6">
-              
+
               {/* Header and Save actions */}
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-gray-800/80">
                 <div className="space-y-1">
                   <span className="text-[10px] font-bold text-orange-400 uppercase tracking-widest font-mono">Editor de Flujo de Asesoría</span>
                   <h4 className="text-base font-bold text-white">{activeRecommender.name}</h4>
                 </div>
-                
+
                 <div className="flex items-center gap-2.5">
                   <button
                     onClick={handleSaveActiveConfig}
@@ -786,7 +786,7 @@ export default function MultiRecomendadorView() {
                   <div className="space-y-4">
                     {activeRecommender.questions.map((q, qIndex) => (
                       <div key={q.id} className="p-4 rounded-xl bg-black border border-gray-800 space-y-4">
-                        
+
                         {/* Question Header */}
                         <div className="flex items-center gap-3 justify-between">
                           <div className="flex items-center gap-2 flex-1">
@@ -801,7 +801,7 @@ export default function MultiRecomendadorView() {
                               className="bg-transparent text-sm font-semibold text-white focus:outline-none border-b border-transparent focus:border-orange-500/50 pb-0.5 flex-1"
                             />
                           </div>
-                          
+
                           <button
                             onClick={() => handleRemoveQuestion(q.id)}
                             className="text-gray-500 hover:text-red-400 p-1"
@@ -814,7 +814,7 @@ export default function MultiRecomendadorView() {
                         {/* Options Section */}
                         <div className="pl-7 space-y-2">
                           <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Opciones de Respuesta Múltiple:</p>
-                          
+
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                             {q.options.map((opt, oIdx) => (
                               <div key={opt.id} className="flex items-center gap-2 bg-gray-900/60 p-2 rounded-lg border border-gray-850">
@@ -877,7 +877,7 @@ export default function MultiRecomendadorView() {
                   <div className="space-y-3.5">
                     {activeRecommender.rules.map((rule, rIdx) => (
                       <div key={rule.id} className="p-4 rounded-xl bg-black border border-gray-800 flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-                        
+
                         {/* Conditions setup */}
                         <div className="space-y-2 flex-1 w-full">
                           <div className="flex items-center justify-between">
@@ -963,11 +963,11 @@ export default function MultiRecomendadorView() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
-                    
+
                     {/* Platform selectors & inputs */}
                     <div className="space-y-4">
                       <h5 className="font-bold text-white text-xs uppercase tracking-wider">Credenciales de Acceso</h5>
-                      
+
                       <div className="space-y-3.5 bg-black p-4 rounded-xl border border-gray-850">
                         <div className="space-y-1.5">
                           <label className="block text-[10px] text-gray-500 font-bold uppercase">Plataforma Externa Destino:</label>
@@ -1038,13 +1038,13 @@ export default function MultiRecomendadorView() {
 
                       <div className="flex-1 bg-black text-[#00ff00] font-mono p-4 rounded-xl border border-gray-850 h-56 md:h-72 overflow-y-auto space-y-2 scrollbar-thin text-[11px] leading-relaxed select-all">
                         <p className="text-gray-500">// Terminal iniciada para la pasarela: {activeRecommender.externalPlatform || 'mastershop'}</p>
-                        
+
                         {apiTestLogs.map((log, idx) => (
                           <div key={idx} className={
-                            log.type === 'sent' 
-                              ? 'text-blue-400' 
-                              : log.type === 'received' 
-                              ? 'text-yellow-300 whitespace-pre-wrap' 
+                            log.type === 'sent'
+                              ? 'text-blue-400'
+                              : log.type === 'received'
+                              ? 'text-yellow-300 whitespace-pre-wrap'
                               : 'text-gray-400'
                           }>
                             {log.type === 'sent' && '>>> '}
@@ -1060,8 +1060,8 @@ export default function MultiRecomendadorView() {
 
                       {apiSuccess !== null && (
                         <div className={`p-3.5 rounded-lg border text-xs flex items-center gap-3.5 ${
-                          apiSuccess 
-                            ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
+                          apiSuccess
+                            ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
                             : 'bg-red-500/10 border-red-500/20 text-red-400'
                         }`}>
                           {apiSuccess ? (

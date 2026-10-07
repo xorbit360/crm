@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  CreditCard, DollarSign, CheckCircle2, Zap, ShieldCheck, Globe, RefreshCw, 
-  Copy, ExternalLink, Lock, QrCode, Building2, Sparkles, Check, Plus, Key, 
+import {
+  CreditCard, DollarSign, CheckCircle2, Zap, ShieldCheck, Globe, RefreshCw,
+  Copy, ExternalLink, Lock, QrCode, Building2, Sparkles, Check, Plus, Key,
   Sliders, Receipt, Link as LinkIcon, TrendingUp, Send, Layers, Eye, EyeOff, Save, AlertCircle, Code, Play
 } from 'lucide-react';
 
@@ -51,7 +51,7 @@ export default function PasarelaPagoView() {
   // Form State for Embedded Payment Gateway Configuration (User Instruction Specs)
   const [merchantId, setMerchantId] = useState<string>(() => {
     try {
-      const saved = localStorage.getItem('EXPERT360_PAYMENT_CONFIG');
+      const saved = localStorage.getItem('XORBIT 360_PAYMENT_CONFIG');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed.wompi?.merchantId) return parsed.wompi.merchantId;
@@ -62,7 +62,7 @@ export default function PasarelaPagoView() {
 
   const [secretKey, setSecretKey] = useState<string>(() => {
     try {
-      const saved = localStorage.getItem('EXPERT360_PAYMENT_CONFIG');
+      const saved = localStorage.getItem('XORBIT 360_PAYMENT_CONFIG');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed.wompi?.secretKey) return parsed.wompi.secretKey;
@@ -77,7 +77,7 @@ export default function PasarelaPagoView() {
   const [currency, setCurrency] = useState<string>('COP');
   const [reference, setReference] = useState<string>('REF-2026-PAY-9812');
   const [redirectUrl, setRedirectUrl] = useState<string>(`${window.location.origin}/confirmacion-pago`);
-  
+
   // Computed values
   const [amountInCents, setAmountInCents] = useState<number>(10000000);
   const [concatenatedData, setConcatenatedData] = useState<string>('');
@@ -102,7 +102,7 @@ export default function PasarelaPagoView() {
         keys: [
           { label: 'API Key de Integración Bold', keyName: 'bold_api_key', value: 'x_live_bold_89210928412' },
           { label: 'Llave Secreta de Firma (Signing Key)', keyName: 'bold_secret_key', value: 'secret_live_bold_9210982', isSecret: true },
-          { label: 'Link de Pago Personalizado / Checkout URL', keyName: 'bold_checkout_url', value: 'https://checkout.bold.co/payment/LNK_EXPERT360' }
+          { label: 'Link de Pago Personalizado / Checkout URL', keyName: 'bold_checkout_url', value: 'https://checkout.bold.co/payment/LNK_XORBIT 360' }
         ],
         webhookUrl: `${window.location.origin}/api/payments/bold/webhook`
       },
@@ -165,7 +165,7 @@ export default function PasarelaPagoView() {
     ];
 
     try {
-      const saved = localStorage.getItem('EXPERT360_PAYMENT_CONFIG');
+      const saved = localStorage.getItem('XORBIT 360_PAYMENT_CONFIG');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed.gateways) return parsed.gateways;
@@ -254,7 +254,7 @@ export default function PasarelaPagoView() {
       wompi: { merchantId, secretKey },
       gateways
     };
-    localStorage.setItem('EXPERT360_PAYMENT_CONFIG', JSON.stringify(configToSave));
+    localStorage.setItem('XORBIT 360_PAYMENT_CONFIG', JSON.stringify(configToSave));
     window.dispatchEvent(new Event('payment-config-updated'));
     setSavedToast('⚡ Credenciales de la Empresa Guardadas y Conectadas Automáticamente con las Recargas.');
     setTimeout(() => setSavedToast(null), 4000);
@@ -285,7 +285,7 @@ export default function PasarelaPagoView() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      
+
       {/* HEADER BANNER */}
       <div className="p-6 rounded-2xl bg-gradient-to-r from-emerald-950/70 via-gray-900 to-black border border-emerald-500/40 relative overflow-hidden">
         <div className="absolute -right-10 -bottom-10 w-60 h-60 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
@@ -348,7 +348,7 @@ export default function PasarelaPagoView() {
             onClick={() => setActiveSubTab('terminal')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
               activeSubTab === 'terminal'
-                ? 'bg-purple-500 text-white shadow-md shadow-purple-500/20 font-black'
+                ? 'bg-blue-500 text-white shadow-md shadow-blue-500/20 font-black'
                 : 'bg-gray-900 text-gray-400 hover:text-white border border-gray-800'
             }`}
           >
@@ -379,7 +379,7 @@ export default function PasarelaPagoView() {
       {/* TAB 1: PASARELA DE PAGOS & BOTÓN EMBEBIDO (PROMPT DIRECTIVE) */}
       {activeSubTab === 'embebido' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          
+
           {/* LEFT PANEL: CONFIGURATION FORM (ID DE COMERCIO, LLAVE SECRETA, ENTORNO, MONTO, DIVISA) */}
           <div className="lg:col-span-6 panel p-6 rounded-2xl bg-gray-950 border border-emerald-500/30 space-y-5">
             <div className="flex items-center justify-between border-b border-gray-800 pb-3">
@@ -626,8 +626,8 @@ export default function PasarelaPagoView() {
         <div className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {gateways.map((gw) => (
-              <div 
-                key={gw.id} 
+              <div
+                key={gw.id}
                 className={`panel p-6 rounded-2xl bg-gray-950 border transition-all space-y-4 ${
                   gw.enabled ? 'border-red-500/40 shadow-lg shadow-red-500/5' : 'border-gray-800 opacity-80'
                 }`}
@@ -707,7 +707,7 @@ export default function PasarelaPagoView() {
       {activeSubTab === 'terminal' && (
         <div className="panel p-6 rounded-2xl bg-gray-950 border border-gray-800 space-y-4">
           <h3 className="text-lg font-bold text-white flex items-center gap-2 border-b border-gray-800 pb-3">
-            <Zap className="text-purple-400" size={20} /> Terminal Rápida de Cobros Directos
+            <Zap className="text-blue-400" size={20} /> Terminal Rápida de Cobros Directos
           </h3>
           <p className="text-xs text-gray-400">
             Genera enlaces directos de cobro y terminales QR para enviar por WhatsApp o correo electrónico.

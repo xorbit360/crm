@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Palette, Eye, EyeOff, Layout, Shield, Check, Sparkles, Globe, 
-  UploadCloud, Copy, ExternalLink, Bot, Phone, Mail, Image, 
+import {
+  Palette, Eye, EyeOff, Layout, Shield, Check, Sparkles, Globe,
+  UploadCloud, Copy, ExternalLink, Bot, Phone, Mail, Image,
   Briefcase, TrendingUp, Monitor, Megaphone, Users, Package, RefreshCw
 } from 'lucide-react';
-import { 
-  WhiteLabelConfig, getCachedWhiteLabel, saveWhiteLabelConfig, 
-  getEffectiveDomain, getReferralLink 
+import {
+  WhiteLabelConfig, getCachedWhiteLabel, saveWhiteLabelConfig,
+  getEffectiveDomain, getReferralLink
 } from '../lib/whitelabel';
 
 interface PersonalizacionPlataformaViewProps {
@@ -20,7 +20,7 @@ const COLOR_PRESETS = [
   { name: 'Dorado Imperial (Predeterminado)', hex: '#d4af37', border: 'border-yellow-500/50' },
   { name: 'Esmeralda Neón', hex: '#10b981', border: 'border-emerald-500/50' },
   { name: 'Azul Zafiro', hex: '#3b82f6', border: 'border-blue-500/50' },
-  { name: 'Púrpura Cyber', hex: '#a855f7', border: 'border-purple-500/50' },
+  { name: 'Púrpura Cyber', hex: '#a855f7', border: 'border-blue-500/50' },
   { name: 'Carmesí Intenso', hex: '#ef4444', border: 'border-red-500/50' },
   { name: 'Naranja Fuego', hex: '#f97316', border: 'border-orange-500/50' }
 ];
@@ -29,12 +29,12 @@ const AVAILABLE_TOOLS = [
   { id: 'whatsapp', name: 'Bot de WhatsApp & CRM Multicanal', icon: <Bot size={18} className="text-green-400" />, desc: 'Respuestas automáticas con IA y gestión de chats' },
   { id: 'llamadas', name: 'Llamadas de Voz IA', icon: <Phone size={18} className="text-blue-400" />, desc: 'Agentes telefónicos para cierres y confirmaciones' },
   { id: 'email', name: 'Email Marketing & Secuencias', icon: <Mail size={18} className="text-amber-400" />, desc: 'Campañas automatizadas y carritos abandonados' },
-  { id: 'contenido', name: 'Creación & Contenido UGC', icon: <Sparkles size={18} className="text-purple-400" />, desc: 'Guiones virales, clones de video y copys' },
+  { id: 'contenido', name: 'Creación & Contenido UGC', icon: <Sparkles size={18} className="text-blue-400" />, desc: 'Guiones virales, clones de video y copys' },
   { id: 'branding', name: 'Branding & Identidad de Marca', icon: <Briefcase size={18} className="text-yellow-400" />, desc: 'Manual de marca, logos y propuesta de valor' },
   { id: 'mercado', name: 'Estudio de Mercado & Ganadores', icon: <TrendingUp size={18} className="text-orange-400" />, desc: 'Análisis de nichos, competencia y precios' },
   { id: 'landing', name: 'Landing Pages & Editor Web', icon: <Monitor size={18} className="text-cyan-400" />, desc: 'Embudos de alta conversión y rastreador de visitas' },
   { id: 'ads', name: 'Gestión de Campañas Ads', icon: <Megaphone size={18} className="text-red-400" />, desc: 'Traffiker IA y métricas en Meta & TikTok Ads' },
-  { id: 'comunidad', name: 'Comunidad & Mentor 360°', icon: <Users size={18} className="text-indigo-400" />, desc: 'Chat con copiloto de negocios y red de miembros' },
+  { id: 'comunidad', name: 'Comunidad & Mentor 360°', icon: <Users size={18} className="text-blue-400" />, desc: 'Chat con copiloto de negocios y red de miembros' },
   { id: 'proveedores', name: 'Catálogo de Proveedores COD', icon: <Package size={18} className="text-emerald-400" />, desc: 'Bodegas Dropi / MasterShop y productos en stock' }
 ];
 
@@ -45,14 +45,14 @@ export default function PersonalizacionPlataformaView({
   onCustomizationApplied
 }: PersonalizacionPlataformaViewProps) {
   const isAdmin = currentUser?.role === 'superadmin' || currentUser?.role === 'admin';
-  const userEmail = currentUser?.email || 'usuario@expert360.ai';
+  const userEmail = currentUser?.email || 'usuario@xorbit360.com';
 
   const [config, setConfig] = useState<WhiteLabelConfig>(() => getCachedWhiteLabel(userEmail));
   const [scope, setScope] = useState<'global' | 'user'>(isAdmin ? 'global' : 'user');
   const [hideDashboard, setHideDashboard] = useState<boolean>(config.hideDashboard || false);
   const [defaultTool, setDefaultTool] = useState<string>(config.defaultTool || 'whatsapp');
   const [customDomain, setCustomDomain] = useState<string>(config.customDomain || '');
-  const [brandName, setBrandName] = useState<string>(config.brandName || 'Expert 360°');
+  const [brandName, setBrandName] = useState<string>(config.brandName || 'Xorbit 360');
   const [tagline, setTagline] = useState<string>(config.tagline || 'Marketing & Ventas AI');
   const [logoUrl, setLogoUrl] = useState<string>(config.logoUrl || '');
   const [primaryColor, setPrimaryColor] = useState<string>(config.primaryColor || '#d4af37');
@@ -65,7 +65,7 @@ export default function PersonalizacionPlataformaView({
   useEffect(() => {
     const cached = getCachedWhiteLabel(userEmail);
     setConfig(cached);
-    setBrandName(cached.brandName || 'Expert 360°');
+    setBrandName(cached.brandName || 'Xorbit 360');
     setTagline(cached.tagline || 'Marketing & Ventas AI');
     setLogoUrl(cached.logoUrl || '');
     setCustomDomain(cached.customDomain || '');
@@ -116,7 +116,7 @@ export default function PersonalizacionPlataformaView({
     const isGlobal = isAdmin && scope === 'global';
     await saveWhiteLabelConfig(updatedConfig, userEmail, isGlobal);
     setConfig(updatedConfig);
-    
+
     // Apply primary color to root CSS variable
     if (typeof document !== 'undefined') {
       document.documentElement.style.setProperty('--color-gold', primaryColor);
@@ -178,8 +178,8 @@ export default function PersonalizacionPlataformaView({
 
       {/* Scope Alert: Admin vs Normal User */}
       <div className={`p-4 rounded-2xl border text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
-        isAdmin 
-          ? 'bg-purple-950/20 border-purple-800/40 text-purple-200' 
+        isAdmin
+          ? 'bg-blue-950/20 border-blue-800/40 text-blue-200'
           : 'bg-blue-950/20 border-blue-800/40 text-blue-200'
       }`}>
         <div className="flex items-start gap-2.5">
@@ -189,7 +189,7 @@ export default function PersonalizacionPlataformaView({
               {isAdmin ? 'Modo Administrador: Control de Ámbito' : 'Marca Blanca de Usuario (Hacia abajo)'}
             </span>
             <span className="text-gray-400">
-              {isAdmin 
+              {isAdmin
                 ? 'Como Administrador, puedes aplicar estos ajustes a nivel Global (afectando a todos los usuarios y revendedores sin marca propia) o guardarlos únicamente para tu propia cuenta.'
                 : 'Esta personalización se aplicará exclusivamente a tu cuenta y a todos los clientes o afiliados que se registren a través de tu dominio y enlace de referidos.'}
             </span>
@@ -209,7 +209,7 @@ export default function PersonalizacionPlataformaView({
             <button
               onClick={() => setScope('user')}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                scope === 'user' ? 'bg-purple-600 text-white font-bold' : 'text-gray-400 hover:text-white'
+                scope === 'user' ? 'bg-blue-600 text-white font-bold' : 'text-gray-400 hover:text-white'
               }`}
             >
               Solo Mi Cuenta
@@ -235,9 +235,9 @@ export default function PersonalizacionPlataformaView({
               </div>
 
               <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  checked={hideDashboard} 
+                <input
+                  type="checkbox"
+                  checked={hideDashboard}
                   onChange={(e) => setHideDashboard(e.target.checked)}
                   className="sr-only peer"
                 />
@@ -251,8 +251,8 @@ export default function PersonalizacionPlataformaView({
                   {hideDashboard ? 'Modo Herramienta Directa (Dashboard Oculto)' : 'Modo Estándar (Dashboard Visible)'}
                 </div>
                 <div className="text-[11px] text-gray-400 mt-0.5">
-                  {hideDashboard 
-                    ? 'La plataforma ocultará el panel principal y cargará directamente la herramienta seleccionada a continuación:' 
+                  {hideDashboard
+                    ? 'La plataforma ocultará el panel principal y cargará directamente la herramienta seleccionada a continuación:'
                     : 'La plataforma mostrará el menú del Dashboard y el asistente Mentor al iniciar sesión.'}
                 </div>
               </div>
@@ -345,7 +345,7 @@ export default function PersonalizacionPlataformaView({
                         : 'bg-black/50 border-gray-800 hover:border-gray-700'
                     }`}
                   >
-                    <div 
+                    <div
                       className="w-5 h-5 rounded-full shrink-0 shadow-sm"
                       style={{ backgroundColor: preset.hex }}
                     />
@@ -361,14 +361,14 @@ export default function PersonalizacionPlataformaView({
             <div className="flex items-center gap-3 pt-2">
               <span className="text-xs text-gray-400">Color personalizado (HEX):</span>
               <div className="flex items-center gap-2">
-                <input 
-                  type="color" 
+                <input
+                  type="color"
                   value={primaryColor}
                   onChange={(e) => setPrimaryColor(e.target.value)}
                   className="w-8 h-8 rounded-lg bg-transparent border border-gray-700 cursor-pointer"
                 />
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={primaryColor}
                   onChange={(e) => setPrimaryColor(e.target.value)}
                   className="bg-gray-900 border border-gray-700 text-xs font-mono text-white rounded-lg px-2.5 py-1.5 w-28 outline-none focus:border-gold uppercase"
@@ -390,8 +390,8 @@ export default function PersonalizacionPlataformaView({
             <div className="space-y-3">
               <div>
                 <label className="text-xs font-semibold text-gray-400 block mb-1">Nombre de la Plataforma / Negocio:</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={brandName}
                   onChange={(e) => setBrandName(e.target.value)}
                   placeholder="Ej: NovaScale 360°"
@@ -401,8 +401,8 @@ export default function PersonalizacionPlataformaView({
 
               <div>
                 <label className="text-xs font-semibold text-gray-400 block mb-1">Eslogan o Subtítulo:</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={tagline}
                   onChange={(e) => setTagline(e.target.value)}
                   placeholder="Ej: Automatización & IA para Dropshipping"
@@ -427,8 +427,8 @@ export default function PersonalizacionPlataformaView({
                       <input type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
                     </label>
                   </div>
-                  <input 
-                    type="url" 
+                  <input
+                    type="url"
                     value={logoUrl}
                     onChange={(e) => setLogoUrl(e.target.value)}
                     placeholder="O pega la URL del logo: https://..."
@@ -448,15 +448,15 @@ export default function PersonalizacionPlataformaView({
 
             <div>
               <label className="text-xs font-semibold text-gray-400 block mb-1">Tu Dominio Personalizado (DNS):</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={customDomain}
                 onChange={(e) => setCustomDomain(e.target.value)}
                 placeholder="app.tumarca.com"
                 className="w-full bg-black border border-gray-800 rounded-xl px-3 py-2 text-xs font-mono text-white outline-none focus:border-blue-500"
               />
               <p className="text-[10px] text-gray-500 mt-1">
-                La URL oficial de respaldo siempre es <span className="font-mono text-gray-400">https://expert360.ai.studio/</span>
+                La URL oficial de respaldo siempre es <span className="font-mono text-gray-400">https://crm.xorbit360.com/</span>
               </p>
             </div>
 
@@ -495,7 +495,7 @@ export default function PersonalizacionPlataformaView({
                   {logoUrl ? (
                     <img src={logoUrl} alt="Logo" className="w-6 h-6 object-contain" />
                   ) : (
-                    <div 
+                    <div
                       className="w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold text-black"
                       style={{ backgroundColor: primaryColor }}
                     >
@@ -508,7 +508,7 @@ export default function PersonalizacionPlataformaView({
                   </div>
                 </div>
 
-                <div 
+                <div
                   className="text-[10px] px-2 py-0.5 rounded-full font-bold text-black"
                   style={{ backgroundColor: primaryColor }}
                 >

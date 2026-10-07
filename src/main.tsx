@@ -28,7 +28,7 @@ class ErrorBoundary extends React.Component<{children: ReactNode}, {hasError: bo
     const state = (this as any).state || {};
     if (state.hasError) {
       const isDomError = state.error?.message?.includes('insertBefore') || state.error?.message?.includes('removeChild');
-      
+
       return (
         <div style={{
           minHeight: '100vh',
@@ -55,8 +55,8 @@ class ErrorBoundary extends React.Component<{children: ReactNode}, {hasError: bo
               {isDomError ? 'Conflicto de Traducción Automática' : 'Ocurrió un inconveniente temporal'}
             </h2>
             <p style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '24px', lineHeight: '1.6' }}>
-              {isDomError 
-                ? 'El traductor automático de tu navegador modificó la estructura visual de la página. Te recomendamos desactivar la traducción automática en este sitio.' 
+              {isDomError
+                ? 'El traductor automático de tu navegador modificó la estructura visual de la página. Te recomendamos desactivar la traducción automática en este sitio.'
                 : 'La aplicación ha detectado un evento inesperado. Puedes recargar para continuar sin perder tu información.'}
             </p>
             <button

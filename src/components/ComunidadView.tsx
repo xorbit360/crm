@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Users, DollarSign, Share2, Wallet, 
+import {
+  Users, DollarSign, Share2, Wallet,
   CreditCard, ShieldCheck, Gift, Copy, CheckCircle, Network, ArrowRight, Smartphone, Compass, ArrowDownRight, RefreshCw, Send, Radio, X, Globe
 } from 'lucide-react';
 import { ReactFlow, Background, Controls } from '@xyflow/react';
@@ -22,10 +22,10 @@ interface CommissionTx {
 
 const initialNodes = [
   { id: '1', position: { x: 400, y: 50 }, data: { label: 'Tú (Líder)' }, type: 'input' },
-  
+
   { id: '2', position: { x: 200, y: 150 }, data: { label: 'María G. (Nivel 1)\nVentas: $1.2k' } },
   { id: '3', position: { x: 600, y: 150 }, data: { label: 'Carlos L. (Nivel 1)\nVentas: $800' } },
-  
+
   { id: '4', position: { x: 50, y: 250 }, data: { label: 'Ana M. (Nivel 2)\nVentas: $300' } },
   { id: '5', position: { x: 350, y: 250 }, data: { label: 'Luis P. (Nivel 2)\nVentas: $450' } },
   { id: '6', position: { x: 500, y: 250 }, data: { label: 'Sara V. (Nivel 2)\nVentas: $200' } },
@@ -74,7 +74,7 @@ export default function ComunidadView({ currentUser, onUpdateUser }: ComunidadVi
   // Dynamic stats
   const [totalEarnings, setTotalEarnings] = useState(isDroshipperClean ? 0.00 : 4250.00);
   const [totalNetworkVolume, setTotalNetworkVolume] = useState(isDroshipperClean ? 0.00 : 18400.00);
-  
+
   // Commision log starting data
   const [transactions, setTransactions] = useState<CommissionTx[]>(isDroshipperClean ? [] : [
     {
@@ -124,7 +124,7 @@ export default function ComunidadView({ currentUser, onUpdateUser }: ComunidadVi
   const [payCurrency, setPayCurrency] = useState<'USDT' | 'TON'>('USDT');
   const [paymentMethod, setPaymentMethod] = useState<'onchain' | 'bot'>('onchain');
   const TON_RATE = 7.25; // 1 TON = $7.25 USD
-  
+
   const [createdInvoice, setCreatedInvoice] = useState<any>(null);
   const [isCreatingInvoice, setIsCreatingInvoice] = useState(false);
   const [botUsername, setBotUsername] = useState('expertecom_bot');
@@ -148,7 +148,7 @@ export default function ComunidadView({ currentUser, onUpdateUser }: ComunidadVi
       .then(data => {
         if (data.success && data.transactions && data.transactions.length > 0) {
           setTransactions(data.transactions);
-          
+
           let earnings = 4250.00;
           let volume = 18400.00;
           data.transactions.forEach((tx: any) => {
@@ -178,7 +178,7 @@ export default function ComunidadView({ currentUser, onUpdateUser }: ComunidadVi
 
   const handleCopyPlatform = () => {
     const link = effectiveReferralLink;
-    
+
     if (navigator.clipboard) {
       navigator.clipboard.writeText(link)
         .then(() => {
@@ -288,11 +288,11 @@ export default function ComunidadView({ currentUser, onUpdateUser }: ComunidadVi
   const runSmartContractSplit = async () => {
     if (!createdInvoice) return;
     setSimStep(1);
-    
+
     // Step 1: Connecting to bot and validating TG session
     setTimeout(async () => {
       setSimStep(2);
-      
+
       try {
         const res = await fetch('/api/telegram-pay/confirm', {
           method: 'POST',
@@ -311,7 +311,7 @@ export default function ComunidadView({ currentUser, onUpdateUser }: ComunidadVi
           const txData = await txRes.json();
           if (txData.success && txData.transactions) {
             setTransactions(txData.transactions);
-            
+
             let earnings = 4250.00;
             let volume = 18400.00;
             txData.transactions.forEach((tx: any) => {
@@ -359,8 +359,8 @@ export default function ComunidadView({ currentUser, onUpdateUser }: ComunidadVi
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-t-lg transition-colors whitespace-nowrap text-sm font-medium ${
-              activeTab === tab.id 
-                ? 'bg-gold/10 text-gold border-b-2 border-gold -mb-[1px]' 
+              activeTab === tab.id
+                ? 'bg-gold/10 text-gold border-b-2 border-gold -mb-[1px]'
                 : 'text-gray-400 hover:text-gray-200 hover:bg-gray-900/50'
             }`}
           >
@@ -380,7 +380,7 @@ export default function ComunidadView({ currentUser, onUpdateUser }: ComunidadVi
                   {currentUser?.role !== 'droshipper' && ' Soporte Admin Wallet (25%).'}
                 </p>
               </div>
-              <button 
+              <button
                 onClick={() => startSimulation('Pro Droshipper', 300)}
                 className="bg-gold text-black px-4 py-2 rounded-lg text-xs font-bold hover:bg-yellow-400 transition"
               >
@@ -388,9 +388,9 @@ export default function ComunidadView({ currentUser, onUpdateUser }: ComunidadVi
               </button>
             </div>
             <div className="flex-1 bg-black/50 border border-gray-800 rounded-xl overflow-hidden min-h-[400px]">
-              <ReactFlow 
-                nodes={isDroshipperClean ? [{ id: '1', position: { x: 400, y: 150 }, data: { label: `Tú (${currentUser?.name || 'Jose'})` }, type: 'input' }] : initialNodes} 
-                edges={isDroshipperClean ? [] : initialEdges} 
+              <ReactFlow
+                nodes={isDroshipperClean ? [{ id: '1', position: { x: 400, y: 150 }, data: { label: `Tú (${currentUser?.name || 'Jose'})` }, type: 'input' }] : initialNodes}
+                edges={isDroshipperClean ? [] : initialEdges}
                 fitView
                 colorMode="dark"
               >
@@ -425,14 +425,14 @@ export default function ComunidadView({ currentUser, onUpdateUser }: ComunidadVi
                    </div>
                 </div>
              </div>
-             
+
              <div className="flex justify-between items-center mt-8 mb-4">
                 <h3 className="text-lg font-bold text-white">Transacciones Recientes del Smart Contract en Telegram</h3>
                 <div className="text-xs text-gray-500 font-mono flex items-center gap-1">
                    <RefreshCw size={12} className="animate-spin" /> Escaneando Ton / Telegram Blockchain
                 </div>
              </div>
-             
+
              <div className="overflow-x-auto border border-gray-800 rounded-xl bg-black/20">
                <table className="w-full text-left text-sm">
                  <thead className="bg-gray-900/80 text-gray-400">
@@ -482,7 +482,7 @@ export default function ComunidadView({ currentUser, onUpdateUser }: ComunidadVi
                     <h3 className="text-xl font-bold text-white mb-2">Enlaces de Referido y Patrocinio Activo</h3>
                     <p className="text-gray-400 text-sm">Comparte cualquiera de estos dos enlaces. El sistema asocia en automático tu Wallet de Telegram para que recibas comisiones en tu billetera de forma inmediata on-chain al adquirirse cualquier plan.</p>
                   </div>
-                  
+
                   {/* Opción 1: Enlace de la Plataforma */}
                   <div className="bg-gold/5 p-4 rounded-xl border border-gold/20 space-y-3">
                      <div className="flex items-center justify-between">
@@ -491,8 +491,8 @@ export default function ComunidadView({ currentUser, onUpdateUser }: ComunidadVi
                      </div>
                      <p className="text-xs text-gray-400">Tus referidos se registrarán en tu dominio personalizado o enlace oficial ({effectiveDomain}), su cuenta quedará vinculada en automático a tu patrocinio, y al seleccionar el plan se generará el pago instantáneo en Telegram con tu wallet configurada.</p>
                      <div className="flex gap-2">
-                        <input 
-                          readOnly 
+                        <input
+                          readOnly
                           value={effectiveReferralLink}
                           onFocus={(e) => e.target.select()}
                           className="flex-1 bg-black border border-gray-800 rounded-lg px-4 py-3 text-sm text-gray-200 focus:outline-none font-mono text-xs cursor-pointer"
@@ -510,9 +510,9 @@ export default function ComunidadView({ currentUser, onUpdateUser }: ComunidadVi
                      </div>
                      <p className="text-xs text-gray-500 font-sans">Abre directamente el bot oficial en su celular, guardando tu dirección como patrocinador dentro de Telegram.</p>
                      <div className="flex gap-2">
-                        <input 
-                          readOnly 
-                          value={`https://t.me/${botUsername}?start=ref_${walletAddress}`} 
+                        <input
+                          readOnly
+                          value={`https://t.me/${botUsername}?start=ref_${walletAddress}`}
                           className="flex-1 bg-black border border-gray-900 rounded-lg px-4 py-3 text-sm text-gray-450 focus:outline-none font-mono text-xs"
                         />
                        <button onClick={handleCopy} className="bg-gray-805 hover:bg-gray-750 text-white px-4 py-3 rounded-lg transition-colors flex items-center justify-center min-w-[120px] text-xs shrink-0 border border-gray-800">
@@ -533,7 +533,7 @@ export default function ComunidadView({ currentUser, onUpdateUser }: ComunidadVi
                   </div>
                </div>
             </div>
-            
+
             <div className="panel p-6 rounded-2xl border border-gray-800 bg-black/30">
                <h4 className="font-bold text-white mb-3 text-left">Diagrama de Reparto de Comisión Telegram Smart Contract {currentUser?.role === 'droshipper' ? '(75%)' : '(100%)'}</h4>
                <div className={`grid grid-cols-1 ${currentUser?.role === 'droshipper' ? 'md:grid-cols-5' : 'md:grid-cols-6'} gap-4`}>
@@ -579,11 +579,11 @@ export default function ComunidadView({ currentUser, onUpdateUser }: ComunidadVi
                      <h3 className="text-xl font-bold text-white mb-1">Banco Breve / Wallet Personal</h3>
                      <p className="text-gray-400 text-sm">Dirección donde recibes tus ganancias automáticas de la red.</p>
                    </div>
-                   
+
                    <div className="space-y-2">
                       <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block">Wallet de Recepción (Telegram Wallet)</label>
-                      <input 
-                         type="text" 
+                      <input
+                         type="text"
                          value={walletAddress}
                          onChange={(e) => setWalletAddress(e.target.value)}
                          placeholder="Ingresa tu dirección de Telegram Wallet (@wallet)"
@@ -593,7 +593,7 @@ export default function ComunidadView({ currentUser, onUpdateUser }: ComunidadVi
                    <button className="bg-gold text-black px-6 py-2 rounded-lg font-semibold hover:bg-yellow-400 transition-colors w-full sm:w-auto mt-2">
                      Vincular Telegram Wallet
                    </button>
-                   
+
                    <div className="p-4 bg-blue-900/10 border border-blue-900/30 rounded-lg mt-4 flex gap-3 text-sm text-blue-200 items-start">
                       <ShieldCheck size={18} className="mt-0.5 text-blue-400 flex-shrink-0" />
                       <p>Sugerencia: Todas las comisiones de tu Unilevel se depositan automáticamente e instantáneamente en esta wallet de Telegram cuando un referido adquiere un paquete.</p>
@@ -645,7 +645,7 @@ export default function ComunidadView({ currentUser, onUpdateUser }: ComunidadVi
                 );
               }
             })()}
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {packages.map((sub, i) => {
                 const isActive = (currentUser?.plan || 'Gratuito') === sub.title;
@@ -662,7 +662,7 @@ export default function ComunidadView({ currentUser, onUpdateUser }: ComunidadVi
                     </h4>
                     <div className="text-3xl font-display text-white mb-2">${sub.price} USD</div>
                     <p className="text-gray-500 text-sm mb-6 pb-6 border-b border-gray-800">{sub.desc}</p>
-                    
+
                     <ul className="space-y-3 mb-8 flex-1">
                       {sub.features.map((feat, fi) => (
                         <li key={fi} className="flex items-center gap-2 text-sm text-gray-300">
@@ -670,13 +670,13 @@ export default function ComunidadView({ currentUser, onUpdateUser }: ComunidadVi
                         </li>
                       ))}
                     </ul>
-                    
+
                     {isActive ? (
                        <div className="w-full py-3 rounded-lg font-bold bg-green-950/30 border border-green-500/30 text-green-400 text-center tracking-wide text-sm flex items-center justify-center gap-1.5">
                           <CheckCircle size={16} /> Suscripción Activa
                        </div>
                     ) : (
-                       <button 
+                       <button
                          onClick={() => startSimulation(sub.title, sub.price)}
                          className={`w-full py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2 ${sub.premium ? 'bg-gold text-black hover:bg-yellow-400' : 'bg-gray-800 text-white hover:bg-gray-700'}`}
                        >
@@ -695,7 +695,7 @@ export default function ComunidadView({ currentUser, onUpdateUser }: ComunidadVi
       {showSimModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-md p-4">
           <div className="bg-[#0f172a] border border-blue-900/40 rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden animate-fade-in relative text-left">
-            
+
             {/* Simulation Header */}
             <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-[#1e293b]/50">
               <div className="flex items-center gap-3">
@@ -713,12 +713,12 @@ export default function ComunidadView({ currentUser, onUpdateUser }: ComunidadVi
                 <X size={20} />
               </button>
             </div>
-            
+
             <div className="p-6 space-y-6">
-              
+
               {/* Phone interface body */}
               <div className="bg-slate-950 border border-slate-800 rounded-2xl p-6 relative min-h-[350px] flex flex-col justify-between">
-                 
+
                  {/* Step 0: Ready to pay */}
                  {simStep === 0 && (
                     <div className="space-y-6 text-center py-4 flex-1 flex flex-col justify-center items-center">
@@ -733,24 +733,24 @@ export default function ComunidadView({ currentUser, onUpdateUser }: ComunidadVi
                                  <h4 className="text-lg font-bold text-white flex items-center justify-center gap-2 font-sans">
                                    <ShieldCheck className="text-blue-400" size={20} /> {payCurrency === 'USDT' ? 'Pasarela Telegram Payments (USDT)' : 'Pasarela Telegram Payments (TON)'}
                                   </h4>
-                                  
+
                                   {/* Selector de Moneda */}
                                   <div className="flex gap-2 justify-center bg-slate-900/60 p-1.5 rounded-xl border border-slate-800 my-2.5 max-w-[280px] mx-auto">
-                                    <button 
+                                    <button
                                       onClick={() => setPayCurrency('USDT')}
                                       className={`flex-1 py-1 px-2 text-[11px] font-mono rounded-lg transition-all ${payCurrency === 'USDT' ? 'bg-gold text-black font-bold shadow' : 'text-slate-400 hover:text-white'}`}
                                     >
                                       USDT (Red TON)
                                     </button>
-                                    <button 
+                                    <button
                                       onClick={() => setPayCurrency('TON')}
                                       className={`flex-1 py-1 px-2 text-[11px] font-mono rounded-lg transition-all ${payCurrency === 'TON' ? 'bg-gold text-black font-bold shadow' : 'text-slate-400 hover:text-white'}`}
                                     >
                                       TON Nativo
                                     </button>
                                   </div>
- 
-                                 
+
+
                                  <div className="bg-slate-900 border border-slate-800 rounded p-3 mb-2 text-left">
                                     <div className="flex justify-between mb-1">
                                       <span className="text-slate-400 text-[10px] uppercase">Cantidad a enviar:</span>
@@ -765,31 +765,31 @@ export default function ComunidadView({ currentUser, onUpdateUser }: ComunidadVi
                                       <span className="text-white font-mono text-[10px] break-all">{createdInvoice?.superAdminWallet}</span>
                                     </div>
                                  </div>
-                                 
+
                                  <p className="text-[11px] text-slate-400 max-w-md mx-auto font-sans leading-relaxed">
-                                   Escanea el código QR desde tu billetera compatible (Ej. Tonkeeper o Wallet de Telegram). 
+                                   Escanea el código QR desde tu billetera compatible (Ej. Tonkeeper o Wallet de Telegram).
                                    <strong className="text-green-400 block mt-2 text-xs">Este pago es REAL y los fondos se dispersarán en blockchain inmediatamente.</strong>
                                  </p>
 
                              </div>
- 
+
                              {/* Real dynamically generated base64 QR Code */}
                              <div className="bg-white p-3 rounded-2xl border border-slate-700 shadow-xl inline-block max-w-[170px] mx-auto">
                                 <img src={createdInvoice.qrCodeValue} alt="Telegram Payment URL QR" className="w-36 h-36" />
                              </div>
- 
+
                              <div className="space-y-3 w-full">
-                                <a 
-                                  href={payCurrency === 'USDT' ? createdInvoice.usdtTransferLink : createdInvoice.tonTransferLink} 
-                                  target="_blank" 
+                                <a
+                                  href={payCurrency === 'USDT' ? createdInvoice.usdtTransferLink : createdInvoice.tonTransferLink}
+                                  target="_blank"
                                   rel="noopener noreferrer"
                                   className="text-xs text-blue-400 underline hover:text-blue-300 break-all font-mono block max-w-md mx-auto font-sans font-semibold"
                                 >
                                   {payCurrency === 'USDT' ? `🚀 Abrir Enlace TON/USDT Directo en Wallet` : `🚀 Abrir Enlace TON Nativo Directo en Wallet`}
                                 </a>
- 
+
                                 <div className="flex gap-4 w-full justify-center pt-2">
-                                   <button 
+                                   <button
                                      onClick={runSmartContractSplit}
                                      className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-8 py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-900/30 w-full sm:w-auto"
                                    >
@@ -825,7 +825,7 @@ export default function ComunidadView({ currentUser, onUpdateUser }: ComunidadVi
                           <h4 className="text-lg font-bold text-yellow-500 animate-pulse">¡Pago Confirmado! Ejecutando Distribución Real</h4>
                           <p className="text-xs text-slate-400">Transfiriendo USDT / TON en tiempo real a las wallets registradas</p>
                        </div>
-                       
+
                        {/* Animated distribution diagram */}
                        <div className="space-y-3">
                           <div className="p-3 bg-blue-950/40 border border-blue-900/40 rounded-lg flex justify-between items-center text-sm">
@@ -865,7 +865,7 @@ export default function ComunidadView({ currentUser, onUpdateUser }: ComunidadVi
                           <h4 className="text-xl font-bold text-white">Smart Contract Ejecutado de Manera Exitosa</h4>
                           <p className="text-sm text-slate-400">Las wallets de Telegram han recibido las comisiones de manera inmediata on-chain.</p>
                        </div>
-                       
+
                        <div className="bg-slate-905 border border-slate-800 rounded-xl w-full max-w-md p-4">
                           <div className="flex justify-between text-xs text-slate-405 py-1">
                              <span>ID Transacción:</span>
@@ -881,7 +881,7 @@ export default function ComunidadView({ currentUser, onUpdateUser }: ComunidadVi
                           </div>
                        </div>
 
-                       <button 
+                       <button
                          onClick={() => {
                             setShowSimModal(false);
                             setActiveTab('comisiones');
@@ -892,7 +892,7 @@ export default function ComunidadView({ currentUser, onUpdateUser }: ComunidadVi
                        </button>
                     </div>
                  )}
-                 
+
                  {/* Bottom bar inside phone */}
                  <div className="border-t border-slate-900 pt-3 flex justify-between items-center text-[10px] text-slate-500 font-mono">
                     <span>STATUS: ONLINE</span>
@@ -900,7 +900,7 @@ export default function ComunidadView({ currentUser, onUpdateUser }: ComunidadVi
                  </div>
               </div>
             </div>
-            
+
           </div>
         </div>
       )}

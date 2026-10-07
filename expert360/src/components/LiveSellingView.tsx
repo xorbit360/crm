@@ -656,7 +656,7 @@ export default function LiveSellingView() {
 
   // Copy shareable live link
   const copyLiveLink = () => {
-    const url = `https://${customDomain || 'live.expert360.com'}/live/estreno-especial`;
+    const url = `https://${customDomain || 'live.tudominio.com'}/live/estreno-especial`;
     navigator.clipboard.writeText(url);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2500);
@@ -667,11 +667,11 @@ export default function LiveSellingView() {
 
   return (
     <div className="space-y-6 w-full pb-16 text-gray-100 animate-fade-in">
-      
+
       {/* Top Main Banner - Effi + Pancake style */}
       <div className="p-6 rounded-2xl border border-red-500/20 bg-gradient-to-r from-gray-950 via-gray-900 to-red-950/20 relative overflow-hidden shadow-xl">
         <div className="absolute -top-24 -right-24 w-96 h-96 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
-        
+
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-start gap-4">
             <div className="p-3.5 rounded-2xl bg-gradient-to-br from-red-600 to-amber-600 text-white shadow-lg shadow-red-600/30 shrink-0">
@@ -771,7 +771,7 @@ export default function LiveSellingView() {
         </div>
 
         {/* STRATEGY BANNER: "GRABAR 1 SOLA VEZ & VENDER 24/7" (EFFI + PANCAKE METHOD) */}
-        <div className="mt-5 p-4 rounded-xl bg-gradient-to-r from-amber-500/10 via-red-500/10 to-purple-500/10 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="mt-5 p-4 rounded-xl bg-gradient-to-r from-amber-500/10 via-red-500/10 to-blue-500/10 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-start gap-3">
             <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 shrink-0 mt-0.5">
               <Repeat size={20} className="animate-spin" />
@@ -837,11 +837,11 @@ export default function LiveSellingView() {
       {/* TAB 1: STUDIO EN VIVO & PINNED PRODUCTS */}
       {activeTab === 'studio' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          
+
           {/* Main Video Live Broadcast Stage (Col 7) */}
           <div className="lg:col-span-7 space-y-4">
             <div className="panel p-4 rounded-2xl border border-gray-800 bg-gray-900/80 space-y-3">
-              
+
               {/* Controls bar */}
               <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-gray-800">
                 <div className="flex flex-wrap items-center gap-2">
@@ -1189,7 +1189,7 @@ export default function LiveSellingView() {
           {/* Right Column: Live Comments Feed & Real-Time Order Capture (Col 5) */}
           <div className="lg:col-span-5 space-y-4 flex flex-col">
             <div className="panel p-4 rounded-2xl border border-gray-800 bg-gray-900/80 flex-1 flex flex-col">
-              
+
               {/* Header */}
               <div className="flex items-center justify-between pb-3 border-b border-gray-800 shrink-0">
                 <div className="flex items-center gap-2">
@@ -1224,7 +1224,7 @@ export default function LiveSellingView() {
                         <span className={`text-[10px] font-extrabold uppercase px-1.5 py-0.2 rounded ${
                           comm.platform === 'tiktok' ? 'bg-black text-white border border-gray-700' :
                           comm.platform === 'facebook' ? 'bg-blue-600 text-white' :
-                          comm.platform === 'instagram' ? 'bg-pink-600 text-white' : 'bg-emerald-600 text-white'
+                          comm.platform === 'instagram' ? 'bg-blue-600 text-white' : 'bg-emerald-600 text-white'
                         }`}>
                           {comm.platform}
                         </span>
@@ -1337,7 +1337,7 @@ export default function LiveSellingView() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              
+
               {/* Keywords Configuration */}
               <div className="space-y-4">
                 <div>
@@ -1475,7 +1475,7 @@ export default function LiveSellingView() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => {
-                    const csvContent = "data:text/csv;charset=utf-8," 
+                    const csvContent = "data:text/csv;charset=utf-8,"
                       + ["ID,Cliente,Teléfono,Canal,Producto,Total,Estado,Fecha"]
                         .concat(orders.map(o => `${o.id},"${o.customerName}",${o.phone},${o.channel},"${o.productName}",${o.price},${o.status},${o.createdAt}`))
                         .join("\n");
@@ -1578,7 +1578,7 @@ export default function LiveSellingView() {
 
               <button
                 onClick={() => {
-                  window.open(`https://${customDomain || 'live.expert360.com'}/live/estreno`, '_blank');
+                  window.open(`https://${customDomain || 'live.tudominio.com'}/live/estreno`, '_blank');
                 }}
                 className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-blue-600/20"
               >
@@ -1588,7 +1588,7 @@ export default function LiveSellingView() {
 
             {/* Mock View of the Mobile Storefront */}
             <div className="max-w-md mx-auto bg-black rounded-3xl border-4 border-gray-800 overflow-hidden shadow-2xl space-y-0">
-              
+
               {/* Video Screen */}
               <div className="relative aspect-[9/14] bg-gray-900 overflow-hidden flex flex-col justify-between p-4">
                 {selectedPlatform === 'recorded_loop' ? (
@@ -1746,7 +1746,7 @@ export default function LiveSellingView() {
                         <tr>
                           <td className="p-2 font-bold text-amber-400">CNAME</td>
                           <td className="p-2 text-white">live</td>
-                          <td className="p-2 text-emerald-400">cname.expert360.live</td>
+                          <td className="p-2 text-emerald-400">crm.xorbit360.com</td>
                           <td className="p-2 text-gray-500">Auto / 300</td>
                         </tr>
                       </tbody>
@@ -1850,7 +1850,7 @@ export default function LiveSellingView() {
 
               <div className="p-4 rounded-xl bg-gray-950 border border-gray-800 space-y-1">
                 <span className="text-[11px] font-bold text-gray-400 uppercase">Ticket Promedio</span>
-                <p className="text-2xl font-bold text-purple-400">
+                <p className="text-2xl font-bold text-blue-400">
                   {orders.length > 0 ? formatCOP(Math.round(totalSalesRevenue / orders.length)) : '$0'}
                 </p>
                 <p className="text-[10px] text-gray-400">Por pedido generado en vivo</p>
@@ -1889,7 +1889,7 @@ export default function LiveSellingView() {
       {showRecordingModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-fade-in">
           <div className="bg-gray-950 border border-gray-800 rounded-3xl w-full max-w-5xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh]">
-            
+
             {/* Modal Header */}
             <div className="p-4 sm:p-5 border-b border-gray-800 flex items-center justify-between bg-gray-900/80">
               <div className="flex items-center gap-3">
@@ -1926,11 +1926,11 @@ export default function LiveSellingView() {
 
             {/* Modal Body: Two Columns */}
             <div className="p-4 sm:p-6 overflow-y-auto grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1">
-              
+
               {/* Left Column: Camera View & Recording Controls */}
               <div className={showTeleprompter ? 'lg:col-span-7 space-y-4' : 'lg:col-span-12 max-w-3xl mx-auto w-full space-y-4'}>
                 <div className="relative aspect-video w-full rounded-2xl bg-black border border-gray-800 overflow-hidden flex items-center justify-center shadow-xl">
-                  
+
                   {/* If video was recorded, show playback preview */}
                   {recordedVideoUrl ? (
                     <video

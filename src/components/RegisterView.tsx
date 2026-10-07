@@ -20,7 +20,7 @@ export default function RegisterView({ initialReferral = '', onRegisterSuccess, 
   const [referralCode, setReferralCode] = useState(initialReferral);
   const [isRegistering, setIsRegistering] = useState(false);
   const [success, setSuccess] = useState(false);
-  
+
   const [packages, setPackages] = useState<any[]>([]);
   const [superAdminWallet, setSuperAdminWallet] = useState('');
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
@@ -29,7 +29,7 @@ export default function RegisterView({ initialReferral = '', onRegisterSuccess, 
     if (initialReferral) {
       setReferralCode(initialReferral);
     }
-    
+
     fetch('/api/packages')
       .then(res => res.json())
       .then(data => setPackages(data))
@@ -51,7 +51,7 @@ export default function RegisterView({ initialReferral = '', onRegisterSuccess, 
 
   const handleConfirmPayment = () => {
     setIsRegistering(true);
-    
+
     // Guardar el wallet del patrocinador asociado al correo del usuario registrado
     if (referralCode) {
       localStorage.setItem(`sponsor_wallet_${email.toLowerCase().trim()}`, referralCode.trim());
@@ -61,7 +61,7 @@ export default function RegisterView({ initialReferral = '', onRegisterSuccess, 
     setTimeout(() => {
       setIsRegistering(false);
       setSuccess(true);
-      
+
       // After success message, auto login
       setTimeout(() => {
         onRegisterSuccess({
@@ -92,17 +92,17 @@ export default function RegisterView({ initialReferral = '', onRegisterSuccess, 
     <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4 py-12 overflow-y-auto">
       <div className="w-full max-w-xl panel p-8 rounded-2xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-gold/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
-        
+
         <div className="relative z-10">
-          
+
           {step === 1 ? (
             <>
               <div className="flex items-center gap-3 mb-4">
                 {whiteLabel.logoUrl ? (
-                  <img 
-                    src={whiteLabel.logoUrl} 
-                    alt="Logo" 
-                    className="w-10 h-10 rounded-lg object-contain bg-black/50 border border-gold/30 p-1 shadow-md shadow-gold/10" 
+                  <img
+                    src={whiteLabel.logoUrl}
+                    alt="Logo"
+                    className="w-10 h-10 rounded-lg object-contain bg-black/50 border border-gold/30 p-1 shadow-md shadow-gold/10"
                   />
                 ) : (
                   <div className="w-10 h-10 rounded-lg bg-gold flex items-center justify-center font-bold text-black font-display shadow-md shadow-gold/20 text-lg">
@@ -111,7 +111,7 @@ export default function RegisterView({ initialReferral = '', onRegisterSuccess, 
                 )}
                 <div>
                   <h2 className="text-2xl font-display text-white leading-tight">
-                    {whiteLabel.brandName || 'Expert 360°'}
+                    {whiteLabel.brandName || 'Xorbit 360'}
                   </h2>
                   <p className="text-[11px] text-gold uppercase tracking-wider">Unirse a la Red de Afiliados</p>
                 </div>
@@ -119,7 +119,7 @@ export default function RegisterView({ initialReferral = '', onRegisterSuccess, 
               <p className="text-gray-400 text-sm mb-6">Regístrate y comienza a activar tus herramientas y comisiones automáticas.</p>
 
               <form onSubmit={handleNextStep} className="space-y-4">
-                
+
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block flex justify-between">
                     <span>Código de Referido (Patrocinador)</span>
@@ -131,8 +131,8 @@ export default function RegisterView({ initialReferral = '', onRegisterSuccess, 
                   </label>
                   <div className="relative">
                     <ShieldCheck className={`absolute left-3 top-1/2 -translate-y-1/2 ${initialReferral ? 'text-yellow-400 animate-pulse' : 'text-gray-500'}`} size={18} />
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       value={referralCode}
                       onChange={(e) => setReferralCode(e.target.value)}
                       disabled={!!initialReferral}
@@ -151,8 +151,8 @@ export default function RegisterView({ initialReferral = '', onRegisterSuccess, 
                   <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Nombre Completo</label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       required
                       value={name}
                       onChange={(e) => setName(e.target.value)}
@@ -166,8 +166,8 @@ export default function RegisterView({ initialReferral = '', onRegisterSuccess, 
                   <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Correo Electrónico</label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-                    <input 
-                      type="email" 
+                    <input
+                      type="email"
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
@@ -181,8 +181,8 @@ export default function RegisterView({ initialReferral = '', onRegisterSuccess, 
                   <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Nombre de Usuario (Único)</label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       required
                       value={username}
                       onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s+/g, ''))}
@@ -197,8 +197,8 @@ export default function RegisterView({ initialReferral = '', onRegisterSuccess, 
                   <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Número de WhatsApp</label>
                   <div className="relative">
                     <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-                    <input 
-                      type="tel" 
+                    <input
+                      type="tel"
                       required
                       value={whatsapp}
                       onChange={(e) => setWhatsapp(e.target.value)}
@@ -210,8 +210,8 @@ export default function RegisterView({ initialReferral = '', onRegisterSuccess, 
 
                 <div className="space-y-2 pt-2">
                   <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Crea una contraseña</label>
-                  <input 
-                    type="password" 
+                  <input
+                    type="password"
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -220,8 +220,8 @@ export default function RegisterView({ initialReferral = '', onRegisterSuccess, 
                   />
                 </div>
 
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   className="w-full bg-gold text-black hover:bg-yellow-400 font-bold py-3 rounded-lg flex items-center justify-center gap-2 mt-4 transition-all"
                 >
                   Continuar a Selección de Plan <ArrowRight size={18} />
@@ -245,11 +245,11 @@ export default function RegisterView({ initialReferral = '', onRegisterSuccess, 
                 </button>
                 <h2 className="text-2xl font-display text-white">Selecciona tu Plan</h2>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {packages.map((pkg, i) => (
-                  <div 
-                    key={i} 
+                  <div
+                    key={i}
                     onClick={() => setSelectedPlan(pkg)}
                     className={`p-4 rounded-xl border cursor-pointer transition-all ${selectedPlan?.title === pkg.title ? 'border-gold bg-gold/5 shadow-lg shadow-gold/10' : 'border-gray-800 bg-[#0d0d0d] hover:border-gray-600'}`}
                   >
@@ -278,7 +278,7 @@ export default function RegisterView({ initialReferral = '', onRegisterSuccess, 
                   <div className="bg-black border border-gray-800 p-3 rounded-lg flex items-center justify-center break-all">
                     <code className="text-gold font-mono text-sm select-all">{superAdminWallet || 'Cargando...'}</code>
                   </div>
-                  <button 
+                  <button
                     onClick={handleConfirmPayment}
                     disabled={isRegistering}
                     className={`w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition-all ${isRegistering ? 'opacity-70 cursor-not-allowed' : ''}`}

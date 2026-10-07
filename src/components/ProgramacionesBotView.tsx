@@ -24,7 +24,7 @@ export default function ProgramacionesBotView() {
     setTimeout(() => {
       const lowerInput = userMessage.toLowerCase();
       let aiResponse = 'Entendido. Estoy procesando tu solicitud para configurar la programación.';
-      
+
       if (lowerInput.includes('ventas') || lowerInput.includes('reporte')) {
         aiResponse = '¡Claro! He detectado tu solicitud de reporte de ventas. Me conectaré a la API externa mediante una solicitud GET sobre las ventas de ese día y realizaré la lógica en automático. Puedes hacerme preguntas como "¿qué ciudades vendieron más?" o "en esta semana qué día se vendió más". ¿Deseas que programe este envío diario?';
         setTasks(prev => [...prev, {
@@ -64,7 +64,7 @@ export default function ProgramacionesBotView() {
             <Bot className="text-green-400" size={18} />
             <h3 className="font-semibold text-white">Chat de Configuración</h3>
           </div>
-          
+
           <div className="flex-1 p-4 overflow-y-auto space-y-4">
             {chatMessages.map((msg, idx) => (
               <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -84,7 +84,7 @@ export default function ProgramacionesBotView() {
                 placeholder="Ej. Envía un reporte de ventas todos los días a las 8am..."
                 className="flex-1 bg-black border border-gray-700 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-green-500"
               />
-              <button 
+              <button
                 type="submit"
                 className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-500 transition-colors"
               >
@@ -121,7 +121,7 @@ export default function ProgramacionesBotView() {
                   {task.time}
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-2 text-xs font-mono text-blue-400 bg-blue-900/10 p-2 rounded-lg border border-blue-900/30">
                 <Link size={12} /> {task.api}
               </div>
@@ -136,7 +136,7 @@ export default function ProgramacionesBotView() {
               </div>
             </div>
           ))}
-          
+
           {tasks.length === 0 && (
             <div className="p-8 border border-dashed border-gray-800 rounded-2xl text-center">
               <p className="text-gray-500 text-sm">No hay tareas programadas.</p>

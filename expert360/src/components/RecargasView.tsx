@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Zap, 
-  CreditCard, 
-  Check, 
-  History, 
-  Sparkles, 
-  Bot, 
-  Volume2, 
-  ShieldCheck, 
-  MessageSquare, 
-  X, 
-  ArrowRight, 
-  Clock, 
+import {
+  Zap,
+  CreditCard,
+  Check,
+  History,
+  Sparkles,
+  Bot,
+  Volume2,
+  ShieldCheck,
+  MessageSquare,
+  X,
+  ArrowRight,
+  Clock,
   Download,
   AlertCircle,
   TrendingUp,
@@ -188,7 +188,7 @@ export default function RecargasView() {
   // Load Company Payment Gateway Credentials from localStorage
   const [gatewayConfig, setGatewayConfig] = useState<any>(() => {
     try {
-      const saved = localStorage.getItem('EXPERT360_PAYMENT_CONFIG');
+      const saved = localStorage.getItem('XORBIT 360_PAYMENT_CONFIG');
       if (saved) return JSON.parse(saved);
     } catch (e) {}
     return null;
@@ -197,7 +197,7 @@ export default function RecargasView() {
   useEffect(() => {
     const reloadConfig = () => {
       try {
-        const saved = localStorage.getItem('EXPERT360_PAYMENT_CONFIG');
+        const saved = localStorage.getItem('XORBIT 360_PAYMENT_CONFIG');
         if (saved) setGatewayConfig(JSON.parse(saved));
       } catch (e) {}
     };
@@ -207,7 +207,7 @@ export default function RecargasView() {
 
   const boldGw = gatewayConfig?.gateways?.find((g: any) => g.id === 'bold');
   const boldApiKey = boldGw?.keys?.find((k: any) => k.keyName === 'bold_api_key')?.value || 'x_live_bold_89210928412';
-  const boldCheckoutUrl = boldGw?.keys?.find((k: any) => k.keyName === 'bold_checkout_url')?.value || 'https://checkout.bold.co/payment/LNK_EXPERT360';
+  const boldCheckoutUrl = boldGw?.keys?.find((k: any) => k.keyName === 'bold_checkout_url')?.value || 'https://checkout.bold.co/payment/LNK_XORBIT 360';
 
   const handleSelectPackage = (pkg: PackageOption) => {
     setSelectedPackage(pkg);
@@ -257,7 +257,7 @@ export default function RecargasView() {
 
   return (
     <div className="space-y-8 w-full pb-16 animate-fade-in text-gray-100">
-      
+
       {/* Toast Notification */}
       {purchaseSuccessToast && (
         <div className="fixed top-6 right-6 z-50 bg-emerald-500 text-black font-bold p-4 rounded-2xl shadow-2xl flex items-center gap-3 animate-bounce border border-emerald-300">
@@ -350,7 +350,7 @@ export default function RecargasView() {
               </p>
             </div>
           </div>
-          
+
           <button
             onClick={() => {
               const el = document.getElementById('paquetes-seccion');
@@ -734,7 +734,7 @@ export default function RecargasView() {
               </div>
 
               {/* Bold Payments Highlight Banner */}
-              <div 
+              <div
                 onClick={() => setPaymentMethod('bold')}
                 className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-4 ${
                   paymentMethod === 'bold'
@@ -935,7 +935,7 @@ export default function RecargasView() {
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in">
           <div className="bg-gray-950 border-2 border-red-500/50 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl relative my-auto max-h-[92vh] flex flex-col">
             <div className="overflow-y-auto custom-scrollbar">
-            
+
             {/* BOLD BRANDING HEADER */}
             <div className="bg-gradient-to-r from-red-950 via-gray-900 to-black p-5 border-b border-red-500/30 flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -1064,9 +1064,9 @@ export default function RecargasView() {
 
                     <div>
                       <label className="block text-[11px] font-bold text-gray-400 mb-1">Número Documento:</label>
-                      <input 
-                        type="text" 
-                        placeholder="Número de Cédula o NIT" 
+                      <input
+                        type="text"
+                        placeholder="Número de Cédula o NIT"
                         className="w-full bg-black border border-gray-800 rounded-xl px-3 py-2 text-white text-xs font-mono focus:outline-none focus:border-red-500"
                       />
                     </div>
@@ -1150,7 +1150,7 @@ export default function RecargasView() {
                 {boldCheckoutUrl && (
                   <button
                     onClick={() => {
-                      const urlWithParams = boldCheckoutUrl.includes('?') 
+                      const urlWithParams = boldCheckoutUrl.includes('?')
                         ? `${boldCheckoutUrl}&amount=${selectedPackage.price}&reference=REC-${Date.now()}`
                         : `${boldCheckoutUrl}?amount=${selectedPackage.price}&reference=REC-${Date.now()}`;
                       window.open(urlWithParams, '_blank');

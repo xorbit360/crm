@@ -1,23 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Megaphone, 
-  CheckCircle, 
-  BarChart2, 
-  RefreshCw, 
-  AlertCircle, 
-  Sparkles, 
-  Sliders, 
-  ExternalLink, 
-  TrendingUp, 
-  DollarSign, 
-  Users, 
-  MousePointer, 
-  Eye, 
-  Target, 
-  Link, 
-  Plus, 
-  Check, 
-  CirclePlay, 
+import {
+  Megaphone,
+  CheckCircle,
+  BarChart2,
+  RefreshCw,
+  AlertCircle,
+  Sparkles,
+  Sliders,
+  ExternalLink,
+  TrendingUp,
+  DollarSign,
+  Users,
+  MousePointer,
+  Eye,
+  Target,
+  Link,
+  Plus,
+  Check,
+  CirclePlay,
   CirclePause,
   AlertTriangle,
   Network,
@@ -41,19 +41,19 @@ import {
   Smartphone,
   CheckSquare
 } from 'lucide-react';
-import { 
-  ResponsiveContainer, 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  LineChart, 
-  Line, 
-  BarChart, 
-  Bar 
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  LineChart,
+  Line,
+  BarChart,
+  Bar
 } from 'recharts';
 
 interface Campaign {
@@ -112,12 +112,12 @@ interface WhatsappAlertRule {
   createdDate: string;
 }
 
-export default function AdsView({ 
-  activeTab = 'traffiker', 
-  onNavigate 
-}: { 
-  activeTab?: 'traffiker' | 'metricas'; 
-  onNavigate?: (module: string) => void 
+export default function AdsView({
+  activeTab = 'traffiker',
+  onNavigate
+}: {
+  activeTab?: 'traffiker' | 'metricas';
+  onNavigate?: (module: string) => void
 }) {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [config, setConfig] = useState<MetaTiktokConfig | null>(null);
@@ -289,8 +289,8 @@ export default function AdsView({
     localStorage.setItem('googleAdsConnected', String(newState));
     showToastNotification(
       newState ? 'Google Ads Conectado' : 'Google Ads Desconectado',
-      newState 
-        ? '¡Tu cuenta de Google Ads ha sido sincronizada de forma real para capturar métricas!' 
+      newState
+        ? '¡Tu cuenta de Google Ads ha sido sincronizada de forma real para capturar métricas!'
         : 'Se ha removido el enlace de Google Ads.',
       newState ? 'success' : 'alert'
     );
@@ -303,8 +303,8 @@ export default function AdsView({
     localStorage.setItem('instagramAdsConnected', String(newState));
     showToastNotification(
       newState ? 'Instagram Business Conectado' : 'Instagram Business Desconectado',
-      newState 
-        ? '¡Tu cuenta de Instagram Ads e insights de audiencias han sido integradas!' 
+      newState
+        ? '¡Tu cuenta de Instagram Ads e insights de audiencias han sido integradas!'
         : 'Se ha desactivado la sincronización con Instagram.',
       newState ? 'success' : 'alert'
     );
@@ -361,7 +361,7 @@ export default function AdsView({
         } else {
           showToastNotification(
             '🚀 Campaña Creada en Modo Local',
-            `La campaña "${campName}" ha sido registrada en Expert 360°.`,
+            `La campaña "${campName}" ha sido registrada en Xorbit 360.`,
             'success'
           );
           loadData();
@@ -467,7 +467,7 @@ export default function AdsView({
   const handleTriggerSimulateRule = (rule: WhatsappAlertRule) => {
     const metricSymbol = rule.metric === 'ROAS' ? 'x' : rule.metric === 'CTR' ? '%' : ' USD';
     const conditionText = rule.condition === 'greater' ? 'superó' : 'cayó por debajo de';
-    const simulatedCurrentValue = rule.condition === 'greater' 
+    const simulatedCurrentValue = rule.condition === 'greater'
       ? (rule.thresholdValue * 1.35).toFixed(2)
       : (rule.thresholdValue * 0.75).toFixed(2);
 
@@ -742,7 +742,7 @@ export default function AdsView({
 
   return (
     <div className="animate-fade-in space-y-6 text-gray-200 relative">
-      
+
       {/* Interactive Floating WhatsApp Alert Simulator notification popup */}
       {activeNotification && (
         <div className="fixed top-4 right-4 z-50 max-w-sm w-full bg-[#1e293b] border-2 border-emerald-500 rounded-2xl shadow-2xl overflow-hidden animate-slide-in">
@@ -751,7 +751,7 @@ export default function AdsView({
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
               Notificación WhatsApp Recibida (Mona IA)
             </span>
-            <button 
+            <button
               onClick={() => setActiveNotification(null)}
               className="text-gray-400 hover:text-white"
             >
@@ -785,7 +785,7 @@ export default function AdsView({
               {activeTab === 'traffiker' ? 'Traffiker IA & Copiloto' : 'Métricas KPI & Alertas Automatizadas'}
             </h2>
             <p className="text-xs text-gray-400 mt-0.5">
-              {activeTab === 'traffiker' 
+              {activeTab === 'traffiker'
                 ? 'Conecta tus cuentas publicitarias y monta campañas en Meta & TikTok con nuestro chatbot inteligente.'
                 : 'Monitorea el rendimiento de tus anuncios con filtros profesionales y programa alertas directas a tu WhatsApp.'}
             </p>
@@ -810,10 +810,10 @@ export default function AdsView({
           ============================================== */}
       {activeTab === 'traffiker' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          
+
           {/* Left Column: Chatbot + Connections Panel (lg:col-span-7) */}
           <div className="lg:col-span-7 space-y-6 flex flex-col h-full">
-            
+
             {/* Connections & Admin Hub (Facebook, Google, Instagram) */}
             <div className="bg-[#090909] border border-gray-800 rounded-2xl p-4 shadow-xl space-y-4">
               <div className="flex items-center justify-between border-b border-gray-800 pb-3">
@@ -822,9 +822,9 @@ export default function AdsView({
                 </span>
                 <span className="text-[9px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full font-bold">LIVE API READY</span>
               </div>
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                
+
                 {/* Facebook Connector */}
                 <div className="bg-black/30 border border-gray-850 p-3 rounded-xl flex flex-col justify-between gap-3 text-left">
                   <div className="flex items-center gap-2.5">
@@ -845,7 +845,7 @@ export default function AdsView({
                         <span className="text-[8px] text-gray-500 truncate block max-w-full">{config.metaConnectedUser?.name}</span>
                       </div>
                     ) : (
-                      <button 
+                      <button
                         onClick={() => onNavigate && onNavigate('integraciones')}
                         className="w-full py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-[10px] font-bold transition"
                       >
@@ -875,7 +875,7 @@ export default function AdsView({
                     {googleConnected ? (
                       <div className="bg-emerald-500/5 border border-emerald-500/25 rounded-lg p-1.5 text-center flex flex-col gap-0.5">
                         <span className="text-[9px] text-emerald-400 font-bold block">🟢 Conectado</span>
-                        <button 
+                        <button
                           onClick={toggleGoogleConnection}
                           className="text-[8px] text-red-400 hover:underline block"
                         >
@@ -883,7 +883,7 @@ export default function AdsView({
                         </button>
                       </div>
                     ) : (
-                      <button 
+                      <button
                         onClick={toggleGoogleConnection}
                         className="w-full py-1.5 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-lg text-[10px] transition"
                       >
@@ -896,7 +896,7 @@ export default function AdsView({
                 {/* Instagram Ads Connector */}
                 <div className="bg-black/30 border border-gray-850 p-3 rounded-xl flex flex-col justify-between gap-3 text-left">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-pink-600/15 flex items-center justify-center text-pink-500 shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-blue-600/15 flex items-center justify-center text-blue-500 shrink-0">
                       <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
                         <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
                       </svg>
@@ -910,7 +910,7 @@ export default function AdsView({
                     {instagramConnected ? (
                       <div className="bg-emerald-500/5 border border-emerald-500/25 rounded-lg p-1.5 text-center flex flex-col gap-0.5">
                         <span className="text-[9px] text-emerald-400 font-bold block">🟢 Conectado</span>
-                        <button 
+                        <button
                           onClick={toggleInstagramConnection}
                           className="text-[8px] text-red-400 hover:underline block"
                         >
@@ -918,9 +918,9 @@ export default function AdsView({
                         </button>
                       </div>
                     ) : (
-                      <button 
+                      <button
                         onClick={toggleInstagramConnection}
-                        className="w-full py-1.5 bg-pink-600 hover:bg-pink-500 text-white rounded-lg text-[10px] font-bold transition"
+                        className="w-full py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-[10px] font-bold transition"
                       >
                         Vincular Cuenta
                       </button>
@@ -932,7 +932,7 @@ export default function AdsView({
             </div>
 
             {/* Chatbox Interface */}
-            <div 
+            <div
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
@@ -940,7 +940,7 @@ export default function AdsView({
             >
               {/* Terminal Background Accent */}
               <div className="absolute top-0 right-0 w-48 h-48 bg-red-500/5 rounded-full blur-3xl pointer-events-none" />
-              
+
               <div className="flex items-center justify-between border-b border-gray-800 pb-3 mb-3 shrink-0">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
@@ -996,7 +996,7 @@ export default function AdsView({
                         : 'bg-[#121212] border border-gray-800/80 text-gray-300 rounded-bl-none'
                     }`}>
                       <p className="whitespace-pre-line leading-relaxed">{msg.text}</p>
-                      
+
                       {msg.attachment && (
                         <div className="mt-1 p-2 bg-gray-950/80 rounded-xl border border-gray-800 max-w-full">
                           {msg.attachment.type === 'image' && (
@@ -1053,7 +1053,7 @@ export default function AdsView({
 
               {/* Chat Input Bar */}
               <form onSubmit={handleSendMessage} className="space-y-2.5 shrink-0">
-                
+
                 {/* File attachment preview */}
                 {pendingAttachment && (
                   <div className="bg-[#121212] border border-gold/30 rounded-xl p-2 flex items-center justify-between gap-2 animate-pulse text-left">
@@ -1066,8 +1066,8 @@ export default function AdsView({
                         <span className="text-[8px] text-gray-500">{pendingAttachment.size}</span>
                       </div>
                     </div>
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={() => setPendingAttachment(null)}
                       className="text-gray-400 hover:text-white"
                     >
@@ -1117,7 +1117,7 @@ export default function AdsView({
           <div className="lg:col-span-5 space-y-6">
             <div className="bg-[#090909] border border-gray-800 rounded-2xl p-5 shadow-2xl relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-r from-red-500/5 to-transparent pointer-events-none"></div>
-              
+
               <div className="flex items-center justify-between border-b border-gray-800 pb-3 mb-4">
                 <h3 className="font-bold text-white text-sm flex items-center gap-1.5">
                   <Sparkles className="text-red-500" size={16} /> Creador & Lanzador de Campañas
@@ -1284,11 +1284,11 @@ export default function AdsView({
           ============================================== */}
       {activeTab === 'metricas' && (
         <div className="space-y-6">
-          
+
           {/* Performance Filters Panel (Everything a professional Media Buyer needs) */}
           <div className="bg-[#090909] border border-gray-800 rounded-2xl p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 shadow-xl">
             <div className="flex flex-wrap items-center gap-3">
-              
+
               {/* Search campaign */}
               <div className="relative">
                 <input
@@ -1337,7 +1337,7 @@ export default function AdsView({
 
           {/* Media Buyer KPI Summary Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-            
+
             {/* KPI: Spend */}
             <div className="bg-[#090909] border border-gray-800/80 rounded-2xl p-4 text-left relative overflow-hidden">
               <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider block">Presupuesto</span>
@@ -1409,7 +1409,7 @@ export default function AdsView({
 
           {/* Graphical Trends Section */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            
+
             {/* Chart: Campaign CPC & ROAS Breakdown (lg:col-span-8) */}
             <div className="lg:col-span-8 bg-[#090909] border border-gray-800 rounded-2xl p-5 shadow-xl text-left">
               <div className="flex items-center justify-between mb-4 border-b border-gray-800 pb-3">
@@ -1565,8 +1565,8 @@ export default function AdsView({
                   const matchedCamp = campaigns.find(c => c.id === rule.campaignId);
                   const isCampPaused = matchedCamp?.status === 'PAUSED';
                   return (
-                    <div 
-                      key={rule.id} 
+                    <div
+                      key={rule.id}
                       className={`border ${isCampPaused ? 'border-gray-850 opacity-70' : 'border-gray-800/80 hover:border-red-500/30'} bg-black/35 rounded-xl p-3.5 flex flex-col justify-between gap-3.5 transition`}
                     >
                       <div className="space-y-1.5">
@@ -1650,7 +1650,7 @@ export default function AdsView({
                         <td className="py-3 px-3 capitalize">
                           <span className={`px-2 py-0.5 rounded text-[9.5px] font-bold ${
                             isGoogle ? 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20' :
-                            isInstagram ? 'bg-pink-600/10 text-pink-400 border border-pink-500/20' :
+                            isInstagram ? 'bg-blue-600/10 text-blue-400 border border-blue-500/20' :
                             isTiktok ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
                             'bg-blue-600/10 text-blue-400 border border-blue-500/20'
                           }`}>
@@ -1674,8 +1674,8 @@ export default function AdsView({
                           <button
                             onClick={() => handleToggleStatus(c.id, c.status)}
                             className={`px-2 py-1 rounded text-[9px] font-bold transition ${
-                              c.status === 'ACTIVE' 
-                                ? 'bg-red-950/20 hover:bg-red-950/40 border border-red-500/20 text-red-400' 
+                              c.status === 'ACTIVE'
+                                ? 'bg-red-950/20 hover:bg-red-950/40 border border-red-500/20 text-red-400'
                                 : 'bg-emerald-950/20 hover:bg-emerald-950/40 border border-emerald-500/20 text-emerald-400'
                             }`}
                           >

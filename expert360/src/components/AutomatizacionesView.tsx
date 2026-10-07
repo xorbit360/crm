@@ -17,28 +17,28 @@ import '@xyflow/react/dist/style.css';
 
 // ... (keep initial generic nodes and edges) ...
 const initialNodes = [
-  { 
-    id: '1', 
-    position: { x: 250, y: 50 }, 
-    data: { label: '💬 Chatbot Disparador' }, 
+  {
+    id: '1',
+    position: { x: 250, y: 50 },
+    data: { label: '💬 Chatbot Disparador' },
     type: 'input',
     style: { background: '#111', color: '#fff', border: '1px solid #d4af37', borderRadius: '8px', padding: '10px' }
   },
-  { 
-    id: '2', 
-    position: { x: 100, y: 150 }, 
+  {
+    id: '2',
+    position: { x: 100, y: 150 },
     data: { label: '🧠 LLM Agent (Gemini)' },
     style: { background: '#1a1a2e', color: '#fff', border: '1px solid #4f80f0', borderRadius: '8px', padding: '10px' }
   },
-  { 
-    id: '3', 
-    position: { x: 400, y: 150 }, 
+  {
+    id: '3',
+    position: { x: 400, y: 150 },
     data: { label: '📦 Dropi Pedido POST' },
     style: { background: '#0a2e15', color: '#fff', border: '1px solid #22c55e', borderRadius: '8px', padding: '10px' }
   },
-  { 
-    id: '4', 
-    position: { x: 250, y: 250 }, 
+  {
+    id: '4',
+    position: { x: 250, y: 250 },
     data: { label: '💾 Guardar Memoria BD' },
     style: { background: '#2d1a04', color: '#fff', border: '1px solid #f97316', borderRadius: '8px', padding: '10px' }
   },
@@ -64,7 +64,7 @@ const FlowEditor = () => {
   const [activeWorkflowId, setActiveWorkflowId] = useState('wf1');
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-  
+
   const currentWorkflow = workflows.find(w => w.id === activeWorkflowId);
 
   const saveWorkflow = () => {
@@ -154,14 +154,14 @@ const FlowEditor = () => {
               <Zap size={12} /> Disparadores (Triggers)
             </h4>
             <div className="space-y-2">
-              <div 
+              <div
                 className="bg-[#111] border border-[#d4af37] p-3 rounded-lg text-xs text-white cursor-grab active:cursor-grabbing hover:bg-[#1a1a1a] transition-colors flex items-center gap-2"
                 onDragStart={(event) => onDragStart(event, 'input', '💬 Webhook / Bot', '#111', '#d4af37')}
                 draggable
               >
                 <Webhook size={14} className="text-[#d4af37] shrink-0" /> <span className="truncate">Webhook / Bot</span>
               </div>
-              <div 
+              <div
                 className="bg-[#111] border border-blue-500 p-3 rounded-lg text-xs text-white cursor-grab active:cursor-grabbing hover:bg-[#1a1a1a] transition-colors flex items-center gap-2"
                 onDragStart={(event) => onDragStart(event, 'input', '⏱️ Cron (Reloj)', '#111', '#3b82f6')}
                 draggable
@@ -176,12 +176,12 @@ const FlowEditor = () => {
               <BotIcon size={12} /> Inteligencia Artificial
             </h4>
             <div className="space-y-2">
-              <div 
-                className="bg-[#1a1a2e] border border-indigo-500 p-3 rounded-lg text-xs text-white cursor-grab active:cursor-grabbing hover:bg-[#222240] transition-colors flex items-center gap-2"
+              <div
+                className="bg-[#1a1a2e] border border-blue-500 p-3 rounded-lg text-xs text-white cursor-grab active:cursor-grabbing hover:bg-[#222240] transition-colors flex items-center gap-2"
                 onDragStart={(event) => onDragStart(event, 'default', '🧠 LLM Base', '#1a1a2e', '#6366f1')}
                 draggable
               >
-                <BotIcon size={14} className="text-indigo-500 shrink-0" /> <span className="truncate">LLM Agent (Gemini/OpenAI)</span>
+                <BotIcon size={14} className="text-blue-500 shrink-0" /> <span className="truncate">LLM Agent (Gemini/OpenAI)</span>
               </div>
             </div>
           </div>
@@ -191,14 +191,14 @@ const FlowEditor = () => {
               <Database size={12} /> Acciones / BDD
             </h4>
             <div className="space-y-2">
-              <div 
+              <div
                 className="bg-[#0a2e15] border border-green-500 p-3 rounded-lg text-xs text-white cursor-grab active:cursor-grabbing hover:bg-[#0c3c1b] transition-colors flex items-center gap-2"
                 onDragStart={(event) => onDragStart(event, 'default', '🌐 Petición HTTP', '#0a2e15', '#22c55e')}
                 draggable
               >
                 <Network size={14} className="text-green-500 shrink-0" /> <span className="truncate">Petición HTTP (API)</span>
               </div>
-              <div 
+              <div
                 className="bg-[#2d1a04] border border-orange-500 p-3 rounded-lg text-xs text-white cursor-grab active:cursor-grabbing hover:bg-[#382005] transition-colors flex items-center gap-2"
                 onDragStart={(event) => onDragStart(event, 'default', '💾 Operación BDD', '#2d1a04', '#f97316')}
                 draggable
@@ -224,7 +224,7 @@ const FlowEditor = () => {
           colorMode="dark"
         >
           <Controls className="bg-gray-900 border-gray-700 !text-white" />
-          <MiniMap 
+          <MiniMap
              nodeStrokeColor={(n) => {
                if (n.type === 'input') return '#d4af37';
                return '#444';
@@ -233,7 +233,7 @@ const FlowEditor = () => {
                return '#222';
              }}
              maskColor="rgba(0,0,0,0.7)"
-             className="bg-black border border-gray-800 rounded-lg overflow-hidden" 
+             className="bg-black border border-gray-800 rounded-lg overflow-hidden"
           />
           <Background gap={16} color="#333" className="opacity-40" />
         </ReactFlow>
@@ -259,15 +259,15 @@ const FlowEditor = () => {
                 <label className="text-[10px] text-gray-500 uppercase mb-1 block">URL del Endpoint</label>
                 <input type="text" className="w-full bg-[#161616] border border-gray-700 rounded p-2 text-xs text-white font-mono" defaultValue="https://api.example.com/v1/data" />
               </div>
-              <div className="p-3 bg-indigo-900/10 border border-indigo-500/20 rounded-lg mt-4">
-                 <h4 className="text-[10px] text-indigo-400 font-semibold mb-1 flex items-center gap-1"><Network size={12}/> Configuración de Headers</h4>
+              <div className="p-3 bg-blue-900/10 border border-blue-500/20 rounded-lg mt-4">
+                 <h4 className="text-[10px] text-blue-400 font-semibold mb-1 flex items-center gap-1"><Network size={12}/> Configuración de Headers</h4>
                  <p className="text-[10px] text-gray-400 mb-2">Añade credenciales de autorización o content-type.</p>
-                 <button className="text-[10px] text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 px-2 py-1 rounded w-full flex items-center justify-center gap-1">
+                 <button className="text-[10px] text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 px-2 py-1 rounded w-full flex items-center justify-center gap-1">
                    <Plus size={10} /> Añadir Header
                  </button>
               </div>
            </div>
-           
+
            <div className="mt-4 pt-4 border-t border-gray-800 shrink-0">
              <button className="shrink-0 w-full bg-green-600 hover:bg-green-500 text-white font-semibold text-xs py-2 rounded-lg flex items-center justify-center gap-2 shadow-lg shadow-green-600/20 transition-colors">
                 <Play size={14} /> Ejecutar Nodo (Test)
@@ -289,7 +289,7 @@ const CronTasksPanel = () => {
   const handleAddTask = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTask.title || !newTask.api) return;
-    
+
     setTasks([...tasks, {
       id: Date.now(),
       title: newTask.title,
@@ -313,19 +313,19 @@ const CronTasksPanel = () => {
           <form onSubmit={handleAddTask} className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Nombre de la Tarea</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={newTask.title}
                 onChange={e => setNewTask({...newTask, title: e.target.value})}
-                placeholder="Ej. Enviar reporte de ventas" 
+                placeholder="Ej. Enviar reporte de ventas"
                 className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
               />
             </div>
-            
+
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Frecuencia</label>
-                <select 
+                <select
                   value={newTask.frequency}
                   onChange={e => setNewTask({...newTask, frequency: e.target.value})}
                   className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
@@ -338,8 +338,8 @@ const CronTasksPanel = () => {
               </div>
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Hora</label>
-                <input 
-                  type="time" 
+                <input
+                  type="time"
                   value={newTask.time}
                   onChange={e => setNewTask({...newTask, time: e.target.value})}
                   className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
@@ -350,7 +350,7 @@ const CronTasksPanel = () => {
             <div>
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Endpoint API</label>
               <div className="flex gap-2">
-                <select 
+                <select
                   value={newTask.method}
                   onChange={e => setNewTask({...newTask, method: e.target.value})}
                   className="w-24 bg-black border border-gray-700 rounded-lg px-2 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
@@ -360,11 +360,11 @@ const CronTasksPanel = () => {
                   <option>PUT</option>
                   <option>DELETE</option>
                 </select>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={newTask.api}
                   onChange={e => setNewTask({...newTask, api: e.target.value})}
-                  placeholder="/api/v1/endpoint" 
+                  placeholder="/api/v1/endpoint"
                   className="flex-1 bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
                 />
               </div>
@@ -381,7 +381,7 @@ const CronTasksPanel = () => {
         <h3 className="text-lg font-bold text-white flex items-center gap-2 px-2">
           <Calendar size={18} className="text-gray-400" /> Tareas Programadas Activas
         </h3>
-        
+
         {tasks.length === 0 ? (
           <div className="p-10 border border-dashed border-gray-800 rounded-2xl text-center">
             <Clock size={32} className="mx-auto text-gray-600 mb-3" />
@@ -403,7 +403,7 @@ const CronTasksPanel = () => {
                     </span>
                   </div>
                 </div>
-                <button 
+                <button
                   onClick={() => removeTask(task.id)}
                   className="text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-red-400/10 rounded-lg"
                 >
@@ -429,7 +429,7 @@ const CronHistoryPanel = () => {
     { id: 4, taskTitle: 'Enviar reporte de ventas', date: '2026-07-10', time: '18:00', status: 'success', api: 'GET /api/v1/sales/today', response: '{ "status": "ok", "sales_processed": 42, "total": 11800 }' }
   ];
 
-  const filteredHistory = history.filter(log => 
+  const filteredHistory = history.filter(log =>
     log.taskTitle.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -439,19 +439,19 @@ const CronHistoryPanel = () => {
         <h3 className="text-lg font-bold text-white flex items-center gap-2">
           <History size={18} className="text-gray-400" /> Historial de Ejecuciones
         </h3>
-        
+
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-            <input 
-              type="text" 
-              placeholder="Buscar por nombre de tarea..." 
+            <input
+              type="text"
+              placeholder="Buscar por nombre de tarea..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full sm:w-64 bg-black border border-gray-800 rounded-lg pl-9 pr-4 py-2 text-sm text-white focus:border-blue-500 focus:outline-none transition-colors"
             />
           </div>
-          <select 
+          <select
             value={dateRange}
             onChange={(e) => setDateRange(e.target.value)}
             className="bg-black border border-gray-800 rounded-lg px-4 py-2 text-sm text-white focus:border-blue-500 focus:outline-none transition-colors"
@@ -464,7 +464,7 @@ const CronHistoryPanel = () => {
           </select>
         </div>
       </div>
-      
+
       <div className="grid gap-3">
         {filteredHistory.length > 0 ? (
           filteredHistory.map((log) => (
@@ -489,7 +489,7 @@ const CronHistoryPanel = () => {
                   {log.status === 'success' ? 'Éxito' : 'Fallo'}
                 </div>
               </div>
-              
+
               <div className="mt-3 bg-black border border-gray-800 rounded-lg p-3">
                 <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-2">Respuesta API</p>
                 <pre className="text-xs text-gray-300 font-mono whitespace-pre-wrap overflow-x-auto max-h-40">
@@ -510,19 +510,19 @@ const CronHistoryPanel = () => {
 
 const WebhooksPanel = () => {
   const [webhooks, setWebhooks] = useState([
-    { id: 1, name: 'Shopify Nuevo Pedido', url: 'https://api.expert360.ai/webhooks/shopify/1234', active: true, events: 'orders/create', payloadMapping: 'order.amount -> venta_total\norder.id -> transaction_id' },
-    { id: 2, name: 'Stripe Pago Exitoso', url: 'https://api.expert360.ai/webhooks/stripe/5678', active: true, events: 'charge.succeeded', payloadMapping: 'data.object.amount -> cobro_realizado' }
+    { id: 1, name: 'Shopify Nuevo Pedido', url: 'https://crm.xorbit360.com/api/webhooks/shopify/1234', active: true, events: 'orders/create', payloadMapping: 'order.amount -> venta_total\norder.id -> transaction_id' },
+    { id: 2, name: 'Stripe Pago Exitoso', url: 'https://crm.xorbit360.com/api/webhooks/stripe/5678', active: true, events: 'charge.succeeded', payloadMapping: 'data.object.amount -> cobro_realizado' }
   ]);
   const [newWebhook, setNewWebhook] = useState({ name: '', events: '', payloadMapping: '' });
 
   const handleAddWebhook = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newWebhook.name) return;
-    
+
     setWebhooks([...webhooks, {
       id: Date.now(),
       name: newWebhook.name,
-      url: `https://api.expert360.ai/webhooks/custom/${Date.now()}`,
+      url: `https://crm.xorbit360.com/api/webhooks/custom/${Date.now()}`,
       events: newWebhook.events || 'all',
       payloadMapping: newWebhook.payloadMapping,
       active: true
@@ -547,47 +547,47 @@ const WebhooksPanel = () => {
       <div className="lg:col-span-1 space-y-4">
         <div className="bg-[#111] border border-gray-800 rounded-xl p-6">
           <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-            <Plus size={18} className="text-purple-500" /> Nuevo Webhook Entrante
+            <Plus size={18} className="text-blue-500" /> Nuevo Webhook Entrante
           </h3>
           <form onSubmit={handleAddWebhook} className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Nombre del Webhook</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={newWebhook.name}
                 onChange={e => setNewWebhook({...newWebhook, name: e.target.value})}
-                placeholder="Ej. WooCommerce Sales" 
-                className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none"
+                placeholder="Ej. WooCommerce Sales"
+                className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
               />
             </div>
-            
+
             <div>
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Eventos (Opcional)</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={newWebhook.events}
                 onChange={e => setNewWebhook({...newWebhook, events: e.target.value})}
-                placeholder="Ej. order.created" 
-                className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none"
+                placeholder="Ej. order.created"
+                className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
               />
             </div>
 
             <div>
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1 flex items-center justify-between">
                 <span>Mapeo de Datos (JSON)</span>
-                <span className="text-[10px] bg-purple-500/10 text-purple-400 px-1.5 py-0.5 rounded border border-purple-500/20">Opcional</span>
+                <span className="text-[10px] bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded border border-blue-500/20">Opcional</span>
               </label>
-              <textarea 
+              <textarea
                 value={newWebhook.payloadMapping}
                 onChange={e => setNewWebhook({...newWebhook, payloadMapping: e.target.value})}
-                placeholder="Ej. payload.amount -> total_venta&#10;payload.customer -> cliente_id" 
+                placeholder="Ej. payload.amount -> total_venta&#10;payload.customer -> cliente_id"
                 rows={3}
-                className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:border-purple-500 focus:outline-none resize-none"
+                className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:border-blue-500 focus:outline-none resize-none"
               />
               <p className="text-[10px] text-gray-500 mt-1">Mapea campos del JSON entrante a variables internas.</p>
             </div>
 
-            <button type="submit" className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold text-sm py-2.5 rounded-lg transition-colors mt-2">
+            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm py-2.5 rounded-lg transition-colors mt-2">
               Generar URL
             </button>
           </form>
@@ -598,7 +598,7 @@ const WebhooksPanel = () => {
         <h3 className="text-lg font-bold text-white flex items-center gap-2 px-2">
           <Webhook size={18} className="text-gray-400" /> Webhooks Activos
         </h3>
-        
+
         {webhooks.length === 0 ? (
           <div className="p-10 border border-dashed border-gray-800 rounded-2xl text-center">
             <Webhook size={32} className="mx-auto text-gray-600 mb-3" />
@@ -611,9 +611,9 @@ const WebhooksPanel = () => {
               <div key={webhook.id} className="bg-[#111] border border-gray-800 rounded-xl p-4 flex flex-col gap-3 group">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <button 
+                    <button
                       onClick={() => toggleWebhook(webhook.id)}
-                      className={`w-10 h-6 rounded-full transition-colors relative ${webhook.active ? 'bg-purple-500' : 'bg-gray-700'}`}
+                      className={`w-10 h-6 rounded-full transition-colors relative ${webhook.active ? 'bg-blue-500' : 'bg-gray-700'}`}
                     >
                       <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${webhook.active ? 'left-5' : 'left-1'}`} />
                     </button>
@@ -626,7 +626,7 @@ const WebhooksPanel = () => {
                       </div>
                     </div>
                   </div>
-                  <button 
+                  <button
                     onClick={() => removeWebhook(webhook.id)}
                     className="text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-red-400/10 rounded-lg"
                   >
@@ -639,17 +639,17 @@ const WebhooksPanel = () => {
                     <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 flex items-center gap-1">
                       <Database size={10} /> Mapeo de Variables Activo
                     </p>
-                    <pre className="text-xs text-purple-300/80 font-mono whitespace-pre-wrap">
+                    <pre className="text-xs text-blue-300/80 font-mono whitespace-pre-wrap">
                       {webhook.payloadMapping}
                     </pre>
                   </div>
                 )}
-                
+
                 <div className="flex items-center gap-2 bg-black border border-gray-800 rounded-lg p-2 mt-1">
                   <code className="text-xs text-gray-300 flex-1 overflow-hidden text-ellipsis whitespace-nowrap font-mono">
                     {webhook.url}
                   </code>
-                  <button 
+                  <button
                     onClick={() => copyToClipboard(webhook.url)}
                     className="text-gray-500 hover:text-white p-1.5 bg-gray-900 rounded-md transition-colors border border-gray-800"
                     title="Copiar URL"
@@ -676,7 +676,7 @@ const NotificationsPanel = () => {
   const handleAddNotification = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newNotification.name || !newNotification.target) return;
-    
+
     setNotifications([...notifications, {
       id: Date.now(),
       name: newNotification.name,
@@ -701,26 +701,26 @@ const NotificationsPanel = () => {
       <div className="lg:col-span-1 space-y-4">
         <div className="bg-[#111] border border-gray-800 rounded-xl p-6">
           <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-            <Bell size={18} className="text-pink-500" /> Nueva Notificación
+            <Bell size={18} className="text-blue-500" /> Nueva Notificación
           </h3>
           <form onSubmit={handleAddNotification} className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Nombre</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={newNotification.name}
                 onChange={e => setNewNotification({...newNotification, name: e.target.value})}
-                placeholder="Ej. Alerta CRON Ventas" 
-                className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-pink-500 focus:outline-none"
+                placeholder="Ej. Alerta CRON Ventas"
+                className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
               />
             </div>
-            
+
             <div>
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Condición</label>
-              <select 
+              <select
                 value={newNotification.condition}
                 onChange={e => setNewNotification({...newNotification, condition: e.target.value})}
-                className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-pink-500 focus:outline-none"
+                className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
               >
                 <option value="on_error">Cuando falle una tarea</option>
                 <option value="on_success">Éxito en integración/flujo</option>
@@ -730,10 +730,10 @@ const NotificationsPanel = () => {
 
             <div>
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Canal de Envío</label>
-              <select 
+              <select
                 value={newNotification.channel}
                 onChange={e => setNewNotification({...newNotification, channel: e.target.value})}
-                className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-pink-500 focus:outline-none"
+                className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
               >
                 <option value="whatsapp">WhatsApp</option>
                 <option value="email">Email</option>
@@ -745,16 +745,16 @@ const NotificationsPanel = () => {
 
             <div>
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Destinatario / Canal ID</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={newNotification.target}
                 onChange={e => setNewNotification({...newNotification, target: e.target.value})}
-                placeholder={newNotification.channel === 'whatsapp' ? '+57...' : newNotification.channel === 'email' ? 'admin@empresa.com' : 'Usuario'} 
-                className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-pink-500 focus:outline-none"
+                placeholder={newNotification.channel === 'whatsapp' ? '+57...' : newNotification.channel === 'email' ? 'admin@empresa.com' : 'Usuario'}
+                className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
               />
             </div>
 
-            <button type="submit" className="w-full bg-pink-600 hover:bg-pink-500 text-white font-bold text-sm py-2.5 rounded-lg transition-colors mt-2">
+            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm py-2.5 rounded-lg transition-colors mt-2">
               Crear Regla
             </button>
           </form>
@@ -765,7 +765,7 @@ const NotificationsPanel = () => {
         <h3 className="text-lg font-bold text-white flex items-center gap-2 px-2">
           <MessageSquare size={18} className="text-gray-400" /> Reglas Activas
         </h3>
-        
+
         {notifications.length === 0 ? (
           <div className="p-10 border border-dashed border-gray-800 rounded-2xl text-center">
             <Bell size={32} className="mx-auto text-gray-600 mb-3" />
@@ -778,9 +778,9 @@ const NotificationsPanel = () => {
               <div key={notification.id} className="bg-[#111] border border-gray-800 rounded-xl p-4 flex flex-col gap-3 group">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <button 
+                    <button
                       onClick={() => toggleNotification(notification.id)}
-                      className={`w-10 h-6 rounded-full transition-colors relative ${notification.active ? 'bg-pink-500' : 'bg-gray-700'}`}
+                      className={`w-10 h-6 rounded-full transition-colors relative ${notification.active ? 'bg-blue-500' : 'bg-gray-700'}`}
                     >
                       <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${notification.active ? 'left-5' : 'left-1'}`} />
                     </button>
@@ -801,14 +801,14 @@ const NotificationsPanel = () => {
                       </div>
                     </div>
                   </div>
-                  <button 
+                  <button
                     onClick={() => removeNotification(notification.id)}
                     className="text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-red-400/10 rounded-lg"
                   >
                     <Trash2 size={16} />
                   </button>
                 </div>
-                
+
                 <div className="flex items-center gap-2 bg-black border border-gray-800 rounded-lg p-2 mt-1">
                   <span className="text-xs text-gray-500 font-bold uppercase">Destino:</span>
                   <code className="text-xs text-gray-300 flex-1 overflow-hidden text-ellipsis whitespace-nowrap font-mono">
@@ -831,7 +831,7 @@ export default function AutomatizacionesView() {
     <div className="animate-fade-in flex flex-col h-full space-y-4">
       <div className="flex items-center justify-between border-b border-gray-800 pb-4 shrink-0">
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+          <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
             <Network size={20} />
           </div>
           <div>
@@ -841,18 +841,18 @@ export default function AutomatizacionesView() {
         </div>
         <div className="flex gap-2">
           {activeTab === 'flow' && (
-            <button className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
+            <button className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
               <Save size={14} /> Guardar Flujo
             </button>
           )}
         </div>
       </div>
-      
+
       <div className="flex gap-4 border-b border-gray-800 overflow-x-auto no-scrollbar pb-1">
         <button
           onClick={() => setActiveTab('flow')}
           className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-            activeTab === 'flow' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-gray-500 hover:text-gray-300'
+            activeTab === 'flow' ? 'border-blue-500 text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-300'
           }`}
         >
           Flujo Visual
@@ -876,7 +876,7 @@ export default function AutomatizacionesView() {
         <button
           onClick={() => setActiveTab('webhooks')}
           className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-            activeTab === 'webhooks' ? 'border-purple-500 text-purple-400' : 'border-transparent text-gray-500 hover:text-gray-300'
+            activeTab === 'webhooks' ? 'border-blue-500 text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-300'
           }`}
         >
           Webhooks Entrantes
@@ -884,7 +884,7 @@ export default function AutomatizacionesView() {
         <button
           onClick={() => setActiveTab('notifications')}
           className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-            activeTab === 'notifications' ? 'border-pink-500 text-pink-400' : 'border-transparent text-gray-500 hover:text-gray-300'
+            activeTab === 'notifications' ? 'border-blue-500 text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-300'
           }`}
         >
           Notificaciones

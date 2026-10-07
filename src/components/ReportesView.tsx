@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  BarChart3, TrendingUp, Package, MapPin, Map, Tag, AlertTriangle, 
-  RefreshCcw, XCircle, Users, Bot, Sparkles, Send, MessageSquare, 
+import {
+  BarChart3, TrendingUp, Package, MapPin, Map, Tag, AlertTriangle,
+  RefreshCcw, XCircle, Users, Bot, Sparkles, Send, MessageSquare,
   ChevronRight, Brain, Truck, DollarSign, Clock, CheckCircle, Percent, ArrowUpDown
 } from 'lucide-react';
 
@@ -23,7 +23,7 @@ function renderMarkdown(text: string) {
     <div className="space-y-2 text-sm text-gray-200 leading-relaxed">
       {lines.map((line, idx) => {
         const trimmed = line.trim();
-        
+
         // Headers
         if (trimmed.startsWith('### ')) {
           return <h4 key={idx} className="text-base font-bold text-white mt-4 mb-2">{trimmed.substring(4)}</h4>;
@@ -34,7 +34,7 @@ function renderMarkdown(text: string) {
         if (trimmed.startsWith('# ')) {
           return <h2 key={idx} className="text-xl font-bold text-gold mt-6 mb-3">{trimmed.substring(2)}</h2>;
         }
-        
+
         // Bullet points
         if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
           const content = trimmed.substring(2);
@@ -44,7 +44,7 @@ function renderMarkdown(text: string) {
             </ul>
           );
         }
-        
+
         // Ordered list
         const numMatch = trimmed.match(/^(\d+)\.\s+(.+)$/);
         if (numMatch) {
@@ -75,12 +75,12 @@ function renderMarkdown(text: string) {
             </div>
           );
         }
-        
+
         // Empty lines
         if (trimmed === '') {
           return <div key={idx} className="h-2" />;
         }
-        
+
         // Standard paragraphs
         return <p key={idx}>{parseBold(line)}</p>;
       })}
@@ -111,7 +111,7 @@ export default function ReportesView({ businessType = 'E-Commerce (Venta de Prod
     processImprovementText = "Sincronización del pipeline de prospectos, optimización de mentorías/duplicación y seguimiento de rangos/afiliaciones.";
   }
 
-  
+
   // Carrier Recommendation States
   const [recCity, setRecCity] = useState('Bogotá D.C.');
   const [recCategory, setRecCategory] = useState('Electrónica');
@@ -177,7 +177,7 @@ export default function ReportesView({ businessType = 'E-Commerce (Venta de Prod
     { city: 'Barranquilla (Atlántico)', category: 'Belleza', carrier: 'Interrapidisimo', rate: 90, time: '2.5 días', cost: 10500, risk: 'Bajo', attempts: '1.4' },
     { city: 'Barranquilla (Atlántico)', category: 'Belleza', carrier: 'Envía', rate: 89, time: '2.6_días', cost: 10900, risk: 'Medio', attempts: '1.5' },
   ];
-  
+
   // AI Chat States
   const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; text: string }>>([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -222,9 +222,9 @@ export default function ReportesView({ businessType = 'E-Commerce (Venta de Prod
       const data = await response.json();
       setMessages(prev => [...prev, { role: 'assistant', text: data.text || 'Sin respuesta.' }]);
     } catch (error: any) {
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        text: '⚠️ Disculpa, en este momento no puedo procesar tu consulta. Verifica la conexión con el servidor o que la API Key de Gemini esté configurada.' 
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        text: '⚠️ Disculpa, en este momento no puedo procesar tu consulta. Verifica la conexión con el servidor o que la API Key de Gemini esté configurada.'
       }]);
     } finally {
       setLoading(false);
@@ -235,7 +235,7 @@ export default function ReportesView({ businessType = 'E-Commerce (Venta de Prod
     { text: '¿Cómo mejorar la conversión de chats a pedidos?', icon: <Sparkles size={14} className="text-emerald-400" /> },
     { text: '¿Cuáles son los productos más vendidos y su stock?', icon: <Package size={14} className="text-amber-400" /> },
     { text: 'Diagnóstico de las conversaciones de WhatsApp', icon: <MessageSquare size={14} className="text-blue-400" /> },
-    { text: 'Ideas para reducir los carritos abandonados', icon: <RefreshCcw size={14} className="text-purple-400" /> },
+    { text: 'Ideas para reducir los carritos abandonados', icon: <RefreshCcw size={14} className="text-blue-400" /> },
   ];
 
   return (
@@ -293,7 +293,7 @@ export default function ReportesView({ businessType = 'E-Commerce (Venta de Prod
               { label: 'Efectividad COD (Recaudo)', value: '91.8%', icon: <Percent size={20} className="text-green-400" /> },
               { label: 'Flete Promedio (Costo)', value: '$9,250', icon: <DollarSign size={20} className="text-blue-300" /> },
               { label: 'Tiempo de Entrega', value: '1.8 días', icon: <Clock size={20} className="text-amber-400" /> },
-              { label: 'Entregas por Región (Top)', value: 'Antioquia', icon: <MapPin size={20} className="text-purple-400" /> },
+              { label: 'Entregas por Región (Top)', value: 'Antioquia', icon: <MapPin size={20} className="text-blue-400" /> },
               { label: 'Transportadora Top', value: 'Coordinadora', icon: <Map size={20} className="text-emerald-500" /> },
               { label: 'Asesores Activos', value: '3', icon: <Users size={20} className="text-blue-300" /> }
             ].map((stat, i) => (
@@ -392,7 +392,7 @@ export default function ReportesView({ businessType = 'E-Commerce (Venta de Prod
                         <span className="text-gray-300">Campaña de Anuncios (Ads)</span>
                         <span className="font-bold text-white">55%</span>
                       </div>
-                      <div className="w-full bg-gray-800 rounded-full h-1.5"><div className="bg-purple-500 h-1.5 rounded-full" style={{width: '55%'}}></div></div>
+                      <div className="w-full bg-gray-800 rounded-full h-1.5"><div className="bg-blue-500 h-1.5 rounded-full" style={{width: '55%'}}></div></div>
                    </div>
                    <div>
                       <div className="flex justify-between text-xs mb-1">
@@ -442,8 +442,8 @@ export default function ReportesView({ businessType = 'E-Commerce (Venta de Prod
                      <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Por Género</h4>
                      <div className="flex items-center gap-4 h-full pb-4">
                         <div className="flex-1 flex flex-col items-center gap-2">
-                           <div className="relative w-16 h-16 rounded-full border-4 border-pink-500/20 flex items-center justify-center">
-                              <span className="text-pink-400 font-bold">60%</span>
+                           <div className="relative w-16 h-16 rounded-full border-4 border-blue-500/20 flex items-center justify-center">
+                              <span className="text-blue-400 font-bold">60%</span>
                            </div>
                            <span className="text-xs text-gray-400">Mujeres</span>
                         </div>
@@ -514,11 +514,11 @@ export default function ReportesView({ businessType = 'E-Commerce (Venta de Prod
 
               return (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  
+
                   {/* Destacado / Recomendacion Recomendada */}
                   <div className="lg:col-span-1 bg-gradient-to-b from-[#1c241d] to-[#121613] border border-emerald-900/30 rounded-2xl p-6 flex flex-col justify-between text-left relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl -mr-6 -mt-6"></div>
-                    
+
                     <div className="space-y-4">
                       <span className="bg-emerald-500/10 text-emerald-400 text-[10px] uppercase font-bold px-2.5 py-1 rounded-full border border-emerald-500/20 tracking-wider">
                         ★ Transportadora Sugerida
@@ -585,8 +585,8 @@ export default function ReportesView({ businessType = 'E-Commerce (Venta de Prod
                           }`}>
                             <div className="flex items-center gap-3">
                               <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs ${
-                                isWinner 
-                                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+                                isWinner
+                                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                                   : 'bg-gray-800 text-gray-400'
                               }`}>
                                 {idx + 1}
@@ -613,10 +613,10 @@ export default function ReportesView({ businessType = 'E-Commerce (Venta de Prod
                                 <span className="text-xs text-gray-400 block font-semibold">Tasa de Entrega</span>
                                 <span className={`text-base font-black ${isWinner ? 'text-emerald-400' : 'text-gray-200'}`}>{item.rate}%</span>
                               </div>
-                              
+
                               <div className="w-16 bg-gray-800 rounded-full h-1.5">
-                                <div 
-                                  className={`h-1.5 rounded-full ${isWinner ? 'bg-emerald-400' : 'bg-gray-500'}`} 
+                                <div
+                                  className={`h-1.5 rounded-full ${isWinner ? 'bg-emerald-400' : 'bg-gray-500'}`}
                                   style={{ width: `${item.rate}%` }}
                                 ></div>
                               </div>
@@ -689,10 +689,10 @@ export default function ReportesView({ businessType = 'E-Commerce (Venta de Prod
 
       {activeSubTab === 'consultor' && (
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start">
-          
+
           {/* Main Chat Interface */}
           <div className="xl:col-span-3 bg-[#111111] border border-gray-800 rounded-2xl flex flex-col h-[600px] overflow-hidden shadow-2xl relative">
-            
+
             {/* Chat Header */}
             <div className="bg-[#161616] border-b border-gray-800 px-6 py-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -711,7 +711,7 @@ export default function ReportesView({ businessType = 'E-Commerce (Venta de Prod
 
             {/* Message Area */}
             <div className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-thin scrollbar-thumb-gray-800">
-              
+
               {/* Static Welcome Message */}
               <div className="flex gap-3 max-w-[85%]">
                 <div className="w-8 h-8 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center text-gold shrink-0 self-start">
@@ -739,13 +739,13 @@ export default function ReportesView({ businessType = 'E-Commerce (Venta de Prod
 
               {/* Chat messages */}
               {messages.map((msg, idx) => (
-                <div 
-                  key={idx} 
+                <div
+                  key={idx}
                   className={`flex gap-3 max-w-[85%] ${msg.role === 'user' ? 'ml-auto flex-row-reverse' : ''}`}
                 >
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 self-start ${
-                    msg.role === 'user' 
-                      ? 'bg-gold text-black font-semibold text-xs' 
+                    msg.role === 'user'
+                      ? 'bg-gold text-black font-semibold text-xs'
                       : 'bg-gold/10 border border-gold/20 text-gold'
                   }`}>
                     {msg.role === 'user' ? 'U' : <Bot size={16} />}
@@ -795,7 +795,7 @@ export default function ReportesView({ businessType = 'E-Commerce (Venta de Prod
             </div>
 
             {/* Chat Input */}
-            <form 
+            <form
               onSubmit={(e) => {
                 e.preventDefault();
                 handleSendMessage();
@@ -831,7 +831,7 @@ export default function ReportesView({ businessType = 'E-Commerce (Venta de Prod
               <p className="text-xs text-gray-400 leading-relaxed mb-4">
                 El consultor IA analiza tus datos de WhatsApp para sugerirte mejoras en dos frentes principales:
               </p>
-              
+
               <div className="space-y-4">
                 <div className="p-3 bg-gray-950/60 rounded-xl border border-gray-900">
                   <h4 className="text-xs font-bold text-white mb-1 flex items-center gap-1.5">
@@ -842,7 +842,7 @@ export default function ReportesView({ businessType = 'E-Commerce (Venta de Prod
                     {chatImprovementText}
                   </p>
                 </div>
-                
+
                 <div className="p-3 bg-gray-950/60 rounded-xl border border-gray-900">
                   <h4 className="text-xs font-bold text-white mb-1 flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>

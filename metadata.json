@@ -1,6 +1,6 @@
 {
-  "name": "Comunidad Expert 360",
-  "description": "Plataforma integral de Agentes de IA, CRM, Comunicaciones, Recargas Bold Payments y Gestión de Equipos para Comunidad Expert 360.",
+  "name": "Xorbit 360",
+  "description": "Plataforma integral de Agentes de IA, CRM, Comunicaciones, Recargas Bold Payments y Gestión de Equipos para Xorbit 360.",
   "requestFramePermissions": [
     "microphone",
     "camera"

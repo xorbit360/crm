@@ -9,7 +9,7 @@ let currentQRGenerationTime = 0;
 
 export async function connectToWhatsApp() {
   if (sock) return;
-  
+
   try {
     const { state, saveCreds } = await useMultiFileAuthState('baileys_auth_info');
 
@@ -17,25 +17,25 @@ export async function connectToWhatsApp() {
       auth: state,
       printQRInTerminal: false,
       logger: require('pino')({ level: 'silent' }),
-      browser: ['Expert360 AI', 'Chrome', '1.0.0']
+      browser: ['Xorbit 360 AI', 'Chrome', '1.0.0']
     });
 
     sock.ev.on('connection.update', async (update: any) => {
       const { connection, lastDisconnect, qr } = update;
-      
+
       if (qr) {
         globalQR = await QRCode.toDataURL(qr);
         currentQRGenerationTime = Date.now();
         console.log('New WA QR Generated');
       }
-      
+
       if (connection === 'close') {
         const shouldReconnect = (lastDisconnect?.error as any)?.output?.statusCode !== DisconnectReason.loggedOut;
         isConnected = false;
         globalQR = "";
         userPhone = "";
         sock = null;
-        
+
         if (shouldReconnect) {
           connectToWhatsApp();
         } else {

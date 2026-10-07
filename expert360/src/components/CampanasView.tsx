@@ -70,7 +70,7 @@ export default function CampanasView() {
                   </div>
                   <h3 className="font-bold text-xl text-gray-100">Campaña Lista</h3>
                   <p className="text-gray-400 text-sm max-w-md mx-auto">Estás a punto de enviar la plantilla "Promo Black Friday" a 1,250 usuarios seleccionados.</p>
-                  
+
                   <div className="flex justify-center gap-4 mt-8">
                      <button onClick={() => setStep(2)} className="text-gray-400 hover:text-white px-6 py-2 font-bold">Volver</button>
                      <button onClick={() => alert('¡Campaña iniciada!')} className="bg-gold text-black px-8 py-3 rounded-lg font-bold shadow-lg shadow-gold/20 flex items-center gap-2">

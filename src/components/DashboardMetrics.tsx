@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, 
-  LineChart, Line, PieChart, Pie, Cell, Legend 
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
+  LineChart, Line, PieChart, Pie, Cell, Legend
 } from 'recharts';
-import { 
-  TrendingUp, ShoppingCart, Activity, AlertCircle, Truck, CheckCircle, RefreshCcw, 
+import {
+  TrendingUp, ShoppingCart, Activity, AlertCircle, Truck, CheckCircle, RefreshCcw,
   CreditCard, Zap, ArrowRight
 } from 'lucide-react';
 
@@ -34,11 +34,11 @@ const adAttributionData = [
   { name: 'Orgánico', value: 10 },
 ];
 
-export default function DashboardMetrics({ 
+export default function DashboardMetrics({
   currentUser,
   onNavigateToRecargas,
   hiddenItems = []
-}: { 
+}: {
   currentUser?: { name: string, role: string, email: string } | null,
   onNavigateToRecargas?: () => void,
   hiddenItems?: string[]
@@ -101,7 +101,7 @@ export default function DashboardMetrics({
 
   return (
     <div className="animate-fade-in space-y-6">
-      
+
       {/* LOW BALANCE ALERT BANNER ON DASHBOARD */}
       {isLowBalance && (
         <div className="p-5 rounded-2xl bg-gradient-to-r from-amber-950/80 via-amber-900/60 to-red-950/80 border-2 border-amber-500/60 text-amber-200 shadow-2xl shadow-amber-950/50 flex flex-col md:flex-row md:items-center justify-between gap-4 animate-pulse">
@@ -204,7 +204,7 @@ export default function DashboardMetrics({
 
       {/* KPI Cards */}
       <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-${!hiddenItems.includes('pedidos') ? 4 : 1} gap-4`}>
-        <MetricCard 
+        <MetricCard
           title="Ventas Totales (Hoy)"
           value={metrics.sales}
           trend={isZeroStats ? "0%" : "+15%"}
@@ -213,21 +213,21 @@ export default function DashboardMetrics({
         />
         {!hiddenItems.includes('pedidos') && (
           <>
-            <MetricCard 
+            <MetricCard
               title="Pedidos Confirmados"
               value={metrics.orders}
               trend={isZeroStats ? "0%" : "+5%"}
               isPositive={true}
               icon={<CheckCircle className="text-blue-500" size={20} />}
             />
-            <MetricCard 
+            <MetricCard
               title="Pedidos Pendientes"
               value={metrics.pending}
               trend={isZeroStats ? "0%" : "-2%"}
               isPositive={false}
               icon={<ShoppingCart className="text-yellow-500" size={20} />}
             />
-            <MetricCard 
+            <MetricCard
               title="Carritos Recuperados"
               value={metrics.abandoned}
               trend={isZeroStats ? "0%" : "+12%"}
@@ -251,7 +251,7 @@ export default function DashboardMetrics({
                 <XAxis dataKey="name" stroke="#888" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis yAxisId="left" stroke="#888" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis yAxisId="right" orientation="right" stroke="#888" fontSize={12} tickLine={false} axisLine={false} />
-                <RechartsTooltip 
+                <RechartsTooltip
                   contentStyle={{ backgroundColor: '#111', border: '1px solid #333', borderRadius: '8px' }}
                   itemStyle={{ color: '#fff' }}
                 />
@@ -285,7 +285,7 @@ export default function DashboardMetrics({
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <RechartsTooltip 
+                <RechartsTooltip
                   contentStyle={{ backgroundColor: '#111', border: '1px solid #333', borderRadius: '8px' }}
                   itemStyle={{ color: '#fff' }}
                 />
@@ -308,7 +308,7 @@ export default function DashboardMetrics({
                 <CartesianGrid strokeDasharray="3 3" stroke="#333" horizontal={true} vertical={false} />
                 <XAxis type="number" stroke="#888" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis dataKey="name" type="category" stroke="#888" fontSize={12} tickLine={false} axisLine={false} width={80} />
-                <RechartsTooltip 
+                <RechartsTooltip
                   cursor={{ fill: '#1a1a1a' }}
                   contentStyle={{ backgroundColor: '#111', border: '1px solid #333', borderRadius: '8px' }}
                   itemStyle={{ color: '#fff' }}

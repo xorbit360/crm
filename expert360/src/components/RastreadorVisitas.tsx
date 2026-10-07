@@ -26,7 +26,7 @@ export default function RastreadorVisitas() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         {/* Main Analytics Panel */}
         <div className="lg:col-span-2 space-y-6">
           <div className="grid grid-cols-3 gap-4">
@@ -46,7 +46,7 @@ export default function RastreadorVisitas() {
             </div>
             <div className="panel p-4 rounded-xl border border-gray-800 bg-[#0a0a0a]">
               <div className="flex items-center gap-2 text-gray-400 text-xs font-bold uppercase mb-2">
-                <Clock size={14} className="text-purple-400" /> Tiempo Promedio
+                <Clock size={14} className="text-blue-400" /> Tiempo Promedio
               </div>
               <p className="text-2xl font-black font-mono text-white">00:45</p>
               <p className="text-[10px] text-gray-500 font-bold mt-1">Minutos</p>
@@ -58,7 +58,7 @@ export default function RastreadorVisitas() {
             <div className="w-full aspect-[16/9] bg-gray-900 rounded-lg border border-gray-800 relative overflow-hidden flex items-center justify-center group">
               {/* Fake Landing Background */}
               <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1460925895917-afdab827c52f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80')] bg-cover bg-center opacity-20"></div>
-              
+
               {/* Heatmap overlay simulation */}
               <div className="absolute top-[20%] left-[10%] w-32 h-32 bg-red-500/40 rounded-full blur-3xl"></div>
               <div className="absolute top-[40%] right-[20%] w-40 h-40 bg-yellow-500/30 rounded-full blur-3xl"></div>
@@ -71,7 +71,7 @@ export default function RastreadorVisitas() {
                   Alto interés en Título
                 </div>
               </div>
-              
+
               <div className="absolute top-[45%] right-[25%] flex flex-col items-center">
                 <div className="w-4 h-4 bg-yellow-500 rounded-full shadow-[0_0_15px_rgba(234,179,8,0.8)] border-2 border-white"></div>
                 <div className="mt-2 px-2 py-1 bg-black/80 rounded text-[9px] font-bold text-white border border-yellow-500/50">
@@ -93,12 +93,12 @@ export default function RastreadorVisitas() {
         <div className="space-y-6">
           <div className="panel p-6 rounded-2xl border border-blue-500/20 bg-[#0a0a0a] shadow-[0_0_20px_rgba(59,130,246,0.05)] relative overflow-hidden h-full flex flex-col">
             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl pointer-events-none"></div>
-            
+
             <h3 className="text-sm font-bold text-white flex items-center gap-2 mb-4">
               <Zap className="text-blue-400" size={18} />
               Mejoras IA Recomendadas
             </h3>
-            
+
             <div className="flex-1 space-y-4">
               <div className="p-3 bg-red-500/5 border border-red-500/20 rounded-xl space-y-2">
                 <div className="flex items-start gap-2">
@@ -139,7 +139,7 @@ export default function RastreadorVisitas() {
                   <p className="text-[10px] text-gray-500">Los cambios han sido aplicados automáticamente a la plantilla activa.</p>
                 </div>
               ) : (
-                <button 
+                <button
                   onClick={handleApplyImprovements}
                   disabled={isApplying}
                   className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(59,130,246,0.3)]"

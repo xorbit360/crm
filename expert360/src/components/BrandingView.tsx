@@ -1,17 +1,17 @@
 import React, { useState } from 'react';
-import { 
-  Bot, 
-  CheckCircle, 
-  Sparkles, 
-  Sliders, 
-  Palette, 
-  Type, 
-  Award, 
-  Download, 
-  RefreshCw, 
-  Send, 
-  Plus, 
-  Check, 
+import {
+  Bot,
+  CheckCircle,
+  Sparkles,
+  Sliders,
+  Palette,
+  Type,
+  Award,
+  Download,
+  RefreshCw,
+  Send,
+  Plus,
+  Check,
   HelpCircle,
   FileText,
   Copy,
@@ -53,10 +53,10 @@ interface BrandingViewProps {
 export default function BrandingView({ activeTab = 'entrevista' }: BrandingViewProps) {
   // Entrevista State
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    { 
+    {
       id: 'initial-msg',
-      role: 'assistant', 
-      text: '¡Hola! Soy tu AI Brand Strategist. Para diseñar la identidad perfecta de tu marca, cuéntame: ¿Qué problema principal resuelve tu producto dropshipping y a qué tipo de público quieres enamorar?' 
+      role: 'assistant',
+      text: '¡Hola! Soy tu AI Brand Strategist. Para diseñar la identidad perfecta de tu marca, cuéntame: ¿Qué problema principal resuelve tu producto dropshipping y a qué tipo de público quieres enamorar?'
     }
   ]);
   const [chatInput, setChatInput] = useState('');
@@ -76,15 +76,15 @@ export default function BrandingView({ activeTab = 'entrevista' }: BrandingViewP
   // New Brand Optimizer Tool States
   const [brandingSubTab, setBrandingSubTab] = useState<'optimizer' | 'chat'>('optimizer');
   const [creationMode, setCreationMode] = useState<'scratch' | 'improve' | 'competitor'>('scratch');
-  
+
   // Input fields
   const [scratchProductName, setScratchProductName] = useState('');
   const [scratchAudience, setScratchAudience] = useState('');
   const [scratchNiche, setScratchNiche] = useState('hogar'); // 'hogar' | 'tecnologia' | 'belleza' | 'salud' | 'moda'
-  
+
   const [improveBrandName, setImproveBrandName] = useState('');
   const [improveFocus, setImproveFocus] = useState('todo'); // 'todo' | 'colors' | 'tone' | 'value'
-  
+
   const [competitorUrl, setCompetitorUrl] = useState('');
   const [competitorAesthetic, setCompetitorAesthetic] = useState('');
 
@@ -97,7 +97,7 @@ export default function BrandingView({ activeTab = 'entrevista' }: BrandingViewP
   } | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
-  
+
   const [extraBrandNotes, setExtraBrandNotes] = useState('');
 
   // Execution states
@@ -277,7 +277,7 @@ export default function BrandingView({ activeTab = 'entrevista' }: BrandingViewP
 
     setIsUploading(true);
     setUploadProgress(0);
-    
+
     // Simula barra de progreso real
     let progress = 0;
     const interval = setInterval(() => {
@@ -286,11 +286,11 @@ export default function BrandingView({ activeTab = 'entrevista' }: BrandingViewP
       if (progress >= 100) {
         clearInterval(interval);
         setIsUploading(false);
-        
+
         let type: 'image' | 'pdf' | 'video' = 'image';
         if (file.type.includes('pdf')) type = 'pdf';
         else if (file.type.includes('video') || file.name.endsWith('.mp4') || file.name.endsWith('.mov')) type = 'video';
-        
+
         setUploadedFile({
           name: file.name,
           type: type,
@@ -337,7 +337,7 @@ export default function BrandingView({ activeTab = 'entrevista' }: BrandingViewP
           setResultValueProp(`${prod} diseñado con tecnología ergonómica premium para resolver los dolores cotidianos de ${aud}, elevando su calidad de vida.`);
           setResultTone('Fresco, moderno y sumamente confiable. Nos enfocamos en el diseño y en la practicidad diaria.');
           setResultMission(`Ayudar a ${aud} a vivir de forma más inteligente y sofisticada mediante soluciones prácticas y de alta estética.`);
-          
+
           let colors = ['#0F172A', '#1E293B', '#F59E0B', '#F8FAFC']; // Slate & Amber
           if (scratchNiche === 'belleza') colors = ['#2E151B', '#E86F80', '#F3B0C3', '#FFF5F6'];
           else if (scratchNiche === 'tecnologia') colors = ['#030712', '#1F2937', '#3B82F6', '#F9FAFB'];
@@ -354,8 +354,8 @@ Crea la identidad de marca para "${calculatedBrandName}" enfocada en "${prod}".
 - Tono de Voz: Amistoso pero experto, directo a los beneficios emocionales.
 - Gancho Publicitario: "No es solo un producto, es el estándar de lo que mereces."
 Utiliza este Prompt para redactar cartas de venta, descripciones en Shopify y guiones UGC de forma 100% cohesionada.`);
-        } 
-        
+        }
+
         else if (creationMode === 'improve') {
           const brand = improveBrandName.trim() || 'Mi Marca';
           const calculatedBrandName = `${brand} Premium`;
@@ -374,14 +374,14 @@ Actúa como Director General de Creatividad. Vamos a elevar la marca "${brand}" 
 - Tono Re-estructurado: Menos genérico, más autoritario y centrado en la exclusividad.
 - Directriz Visual: Sombras suaves, fondos oscuros de estudio y tipografía serif elegante.
 Optimiza todos los copies para que transmitan un estatus premium inconfundible.`);
-        } 
-        
+        }
+
         else { // Competitor mode
           const comp = competitorUrl.trim() || 'marca-competidora.com';
           const domainName = comp.replace('https://', '').replace('http://', '').split('.')[0];
           const friendlyComp = domainName ? (domainName.charAt(0).toUpperCase() + domainName.slice(1)) : 'Competidor';
           const calculatedBrandName = `${friendlyComp} Fusion`;
-          
+
           setResultBrandName(calculatedBrandName);
           setResultSlogan('Inspirado en los mejores, adaptado para ti.');
           setResultValueProp(`Replicamos la increíble estética y ganchos de conversión que hacen exitoso a ${friendlyComp}, pero con precios más accesibles y envíos rápidos locales.`);
@@ -407,14 +407,14 @@ Usa esta directriz para ganarle mercado a la competencia tradicional con copys u
     setMission(resultMission);
     setTone(resultTone);
     setValueProp(resultValueProp);
-    
+
     // Create new custom palette
     const newPalette = {
       name: `✨ ${resultBrandName} (Generada)`,
       colors: resultColors,
       tags: ['Personalizada', 'IA Optimizada', 'Conversión']
     };
-    
+
     // Add to palette list and select it
     setPalettesState(prev => [newPalette, ...prev]);
     setSelectedPaletteIdx(0);
@@ -425,7 +425,7 @@ Usa esta directriz para ganarle mercado a la competencia tradicional con copys u
       { id: `logo-custom-2`, name: `${resultBrandName} Dark`, style: 'Creative Badge', icon: '⚡', color: resultColors[3] || '#FFFFFF', bg: resultColors[1] || '#1A1A1A' }
     ]);
     setNewLogoName(resultBrandName);
-    
+
     setHasOptimized(false);
     alert(`¡Identidad de Marca "${resultBrandName}" aplicada con éxito!\n\n1. Se actualizó el Manual de Marca.\n2. Se creó y seleccionó tu nueva paleta de colores.\n3. Ya puedes descargar los recursos en la pestaña "Logos & Recursos".`);
   };
@@ -458,7 +458,7 @@ Usa esta directriz para ganarle mercado a la competencia tradicional con copys u
 
   return (
     <div className="animate-fade-in space-y-6 text-gray-200">
-      
+
       {/* Header */}
       <div className="flex items-center gap-4 border-b border-gray-800 pb-4">
         <div className="w-12 h-12 rounded-2xl bg-gold/10 border border-gold/20 flex items-center justify-center text-gold">
@@ -499,12 +499,12 @@ Usa esta directriz para ganarle mercado a la competencia tradicional con copys u
 
           {brandingSubTab === 'optimizer' ? (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-              
+
               {/* PANEL IZQUIERDO: CONFIGURADOR MULTIMEDIA */}
               <div className="lg:col-span-7 space-y-5">
                 <div className="panel p-6 rounded-2xl bg-[#0b0b0b] border border-gray-800 space-y-5 relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-gold/5 rounded-full blur-3xl pointer-events-none"></div>
-                  
+
                   <div>
                     <span className="text-[10px] bg-gold/10 text-gold border border-gold/20 px-2 py-0.5 rounded-md font-bold uppercase tracking-widest font-mono">
                       Configuración Inicial
@@ -655,7 +655,7 @@ Usa esta directriz para ganarle mercado a la competencia tradicional con copys u
                         <Upload size={14} className="text-gold" /> Cargar Material de Marca <span className="text-gray-500 font-normal">(Imagen, PDF, Video)</span>
                       </label>
                     </div>
-                    
+
                     <div className="border border-dashed border-gray-800 rounded-xl p-4 bg-black/45 hover:bg-black/75 transition relative text-center min-h-[110px] flex flex-col justify-center items-center">
                       <input
                         type="file"
@@ -749,7 +749,7 @@ Usa esta directriz para ganarle mercado a la competencia tradicional con copys u
 
               {/* PANEL DERECHO: CONTEXTO GENERADO & PROMPT MAESTRO */}
               <div className="lg:col-span-5 h-full">
-                
+
                 {/* 1. CARGANDO */}
                 {isOptimizing && (
                   <div className="panel p-6 rounded-2xl bg-[#090909] border border-gray-800 space-y-4 animate-pulse text-left h-full min-h-[450px] flex flex-col justify-center">
@@ -757,7 +757,7 @@ Usa esta directriz para ganarle mercado a la competencia tradicional con copys u
                     <h3 className="text-sm font-bold text-white text-center uppercase tracking-wider">
                       Procesando con Inteligencia Artificial Multimodal
                     </h3>
-                    
+
                     <div className="space-y-2 bg-black/80 border border-gray-900 p-4 rounded-xl font-mono text-[10px] text-gray-400 leading-relaxed max-w-sm mx-auto w-full">
                       {optimizeLogs.map((log, i) => (
                         <p key={i} className="animate-fade-in text-gold">
@@ -795,7 +795,7 @@ Usa esta directriz para ganarle mercado a la competencia tradicional con copys u
                 {!isOptimizing && hasOptimized && (
                   <div className="space-y-4 animate-fade-in text-left">
                     <div className="panel p-5 rounded-2xl bg-[#0c0c0c] border border-gray-800 space-y-4">
-                      
+
                       <div className="flex items-center gap-2 border-b border-gray-900 pb-3">
                         <CheckCircle size={18} className="text-emerald-500" />
                         <div>
@@ -809,7 +809,7 @@ Usa esta directriz para ganarle mercado a la competencia tradicional con copys u
                         <span className="text-[10px] text-gold font-bold uppercase tracking-wider block font-mono">
                           🔥 Prompt de Posicionamiento Optimizado
                         </span>
-                        
+
                         <div className="relative">
                           <textarea
                             readOnly
@@ -834,7 +834,7 @@ Usa esta directriz para ganarle mercado a la competencia tradicional con copys u
                       {/* FICHA TÉCNICA EXTRACTADA */}
                       <div className="space-y-3.5 pt-2 border-t border-gray-900 text-xs">
                         <h4 className="font-bold text-white text-xs uppercase tracking-wider">Ficha Técnica Extractada</h4>
-                        
+
                         <div className="grid grid-cols-2 gap-2 text-[11px]">
                           <div className="bg-black/50 p-2.5 rounded-lg border border-gray-900">
                             <span className="text-[9px] text-gray-500 font-bold block">LOGOTIPO / NOMBRE:</span>
@@ -906,8 +906,8 @@ Usa esta directriz para ganarle mercado a la competencia tradicional con copys u
                     {chatMessages.map((msg, idx) => (
                       <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}>
                         <div className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed ${
-                          msg.role === 'user' 
-                            ? 'bg-gold text-black rounded-tr-none font-medium shadow-lg' 
+                          msg.role === 'user'
+                            ? 'bg-gold text-black rounded-tr-none font-medium shadow-lg'
                             : 'bg-[#121212] border border-gray-800/80 text-gray-200 rounded-tl-none'
                         }`}>
                           {msg.isAudio ? (
@@ -935,7 +935,7 @@ Usa esta directriz para ganarle mercado a la competencia tradicional con copys u
                                     Nota de voz • {msg.audioDuration}
                                   </span>
                                   <div className="relative w-full h-1.5 bg-black/20 rounded-full overflow-hidden">
-                                    <div 
+                                    <div
                                       className={`absolute top-0 left-0 h-1.5 rounded-full transition-all duration-155 ${
                                         msg.role === 'user' ? 'bg-black' : 'bg-gold'
                                       }`}
@@ -1038,7 +1038,7 @@ Usa esta directriz para ganarle mercado a la competencia tradicional con copys u
                             {Math.floor(recordingSeconds / 60)}:{(recordingSeconds % 60) < 10 ? '0' : ''}{recordingSeconds % 60}
                           </span>
                         </div>
-                        
+
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
@@ -1154,12 +1154,12 @@ Usa esta directriz para ganarle mercado a la competencia tradicional con copys u
 
               <div className="space-y-3 pt-2">
                 {palettesState.map((p, idx) => (
-                  <div 
+                  <div
                     key={idx}
                     onClick={() => setSelectedPaletteIdx(idx)}
                     className={`p-3.5 rounded-xl border transition cursor-pointer flex flex-col gap-2 ${
-                      selectedPaletteIdx === idx 
-                        ? 'bg-gold/10 border-gold shadow-[0_0_15px_rgba(212,175,55,0.1)]' 
+                      selectedPaletteIdx === idx
+                        ? 'bg-gold/10 border-gold shadow-[0_0_15px_rgba(212,175,55,0.1)]'
                         : 'bg-black/40 border-gray-800 hover:border-gray-700 hover:bg-black/60'
                     }`}
                   >
@@ -1171,12 +1171,12 @@ Usa esta directriz para ganarle mercado a la competencia tradicional con copys u
                         ))}
                       </div>
                     </div>
-                    
+
                     <div className="flex h-8 rounded-lg overflow-hidden border border-black/30">
                       {p.colors.map((c, i) => (
-                        <div 
-                          key={i} 
-                          style={{ backgroundColor: c }} 
+                        <div
+                          key={i}
+                          style={{ backgroundColor: c }}
                           className="flex-1 hover:scale-105 transition"
                           title={`Copiar ${c}`}
                         />
@@ -1224,7 +1224,7 @@ Usa esta directriz para ganarle mercado a la competencia tradicional con copys u
                 <span className="text-[10px] text-gray-500 uppercase font-bold tracking-widest block">Códigos de Paleta Seleccionada</span>
                 <div className="grid grid-cols-2 gap-2">
                   {activePalette.colors.map((color, i) => (
-                    <button 
+                    <button
                       key={i}
                       onClick={() => handleCopyColor(color)}
                       className="p-2.5 rounded-lg bg-black/60 border border-gray-800 hover:border-gray-700 text-xs flex items-center justify-between text-left group transition"
@@ -1262,8 +1262,8 @@ Usa esta directriz para ganarle mercado a la competencia tradicional con copys u
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-2">
               <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider">Misión de Marca</label>
-              <textarea 
-                value={mission} 
+              <textarea
+                value={mission}
                 onChange={(e) => setMission(e.target.value)}
                 className="w-full h-32 bg-black border border-gray-800 rounded-xl p-4 text-xs text-gray-300 focus:outline-none focus:border-gold leading-relaxed"
               />
@@ -1271,8 +1271,8 @@ Usa esta directriz para ganarle mercado a la competencia tradicional con copys u
 
             <div className="space-y-2">
               <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider">Tono de Comunicación</label>
-              <textarea 
-                value={tone} 
+              <textarea
+                value={tone}
                 onChange={(e) => setTone(e.target.value)}
                 className="w-full h-32 bg-black border border-gray-800 rounded-xl p-4 text-xs text-gray-300 focus:outline-none focus:border-gold leading-relaxed"
               />
@@ -1280,8 +1280,8 @@ Usa esta directriz para ganarle mercado a la competencia tradicional con copys u
 
             <div className="space-y-2">
               <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider">Propuesta Única de Valor (USP)</label>
-              <textarea 
-                value={valueProp} 
+              <textarea
+                value={valueProp}
                 onChange={(e) => setValueProp(e.target.value)}
                 className="w-full h-32 bg-black border border-gray-800 rounded-xl p-4 text-xs text-gray-300 focus:outline-none focus:border-gold leading-relaxed"
               />
@@ -1289,7 +1289,7 @@ Usa esta directriz para ganarle mercado a la competencia tradicional con copys u
           </div>
 
           <div className="pt-4 border-t border-gray-800 flex justify-end gap-3">
-            <button 
+            <button
               type="button"
               className="px-4 py-2 bg-gray-900 hover:bg-gray-800 border border-gray-800 text-xs font-bold rounded-xl transition"
               onClick={() => {
@@ -1300,7 +1300,7 @@ Usa esta directriz para ganarle mercado a la competencia tradicional con copys u
             >
               Restablecer Valores
             </button>
-            <button 
+            <button
               type="button"
               className="px-5 py-2 bg-gold text-black font-bold text-xs rounded-xl hover:bg-yellow-400 transition"
               onClick={() => alert('¡Manual de comunicación guardado de manera exitosa!')}
@@ -1326,8 +1326,8 @@ Usa esta directriz para ganarle mercado a la competencia tradicional con copys u
               <div className="space-y-3 pt-2">
                 <div>
                   <label className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Nombre de la Marca:</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={newLogoName}
                     onChange={(e) => setNewLogoName(e.target.value)}
                     placeholder="ej. AuraMist"
@@ -1344,8 +1344,8 @@ Usa esta directriz para ganarle mercado a la competencia tradicional con copys u
                         type="button"
                         onClick={() => setSelectedLogoIcon(icon)}
                         className={`p-2 rounded bg-black border text-center text-sm transition ${
-                          selectedLogoIcon === icon 
-                            ? 'border-gold text-white bg-gold/10' 
+                          selectedLogoIcon === icon
+                            ? 'border-gold text-white bg-gold/10'
                             : 'border-gray-800 text-gray-400 hover:border-gray-700'
                         }`}
                       >
@@ -1383,12 +1383,12 @@ Usa esta directriz para ganarle mercado a la competencia tradicional con copys u
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                 {logos.map((logo) => (
-                  <div 
+                  <div
                     key={logo.id}
                     className="border border-gray-800 rounded-xl overflow-hidden bg-black/40 flex flex-col group hover:border-gray-700 transition"
                   >
-                    <div 
-                      style={{ backgroundColor: logo.bg }} 
+                    <div
+                      style={{ backgroundColor: logo.bg }}
                       className="h-32 flex flex-col items-center justify-center gap-2 relative"
                     >
                       <div className="text-4xl">{logo.icon}</div>
@@ -1405,7 +1405,7 @@ Usa esta directriz para ganarle mercado a la competencia tradicional con copys u
                         <p className="font-bold text-gray-200">{logo.name}.png</p>
                         <p className="text-[10px] text-gray-500 font-mono">1024 x 1024 px</p>
                       </div>
-                      <button 
+                      <button
                         onClick={() => alert(`Iniciando descarga ficticia del recurso '${logo.name}.png' en alta resolución`)}
                         className="text-gold p-1.5 rounded hover:bg-gold/10 transition"
                         title="Descargar recurso"

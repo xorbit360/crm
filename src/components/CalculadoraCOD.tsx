@@ -4,7 +4,7 @@ import { Calculator, Save, Settings as SettingsIcon, RefreshCcw, DollarSign, Per
 export default function CalculadoraCOD() {
   const [productName, setProductName] = useState('Limpiador Nasal x 2');
   const [currency, setCurrency] = useState('COP');
-  
+
   // Inputs
   const [units, setUnits] = useState(1);
   const [costPerUnit, setCostPerUnit] = useState(0);
@@ -19,21 +19,21 @@ export default function CalculadoraCOD() {
   // Calculation Logic
   const fleteDevoluciones = deliveryRate > 0 ? (baseFreight / (deliveryRate / 100)) : 0;
   const cpaCosteado = finalDeliveryRate > 0 ? (cpa / (finalDeliveryRate / 100)) : 0;
-  
+
   const proveedorCosto = costPerUnit * units;
-  
+
   const totalCost = proveedorCosto + fleteDevoluciones + adminCost + fulfillment + cpaCosteado;
-  
+
   // PV = CT / (1 - margin)
   const marginDecimal = desiredMargin / 100;
   const rawPrice = marginDecimal < 1 ? (totalCost / (1 - marginDecimal)) : totalCost;
-  
+
   // Round to nearest 900 for typical pricing
-  const precioVenta = Math.ceil(rawPrice / 100) * 100; 
-  
+  const precioVenta = Math.ceil(rawPrice / 100) * 100;
+
   const utilityValue = precioVenta - totalCost;
   const actualMargin = precioVenta > 0 ? (utilityValue / precioVenta) * 100 : 0;
-  
+
   const marginCT = totalCost > 0 ? (utilityValue / totalCost) * 100 : 0;
   const precioComparacion = precioVenta * 2;
 
@@ -69,13 +69,13 @@ export default function CalculadoraCOD() {
           <h3 className="text-xs font-bold uppercase tracking-widest text-orange-500 mb-6 flex items-center gap-2">
             <SettingsIcon size={14} className="hidden" /> Producto y Costos
           </h3>
-          
+
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-[10px] uppercase font-bold text-gray-500 block mb-1">Nombre del producto</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={productName}
                   onChange={(e) => setProductName(e.target.value)}
                   className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-orange-500"
@@ -83,7 +83,7 @@ export default function CalculadoraCOD() {
               </div>
               <div>
                 <label className="text-[10px] uppercase font-bold text-gray-500 block mb-1">Moneda</label>
-                <select 
+                <select
                   value={currency}
                   onChange={(e) => setCurrency(e.target.value)}
                   className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-orange-500"
@@ -148,9 +148,9 @@ export default function CalculadoraCOD() {
         {/* OUTPUTS PANEL */}
         <div className="panel p-6 rounded-2xl border border-gray-800 bg-[#0d0d0d] flex flex-col justify-between shadow-xl relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/5 rounded-full blur-3xl pointer-events-none"></div>
-          
+
           <div className="relative z-10 space-y-6">
-            
+
             <div className="space-y-3">
               <div className="flex justify-between items-center pb-2 border-b border-gray-800/50">
                 <span className="text-sm text-gray-400">Proveedor x {units}</span>
@@ -183,7 +183,7 @@ export default function CalculadoraCOD() {
                 <span className="text-xs font-bold text-orange-400">UTILIDAD ({actualMargin.toFixed(1)}%)</span>
                 <span className="text-sm font-bold font-mono text-green-400">{formatCurrency(utilityValue)}</span>
               </div>
-              
+
               {/* Margin visual bar */}
               <div className="mt-4 pt-2">
                 <div className="flex justify-between text-[9px] font-mono text-gray-500 mb-1">
@@ -210,7 +210,7 @@ export default function CalculadoraCOD() {
             </div>
 
           </div>
-          
+
           <div className="mt-6">
             <div className="bg-orange-500/10 border border-orange-500/30 p-5 rounded-xl text-center shadow-[inset_0_0_20px_rgba(249,115,22,0.1)] relative overflow-hidden">
               <p className="text-[10px] font-bold uppercase tracking-widest text-orange-500 mb-1">Precio de Venta Sugerido</p>

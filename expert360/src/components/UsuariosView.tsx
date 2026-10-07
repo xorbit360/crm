@@ -36,7 +36,7 @@ const initialUsers: UserData[] = [
   {
     id: 1,
     name: 'Oscar Molina',
-    email: 'oscar@expert360.ai',
+    email: 'admin@xorbit360.com',
     role: 'superadmin',
     status: 'activo',
     plan: 'Enterprise 360°',
@@ -85,12 +85,12 @@ const initialUsers: UserData[] = [
   }
 ];
 
-export default function UsuariosView({ 
-  hiddenItems, 
+export default function UsuariosView({
+  hiddenItems,
   toggleVisibility,
-  currentUser 
-}: { 
-  hiddenItems: string[]; 
+  currentUser
+}: {
+  hiddenItems: string[];
   toggleVisibility: (id: string) => void;
   currentUser?: { name: string; role: string; email: string; plan?: string } | null;
 }) {
@@ -234,14 +234,14 @@ export default function UsuariosView({
               {isAdmin ? 'Usuarios y Roles de la Plataforma' : 'Mi Cuenta y Estructura de Usuarios'}
             </h2>
             <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
-              isAdmin ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'bg-gold/20 text-gold border border-gold/30'
+              isAdmin ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'bg-gold/20 text-gold border border-gold/30'
             }`}>
               {isAdmin ? 'Vista Administrador' : 'Mi Estructura (Usuario)'}
             </span>
           </div>
           <p className="text-gray-400 text-xs">
-            {isAdmin 
-              ? 'Como Administrador, puedes ver a todos los usuarios del sistema, sus planes, roles y las herramientas que tienen habilitadas.' 
+            {isAdmin
+              ? 'Como Administrador, puedes ver a todos los usuarios del sistema, sus planes, roles y las herramientas que tienen habilitadas.'
               : 'Información de tu suscripción, perfil y clientes/referidos registrados bajo tu estructura.'}
           </p>
         </div>
@@ -276,19 +276,19 @@ export default function UsuariosView({
       </div>
 
       <div className="flex items-center gap-2 border-b border-gray-800 pb-2">
-        <button 
+        <button
           onClick={() => setActiveTab('lista')}
           className={`px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'lista' ? 'text-gold border-b-2 border-gold -mb-[9px]' : 'text-gray-500 hover:text-gray-300'}`}
         >
           Lista Detallada de Usuarios
         </button>
-        <button 
+        <button
           onClick={() => setActiveTab('roles')}
           className={`px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'roles' ? 'text-gold border-b-2 border-gold -mb-[9px]' : 'text-gray-500 hover:text-gray-300'}`}
         >
           Gestión de Permisos (Roles)
         </button>
-        <button 
+        <button
           onClick={() => setActiveTab('modulos')}
           className={`px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'modulos' ? 'text-gold border-b-2 border-gold -mb-[9px]' : 'text-gray-500 hover:text-gray-300'}`}
         >
@@ -303,12 +303,12 @@ export default function UsuariosView({
               {/* Search Bar */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Buscar por nombre o correo..." 
-                  className="bg-black border border-gray-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white focus:outline-none focus:border-gold w-64" 
+                  placeholder="Buscar por nombre o correo..."
+                  className="bg-black border border-gray-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white focus:outline-none focus:border-gold w-64"
                 />
               </div>
 
@@ -337,14 +337,14 @@ export default function UsuariosView({
               </select>
             </div>
 
-            <button 
+            <button
               onClick={() => setShowAddUserModal(true)}
               className="bg-gold text-black px-4 py-2.5 rounded-xl font-bold hover:bg-yellow-400 transition-all text-xs shadow-lg shadow-gold/20 flex items-center justify-center gap-2 cursor-pointer shrink-0"
             >
               <Plus size={16} /> Registrar Nuevo Usuario
             </button>
           </div>
-           
+
           {/* Main Users Table */}
           <div className="overflow-x-auto custom-scrollbar">
             <table className="w-full text-left text-xs">
@@ -605,7 +605,7 @@ export default function UsuariosView({
             <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold flex items-center gap-2 max-w-md">
               <span className="text-base">💬</span>
               <span>
-                <strong>Tip de Automatización:</strong> También puedes pedirle al Agente 360° en el chat: <em>"oculta el módulo de llamadas"</em> o <em>"muestra solo WhatsApp y Landing Pages"</em> y los cambios se aplicarán al instante.
+                <strong>Tip de Automatización:</strong> También puedes pedirle al Agente Xorbit 360 en el chat: <em>"oculta el módulo de llamadas"</em> o <em>"muestra solo WhatsApp y Landing Pages"</em> y los cambios se aplicarán al instante.
               </span>
             </div>
           </div>
@@ -633,7 +633,7 @@ export default function UsuariosView({
             ].map(item => (
               <div key={item.id} className="flex items-center justify-between p-3.5 bg-gray-900/80 border border-gray-800 rounded-xl hover:border-gray-700 transition">
                 <span className="text-xs text-gray-200 font-semibold">{item.label}</span>
-                <button 
+                <button
                   onClick={() => toggleVisibility(item.id)}
                   className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${!hiddenItems.includes(item.id) ? 'bg-emerald-500' : 'bg-gray-700'}`}
                   title={!hiddenItems.includes(item.id) ? 'Módulo Visible' : 'Módulo Oculto'}
@@ -665,14 +665,14 @@ export default function UsuariosView({
                  <div className="flex items-center gap-2 text-sm text-gray-300"><Check size={16} className="text-red-500" /> Ver estructura de red global</div>
                  <div className="flex items-center gap-2 text-sm text-gray-300"><Check size={16} className="text-red-500" /> Configuración Master del Smart Contract</div>
               </div>
-              <button 
+              <button
                  onClick={() => setShowSuperAdminSettings(true)}
                  className="w-full py-2 bg-red-900/20 border border-red-900/50 text-red-400 text-sm font-semibold rounded-lg hover:bg-red-900/40 transition-colors"
               >
                  Configurar Wallet y Sistema
               </button>
            </div>
-           
+
            {/* Admin */}
            <div className="panel p-6 rounded-2xl border flex flex-col border-blue-900/30 bg-gradient-to-b from-blue-950/10 to-black">
               <div className="w-12 h-12 rounded-xl bg-blue-900/20 text-blue-500 flex items-center justify-center mb-4 border border-blue-900/50">
@@ -693,7 +693,7 @@ export default function UsuariosView({
                  Configurar Permisos
               </button>
            </div>
-           
+
            {/* Droshipper */}
            <div className="panel p-6 rounded-2xl border flex flex-col border-gray-800 bg-black/50">
               <div className="w-12 h-12 rounded-xl bg-gray-800 text-gray-300 flex items-center justify-center mb-4 border border-gray-700">
@@ -710,7 +710,7 @@ export default function UsuariosView({
                  <div className="flex items-center gap-2 text-sm text-gray-500"><X size={16} className="text-gray-600" /> Ver comisiones de otros</div>
                  <div className="flex items-center gap-2 text-sm text-gray-500"><X size={16} className="text-gray-600" /> Configurar catálogo base de la plataforma</div>
               </div>
-              <button 
+              <button
                 onClick={() => setShowDroshipperPermissions(true)}
                 className="w-full py-2 bg-gray-900 border border-gray-800 text-white text-sm font-semibold rounded-lg hover:bg-gray-800 transition-colors"
               >
@@ -737,7 +737,7 @@ export default function UsuariosView({
                 {droshipperModules.map((module) => (
                   <div key={module.id} className="flex items-center justify-between p-3 bg-gray-900 border border-gray-800 rounded-xl">
                     <span className="text-sm text-gray-300 font-medium">{module.label}</span>
-                    <button 
+                    <button
                       onClick={() => {
                         setDroshipperModules(prev => prev.map(m => m.id === module.id ? { ...m, active: !m.active } : m));
                       }}
@@ -773,7 +773,7 @@ export default function UsuariosView({
                 <X size={20} />
               </button>
             </div>
-            
+
             <div className="p-6 space-y-6">
               <div className="bg-blue-900/10 border border-blue-900/30 p-4 rounded-xl flex gap-3 text-sm text-blue-200">
                  <Wallet className="flex-shrink-0 mt-0.5" size={18} />
@@ -782,18 +782,18 @@ export default function UsuariosView({
                     <p className="opacity-80">Por cada suscripción dentro de la red, el Smart Contract distribuye un 25% directo a esta wallet. Debe ser una billetera compatible de Telegram.</p>
                  </div>
               </div>
-              
+
               <div className="space-y-2">
                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">Dirección Telegram Wallet (@wallet)</label>
-                 <input 
-                    type="text" 
+                 <input
+                    type="text"
                     value={masterWallet}
                     onChange={(e) => setMasterWallet(e.target.value)}
                     className="w-full bg-black border border-gray-700 rounded-lg px-4 py-3 text-sm text-gray-200 focus:border-red-500 focus:outline-none transition-colors"
                     placeholder="Ej. UQDv_h-hY... (Telegram TON Wallet)" />
               </div>
 
-              
+
               <div className="space-y-2">
                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">Frase Semilla (Mnemonic) - 24 Palabras</label>
                  <textarea
@@ -816,9 +816,9 @@ export default function UsuariosView({
                 </div>
               )}
             </div>
-            
+
             <div className="p-6 border-t border-gray-800 bg-black/50 flex justify-end gap-3">
-               <button 
+               <button
                  onClick={() => {
                    setShowSuperAdminSettings(false);
                    setSaveStatus('idle');
@@ -827,7 +827,7 @@ export default function UsuariosView({
                >
                   Cancelar
                </button>
-               <button 
+               <button
                  disabled={saveStatus === 'saving'}
                  onClick={() => {
                    setSaveStatus('saving');

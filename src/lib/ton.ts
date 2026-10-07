@@ -7,32 +7,32 @@ export async function distributeTonCommissions(invoiceData: any, superAdminMnemo
     console.log("No SUPERADMIN_MNEMONIC configured. Skipping real on-chain dispersion.");
     return false;
   }
-  
+
   try {
     const mnemonic = mnemonicStr.split(' ');
     const key = await mnemonicToPrivateKey(mnemonic);
-    
+
     // Create a client for the mainnet
     const client = new TonClient({
-      endpoint: 'https://toncenter.com/api/v2/jsonRPC', 
+      endpoint: 'https://toncenter.com/api/v2/jsonRPC',
     });
-    
+
     const wallet = WalletContractV4.create({ publicKey: key.publicKey, workchain: 0 });
     const contract = client.open(wallet);
     const balance = await contract.getBalance();
     console.log(`[ON-CHAIN] Admin Wallet Balance: ${balance.toString()} nanoTON`);
 
     const hasSponsors = !!invoiceData.sponsorWallet;
-    
+
     if (hasSponsors) {
        // Convert USDT plan value to TON (mock rate, you should fetch real rate in production)
-       const TON_RATE = 7.25; 
-       
+       const TON_RATE = 7.25;
+
        // Calc values in nanoTON
        const sponsorValue = Math.round((invoiceData.planValue * 0.50 / TON_RATE) * 1e9).toString();
-       
+
        const seqno = await contract.getSeqno();
-       
+
        // WalletV4 allows up to 4 internal messages per transaction.
        await contract.sendTransfer({
          seqno,
@@ -46,7 +46,7 @@ export async function distributeTonCommissions(invoiceData: any, superAdminMnemo
            // You can add more internal messages here for N2, N3, etc.
          ]
        });
-       
+
        console.log(`[ON-CHAIN] SUCCESS: Dispersed TON to Sponsor ${invoiceData.sponsorWallet}`);
     } else {
        console.log(`[ON-CHAIN] No sponsor. 100% remains in SuperAdmin wallet.`);
