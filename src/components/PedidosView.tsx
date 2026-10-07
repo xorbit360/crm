@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, Filter, ArrowDownToLine, ShoppingCart, RefreshCw, Truck, CheckCircle2, X, Trash2, Edit3, ShieldCheck, HelpCircle, Package, DollarSign, Calendar, Clock, AlertCircle, MessageSquare, Send, Smartphone } from 'lucide-react';
+import { buildAdminDemoOrders, isPrincipalAdmin, scopedStorageKey } from '../lib/demoSales';
 
 interface Order {
   id: string;
@@ -15,7 +16,7 @@ interface Order {
   confirmationStatus?: 'Confirmado' | 'No Confirmado';
 }
 
-export default function PedidosView() {
+export default function PedidosView({ currentUser }: { currentUser?: { role?: string; email?: string } | null }) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterShipping, setFilterShipping] = useState('ALL');
@@ -51,6 +52,8 @@ export default function PedidosView() {
   const [templateCustomReason, setTemplateCustomReason] = useState('Dirección errada o cliente no se encontraba en el domicilio');
   const [isSendingTemplate, setIsSendingTemplate] = useState(false);
   const [templateResult, setTemplateResult] = useState<{ success: boolean; msg: string } | null>(null);
+  const ordersStorageKey = scopedStorageKey('crm_orders', currentUser);
+  const clientsStorageKey = scopedStorageKey('crm_clients', currentUser);
 
   const handleSendWhatsAppLogisticsTemplate = async () => {
     if (!selectedTemplateOrder) return;
@@ -106,6 +109,16 @@ export default function PedidosView() {
 
   // Load orders
   useEffect(() => {
+    if (isPrincipalAdmin(currentUser)) {
+      const demoOrders = buildAdminDemoOrders();
+      setOrders(demoOrders);
+      localStorage.setItem(ordersStorageKey, JSON.stringify(demoOrders));
+      return;
+    }
+    setOrders([]);
+    localStorage.setItem(ordersStorageKey, JSON.stringify([]));
+    return;
+    /* Legacy mock data remains below for reference only. */
     const stored = localStorage.getItem('crm_orders');
     if (stored) {
       try {
@@ -199,12 +212,12 @@ export default function PedidosView() {
         confirmationStatus: "No Confirmado"
       }
     ];
-    localStorage.setItem('crm_orders', JSON.stringify(mock));
+    localStorage.setItem(ordersStorageKey, JSON.stringify(mock));
     setOrders(mock);
   };
 
   const saveToStorage = (updated: Order[]) => {
-    localStorage.setItem('crm_orders', JSON.stringify(updated));
+        localStorage.setItem(ordersStorageKey, JSON.stringify(updated));
     setOrders(updated);
   };
 
@@ -292,7 +305,7 @@ export default function PedidosView() {
 
       // Auto-guardar automáticamente el cliente en crm_clients
       try {
-        const storedClients = localStorage.getItem('crm_clients');
+        const storedClients = localStorage.getItem(clientsStorageKey);
         let clientList: any[] = [];
         if (storedClients) {
           try { clientList = JSON.parse(storedClients); } catch (e) {}
@@ -323,7 +336,7 @@ export default function PedidosView() {
         } else {
           clientList.push(clientData);
         }
-        localStorage.setItem('crm_clients', JSON.stringify(clientList));
+        localStorage.setItem(clientsStorageKey, JSON.stringify(clientList));
       } catch (err) {
         console.error('Error auto-guardando cliente desde PedidosView:', err);
       }

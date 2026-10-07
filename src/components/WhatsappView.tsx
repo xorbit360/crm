@@ -17,6 +17,7 @@ import { VoiceNotePlayer } from './VoiceNotePlayer';
 import { LiveAudioRecorder } from './LiveAudioRecorder';
 import ChatbotIntegracionesView from './ChatbotIntegracionesView';
 import { formatLocalTime, formatLocalDateTime, formatColombiaTime, getTimezone } from '../utils/timezone';
+import { buildAdminDemoClients, buildAdminDemoOrders, isPrincipalAdmin, scopedStorageKey } from '../lib/demoSales';
 
 
 // Helper functions for stylish initials and distinct enterprise avatars
@@ -117,6 +118,11 @@ export default function WhatsappView({
   isSidebarOpen?: boolean,
   onToggleSidebar?: () => void
 }) {
+  const isAdminDemo = isPrincipalAdmin(currentUser);
+  const clientsStorageKey = scopedStorageKey('crm_clients', currentUser);
+  const ordersStorageKey = scopedStorageKey('crm_orders', currentUser);
+  const chatsStorageKey = scopedStorageKey('whatsapp_chats_persistent_v1', currentUser);
+  const messagesStorageKey = scopedStorageKey('whatsapp_messages_persistent_v1', currentUser);
   const [internalTab, setInternalTab] = useState('conexion');
   const [trainingSubTab, setTrainingSubTab] = useState<'base' | 'greeting' | 'faqs' | 'ai_rules' | 'memory' | 'remarketing' | 'ai_models' | 'debug'>('base');
   const [catalogProductCount, setCatalogProductCount] = useState(0);
@@ -549,8 +555,8 @@ export default function WhatsappView({
           setChats([]);
           setMessages({});
           try {
-            localStorage.removeItem('whatsapp_chats_persistent_v1');
-            localStorage.removeItem('whatsapp_messages_persistent_v1');
+            localStorage.removeItem(chatsStorageKey);
+            localStorage.removeItem(messagesStorageKey);
           } catch(e) {}
         } else if (dbData.chats && Array.isArray(dbData.chats)) {
           setChats(prevChats => {
@@ -1608,18 +1614,36 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
     { id: '10', name: "Sofía Castro", time: "08:45 a. m.", msg: "Mi paquete ya aparece despachado en Coordinadora", unread: 0, phone: "+57 301 777 2211", columnId: 'en_transito', tags: ['Despachado'], leadStatus: 'tibio' as const, avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=150&h=150&q=80' }
   ];
 
+  const ADMIN_DEMO_CHATS = DEFAULT_CHATS.map((chat, index) => ({
+    ...chat,
+    name: ['Laura Gómez', 'Andrés Rojas', 'Camila Torres', 'Juan Martínez', 'Mariana Cárdenas', 'Santiago Pérez', 'Daniela Restrepo', 'Nicolás Vargas', 'Valentina Salazar', 'Sebastián Castro'][index],
+    msg: [
+      '¿Todavía tienen disponible el combo de camisas polo?',
+      'Quiero confirmar el pedido y pagar contra entrega.',
+      '¿Qué tallas vienen en el combo? Me interesa comprar dos.',
+      'Envíame el enlace de Shopify para terminar la compra.',
+      'Ya recibí el combo, la calidad está excelente. ¿Cómo hago recompra?',
+      '¿El envío a Medellín tarda entre 2 y 5 días?',
+      'Necesito cambiar una talla antes de que lo despachen.',
+      'Mi pedido aparece en tránsito, ¿me compartes la guía?',
+      'Vi el anuncio en Meta y quiero aprovechar el precio de $160.000.',
+      'Llegué desde Google. ¿Puedo pedir el combo en talla M?'
+    ][index],
+    tags: [index % 3 === 0 ? 'Venta Cerrada' : 'Interesado', index % 2 === 0 ? 'Combo Polos' : 'Logística']
+  }));
+
   // Dynamic CRM Chat States (con almacenamiento persistente local)
   const [chats, setChats] = useState<{ id: string, name: string, time: string, msg: string, unread: number, phone: string, columnId: string, tags: string[], leadStatus?: 'frío' | 'tibio' | 'caliente', avatar?: string }[]>(() => {
     try {
-      const saved = localStorage.getItem('whatsapp_chats_persistent_v1');
+      const saved = localStorage.getItem(chatsStorageKey);
       if (saved !== null) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (isAdminDemo && Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
     } catch (e) {
       console.warn('Error cargando chats persistentes:', e);
     }
-    return DEFAULT_CHATS;
+    return isAdminDemo ? ADMIN_DEMO_CHATS : [];
   });
   const [activeChatId, setActiveChatId] = useState('1');
   const [chatSearch, setChatSearch] = useState('');
@@ -1701,8 +1725,8 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
         setMessages({});
         setActiveChatId('');
         try {
-          localStorage.setItem('whatsapp_chats_persistent_v1', JSON.stringify([]));
-          localStorage.setItem('whatsapp_messages_persistent_v1', JSON.stringify({}));
+          localStorage.setItem(chatsStorageKey, JSON.stringify([]));
+          localStorage.setItem(messagesStorageKey, JSON.stringify({}));
         } catch(e) {}
         const timeNow = formatLocalTime(new Date());
         setLastMemoryClearTime(timeNow);
@@ -1737,17 +1761,17 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
         }));
         setChats(prev => prev.filter(c => c.id !== chatIdToClear));
         try {
-          const storedMsgs = localStorage.getItem('whatsapp_messages_persistent_v1');
+          const storedMsgs = localStorage.getItem(messagesStorageKey);
           if (storedMsgs) {
             const parsed = JSON.parse(storedMsgs);
             delete parsed[chatIdToClear];
-            localStorage.setItem('whatsapp_messages_persistent_v1', JSON.stringify(parsed));
+            localStorage.setItem(messagesStorageKey, JSON.stringify(parsed));
           }
-          const storedChats = localStorage.getItem('whatsapp_chats_persistent_v1');
+          const storedChats = localStorage.getItem(chatsStorageKey);
           if (storedChats) {
             const parsedChats = JSON.parse(storedChats);
             const filteredChats = parsedChats.filter((c: any) => c.id !== chatIdToClear);
-            localStorage.setItem('whatsapp_chats_persistent_v1', JSON.stringify(filteredChats));
+            localStorage.setItem(chatsStorageKey, JSON.stringify(filteredChats));
           }
         } catch(e) {}
         alert(`✨ Conversación con "${chatName}" eliminada y reiniciada desde cero.`);
@@ -2039,18 +2063,36 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
 
   const [messages, setMessages] = useState<{ [key: string]: { sender: 'bot' | 'client' | 'agent', text: string, time: string, attachment?: { name: string, type: 'imagen' | 'video' | 'audio' | 'archivo', url: string, size?: string } }[] }>(() => {
     try {
-      const saved = localStorage.getItem('whatsapp_messages_persistent_v1');
+      const saved = localStorage.getItem(messagesStorageKey);
       if (saved !== null) {
         const parsed = JSON.parse(saved);
-        if (parsed && typeof parsed === 'object') {
+        if (isAdminDemo && parsed && typeof parsed === 'object') {
           return parsed;
         }
       }
     } catch (e) {
       console.warn('Error cargando historial de mensajes persistente:', e);
     }
-    return DEFAULT_MESSAGES;
+    return isAdminDemo ? Object.fromEntries(Object.entries(DEFAULT_MESSAGES).map(([id, history]) => [id, history.map(message => ({
+      ...message,
+      text: message.text
+        .replace(/Smartwatch Ultra X8|Smartwatch Ultra|Smartwatch X8|smartwatch/gi, 'Combo de Camisas Polo')
+        .replace(/Licuadora PortÃ¡til ShakeGo|Auriculares Pro 4/gi, 'Combo de Camisas Polo')
+        .replace(/la pantalla llegÃ³ rota/gi, 'la talla no fue la esperada')
+    }))])) : {};
   });
+
+  React.useEffect(() => {
+    if (isAdminDemo) {
+      localStorage.setItem(clientsStorageKey, JSON.stringify(buildAdminDemoClients()));
+      localStorage.setItem(ordersStorageKey, JSON.stringify(buildAdminDemoOrders()));
+    } else {
+      setChats([]);
+      setMessages({});
+      localStorage.setItem(clientsStorageKey, JSON.stringify([]));
+      localStorage.setItem(ordersStorageKey, JSON.stringify([]));
+    }
+  }, [isAdminDemo, currentUser?.email]);
 
   const activeChatObj = chats.find(c => c.id === activeChatId);
   const activeCleanPhone = activeChatObj?.phone ? activeChatObj.phone.replace(/\D/g, '') : (activeChatId ? activeChatId.replace(/\D/g, '') : '');
@@ -2065,7 +2107,7 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
   // Guardado automático persistente de mensajes y chats en LocalStorage
   React.useEffect(() => {
     try {
-      localStorage.setItem('whatsapp_messages_persistent_v1', JSON.stringify(messages));
+      localStorage.setItem(messagesStorageKey, JSON.stringify(messages));
     } catch (e) {
       console.warn('Error guardando mensajes en localStorage:', e);
     }
@@ -2073,7 +2115,7 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
 
   React.useEffect(() => {
     try {
-      localStorage.setItem('whatsapp_chats_persistent_v1', JSON.stringify(chats));
+      localStorage.setItem(chatsStorageKey, JSON.stringify(chats));
     } catch (e) {
       console.warn('Error guardando chats en localStorage:', e);
     }
@@ -2090,7 +2132,7 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
     if (!activeChatObj) return;
 
     try {
-      const storedClients = localStorage.getItem('crm_clients');
+      const storedClients = localStorage.getItem(clientsStorageKey);
       if (storedClients) {
         const clientList = JSON.parse(storedClients);
         const found = clientList.find((c: any) =>
@@ -2113,7 +2155,7 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
       }
 
       // Sincronizar si ya existe guía generada para este cliente
-      const storedOrders = localStorage.getItem('crm_orders');
+      const storedOrders = localStorage.getItem(ordersStorageKey);
       if (storedOrders) {
         const orderList = JSON.parse(storedOrders);
         const order = orderList.find((o: any) =>
@@ -2143,7 +2185,7 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
 
     const timer = setTimeout(() => {
       try {
-        const stored = localStorage.getItem('crm_clients');
+        const stored = localStorage.getItem(clientsStorageKey);
         let clientList: any[] = [];
         if (stored) {
           try { clientList = JSON.parse(stored); } catch (e) {}
@@ -2179,7 +2221,7 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
           clientList.push(clientData);
         }
 
-        localStorage.setItem('crm_clients', JSON.stringify(clientList));
+        localStorage.setItem(clientsStorageKey, JSON.stringify(clientList));
       } catch (err) {
         console.error('Error auto-guardando cliente:', err);
       }
@@ -2198,7 +2240,7 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
 
     // 1. Auto-guardar cliente en crm_clients
     try {
-      const stored = localStorage.getItem('crm_clients');
+      const stored = localStorage.getItem(clientsStorageKey);
       let clientList: any[] = [];
       if (stored) {
         try { clientList = JSON.parse(stored); } catch (e) {}
@@ -2229,7 +2271,7 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
       } else {
         clientList.push(clientData);
       }
-      localStorage.setItem('crm_clients', JSON.stringify(clientList));
+      localStorage.setItem(clientsStorageKey, JSON.stringify(clientList));
     } catch (e) {
       console.error(e);
     }
@@ -2252,13 +2294,13 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
     };
 
     try {
-      const storedOrders = localStorage.getItem('crm_orders');
+      const storedOrders = localStorage.getItem(ordersStorageKey);
       let orderList: any[] = [];
       if (storedOrders) {
         try { orderList = JSON.parse(storedOrders); } catch (e) {}
       }
       orderList.unshift(newOrder);
-      localStorage.setItem('crm_orders', JSON.stringify(orderList));
+      localStorage.setItem(ordersStorageKey, JSON.stringify(orderList));
     } catch (e) {
       console.error(e);
     }
@@ -9416,10 +9458,10 @@ ${parametersString}
         <div className="pt-4"><CitasView /></div>
       )}
       {currentViewTab === 'clientes' && (
-        <div className="pt-4"><ClientesView /></div>
+        <div className="pt-4"><ClientesView currentUser={currentUser} /></div>
       )}
       {currentViewTab === 'pedidos' && (
-        <div className="pt-4"><PedidosView /></div>
+        <div className="pt-4"><PedidosView currentUser={currentUser} /></div>
       )}
       {currentViewTab === 'recargas' && (
         <div className="pt-4"><RecargasView /></div>

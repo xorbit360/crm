@@ -7,31 +7,35 @@ import {
   TrendingUp, ShoppingCart, Activity, AlertCircle, Truck, CheckCircle, RefreshCcw,
   CreditCard, Zap, ArrowRight
 } from 'lucide-react';
+import { isPrincipalAdmin } from '../lib/demoSales';
 
 const dailySalesData = [
-  { name: 'Lun', sales: 25.4, orders: 181 },
-  { name: 'Mar', sales: 30.2, orders: 215 },
-  { name: 'Mié', sales: 38.5, orders: 275 },
-  { name: 'Jue', sales: 34.0, orders: 242 },
-  { name: 'Vie', sales: 45.8, orders: 327 },
-  { name: 'Sáb', sales: 55.2, orders: 394 },
-  { name: 'Dom', sales: 60.4, orders: 432 },
+  { name: 'Lun', sales: 20, orders: 160 },
+  { name: 'Mar', sales: 24, orders: 170 },
+  { name: 'Mié', sales: 28, orders: 180 },
+  { name: 'Jue', sales: 30, orders: 190 },
+  { name: 'Vie', sales: 32, orders: 180 },
+  { name: 'Sáb', sales: 34, orders: 190 },
+  { name: 'Dom', sales: 32, orders: 180 },
 ];
 
 const orderStatusData = [
-  { name: 'Entregado', value: 1700, color: '#22c55e' },
-  { name: 'En Tránsito', value: 130, color: '#3b82f6' },
-  { name: 'Guía Generada', value: 60, color: '#a855f7' },
-  { name: 'Novedades', value: 50, color: '#f59e0b' },
-  { name: 'Devoluciones', value: 120, color: '#ef4444' },
-  { name: 'Cancelados', value: 90, color: '#6b7280' },
+  { name: 'Entregado', value: 787, color: '#22c55e' },
+  { name: 'En Tránsito', value: 250, color: '#3b82f6' },
+  { name: 'Guía Generada', value: 0, color: '#a855f7' },
+  { name: 'Novedades', value: 0, color: '#f59e0b' },
+  { name: 'Devoluciones', value: 150, color: '#ef4444' },
+  { name: 'Cancelados', value: 63, color: '#6b7280' },
 ];
 
 const adAttributionData = [
-  { name: 'Facebook Ads', value: 45 },
-  { name: 'Instagram', value: 30 },
-  { name: 'TikTok Ads', value: 15 },
-  { name: 'Orgánico', value: 10 },
+  { name: 'WhatsApp', value: 28 },
+  { name: 'Shopify', value: 18 },
+  { name: 'Redes sociales', value: 14 },
+  { name: 'Recompra', value: 10 },
+  { name: 'Meta Ads', value: 12 },
+  { name: 'TikTok Ads', value: 8 },
+  { name: 'Google Ads', value: 10 },
 ];
 
 export default function DashboardMetrics({
@@ -43,7 +47,7 @@ export default function DashboardMetrics({
   onNavigateToRecargas?: () => void,
   hiddenItems?: string[]
 }) {
-  const isZeroStats = currentUser?.role === 'droshipper' && currentUser?.name?.toLowerCase() !== 'oscar';
+  const isZeroStats = !isPrincipalAdmin(currentUser);
 
   // Read AI Credit balance and alert threshold state
   const [aiBalance, setAiBalance] = useState<{ conversations: number; audioMinutes: number }>(() => {
@@ -89,10 +93,10 @@ export default function DashboardMetrics({
     pending: "0",
     abandoned: "0"
   } : {
-    sales: "$60,480,000",
-    orders: "432",
-    pending: "45",
-    abandoned: "12"
+    sales: "$200.000.000",
+    orders: "1.250",
+    pending: "250",
+    abandoned: "96"
   };
 
   const currentDailySalesData = isZeroStats ? dailySalesData.map(d => ({ ...d, sales: 0, orders: 0 })) : dailySalesData;
@@ -205,7 +209,7 @@ export default function DashboardMetrics({
       {/* KPI Cards */}
       <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-${!hiddenItems.includes('pedidos') ? 4 : 1} gap-4`}>
         <MetricCard
-          title="Ventas Totales (Hoy)"
+          title="Ventas Totales (Mes)"
           value={metrics.sales}
           trend={isZeroStats ? "0%" : "+15%"}
           isPositive={true}
@@ -301,7 +305,7 @@ export default function DashboardMetrics({
         {/* Ad Attribution */}
         {!hiddenItems.includes('ads') && (
         <div className="panel p-6 rounded-2xl bg-[#0d0d0d] border border-gray-800">
-          <h4 className="text-sm font-semibold text-gray-300 mb-6">Atribución de Ventas por Anuncio</h4>
+          <h4 className="text-sm font-semibold text-gray-300 mb-6">Fuentes de Ventas</h4>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={currentAdAttributionData} layout="vertical" margin={{ top: 0, right: 0, left: 20, bottom: 0 }}>
@@ -313,9 +317,9 @@ export default function DashboardMetrics({
                   contentStyle={{ backgroundColor: '#111', border: '1px solid #333', borderRadius: '8px' }}
                   itemStyle={{ color: '#fff' }}
                 />
-                <Bar dataKey="value" name="% de Ventas" fill="#a855f7" radius={[0, 4, 4, 0]}>
+                <Bar dataKey="value" name="% de Ventas" fill="#d4af37" radius={[0, 4, 4, 0]}>
                   {currentAdAttributionData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.name === 'Facebook Ads' ? '#3b82f6' : entry.name === 'Instagram' ? '#ec4899' : entry.name === 'TikTok Ads' ? '#000000' : '#22c55e'} />
+                    <Cell key={`cell-${index}`} fill={'#d4af37'} />
                   ))}
                 </Bar>
               </BarChart>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, Filter, ArrowDownToLine, Users, RefreshCw, Sparkles, AlertCircle, ShoppingBag, MapPin, Tag, Calendar, DollarSign, UserCheck, Trash2, Edit3, X, HelpCircle, ShieldAlert, TrendingUp, TrendingDown, Truck, ThumbsUp, ThumbsDown, Eye, Clock } from 'lucide-react';
+import { buildAdminDemoClients, isPrincipalAdmin, scopedStorageKey } from '../lib/demoSales';
 
 export interface OrderHistoryItem {
   id: string;
@@ -30,13 +31,14 @@ export interface Client {
   notes?: string;
 }
 
-export default function ClientesView() {
+export default function ClientesView({ currentUser }: { currentUser?: { role?: string; email?: string } | null }) {
   const [clients, setClients] = useState<Client[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDept, setFilterDept] = useState('ALL');
   const [filterRecur, setFilterRecur] = useState('ALL');
   const [filterCampaign, setFilterCampaign] = useState('ALL');
   const [filterRisk, setFilterRisk] = useState('ALL');
+  const clientsStorageKey = scopedStorageKey('crm_clients', currentUser);
 
   // Selected client for history detail modal
   const [historyModalClient, setHistoryModalClient] = useState<Client | null>(null);
@@ -63,6 +65,16 @@ export default function ClientesView() {
 
   // Load clients
   useEffect(() => {
+    if (isPrincipalAdmin(currentUser)) {
+      const demoClients = buildAdminDemoClients();
+      setClients(demoClients);
+      localStorage.setItem(clientsStorageKey, JSON.stringify(demoClients));
+      return;
+    }
+    setClients([]);
+    localStorage.setItem(clientsStorageKey, JSON.stringify([]));
+    return;
+    /* Legacy mock data remains below for reference only. */
     const stored = localStorage.getItem('crm_clients');
     if (stored) {
       try {
@@ -200,12 +212,12 @@ export default function ClientesView() {
         ]
       }
     ];
-    localStorage.setItem('crm_clients', JSON.stringify(mock));
+    localStorage.setItem(clientsStorageKey, JSON.stringify(mock));
     setClients(mock);
   };
 
   const saveToStorage = (updated: Client[]) => {
-    localStorage.setItem('crm_clients', JSON.stringify(updated));
+    localStorage.setItem(clientsStorageKey, JSON.stringify(updated));
     setClients(updated);
   };
 
