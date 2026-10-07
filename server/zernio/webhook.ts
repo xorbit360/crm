@@ -223,7 +223,7 @@ export async function registerOrUpdateZernioWebhook(webhookUrl: string, webhookN
   if (existingWebhook && (existingWebhook.id || existingWebhook._id)) {
     const hookId = existingWebhook.id || existingWebhook._id;
     const updateRes = await zernioRequest({
-      method: 'PUT',
+      method: 'PATCH',
       path: `/v1/webhooks/settings/${hookId}`,
       body: payload
     });
