@@ -256,13 +256,23 @@ export function RecargasView() {
         const onLoad = () => resolve(Boolean((window as any).BoldCheckout));
         existing.addEventListener('load', onLoad, { once: true });
         existing.addEventListener('error', () => resolve(false), { once: true });
-        setTimeout(() => resolve(Boolean((window as any).BoldCheckout)), 1000);
+        setTimeout(() => resolve(Boolean((window as any).BoldCheckout)), 8000);
         return;
       }
       const script = document.createElement('script');
       script.src = 'https://checkout.bold.co/library/boldPaymentButton.js';
       script.async = true;
-      script.onload = () => resolve(Boolean((window as any).BoldCheckout));
+      script.onload = () => {
+        // Algunas versiones del SDK exponen BoldCheckout unos milisegundos
+        // después de cargar el script.
+        const started = Date.now();
+        const waitForSdk = () => {
+          if ((window as any).BoldCheckout) return resolve(true);
+          if (Date.now() - started > 8000) return resolve(false);
+          window.setTimeout(waitForSdk, 100);
+        };
+        waitForSdk();
+      };
       script.onerror = () => resolve(false);
       document.head.appendChild(script);
     });
@@ -428,6 +438,9 @@ export function RecargasView() {
         })
       });
       const data = await res.json();
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.error || 'Bold no pudo generar el enlace de pago');
+      }
 
       if (typeof (window as any).BoldCheckout === 'function' && data.apiKey && (data.integritySignature || data.signature)) {
         try {
@@ -448,12 +461,20 @@ export function RecargasView() {
         }
       }
 
-      // Encrypted Bold Button fallback
+      // Si el SDK no está disponible, usar exactamente el enlace firmado que
+      // generó el servidor. Esto evita reconstruirlo en el navegador con una
+      // clave distinta o con parámetros incompletos.
+      if (typeof data.checkoutUrl === 'string' && /^https:\/\/checkout\.bold\.co\//.test(data.checkoutUrl)) {
+        window.location.href = data.checkoutUrl;
+        return;
+      }
+
+      // Fallback local para versiones antiguas de la API.
       const btnUrl = generateBoldBtnUrl({
         orderId: data.orderId || orderId,
         currency: 'COP',
         amount: String(data.amount || amountInCop),
-        apiKey: data.apiKey || 'l_5Wz-8KQmld8Vb_iyy05KWBQ0A3zz5LOtAgMmCjfbk',
+        apiKey: data.apiKey || 'l_5Wz-8KQmld8Vb_iyy05KWBQ0A3zz5LOtagMmCjfbk',
         integritySignature: data.integritySignature || data.signature,
         description: data.description || `Recarga Xorbit 360 AI - ${pkg.name}`,
         redirectionUrl: `${window.location.origin}/#/recargas?payment_status=completed&order=${data.orderId || orderId}`

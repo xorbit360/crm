@@ -269,10 +269,10 @@ export function setupBoldRoutes(app: express.Express, getCurrentDB?: () => any, 
 
       // Generate production Bold Checkout URL for merchant FFVSR3C7Y1
       const encodedDesc = encodeURIComponent(description || 'Recarga de Saldo - Xorbit 360 AI');
-      const checkoutUrl = `https://checkout.bold.co/payment/${BOLD_PRODUCTION_CONFIG.merchantId}?amount=${amountStr}&currency=${currency}&description=${encodedDesc}&reference=${orderId}&apiKey=${encodeURIComponent(
+      const checkoutUrl = `https://checkout.bold.co/payment/${BOLD_PRODUCTION_CONFIG.merchantId}?amount=${amountStr}&currency=${currency}&description=${encodedDesc}&reference=${orderId}&order-id=${encodeURIComponent(orderId)}&apiKey=${encodeURIComponent(
         BOLD_PRODUCTION_CONFIG.apiKey
-      )}&integritySignature=${signature}&callbackUrl=${encodeURIComponent(
-        'https://crm.xorbit360.com/#/recargas'
+      )}&integritySignature=${signature}&redirection-url=${encodeURIComponent(
+        'https://crm.xorbit360.com/#/recargas?payment_status=completed'
       )}`;
 
       const newTx: BoldTransaction = {
