@@ -11,11 +11,22 @@ export const DEMO_SOURCES = [
   'Google'
 ] as const;
 
-export const isPrincipalAdmin = (user?: { role?: string; email?: string } | null) =>
-  ['superadmin', 'admin'].includes(user?.role || '') &&
-  user?.email?.toLowerCase() === 'admin@xorbit360.com';
+export const isPrincipalAdmin = (user?: { role?: string; email?: string; username?: string; name?: string } | null) => {
+  const role = user?.role?.toLowerCase().trim();
+  const email = user?.email?.toLowerCase().trim();
+  const username = user?.username?.toLowerCase().trim();
+  const name = user?.name?.toLowerCase().trim();
+  const hasAdminRole = ['superadmin', 'admin'].includes(role || '');
+  return hasAdminRole && (
+    email === 'admin@xorbit360.com' ||
+    email === 'oscar@expert360.ai' ||
+    username === 'admin' ||
+    name === 'administrador principal' ||
+    name === 'oscar molina'
+  );
+};
 
-export const scopedStorageKey = (base: string, user?: { role?: string; email?: string } | null) =>
+export const scopedStorageKey = (base: string, user?: { role?: string; email?: string; username?: string; name?: string } | null) =>
   isPrincipalAdmin(user) ? `${base}_admin_demo` : `${base}_${(user?.email || 'anonymous').toLowerCase()}`;
 
 const demoNames = [
