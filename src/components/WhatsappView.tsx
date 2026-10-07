@@ -1616,6 +1616,7 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
 
   const ADMIN_DEMO_CHATS = DEFAULT_CHATS.map((chat, index) => ({
     ...chat,
+    columnId: ['entregado', 'entregado', 'en_transito', 'en_transito', 'entregado', 'en_transito', 'novedad', 'devolucion', 'novedad', 'en_transito'][index],
     name: ['Laura Gómez', 'Andrés Rojas', 'Camila Torres', 'Juan Martínez', 'Mariana Cárdenas', 'Santiago Pérez', 'Daniela Restrepo', 'Nicolás Vargas', 'Valentina Salazar', 'Sebastián Castro'][index],
     msg: [
       '¿Todavía tienen disponible el combo de camisas polo?',
@@ -1635,6 +1636,7 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
   // Dynamic CRM Chat States (con almacenamiento persistente local)
   const [chats, setChats] = useState<{ id: string, name: string, time: string, msg: string, unread: number, phone: string, columnId: string, tags: string[], leadStatus?: 'frío' | 'tibio' | 'caliente', avatar?: string }[]>(() => {
     try {
+      if (isAdminDemo) return ADMIN_DEMO_CHATS;
       const saved = localStorage.getItem(chatsStorageKey);
       if (saved !== null) {
         const parsed = JSON.parse(saved);
