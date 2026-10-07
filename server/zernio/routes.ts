@@ -163,7 +163,10 @@ export function setupZernioRoutes(app: express.Express, onIncomingMessage?: (msg
 
   // Plantillas de WhatsApp: sincronización unificada desde Xorbit.
   router.post('/templates/sync', async (req, res) => {
-    const result = await zernioRequest({ method: 'GET', path: '/v1/whatsapp/templates' });
+    const accountResult: any = await getZernioAccounts();
+    const accountId = String(req.body?.accountId || accountResult?.data?.find((a: any) => a.platform === 'whatsapp')?.id || '');
+    if (!accountId) return res.status(400).json({ success: false, error: 'No hay una cuenta WhatsApp oficial conectada.' });
+    const result = await zernioRequest({ method: 'GET', path: `/v1/whatsapp/templates?accountId=${encodeURIComponent(accountId)}` });
     if (!result.success) return res.status((result as any).error?.status || 502).json(result);
     res.json({ success: true, data: result.data });
   });
