@@ -76,6 +76,7 @@ export async function getZernioProfiles() {
 // 3. Iniciar flujo OAuth (Devuelve authUrl segura para popup en navegador)
 export interface ConnectPlatformParams {
   platform: string;
+  shop?: string;
   redirectUrl: string;
   // WhatsApp: business_app (coexistencia con app móvil) vs api (Cloud API directa)
   onboarding?: 'business_app' | 'api';
@@ -108,6 +109,7 @@ export async function getZernioConnectUrl(params: ConnectPlatformParams) {
   if (profileId) {
     query.set('profileId', profileId);
   }
+  if (params.shop) query.set('shop', params.shop);
 
   if (params.platform === 'whatsapp') {
     // Parámetro CRÍTICO: business_app vs api

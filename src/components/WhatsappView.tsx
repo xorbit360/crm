@@ -769,6 +769,11 @@ export default function WhatsappView({
     try {
       const apiPlatform = platform === 'instagram_beta' ? 'instagram' : platform;
       let url = `/api/zernio/connect-url?platform=${apiPlatform}`;
+      if (platform === 'shopify') {
+        const shop = window.prompt('Dominio de Shopify (ejemplo: tu-tienda.myshopify.com):');
+        if (!shop) return;
+        url += `&shop=${encodeURIComponent(shop.trim())}`;
+      }
       if (platform === 'whatsapp') {
         const mode = onboardingMode || (whatsappMode === 'coexistente' ? 'business_app' : 'api');
         url += `&onboarding=${mode}`;
@@ -3478,7 +3483,7 @@ ${parametersString}
             className={`px-3.5 py-2 text-xs font-medium whitespace-nowrap border-b-2 transition-colors ${internalTab === 'conexion' ? 'border-gold text-gold font-semibold' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
           >
             <QrCode size={14} className="inline mr-1.5" />
-            Conexión (Web)
+            Conectar Canales
           </button>
           <button
             onClick={() => setInternalTab('training')}
@@ -3616,9 +3621,10 @@ ${parametersString}
               ['CAN-09', 'YouTube', 'youtube'], ['CAN-10', 'Threads', 'threads'], ['CAN-11', 'Pinterest', 'pinterest'],
               ['CAN-12', 'Reddit', 'reddit'], ['CAN-13', 'Bluesky', 'bluesky'], ['CAN-14', 'Google Business', 'googlebusiness'],
               ['CAN-15', 'Snapchat', 'snapchat'], ['CAN-16', 'Discord', 'discord'], ['CAN-17', 'Slack', 'slack']
+              , ['CAN-18', 'Shopify Commerce', 'shopify'], ['CAN-19', 'WordPress Blog', 'wordpress']
             ].map(([id, name, category]) => ({
               id, name, category, platformLabel: name, identifier: 'No vinculado', type: 'Xorbit 360 Omnicanal',
-              status: 'Disponible', isActive: false, icon: category === 'tiktok' ? <Video size={18} className="text-cyan-400" /> : category === 'telegram' ? <Send size={18} className="text-sky-400" /> : category === 'youtube' ? <Video size={18} className="text-red-400" /> : category === 'linkedin' ? <Users size={18} className="text-blue-400" /> : category === 'discord' || category === 'slack' ? <MessageSquare size={18} className="text-indigo-400" /> : category === 'reddit' ? <Globe size={18} className="text-orange-400" /> : <Globe size={18} className="text-zinc-400" />,
+              status: 'Disponible', isActive: false, icon: category === 'shopify' ? <ShoppingCart size={18} className="text-emerald-400" /> : category === 'wordpress' ? <Globe size={18} className="text-blue-400" /> : category === 'tiktok' ? <Video size={18} className="text-cyan-400" /> : category === 'telegram' ? <Send size={18} className="text-sky-400" /> : category === 'youtube' ? <Video size={18} className="text-red-400" /> : category === 'linkedin' ? <Users size={18} className="text-blue-400" /> : category === 'discord' || category === 'slack' ? <MessageSquare size={18} className="text-indigo-400" /> : category === 'reddit' ? <Globe size={18} className="text-orange-400" /> : <Globe size={18} className="text-zinc-400" />,
               accountId: null, actionType: category, date: '-'
             }))
           ];

@@ -695,7 +695,7 @@ type ChatMessage = {
                   <div className="space-y-1">
                     {[
                       { id: 'conversaciones', label: 'Conversaciones', icon: <MessageCircle size={16} /> },
-                      { id: 'comentarios_sociales', label: 'Comentarios Omnicanal', icon: <MessageSquare size={16} /> },
+                      { id: 'comentarios_sociales', label: 'Comentarios Redes Sociales', icon: <MessageSquare size={16} /> },
                       { id: 'clientes', label: 'Clientes', icon: <Users size={16} /> },
                       { id: 'pedidos', label: 'Pedidos', icon: <Package size={16} /> },
                       { id: 'fidelizacion', label: 'Fidelización', icon: <HeartHandshake size={16} /> },

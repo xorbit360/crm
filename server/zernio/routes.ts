@@ -58,7 +58,8 @@ export function setupZernioRoutes(app: express.Express, onIncomingMessage?: (msg
       platform,
       redirectUrl,
       onboarding,
-      loginMethod
+      loginMethod,
+      ...(req.query.shop ? { shop: String(req.query.shop) } : {})
     });
 
     if (result.success === false) {
