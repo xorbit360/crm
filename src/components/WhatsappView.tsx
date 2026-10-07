@@ -998,7 +998,7 @@ export default function WhatsappView({
       const unifiedState = await fetch('/api/backoffice/state').then(r => r.ok ? r.json() : null).catch(() => null);
       if (Array.isArray(unifiedState?.chats)) {
         setChats(previous => {
-          const byId = new Map(previous.map(chat => [chat.id, chat]));
+          const byId = new Map<string, any>(previous.map(chat => [chat.id, chat] as [string, any]));
           unifiedState.chats.forEach((chat: any) => byId.set(chat.id, { ...byId.get(chat.id), ...chat, msg: chat.message || chat.msg || byId.get(chat.id)?.msg }));
           return Array.from(byId.values());
         });
