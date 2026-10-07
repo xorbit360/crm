@@ -228,6 +228,13 @@ export async function registerOrUpdateZernioWebhook(webhookUrl: string, webhookN
       body: payload
     });
 
+    // Zernio deployments that do not expose update/delete still accept a new
+    // subscription; fall back to create so manual registrations can recover.
+    if (!updateRes.success && (updateRes as any).error?.status === 404) {
+      const createRes = await zernioRequest({ method: 'POST', path: '/v1/webhooks/settings', body: payload });
+      return { action: 'created' as const, result: createRes };
+    }
+
     return {
       action: 'updated' as const,
       webhookId: hookId,
