@@ -771,6 +771,9 @@ export default function WhatsappView({
       if (platform === 'whatsapp') {
         const mode = onboardingMode || (whatsappMode === 'coexistente' ? 'business_app' : 'api');
         url += `&onboarding=${mode}`;
+      } else if (platform === 'instagram') {
+        // Use Meta's unified Facebook login flow for Instagram Business accounts.
+        url += '&loginMethod=facebook_login';
       }
       const res = await fetch(url);
       const json = await res.json();
