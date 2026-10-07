@@ -129,7 +129,7 @@ export default function PedidosView({ currentUser }: { currentUser?: { role?: st
     } else {
       initializeMockData();
     }
-  }, []);
+  }, [currentUser?.email, ordersStorageKey]);
 
   const initializeMockData = () => {
     const mock: Order[] = [

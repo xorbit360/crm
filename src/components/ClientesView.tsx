@@ -117,7 +117,7 @@ export default function ClientesView({ currentUser }: { currentUser?: { role?: s
     } else {
       initializeMockData();
     }
-  }, []);
+  }, [currentUser?.email, clientsStorageKey]);
 
   const initializeMockData = () => {
     const mock: Client[] = [
