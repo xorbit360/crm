@@ -25,6 +25,7 @@ import {
 import { setupZernioRoutes } from './server/zernio/routes.ts';
 import { handleZernioWebhook } from './server/zernio/webhook.ts';
 import { setupBoldRoutes } from './server/bold.ts';
+import { setupMcpRoutes } from './server/mcp.ts';
 
 let makeWASocket: any = null;
 let useMultiFileAuthState: any = null;
@@ -1804,6 +1805,17 @@ async function createServer() {
       req.rawBody = buf.toString('utf8');
     }
   }));
+
+  // MCP remoto con perfiles separados (Super Admin / Usuario). Los tokens
+  // viven únicamente en variables de entorno y nunca se guardan en Git.
+  setupMcpRoutes(app, {
+    projectRoot: process.cwd(),
+    getDB: () => currentDB,
+    saveDB: (next) => {
+      currentDB = next;
+      saveDBData(currentDB);
+    }
+  });
 
   // Serve uploaded files statically
   const uploadsDir = path.join(process.cwd(), 'uploads');

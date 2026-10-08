@@ -355,7 +355,7 @@ export default function McpApiView() {
   const claudeConfigSnippet = JSON.stringify({
     mcpServers: {
       xorbit360: {
-        url: `${currentDomain}/api/mcp/sse`,
+        url: `${currentDomain}/api/mcp/superadmin`,
         headers: {
           Authorization: `Bearer ${apiKeys[0]?.key || 'exp_live_TU_API_KEY'}`
         }
@@ -366,8 +366,8 @@ export default function McpApiView() {
   const cursorConfigSnippet = JSON.stringify({
     mcpServers: {
       xorbit360: {
-        type: "sse",
-        url: `${currentDomain}/api/mcp/sse`,
+        type: "streamable-http",
+        url: `${currentDomain}/api/mcp/superadmin`,
         headers: {
           Authorization: `Bearer ${apiKeys[0]?.key || 'exp_live_TU_API_KEY'}`
         }
@@ -469,35 +469,35 @@ export default function McpApiView() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="panel p-5 rounded-2xl border border-gray-800 bg-gray-900/60 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-blue-400">SSE Endpoint</span>
-                <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 text-[10px] font-mono">GET</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-blue-400">Super Admin MCP</span>
+                <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 text-[10px] font-mono">POST</span>
               </div>
               <p className="font-mono text-xs text-white break-all bg-gray-950 p-2 rounded-lg border border-gray-800">
-                {currentDomain}/api/mcp/sse
+                {currentDomain}/api/mcp/superadmin
               </p>
               <button
-                onClick={() => copyToClipboard(`${currentDomain}/api/mcp/sse`, 'sse_url')}
+                onClick={() => copyToClipboard(`${currentDomain}/api/mcp/superadmin`, 'superadmin_url')}
                 className="w-full py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-[11px] font-semibold text-gray-300 transition flex items-center justify-center gap-1.5"
               >
-                {copiedId === 'sse_url' ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
-                <span>{copiedId === 'sse_url' ? 'Copiado' : 'Copiar URL SSE'}</span>
+                {copiedId === 'superadmin_url' ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                <span>{copiedId === 'superadmin_url' ? 'Copiado' : 'Copiar URL Super Admin'}</span>
               </button>
             </div>
 
             <div className="panel p-5 rounded-2xl border border-gray-800 bg-gray-900/60 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-blue-400">Tools Endpoint</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-blue-400">Usuario MCP</span>
                 <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 text-[10px] font-mono">POST</span>
               </div>
               <p className="font-mono text-xs text-white break-all bg-gray-950 p-2 rounded-lg border border-gray-800">
-                {currentDomain}/api/mcp/execute
+                {currentDomain}/api/mcp/user
               </p>
               <button
-                onClick={() => copyToClipboard(`${currentDomain}/api/mcp/execute`, 'exec_url')}
+                onClick={() => copyToClipboard(`${currentDomain}/api/mcp/user`, 'user_url')}
                 className="w-full py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-[11px] font-semibold text-gray-300 transition flex items-center justify-center gap-1.5"
               >
-                {copiedId === 'exec_url' ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
-                <span>{copiedId === 'exec_url' ? 'Copiado' : 'Copiar URL Tools'}</span>
+                {copiedId === 'user_url' ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                <span>{copiedId === 'user_url' ? 'Copiado' : 'Copiar URL Usuario'}</span>
               </button>
             </div>
 
