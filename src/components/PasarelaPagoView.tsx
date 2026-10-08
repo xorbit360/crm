@@ -101,7 +101,7 @@ export default function PasarelaPagoView() {
         passFeeToCustomer: false,
         keys: [
           { label: 'ID de Comercio (Merchant ID)', keyName: 'merchant_id', value: '' },
-          { label: 'API Key de Integración Bold', keyName: 'bold_api_key', value: 'l_5Wz-8KQmld8Vb_iyy05KWBQ0A3zz5LOtagMmCjfbk' },
+          { label: 'API Key de Integración Bold', keyName: 'bold_api_key', value: 'l_5Wz-8KQmld8Vb_iyy05KWBQ0A3zz5LOtAgMmCjfbk' },
           { label: 'Llave Secreta de Firma (Signing Key)', keyName: 'bold_secret_key', value: '53nBWst7REiVw9So1Zf5aQ', isSecret: true },
           { label: 'Link de Pago Personalizado / Checkout URL', keyName: 'bold_checkout_url', value: '' }
         ],
@@ -181,8 +181,8 @@ export default function PasarelaPagoView() {
               mIdKey.value = '';
             }
             const apiKey = bold.keys.find((k: any) => k.keyName === 'bold_api_key');
-            if (apiKey && (!apiKey.value || apiKey.value === 'x_live_bold_89210928412')) {
-              apiKey.value = 'l_5Wz-8KQmld8Vb_iyy05KWBQ0A3zz5LOtagMmCjfbk';
+            if (apiKey && (!apiKey.value || apiKey.value === 'x_live_bold_89210928412' || apiKey.value === 'l_5Wz-8KQmld8Vb_iyy05KWBQ0A3zz5LOtagMmCjfbk')) {
+              apiKey.value = 'l_5Wz-8KQmld8Vb_iyy05KWBQ0A3zz5LOtAgMmCjfbk';
             }
             const secKey = bold.keys.find((k: any) => k.keyName === 'bold_secret_key');
             if (secKey && (!secKey.value || secKey.value === 'secret_live_bold_9210982')) {

@@ -31,7 +31,7 @@ export function normalizeAccount(raw: any): ZernioAccount {
   return {
     id,
     platform: raw.platform || (raw.phoneNumber || raw.phoneNumberId ? 'whatsapp' : 'unknown'),
-    name: raw.name || raw.displayName || raw.businessName || raw.phoneNumber || 'Cuenta Zernio',
+    name: raw.name || raw.displayName || raw.businessName || raw.phoneNumber || 'Cuenta conectada',
     username: raw.username,
     phoneNumber: raw.phoneNumber || raw.phone || raw.displayPhoneNumber,
     phoneNumberId: raw.phoneNumberId || raw.phoneId,
@@ -136,7 +136,7 @@ export async function getZernioConnectUrl(params: ConnectPlatformParams) {
       error: {
         status: 500,
         code: 'MISSING_AUTH_URL',
-        message: 'Zernio no retornó una URL de autenticación válida'
+        message: 'El proveedor no retornó una URL de autenticación válida'
       }
     };
   }

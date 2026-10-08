@@ -94,7 +94,7 @@ export async function handleZernioWebhook(req: Request, res: Response, onMessage
   const isValid = verifyZernioSignature(rawBody, signatureHeader);
   if (!isValid && process.env.ZERNIO_ALLOW_LEGACY_SIGNATURES !== 'true') {
     console.warn('[Zernio Webhook] ❌ Firma inválida o ausente. Rechazando con 401');
-    return res.status(401).json({ error: 'Firma X-Zernio-Signature inválida o secreto no configurado' });
+    return res.status(401).json({ error: 'Firma del webhook inválida o secreto no configurado' });
   }
 
   let payload: any = req.body;

@@ -3913,7 +3913,7 @@ async function createServer() {
         currency = "COP",
         description = "Recarga Saldo Xorbit 360 AI",
         orderId = `REC-BOLD-${Date.now()}`,
-        apiKey = "l_5Wz-8KQmld8Vb_iyy05KWBQ0A3zz5LOtagMmCjfbk",
+        apiKey = "l_5Wz-8KQmld8Vb_iyy05KWBQ0A3zz5LOtAgMmCjfbk",
         secretKey = "53nBWst7REiVw9So1Zf5aQ",
         merchantId = "FFVSR3C7Y1",
         originUrl

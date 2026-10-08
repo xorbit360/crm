@@ -1521,6 +1521,15 @@ async function initDB() {
     saveDBData(currentDB);
   }
 
+  // Older disconnects persisted an empty object, which the UI interpreted as
+  // a live WhatsApp Cloud connection after every restart.
+  if (currentDB?.whatsappOauthConfig &&
+      (!currentDB.whatsappOauthConfig.apiToken || !currentDB.whatsappOauthConfig.phoneNumberId)) {
+    currentDB.whatsappOauthConfig = null;
+    console.log('[WhatsApp Cloud] Estado de conexión vacío eliminado durante el arranque.');
+    saveDBData(currentDB);
+  }
+
   // Clean up any remaining blob attachments in memory and save to Supabase/local
   let hasBlob = false;
   if (currentDB && currentDB.faqsList && Array.isArray(currentDB.faqsList)) {
@@ -3024,7 +3033,7 @@ async function createServer() {
         currency = 'COP',
         description = 'Recarga Saldo Xorbit 360 AI',
         orderId = `REC-BOLD-${Date.now()}`,
-        apiKey = 'l_5Wz-8KQmld8Vb_iyy05KWBQ0A3zz5LOtagMmCjfbk',
+        apiKey = 'l_5Wz-8KQmld8Vb_iyy05KWBQ0A3zz5LOtAgMmCjfbk',
         secretKey = '53nBWst7REiVw9So1Zf5aQ',
         merchantId = 'FFVSR3C7Y1',
         originUrl
@@ -6709,6 +6718,11 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
   app.post('/api/integrations/meta-tiktok/save-whatsapp-oauth', async (req, res) => {
     try {
       const { connectedUser } = req.body;
+      if (!connectedUser) {
+        currentDB.whatsappOauthConfig = null;
+        saveDBData(currentDB);
+        return res.json({ success: true, config: null, disconnected: true });
+      }
       const apiToken = connectedUser?.apiToken;
       const phoneNumberId = connectedUser?.phoneNumberId;
 
@@ -6787,9 +6801,11 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
   });
 
   app.get('/api/integrations/whatsapp-oauth/config', (req, res) => {
+    const savedConfig = currentDB.whatsappOauthConfig;
+    const hasRealCredentials = Boolean(savedConfig?.apiToken && savedConfig?.phoneNumberId);
     res.json({
       success: true,
-      config: currentDB.whatsappOauthConfig || null
+      config: hasRealCredentials ? savedConfig : null
     });
   });
 

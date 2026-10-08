@@ -140,7 +140,7 @@ export function setupZernioRoutes(app: express.Express, onIncomingMessage?: (msg
     if (challenge) {
       return res.status(200).send(String(challenge));
     }
-    return res.status(200).json({ status: 'ok', service: 'zernio-webhook', timestamp: Date.now() });
+    return res.status(200).json({ status: 'ok', service: 'omnichannel-webhook', timestamp: Date.now() });
   });
 
   router.post('/webhook', (req, res) => {
@@ -268,7 +268,7 @@ export function setupZernioRoutes(app: express.Express, onIncomingMessage?: (msg
       if (challenge) {
         return res.status(200).send(String(challenge));
       }
-      return res.status(200).json({ status: 'ok', service: 'zernio-webhook', timestamp: Date.now() });
+      return res.status(200).json({ status: 'ok', service: 'omnichannel-webhook', timestamp: Date.now() });
     }
     return handleZernioWebhook(req, res, onIncomingMessage);
   });

@@ -743,9 +743,9 @@ export default function WhatsappView({
       if (data.success && Array.isArray(data.data)) {
         setAllAccounts(data.data);
         const waAccount = data.data.find((a: any) => a.platform === 'whatsapp');
+        setZernioConnected(Boolean(waAccount));
         if (waAccount) {
           setIsOfficialConnected(true);
-          setZernioConnected(true);
           if (waAccount.phoneNumber) setWhatsappConnectedNumber(waAccount.phoneNumber);
           if (waAccount.phoneNumberId) setPhoneNumberId(waAccount.phoneNumberId);
           if (waAccount.wabaId) setWabaId(waAccount.wabaId);
@@ -764,12 +764,15 @@ export default function WhatsappView({
     checkMetaConnection();
 
     const handleMessage = (e: MessageEvent) => {
-      if (e.data?.type === 'META_WABA_CONNECTED' || e.data?.type === 'CHANNEL_CONNECTED' || e.data?.type === 'OAUTH_AUTH_SUCCESS') {
+      const isWhatsappConnection = e.data?.type === 'META_WABA_CONNECTED' ||
+        (e.data?.type === 'OAUTH_AUTH_SUCCESS' && e.data?.provider === 'meta-whatsapp') ||
+        (e.data?.type === 'CHANNEL_CONNECTED' && e.data?.platform === 'whatsapp');
+      if (isWhatsappConnection) {
         setIsOfficialConnected(true);
         setZernioConnected(true);
-        checkMetaConnection();
         setShowConnectModal(false);
       }
+      if (e.data?.type === 'CHANNEL_CONNECTED' || e.data?.type === 'OAUTH_AUTH_SUCCESS') checkMetaConnection();
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
@@ -1234,7 +1237,7 @@ export default function WhatsappView({
           setApiToken(data.apiToken || 'EAAbx...');
           setPhoneNumberId(data.phoneNumberId || '109283918239');
           setWabaId(data.wabaId || '982349823491');
-          setIsOfficialConnected(true);
+          setIsOfficialConnected(Boolean(data?.apiToken && data?.phoneNumberId));
           setWhatsappMode(data.mode || 'coexistente');
           setWhatsappConnectedNumber(data.phoneNumber || '+57 300 123 4567');
         }
@@ -1250,18 +1253,23 @@ export default function WhatsappView({
       .then(res => {
         if (res && res.success && res.config) {
           const cfg = res.config;
+          const hasRealCredentials = Boolean(cfg.apiToken && cfg.phoneNumberId);
           setApiToken(cfg.apiToken || 'EAAbx...');
           setPhoneNumberId(cfg.phoneNumberId || '109283918239');
           setWabaId(cfg.wabaId || '982349823491');
-          setIsOfficialConnected(true);
+          setIsOfficialConnected(hasRealCredentials);
           setWhatsappMode(cfg.mode || 'coexistente');
-          setWhatsappConnectedNumber(cfg.phoneNumber || '+57 300 123 4567');
+          setWhatsappConnectedNumber(hasRealCredentials ? (cfg.phoneNumber || '') : '');
 
           // Rellenar variables de la guía
           setGuideToken(cfg.apiToken || '');
           setGuidePhoneId(cfg.phoneNumberId || '');
           setGuideWabaId(cfg.wabaId || '');
           setGuidePhoneNumber(cfg.phoneNumber || '');
+        } else {
+          setIsOfficialConnected(false);
+          setZernioConnected(false);
+          setWhatsappConnectedNumber('');
         }
       })
       .catch(() => {});
@@ -3670,7 +3678,7 @@ ${parametersString}
           const ttAccount = allAccounts.find((a: any) => a.platform === 'tiktok');
           const fbAccount = allAccounts.find((a: any) => a.platform === 'facebook' || a.platform === 'messenger');
 
-          const isWaOfficialActive = Boolean(isOfficialConnected || zernioConnected || waAccount);
+          const isWaOfficialActive = Boolean(isOfficialConnected || waAccount);
           const isIgActive = Boolean(igAccount);
           const isTtActive = Boolean(ttAccount);
           const isFbActive = Boolean(fbAccount);
@@ -3679,7 +3687,7 @@ ${parametersString}
           const channelsList = [
             {
               id: 'CAN-01',
-              name: 'WhatsApp Business Cloud API (Zernio)',
+              name: 'WhatsApp Business Cloud API',
               category: 'whatsapp',
               platformLabel: 'WhatsApp Cloud API',
               identifier: whatsappConnectedNumber || waAccount?.phoneNumber || (isWaOfficialActive ? 'Línea Oficial Vinculada' : 'No vinculado'),

@@ -227,7 +227,7 @@ export function RecargasView() {
     return () => window.removeEventListener('payment-config-updated', reloadConfig);
   }, []);
 
-  const DEFAULT_BOLD_API_KEY = 'l_5Wz-8KQmld8Vb_iyy05KWBQ0A3zz5LOtagMmCjfbk';
+  const DEFAULT_BOLD_API_KEY = 'l_5Wz-8KQmld8Vb_iyy05KWBQ0A3zz5LOtAgMmCjfbk';
   const DEFAULT_BOLD_SECRET_KEY = '53nBWst7REiVw9So1Zf5aQ';
 
   const boldGw = gatewayConfig?.gateways?.find((g: any) => g.id === 'bold');
@@ -236,7 +236,11 @@ export function RecargasView() {
   const boldSecretKey = (boldGw?.keys?.find((k: any) => k.keyName === 'bold_secret_key')?.value || '').trim() || DEFAULT_BOLD_SECRET_KEY;
   const rawUrl = (boldGw?.keys?.find((k: any) => k.keyName === 'bold_checkout_url')?.value || '').trim();
   // Filter out dummy/test inputs like 'sss' or 'FFVSR3C7Y1'
-  const boldCheckoutUrl = (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) && !rawUrl.includes('FFVSR3C7Y1') ? rawUrl : '';
+  const boldCheckoutUrl = (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) &&
+    !rawUrl.includes('FFVSR3C7Y1') &&
+    !/^https:\/\/checkout\.bold\.co\/payment\//i.test(rawUrl)
+      ? rawUrl
+      : '';
 
   // Real Payment Checkout state
   const [isGeneratingBoldCheckout, setIsGeneratingBoldCheckout] = useState(false);
@@ -493,7 +497,7 @@ export function RecargasView() {
         orderId: data.orderId || orderId,
         currency: 'COP',
         amount: String(data.amount || amountInCop),
-        apiKey: data.apiKey || 'l_5Wz-8KQmld8Vb_iyy05KWBQ0A3zz5LOtagMmCjfbk',
+        apiKey: data.apiKey || DEFAULT_BOLD_API_KEY,
         integritySignature: data.integritySignature || data.signature,
         description: data.description || `Recarga Xorbit 360 AI - ${pkg.name}`,
         redirectionUrl: `${window.location.origin}/#/recargas?payment_status=completed&order=${data.orderId || orderId}`

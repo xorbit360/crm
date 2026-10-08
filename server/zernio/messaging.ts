@@ -130,7 +130,7 @@ export async function enviarMensajeZernio(params: OutboundMessageParams): Promis
     if (res.success === false) {
       return {
         success: false,
-        error: (res as any).error?.message || 'Error al enviar mensaje a Zernio'
+        error: (res as any).error?.message || 'Error al enviar mensaje por el canal conectado'
       };
     }
 
@@ -198,7 +198,7 @@ export async function enviarMensajeZernio(params: OutboundMessageParams): Promis
   if (res.success === false) {
     return {
       success: false,
-      error: (res as any).error?.message || 'Error al abrir conversación en Zernio'
+      error: (res as any).error?.message || 'Error al abrir la conversación del canal conectado'
     };
   }
 

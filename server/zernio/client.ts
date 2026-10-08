@@ -64,8 +64,8 @@ export async function zernioRequest<T = any>(options: ZernioRequestOptions): Pro
       error: {
         status: 401,
         code: 'MISSING_API_KEY',
-        message: 'No se ha configurado la variable de entorno ZERNIO_API_KEY en el servidor',
-        raw: 'ZERNIO_API_KEY is undefined'
+        message: 'No se ha configurado el proveedor de canales en el servidor',
+        raw: 'CHANNEL_PROVIDER_API_KEY is undefined'
       }
     };
   }
@@ -196,8 +196,8 @@ export async function zernioRequest<T = any>(options: ZernioRequestOptions): Pro
           status: isAborted ? 408 : 0,
           code: isAborted ? 'TIMEOUT' : 'NETWORK_ERROR',
           message: isAborted 
-            ? `La solicitud a Zernio excedió el tiempo límite de ${timeoutMs / 1000}s` 
-            : (err?.message || 'Error de red al conectar con Zernio'),
+            ? `La solicitud al proveedor excedió el tiempo límite de ${timeoutMs / 1000}s`
+            : (err?.message || 'Error de red al conectar con el proveedor'),
           raw: String(err?.stack || err)
         }
       };
