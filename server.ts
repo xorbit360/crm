@@ -3203,6 +3203,12 @@ async function createServer() {
              type: 'image_url',
              image_url: { url: `data:${mediaMimeType};base64,${mediaBase64}` }
            });
+        } else if (mediaBase64 && mediaMimeType && mediaMimeType.startsWith('audio/')) {
+           const format = mediaMimeType.includes('wav') ? 'wav' : mediaMimeType.includes('mp3') || mediaMimeType.includes('mpeg') ? 'mp3' : 'ogg';
+           contentPart.push({
+             type: 'input_audio',
+             input_audio: { data: mediaBase64, format }
+           });
         }
 
         messages.push({ role: 'user', content: contentPart });
@@ -3696,6 +3702,10 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
 
     // Handle outgoing message from mobile phone / human operator
     if (data.key.fromMe) {
+      // Si un asesor responde desde el teléfono, entregar la conversación al
+      // humano y pausar automáticamente la IA para ese contacto.
+      if (!currentDB.disabledBots) currentDB.disabledBots = [];
+      if (!currentDB.disabledBots.includes(cleanPhone)) currentDB.disabledBots.push(cleanPhone);
       if (text || isImage || isAudio || isVideo || isDocument) {
         const displayText = text || (isImage ? '📷 [Imagen enviada desde móvil]' : (isAudio ? '🎤 [Nota de voz enviada desde móvil]' : (isVideo ? '🎥 [Video enviado desde móvil]' : '📎 [Archivo enviado desde móvil]')));
         if (!currentDB.messagesHistory) currentDB.messagesHistory = {};
@@ -3752,13 +3762,13 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
     if (!currentDB.chats) currentDB.chats = [];
     const chatIdx = currentDB.chats.findIndex((c: any) => c.phone && c.phone.replace(/\D/g, '') === cleanPhone);
     if (chatIdx !== -1) {
-      currentDB.chats[chatIdx].message = incomingDisplayText;
-      currentDB.chats[chatIdx].time = nowStr;
-      currentDB.chats[chatIdx].status = 'en_conversacion';
-      if (cachedAvatar && !currentDB.chats[chatIdx].avatar) currentDB.chats[chatIdx].avatar = cachedAvatar;
+      const updatedChat = { ...currentDB.chats[chatIdx], message: incomingDisplayText, time: nowStr, status: 'en_conversacion', unread: (Number(currentDB.chats[chatIdx].unread) || 0) + 1 };
+      if (cachedAvatar && !updatedChat.avatar) updatedChat.avatar = cachedAvatar;
       if (senderName && senderName !== `+${cleanPhone}`) {
-        currentDB.chats[chatIdx].sender = senderName;
+        updatedChat.sender = senderName;
       }
+      currentDB.chats.splice(chatIdx, 1);
+      currentDB.chats.unshift(updatedChat);
     } else {
       currentDB.chats.unshift({
         id: `CH-${Date.now().toString().slice(-4)}`,
@@ -3768,6 +3778,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
         message: incomingDisplayText,
         time: nowStr,
         status: 'nuevo'
+        ,unread: 1
       });
     }
     saveDBData(currentDB);
@@ -3796,11 +3807,23 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
 
     try {
       const history = currentDB.messagesHistory[cleanPhone] || [];
+      let aiMediaBase64: string | null = null;
+      let aiMediaMimeType: string | null = null;
+      if (isImage || isAudio) {
+        const mediaPayload = await fetchEvolutionMediaBase64(instance, data).catch(() => null);
+        if (mediaPayload?.base64) {
+          aiMediaBase64 = mediaPayload.base64;
+          aiMediaMimeType = mediaPayload.mimetype || (isImage ? 'image/jpeg' : 'audio/ogg');
+        }
+      }
       const extractedText = await processWithAgents({
         phone: cleanPhone,
         senderName,
         text: fullPromptText,
-        history
+        history,
+        mediaInfo: mediaInfoStr,
+        mediaBase64: aiMediaBase64,
+        mediaMimeType: aiMediaMimeType
       });
 
       if (extractedText) {
