@@ -122,7 +122,9 @@ const dedupeInboxChats = <T extends any>(items: T[]): T[] => {
       : rawChannel.includes('youtube') ? 'youtube'
       : rawChannel || '';
     const isPhoneChannel = channel.startsWith('whatsapp');
-    const rawIdentifier = String(chat.externalId || chat.phone || chat.conversationId || chat.name || '').trim().toLowerCase();
+    const rawIdentifier = String(isPhoneChannel
+      ? (chat.phone || chat.externalId || chat.conversationId || chat.name || '')
+      : (chat.conversationId || chat.externalId || chat.phone || chat.name || '')).trim().toLowerCase();
     const numericIdentifier = rawIdentifier.replace(/\D/g, '');
     const identifier = isPhoneChannel || (/^\+?[\d\s()-]+$/.test(rawIdentifier) && numericIdentifier.length >= 6)
       ? numericIdentifier

@@ -1898,8 +1898,17 @@ async function createServer() {
     try {
       const msg = event.message;
       if (!msg) return;
+      if (!currentDB.chats) currentDB.chats = [];
       const stableSocialId = String(msg.conversationId || msg.raw?.conversationId || msg.raw?.data?.conversationId || msg.senderId || msg.senderPhone || '').trim();
-      const cleanPhone = (msg.senderPhone || msg.senderId || msg.conversationId || '').replace(/\D/g, '') || `social-${stableSocialId.replace(/[^a-zA-Z0-9_-]/g, '')}`;
+      const zernioConversationId = msg.conversationId || msg.raw?.conversationId || msg.raw?.data?.conversationId || '';
+      const existingConversation = zernioConversationId
+        ? currentDB.chats.find((c: any) => c.conversationId && String(c.conversationId) === String(zernioConversationId))
+        : undefined;
+      const incomingMessage = msg.direction !== 'outgoing';
+      const identitySource = incomingMessage
+        ? (msg.senderPhone || msg.senderId || zernioConversationId)
+        : (existingConversation?.phone || existingConversation?.externalId || zernioConversationId || msg.senderPhone || msg.senderId);
+      const cleanPhone = String(identitySource || '').replace(/\D/g, '') || `social-${stableSocialId.replace(/[^a-zA-Z0-9_-]/g, '')}`;
       if (!cleanPhone) return;
 
       const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -1913,9 +1922,7 @@ async function createServer() {
         msg.raw?.sender?.profile_picture || msg.raw?.sender?.profilePicture || msg.raw?.sender?.profilePictureUrl || msg.raw?.sender?.avatar ||
         rawData.sender?.profile_picture || rawData.sender?.profilePicture || rawData.sender?.profilePictureUrl || rawData.sender?.avatar ||
         rawData.participantPicture || rawData.profile_picture || rawData.profilePicture || rawData.profilePictureUrl || '';
-      const incomingMessage = msg.direction !== 'outgoing';
-      const socialPlatform = String(msg.raw?.platform || msg.raw?.data?.platform || rawEvent.platform || 'whatsapp').toLowerCase();
-      const zernioConversationId = msg.conversationId || msg.raw?.conversationId || msg.raw?.data?.conversationId || '';
+      const socialPlatform = String(msg.raw?.platform || msg.raw?.data?.platform || rawEvent.platform || existingConversation?.platform || existingConversation?.channelId || 'instagram').toLowerCase();
       if (!currentDB.messagesHistory) currentDB.messagesHistory = {};
       if (!currentDB.messagesHistory[cleanPhone]) currentDB.messagesHistory[cleanPhone] = [];
 
@@ -1957,13 +1964,12 @@ async function createServer() {
         currentDB.messagesHistory[cleanPhone].shift();
       }
 
-      if (!currentDB.chats) currentDB.chats = [];
       // Primero se busca por la conversación externa. Así todos los mensajes
       // de Instagram del mismo hilo se mantienen en una sola tarjeta, aunque
       // el proveedor cambie el teléfono/ID mostrado del participante.
       const chatIdx = currentDB.chats.findIndex((c: any) => {
-        if (c?.platform !== socialPlatform && c?.channelId !== socialPlatform) return false;
         if (zernioConversationId && c.conversationId && String(c.conversationId) === String(zernioConversationId)) return true;
+        if (c?.platform !== socialPlatform && c?.channelId !== socialPlatform) return false;
         if (msg.senderId && c.externalId && String(c.externalId) === String(msg.senderId)) return true;
         return Boolean(c.phone && c.phone.replace(/\D/g, '') === cleanPhone);
       });
@@ -1971,7 +1977,7 @@ async function createServer() {
         const updatedChat = { ...currentDB.chats[chatIdx], message: msg.text, time: nowStr, timestamp: Date.now(),
           channelId: socialPlatform === 'instagram' ? 'instagram' : currentDB.chats[chatIdx].channelId,
           platform: socialPlatform, conversationId: zernioConversationId || currentDB.chats[chatIdx].conversationId,
-          externalId: msg.senderId || currentDB.chats[chatIdx].externalId,
+          externalId: incomingMessage ? (msg.senderId || currentDB.chats[chatIdx].externalId) : currentDB.chats[chatIdx].externalId,
           ...(profileAvatar ? { avatar: profileAvatar } : {}),
           ...(incomingMessage ? { unread: (Number(currentDB.chats[chatIdx].unread) || 0) + 1 } : {}) };
         currentDB.chats.splice(chatIdx, 1);
@@ -3001,7 +3007,7 @@ async function createServer() {
       const legacyInstagram = !platform && history.some((message: any) => /social_instagram|social_omnichannel/.test(String(message?.source || '').toLowerCase()));
       const instagram = platform.includes('instagram') || legacyInstagram;
       if (!instagram) { result.push(chat); continue; }
-      const identity = String(chat.externalId || chat.sender || chat.phone || '').trim().toLowerCase();
+      const identity = String(chat.conversationId || chat.externalId || chat.sender || chat.phone || '').trim().toLowerCase();
       const key = `instagram|${chat.accountId || ''}|${identity}`;
       if (!key) { result.push(chat); continue; }
       const previous = seen.get(key);
