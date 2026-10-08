@@ -957,6 +957,11 @@ Responde ÚNICAMENTE con un objeto JSON en el siguiente formato, sin bloques de 
     }
 
     if (cleanReplyText) {
+      const quota = reserveAiMessageCredit(phone);
+      if (!quota.allowed) {
+        console.log(`[AI Credits] Respuesta detenida para +${phone}: ${quota.reason}`);
+        break;
+      }
       if (clientSock) {
         await clientSock.sendMessage(senderJid, { text: cleanReplyText });
       } else {
@@ -982,6 +987,11 @@ Responde ÚNICAMENTE con un objeto JSON en el siguiente formato, sin bloques de 
 
     if (attachedMedia && (idx === effectiveReplies.length - 1 || attachedMedia.type === 'audio')) {
       try {
+        const quota = reserveAiMessageCredit(phone);
+        if (!quota.allowed) {
+          console.log(`[AI Credits] Adjunto detenido para +${phone}: ${quota.reason}`);
+          break;
+        }
         let mediaBuffer: Buffer | null = await getMediaBuffer(attachedMedia.url);
 
         if (!mediaBuffer && attachedMedia.type === 'audio') {
@@ -1402,6 +1412,40 @@ function saveDBData(data: any) {
 // In-memory load
 let currentDB = getDBData();
 let globalExecuteAIInternal: any = null;
+
+const AI_CONVERSATION_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+/** Reserve one automated message from the active recharge package. */
+function reserveAiMessageCredit(phone: string): { allowed: boolean; reason?: 'no_conversations' | 'message_limit' } {
+  const balance = currentDB.aiBalance;
+  // Keep legacy accounts working until their first package is configured.
+  if (!balance || typeof balance.conversations !== 'number') return { allowed: true };
+
+  if (!currentDB.aiConversationUsage || typeof currentDB.aiConversationUsage !== 'object') {
+    currentDB.aiConversationUsage = {};
+  }
+
+  const key = String(phone || 'unknown').replace(/\D/g, '') || 'unknown';
+  const now = Date.now();
+  const maxMessages = Math.max(1, Number(balance.aiMessagesPerConv) || 25);
+  let usage = currentDB.aiConversationUsage[key];
+  const startsNewWindow = !usage || !usage.startedAt || now - Number(usage.startedAt) >= AI_CONVERSATION_WINDOW_MS;
+
+  if (startsNewWindow) {
+    if (Number(balance.conversations) <= 0) return { allowed: false, reason: 'no_conversations' };
+    balance.conversations = Math.max(0, Number(balance.conversations) - 1);
+    usage = { startedAt: now, messagesSent: 0 };
+  }
+
+  if (Number(usage.messagesSent) >= maxMessages) return { allowed: false, reason: 'message_limit' };
+
+  usage.messagesSent = Number(usage.messagesSent || 0) + 1;
+  usage.lastMessageAt = now;
+  currentDB.aiConversationUsage[key] = usage;
+  balance.lastUsageAt = new Date(now).toISOString();
+  saveDBData(currentDB);
+  return { allowed: true };
+}
 
 // Timezone Management (Automatic Detection by Device / IP, Defaulting to Colombia America/Bogota)
 if (!currentDB.systemTimezone) {
@@ -2857,6 +2901,16 @@ async function createServer() {
 
   app.get("/api/backoffice/state", (req, res) => {
     res.json(currentDB);
+  });
+
+  app.get("/api/credits/balance", (_req, res) => {
+    const balance = currentDB.aiBalance || {
+      conversations: 0,
+      aiMessagesPerConv: 0,
+      audioMinutes: 0,
+      packagesBought: 0
+    };
+    res.json({ success: true, balance });
   });
 
   app.post("/api/backoffice/state", (req, res) => {

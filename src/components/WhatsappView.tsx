@@ -952,8 +952,8 @@ export default function WhatsappView({
     }
   };
 
-  const handleSyncRecentChats = async () => {
-    setIsSyncingChats(true);
+  const handleSyncRecentChats = async (silent = false) => {
+    if (!silent) setIsSyncingChats(true);
     try {
       const res = await fetch('/api/whatsapp/sync-recent-chats', {
         method: 'POST',
@@ -962,7 +962,23 @@ export default function WhatsappView({
       });
       const data = await res.json();
       if (data.success && data.chats) {
-        setChats(data.chats);
+        setChats(data.chats.map((chat: any) => ({
+          id: chat.id || `chat-${String(chat.phone || Date.now()).replace(/\D/g, '')}`,
+          name: chat.name || chat.sender || chat.phone || 'Contacto',
+          time: chat.time || 'Ahora',
+          msg: chat.msg || chat.message || '',
+          unread: Number(chat.unread) || 0,
+          phone: chat.phone || '',
+          columnId: chat.columnId || chat.status || 'nuevo_contacto',
+          tags: Array.isArray(chat.tags) ? chat.tags : ['WhatsApp'],
+          leadStatus: chat.leadStatus || 'tibio',
+          avatar: chat.avatar,
+          channelId: chat.channelId,
+          platform: chat.platform,
+          conversationId: chat.conversationId,
+          externalId: chat.externalId,
+          accountId: chat.accountId
+        })));
         if (data.messagesHistory) {
           setMessages(prev => {
             const next = { ...prev };
@@ -1000,7 +1016,7 @@ export default function WhatsappView({
         setChats(previous => {
           const next = [...previous];
           zernioHistory.conversations.forEach((conversation: any) => {
-            if (String(conversation.platform).toLowerCase() !== 'instagram' && String(conversation.platform).toLowerCase() !== 'messenger') return;
+            if (!['instagram', 'messenger', 'whatsapp'].includes(String(conversation.platform).toLowerCase())) return;
             const id = String(conversation.id || conversation.externalId);
             const existing = next.find(chat => chat.conversationId === id || chat.externalId === conversation.externalId);
             const historyKey = existing?.id || `zernio-${id}`;
@@ -1033,22 +1049,22 @@ export default function WhatsappView({
       if (Array.isArray(unifiedState?.chats)) {
         setChats(previous => {
           const byId = new Map<string, any>(previous.map(chat => [chat.id, chat] as [string, any]));
-          unifiedState.chats.forEach((chat: any) => byId.set(chat.id, { ...byId.get(chat.id), ...chat, msg: chat.message || chat.msg || byId.get(chat.id)?.msg }));
-          return Array.from(byId.values());
+          unifiedState.chats.forEach((chat: any) => byId.set(chat.id, { tags: ['WhatsApp'], unread: 0, columnId: 'nuevo_contacto', ...byId.get(chat.id), ...chat, msg: chat.message || chat.msg || byId.get(chat.id)?.msg }));
+          return Array.from(byId.values()).sort((a: any, b: any) => (Number(b.timestamp) || 0) - (Number(a.timestamp) || 0));
         });
       }
     } catch (e) {
       console.error('Error syncing chats:', e);
     } finally {
-      setIsSyncingChats(false);
+      if (!silent) setIsSyncingChats(false);
     }
   };
 
   // Mantener la bandeja actualizada sin depender de que el usuario pulse
   // "Sincronizar". Evolution y el inbox social se revisan periódicamente.
   useEffect(() => {
-    handleSyncRecentChats();
-    const timer = window.setInterval(() => { handleSyncRecentChats(); }, 20000);
+    handleSyncRecentChats(true);
+    const timer = window.setInterval(() => { handleSyncRecentChats(true); }, 20000);
     return () => window.clearInterval(timer);
   }, []);
 
@@ -4383,7 +4399,7 @@ ${parametersString}
                  <div className="flex text-zinc-400 gap-1.5 items-center">
                    <button
                      type="button"
-                     onClick={handleSyncRecentChats}
+                     onClick={() => handleSyncRecentChats(false)}
                      disabled={isSyncingChats}
                      title="Sincronizar mensajes recientes desde WhatsApp / VPS"
                      className="cursor-pointer hover:text-white text-xs flex items-center gap-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-2.5 py-1 rounded-md border border-zinc-700 transition"
@@ -4474,18 +4490,19 @@ ${parametersString}
                   {chats
                     .filter(chat => {
                       // 1. Text search filter
-                      const matchesSearch = chat.name.toLowerCase().includes(chatSearch.toLowerCase()) ||
-                                            chat.msg.toLowerCase().includes(chatSearch.toLowerCase());
+                      const tags = Array.isArray(chat.tags) ? chat.tags : [];
+                      const matchesSearch = String(chat.name || '').toLowerCase().includes(chatSearch.toLowerCase()) ||
+                                            String(chat.msg || '').toLowerCase().includes(chatSearch.toLowerCase());
                       if (!matchesSearch) return false;
 
                       // 2. Status filter
                       if (chatFilterStatus === 'unread' && chat.unread === 0) return false;
-                      if (chatFilterStatus === 'bot' && !chat.tags.includes('Bot Activo')) return false;
-                      if (chatFilterStatus === 'human' && !chat.tags.includes('Handoff (Humano)')) return false;
-                      if (chatFilterStatus === 'complaints' && !chat.tags.some(t => t === 'Queja' || t === 'Mala Atención')) return false;
+                      if (chatFilterStatus === 'bot' && !tags.includes('Bot Activo')) return false;
+                      if (chatFilterStatus === 'human' && !tags.includes('Handoff (Humano)')) return false;
+                      if (chatFilterStatus === 'complaints' && !tags.some(t => t === 'Queja' || t === 'Mala Atención')) return false;
 
                       // 3. Tag filter
-                      if (filterTag !== 'all' && !chat.tags.includes(filterTag)) return false;
+                      if (filterTag !== 'all' && !tags.includes(filterTag)) return false;
 
                       // 4. Column / CRM stage filter
                       if (filterColumn !== 'all' && chat.columnId !== filterColumn) return false;
@@ -5631,8 +5648,9 @@ ${parametersString}
 
                         // Get chats for this column with nesting filters applied!
                         const colChats = chats.filter(c => {
-                          const hasActiveComplaint = c.tags.includes('Queja') || c.tags.includes('Mala Atención');
-                          const hasActiveLogistic = c.tags.some(t => ['Logística', 'Despachado', 'Entregado', 'Novedad', 'Envío'].includes(t)) ||
+                          const tags = Array.isArray(c.tags) ? c.tags : [];
+                          const hasActiveComplaint = tags.includes('Queja') || tags.includes('Mala Atención');
+                          const hasActiveLogistic = tags.some(t => ['Logística', 'Despachado', 'Entregado', 'Novedad', 'Envío'].includes(t)) ||
                                                      (c.msg && /guía|despacho|envío|entrega|retraso|paquete|transportadora/i.test(c.msg));
 
                           if (isComplaintsNest) {
@@ -5646,19 +5664,19 @@ ${parametersString}
                             // If this is a logistics funnel, let's map chats into their respective logistic columns based on keywords or tags!
                             if (col.id === 'log_pendiente' || col.id.endsWith('_pendiente')) {
                               // Por Despachar
-                              return c.columnId === col.id || (hasActiveLogistic && !c.tags.includes('Despachado') && !c.tags.includes('Entregado') && !c.tags.includes('Novedad') && !/entregado|ruta|tránsito/i.test(c.msg || ''));
+                              return c.columnId === col.id || (hasActiveLogistic && !tags.includes('Despachado') && !tags.includes('Entregado') && !tags.includes('Novedad') && !/entregado|ruta|tránsito/i.test(c.msg || ''));
                             }
                             if (col.id === 'log_en_ruta' || col.id.endsWith('_en_ruta')) {
                               // En ruta/tránsito
-                              return c.columnId === col.id || (hasActiveLogistic && (c.tags.includes('Despachado') || c.tags.includes('Envío') || /despachado|ruta|tránsito|guía/i.test(c.msg || '')) && !c.tags.includes('Entregado') && !c.tags.includes('Novedad'));
+                              return c.columnId === col.id || (hasActiveLogistic && (tags.includes('Despachado') || tags.includes('Envío') || /despachado|ruta|tránsito|guía/i.test(c.msg || '')) && !tags.includes('Entregado') && !tags.includes('Novedad'));
                             }
                             if (col.id === 'log_entregado' || col.id.endsWith('_entregado')) {
                               // Entregado
-                              return c.columnId === col.id || (hasActiveLogistic && (c.tags.includes('Entregado') || /entregado|recibido/i.test(c.msg || '')));
+                              return c.columnId === col.id || (hasActiveLogistic && (tags.includes('Entregado') || /entregado|recibido/i.test(c.msg || '')));
                             }
                             if (col.id === 'log_novedad' || col.id.endsWith('_novedad')) {
                               // Novedades o devoluciones
-                              return c.columnId === col.id || (hasActiveLogistic && (c.tags.includes('Novedad') || /retraso|devolución|fallo|dañado/i.test(c.msg || '')));
+                              return c.columnId === col.id || (hasActiveLogistic && (tags.includes('Novedad') || /retraso|devolución|fallo|dañado/i.test(c.msg || '')));
                             }
                             return c.columnId === col.id;
                           } else {
@@ -5718,7 +5736,7 @@ ${parametersString}
 
                             <div className="p-3 space-y-3 overflow-y-auto flex-1 custom-scrollbar min-h-[350px]">
                               {colChats.map((lead) => {
-                                const hasComplaint = lead.tags.includes('Queja') || lead.tags.includes('Mala Atención');
+                                const hasComplaint = (lead.tags || []).includes('Queja') || (lead.tags || []).includes('Mala Atención');
                                 return (
                                   <div
                                     key={lead.id}

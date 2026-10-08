@@ -147,6 +147,24 @@ export function RecargasView() {
     window.dispatchEvent(new Event('credits_updated'));
   };
 
+  // El servidor es la fuente de verdad para recargas aprobadas y consumo real.
+  useEffect(() => {
+    let mounted = true;
+    const loadBalance = async () => {
+      try {
+        const response = await fetch('/api/credits/balance', { cache: 'no-store' });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (mounted && data?.balance) updateBalanceAndNotify(data.balance);
+      } catch (_) {
+        // Mantener el ultimo balance local si hay una interrupcion temporal.
+      }
+    };
+    loadBalance();
+    const timer = window.setInterval(loadBalance, 30000);
+    return () => { mounted = false; window.clearInterval(timer); };
+  }, []);
+
   const updateThresholdAndNotify = (val: number) => {
     setAlertThreshold(val);
     localStorage.setItem('app_ai_alert_threshold', val.toString());

@@ -35,8 +35,37 @@ export default function App() {
   const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem('app_theme') as Theme) || 'dark');
   const [showNotifications, setShowNotifications] = useState(false);
   const [whiteLabel, setWhiteLabel] = useState<WhiteLabelConfig>(getCachedWhiteLabel());
+  const [remainingConversations, setRemainingConversations] = useState<number>(() => {
+    try { return Number(JSON.parse(localStorage.getItem('app_ai_balance') || '{}').conversations) || 0; } catch { return 0; }
+  });
 
   const t = translations[language];
+
+  useEffect(() => {
+    let mounted = true;
+    const refreshCredits = async () => {
+      try {
+        const response = await fetch('/api/credits/balance', { cache: 'no-store' });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (mounted && data?.balance) {
+          localStorage.setItem('app_ai_balance', JSON.stringify(data.balance));
+          setRemainingConversations(Math.max(0, Number(data.balance.conversations) || 0));
+        }
+      } catch (_) {}
+    };
+    const handleCreditsUpdated = () => {
+      try { setRemainingConversations(Math.max(0, Number(JSON.parse(localStorage.getItem('app_ai_balance') || '{}').conversations) || 0)); } catch {}
+    };
+    refreshCredits();
+    window.addEventListener('credits_updated', handleCreditsUpdated);
+    const timer = window.setInterval(refreshCredits, 30000);
+    return () => {
+      mounted = false;
+      window.removeEventListener('credits_updated', handleCreditsUpdated);
+      window.clearInterval(timer);
+    };
+  }, []);
 
   useEffect(() => {
     fetchWhiteLabelConfig().then(cfg => {
@@ -722,6 +751,11 @@ type ChatMessage = {
                           }`}
                         >
                           <span className="flex items-center gap-3 truncate">{tab.icon} {tab.label}</span>
+                          {tab.id === 'recargas' && !isEditingSidebar && (
+                            <span className="shrink-0 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-400" title="Conversaciones disponibles">
+                              {remainingConversations.toLocaleString('es-CO')} chats
+                            </span>
+                          )}
                         </button>
                         {isEditingSidebar && (
                           <button
