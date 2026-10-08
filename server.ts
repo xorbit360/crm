@@ -1869,7 +1869,8 @@ async function createServer() {
     try {
       const msg = event.message;
       if (!msg) return;
-      const cleanPhone = (msg.senderPhone || msg.senderId || msg.conversationId || '').replace(/\D/g, '') || `social-${String(msg.senderId || msg.conversationId || Date.now()).replace(/[^a-zA-Z0-9_-]/g, '')}`;
+      const stableSocialId = String(msg.conversationId || msg.raw?.conversationId || msg.raw?.data?.conversationId || msg.senderId || msg.senderPhone || '').trim();
+      const cleanPhone = (msg.senderPhone || msg.senderId || msg.conversationId || '').replace(/\D/g, '') || `social-${stableSocialId.replace(/[^a-zA-Z0-9_-]/g, '')}`;
       if (!cleanPhone) return;
 
       const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -1928,7 +1929,15 @@ async function createServer() {
       }
 
       if (!currentDB.chats) currentDB.chats = [];
-      const chatIdx = currentDB.chats.findIndex((c: any) => c.phone && c.phone.replace(/\D/g, '') === cleanPhone);
+      // Primero se busca por la conversación externa. Así todos los mensajes
+      // de Instagram del mismo hilo se mantienen en una sola tarjeta, aunque
+      // el proveedor cambie el teléfono/ID mostrado del participante.
+      const chatIdx = currentDB.chats.findIndex((c: any) => {
+        if (c?.platform !== socialPlatform && c?.channelId !== socialPlatform) return false;
+        if (zernioConversationId && c.conversationId && String(c.conversationId) === String(zernioConversationId)) return true;
+        if (msg.senderId && c.externalId && String(c.externalId) === String(msg.senderId)) return true;
+        return Boolean(c.phone && c.phone.replace(/\D/g, '') === cleanPhone);
+      });
       if (chatIdx !== -1) {
         const updatedChat = { ...currentDB.chats[chatIdx], message: msg.text, time: nowStr,
           channelId: socialPlatform === 'instagram' ? 'instagram' : currentDB.chats[chatIdx].channelId,
