@@ -1019,11 +1019,11 @@ export default function WhatsappView({
             if (existing) {
               existing.conversationId = id;
               existing.platform = String(conversation.platform).toLowerCase();
-              existing.channelId = existing.platform;
+              existing.channelId = existing.platform === 'whatsapp' ? 'zernio_whatsapp' : existing.platform;
               existing.externalId = conversation.externalId || existing.externalId;
               existing.accountId = conversation.accountId || existing.accountId;
             } else {
-              next.unshift({ id: `zernio-${id}`, name: conversation.participantName || conversation.externalId || 'Contacto Social', time: 'Reciente', msg: conversation.lastMessage || 'Conversación social sincronizada', unread: conversation.unreadCount || 0, phone: conversation.externalId || id, columnId: 'nuevo_contacto', tags: [String(conversation.platform)], platform: String(conversation.platform).toLowerCase(), channelId: String(conversation.platform).toLowerCase(), conversationId: id, externalId: conversation.externalId || conversation.participantId, accountId: conversation.accountId, avatar: conversation.avatar || undefined });
+              next.unshift({ id: `zernio-${id}`, name: conversation.participantName || conversation.externalId || 'Contacto Social', time: 'Reciente', msg: conversation.lastMessage || 'Conversación social sincronizada', unread: conversation.unreadCount || 0, phone: conversation.externalId || id, columnId: 'nuevo_contacto', tags: [String(conversation.platform)], platform: String(conversation.platform).toLowerCase(), channelId: String(conversation.platform).toLowerCase() === 'whatsapp' ? 'zernio_whatsapp' : String(conversation.platform).toLowerCase(), conversationId: id, externalId: conversation.externalId || conversation.participantId, accountId: conversation.accountId, avatar: conversation.avatar || undefined });
             }
           });
           return next;
@@ -3190,6 +3190,7 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
     const activeChat = chats.find(c => c.id === activeChatId);
     if (activeChat && activeChat.phone) {
       try {
+        const isZernio = activeChat.accountId?.startsWith('6') || activeChat.channelId === 'zernio_whatsapp' || activeChat.channelId === 'instagram' || activeChat.channelId === 'messenger';
         const isSocial = activeChat.platform === 'instagram' || activeChat.platform === 'messenger' || activeChat.channelId === 'instagram';
         let socialAccountId = activeChat.accountId;
         if (isSocial && !socialAccountId) {
@@ -3197,11 +3198,11 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
           const accountsPayload: any = accountsResponse.ok ? await accountsResponse.json() : null;
           socialAccountId = accountsPayload?.data?.find((account: any) => account.platform === (activeChat.platform || 'instagram'))?.id;
         }
-        await fetch(isSocial ? '/api/zernio/send-message' : '/api/whatsapp/reply', {
+        await fetch(isZernio ? '/api/zernio/send-message' : '/api/whatsapp/reply', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(isSocial ? {
-            platform: activeChat.platform || 'instagram',
+          body: JSON.stringify(isZernio ? {
+            platform: activeChat.platform || 'whatsapp',
             conversationId: activeChat.conversationId,
             recipientPhone: activeChat.externalId || activeChat.phone,
             text,
@@ -3630,7 +3631,7 @@ ${parametersString}
           const ttAccount = allAccounts.find((a: any) => a.platform === 'tiktok');
           const fbAccount = allAccounts.find((a: any) => a.platform === 'facebook' || a.platform === 'messenger');
 
-          const isWaOfficialActive = false;
+          const isWaOfficialActive = Boolean(isOfficialConnected || zernioConnected || waAccount);
           const isIgActive = Boolean(igAccount);
           const isTtActive = Boolean(ttAccount);
           const isFbActive = Boolean(fbAccount);
@@ -3639,15 +3640,15 @@ ${parametersString}
           const channelsList = [
             {
               id: 'CAN-01',
-              name: 'WhatsApp Web / Evolution (QR)',
+              name: 'WhatsApp Business Cloud API (Zernio)',
               category: 'whatsapp',
               platformLabel: 'WhatsApp Cloud API',
               identifier: whatsappConnectedNumber || waAccount?.phoneNumber || (isWaOfficialActive ? 'Línea Oficial Vinculada' : 'No vinculado'),
               type: 'API oficial de Meta',
-              status: isWaQrActive ? 'Conectado' : 'Disponible',
-              isActive: isWaQrActive,
+              status: isWaOfficialActive ? 'Conectado' : 'Disponible',
+              isActive: isWaOfficialActive,
               icon: <MessageCircle size={18} className="text-emerald-400" />,
-              accountId: 'channel-default',
+              accountId: waAccount?.id || (isWaOfficialActive ? 'zernio_whatsapp' : null),
               actionType: 'whatsapp',
               date: isWaOfficialActive ? 'Sincronizado' : '-'
             },
