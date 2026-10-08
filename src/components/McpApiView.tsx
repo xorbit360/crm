@@ -357,7 +357,7 @@ export default function McpApiView() {
       xorbit360: {
         url: `${currentDomain}/api/mcp/superadmin`,
         headers: {
-          Authorization: `Bearer ${apiKeys[0]?.key || 'exp_live_TU_API_KEY'}`
+          Authorization: 'Bearer MCP_SUPERADMIN_TOKEN'
         }
       }
     }
@@ -369,7 +369,7 @@ export default function McpApiView() {
         type: "streamable-http",
         url: `${currentDomain}/api/mcp/superadmin`,
         headers: {
-          Authorization: `Bearer ${apiKeys[0]?.key || 'exp_live_TU_API_KEY'}`
+          Authorization: 'Bearer MCP_SUPERADMIN_TOKEN'
         }
       }
     }
