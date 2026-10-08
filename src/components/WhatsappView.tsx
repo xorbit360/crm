@@ -3268,7 +3268,7 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
           const accountsPayload: any = accountsResponse.ok ? await accountsResponse.json() : null;
           socialAccountId = accountsPayload?.data?.find((account: any) => account.platform === (activeChat.platform || 'instagram'))?.id;
         }
-        await fetch(isZernio ? '/api/zernio/send-message' : '/api/whatsapp/reply', {
+        const sendResponse = await fetch(isZernio ? '/api/zernio/send-message' : '/api/whatsapp/reply', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(isZernio ? {
@@ -3283,8 +3283,19 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
             channelId: activeChat.channelId || userChannelId
           })
         });
+        const sendResult = await sendResponse.json().catch(() => ({}));
+        if (!sendResponse.ok || sendResult.success === false) {
+          throw new Error(sendResult.error || 'El canal no confirmó el envío del mensaje');
+        }
       } catch (e) {
         console.error("Error enviando mensaje mediante API de WhatsApp:", e);
+        setMessages(prev => ({
+          ...prev,
+          [activeChatId]: [
+            ...(prev[activeChatId] || []),
+            { sender: 'bot', text: `No se pudo enviar: ${e instanceof Error ? e.message : 'error del canal'}`, time: formatColombiaTime(new Date()) }
+          ]
+        }));
       }
     }
   };
