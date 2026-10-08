@@ -1939,7 +1939,7 @@ async function createServer() {
         return Boolean(c.phone && c.phone.replace(/\D/g, '') === cleanPhone);
       });
       if (chatIdx !== -1) {
-        const updatedChat = { ...currentDB.chats[chatIdx], message: msg.text, time: nowStr,
+        const updatedChat = { ...currentDB.chats[chatIdx], message: msg.text, time: nowStr, timestamp: Date.now(),
           channelId: socialPlatform === 'instagram' ? 'instagram' : currentDB.chats[chatIdx].channelId,
           platform: socialPlatform, conversationId: zernioConversationId || currentDB.chats[chatIdx].conversationId,
           externalId: msg.senderId || currentDB.chats[chatIdx].externalId,
@@ -1954,6 +1954,7 @@ async function createServer() {
           phone: `+${cleanPhone}`,
           message: msg.text,
           time: nowStr,
+          timestamp: Date.now(),
           status: 'en_conversacion',
           avatar: profileAvatar || undefined,
           unread: incomingMessage ? 1 : 0
@@ -3940,7 +3941,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
     if (!currentDB.chats) currentDB.chats = [];
     const chatIdx = findEvolutionChatIndex(cleanPhone);
     if (chatIdx !== -1) {
-      const updatedChat = { ...currentDB.chats[chatIdx], message: incomingDisplayText, time: nowStr, status: 'en_conversacion', unread: (Number(currentDB.chats[chatIdx].unread) || 0) + 1, platform: 'whatsapp', channelId: 'evolution_whatsapp' };
+      const updatedChat = { ...currentDB.chats[chatIdx], message: incomingDisplayText, time: nowStr, timestamp: Date.now(), status: 'en_conversacion', unread: (Number(currentDB.chats[chatIdx].unread) || 0) + 1, platform: 'whatsapp', channelId: 'evolution_whatsapp' };
       if (shouldReplaceEvolutionAvatar(updatedChat.avatar, cachedAvatar)) updatedChat.avatar = cachedAvatar;
       if (senderName && senderName !== `+${cleanPhone}`) {
         updatedChat.sender = senderName;
@@ -3957,6 +3958,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
         avatar: cachedAvatar,
         message: incomingDisplayText,
         time: nowStr,
+        timestamp: Date.now(),
         status: 'nuevo'
         ,unread: 1
       });
@@ -4172,6 +4174,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
           currentDB.chats[chatIdx].platform = 'whatsapp';
           currentDB.chats[chatIdx].channelId = 'evolution_whatsapp';
           currentDB.chats[chatIdx].time = timeStr;
+          currentDB.chats[chatIdx].timestamp = timestampMs;
           if (shouldReplaceEvolutionAvatar(currentDB.chats[chatIdx].avatar, avatarUrl)) currentDB.chats[chatIdx].avatar = avatarUrl;
           if (senderName && senderName !== `+${cleanPhone}`) {
             currentDB.chats[chatIdx].sender = senderName;
@@ -4186,6 +4189,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
             avatar: avatarUrl,
             message: displayText,
             time: timeStr,
+            timestamp: timestampMs,
             status: fromMe ? 'en_conversacion' : 'nuevo'
           });
         }

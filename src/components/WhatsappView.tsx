@@ -112,14 +112,21 @@ const dedupeInboxChats = <T extends any>(items: T[]): T[] => {
     const rawChannel = String(chat.platform || chat.channelId || '').toLowerCase();
     const channel = rawChannel.includes('instagram') ? 'instagram'
       : rawChannel.includes('messenger') || rawChannel.includes('facebook') ? 'messenger'
-      : rawChannel.includes('whatsapp') || rawChannel.includes('evolution') ? 'whatsapp'
-      : '';
-    const identifier = channel === 'instagram' || channel === 'messenger'
-      ? String(chat.externalId || chat.conversationId || chat.phone || chat.name || '').trim().toLowerCase()
-      : channel === 'whatsapp'
-        ? String(chat.phone || '').replace(/\D/g, '')
-        : '';
-    const key = channel && identifier ? `${channel}:${identifier}` : `record:${chat.id}`;
+      : rawChannel.includes('evolution') ? 'whatsapp_evolution'
+      : rawChannel.includes('zernio_whatsapp') || rawChannel.includes('cloud') ? 'whatsapp_official'
+      : rawChannel.includes('whatsapp') ? 'whatsapp'
+      : rawChannel.includes('tiktok') ? 'tiktok'
+      : rawChannel.includes('telegram') ? 'telegram'
+      : rawChannel.includes('threads') ? 'threads'
+      : rawChannel.includes('linkedin') ? 'linkedin'
+      : rawChannel.includes('youtube') ? 'youtube'
+      : rawChannel || '';
+    const isPhoneChannel = channel.startsWith('whatsapp');
+    const identifier = isPhoneChannel
+      ? String(chat.phone || chat.externalId || '').replace(/\D/g, '')
+      : String(chat.externalId || chat.phone || chat.conversationId || chat.name || '').trim().toLowerCase();
+    const accountScope = isPhoneChannel ? '' : String(chat.accountId || '').toLowerCase();
+    const key = channel && identifier ? `${channel}:${accountScope}:${identifier}` : `record:${chat.id}`;
     const existingPosition = positions.get(key);
     if (existingPosition === undefined) {
       positions.set(key, result.length);
@@ -1032,6 +1039,7 @@ export default function WhatsappView({
           conversationId: chat.conversationId,
           externalId: chat.externalId,
           accountId: chat.accountId
+          ,timestamp: chat.timestamp
         }));
         setChats(previous => {
           const next = [...previous];
@@ -1041,7 +1049,7 @@ export default function WhatsappView({
             if (index >= 0) next[index] = { ...next[index], ...incoming };
             else next.push(incoming);
           });
-          return dedupeInboxChats(next);
+          return dedupeInboxChats(next).sort((a: any, b: any) => (Number(b.timestamp) || 0) - (Number(a.timestamp) || 0));
         });
         if (data.messagesHistory) {
           setMessages(prev => {
@@ -1879,6 +1887,15 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
     }
     return isAdminDemo ? ADMIN_DEMO_CHATS : [];
   });
+  // Guardia central: cualquier fuente puede actualizar la bandeja, pero nunca
+  // puede dejar dos tarjetas para el mismo contacto dentro del mismo canal.
+  useEffect(() => {
+    setChats(current => {
+      const unique = dedupeInboxChats(current);
+      return unique.length === current.length ? current : unique;
+    });
+  }, [chats.length]);
+
   const [activeChatId, setActiveChatId] = useState('1');
   const [chatSearch, setChatSearch] = useState('');
   const [chatInput, setChatInput] = useState('');
