@@ -2139,13 +2139,7 @@ async function createServer() {
           currentDB.whatsappConnected = false;
           saveDBData(currentDB);
         }
-      } else if (
-        event === 'messages.upsert' ||
-        event === 'messages.update' ||
-        event === 'send.message' ||
-        event.startsWith('messages') ||
-        event.startsWith('chats')
-      ) {
+      } else if (event === 'messages.upsert' || event === 'send.message') {
         if (onEvolutionIncomingMessage) {
           const items: any[] = Array.isArray(data)
             ? data
@@ -3138,7 +3132,17 @@ async function createServer() {
       const legacyInstagram = !platform && history.some((message: any) => /social_instagram|social_omnichannel/.test(String(message?.source || '').toLowerCase()));
       const instagram = platform.includes('instagram') || legacyInstagram;
       if (!instagram) { result.push(chat); continue; }
-      const identity = String(chat.conversationId || chat.externalId || chat.sender || chat.phone || '').trim().toLowerCase();
+      // El proveedor puede rotar el ID del hilo sin cambiar de persona. La
+      // identidad del participante debe ganar para no crear otra tarjeta.
+      const identity = String(
+        chat.participantId ||
+        chat.externalId ||
+        phoneKey ||
+        chat.participantUsername ||
+        chat.sender ||
+        chat.conversationId ||
+        ''
+      ).trim().toLowerCase();
       const key = `instagram|${chat.accountId || ''}|${identity}`;
       if (!key) { result.push(chat); continue; }
       const previous = seen.get(key);
@@ -3152,6 +3156,11 @@ async function createServer() {
       previous.unread = (Number(previous.unread) || 0) + (Number(chat.unread) || 0);
       if (!previous.avatar && chat.avatar) previous.avatar = chat.avatar;
       if (!previous.conversationId && chat.conversationId) previous.conversationId = chat.conversationId;
+      if (!previous.externalId && chat.externalId) previous.externalId = chat.externalId;
+      if (!previous.participantId && chat.participantId) previous.participantId = chat.participantId;
+      if (!previous.participantUsername && chat.participantUsername) previous.participantUsername = chat.participantUsername;
+      if (!previous.accountId && chat.accountId) previous.accountId = chat.accountId;
+      if (!previous.sender && chat.sender) previous.sender = chat.sender;
       const previousPhone = String(previous.phone || '').replace(/\D/g, '');
       if (phoneKey && previousPhone && phoneKey !== previousPhone && Array.isArray(currentDB.messagesHistory?.[phoneKey])) {
         const combined = [...(currentDB.messagesHistory[previousPhone] || []), ...currentDB.messagesHistory[phoneKey]];
@@ -3973,7 +3982,9 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
   }
 
   async function handleEvolutionIncomingMessage(instance: string, data: any) {
-    if (!data || !data.key) return;
+    // Los eventos de estado/lectura no contienen un mensaje real. Ignorarlos
+    // evita historiales duplicados, contadores falsos y pausas accidentales de IA.
+    if (!data || !data.key || !data.message) return;
     const contact = getEvolutionContact(data);
     if (!contact) return;
     const { phone: cleanPhone, jid: senderJid } = contact;
