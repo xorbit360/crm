@@ -566,7 +566,15 @@ export default function WhatsappView({
               if (!bChat.phone) return;
               const cleanBPhone = bChat.phone.replace(/\D/g, '');
 
-              const existingIdx = updated.findIndex(c => c.phone.replace(/\D/g, '') === cleanBPhone || c.id === bChat.id);
+              const isSocialChat = ['instagram', 'messenger', 'facebook', 'tiktok'].includes(String(bChat.platform || bChat.channelId || '').toLowerCase()) || /instagram/i.test(String(bChat.avatar || ''));
+              const existingIdx = updated.findIndex(c => {
+                if (isSocialChat) {
+                  return (bChat.conversationId && c.conversationId === bChat.conversationId) ||
+                    (bChat.externalId && c.externalId === bChat.externalId) ||
+                    (c.name && bChat.sender && c.name === bChat.sender && /instagram/i.test(String(c.platform || c.channelId || c.avatar || '')));
+                }
+                return c.phone.replace(/\D/g, '') === cleanBPhone || c.id === bChat.id;
+              });
 
                   if (existingIdx >= 0) {
                     const existing = updated[existingIdx];
@@ -609,6 +617,15 @@ export default function WhatsappView({
               }
             });
 
+            const seenSocial = new Set<string>();
+            updated = updated.filter(chat => {
+              const social = /instagram/i.test(String(chat.platform || chat.channelId || chat.avatar || ''));
+              if (!social) return true;
+              const key = String(chat.conversationId || chat.externalId || chat.name || chat.phone).toLowerCase();
+              if (seenSocial.has(key)) return false;
+              seenSocial.add(key);
+              return true;
+            });
             return updated;
           });
         }
@@ -3237,8 +3254,8 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
     const activeChat = chats.find(c => c.id === activeChatId);
     if (activeChat && activeChat.phone) {
       try {
-        const isZernio = activeChat.accountId?.startsWith('6') || activeChat.channelId === 'zernio_whatsapp' || activeChat.channelId === 'instagram' || activeChat.channelId === 'messenger';
         const isSocial = activeChat.platform === 'instagram' || activeChat.platform === 'messenger' || activeChat.channelId === 'instagram';
+        const isZernio = isSocial || activeChat.accountId?.startsWith('6') || activeChat.channelId === 'zernio_whatsapp' || activeChat.channelId === 'messenger';
         let socialAccountId = activeChat.accountId;
         if (isSocial && !socialAccountId) {
           const accountsResponse = await fetch('/api/zernio/accounts');
