@@ -264,7 +264,9 @@ const mergeMessageHistory = (current: InboxMessage[], incoming: InboxMessage[]):
       const merged = {
         ...incomingMessage,
         ...existing,
-        id: existing.deliveryStatus === 'sending' && incomingMessage.id ? incomingMessage.id : (existing.id || incomingMessage.id),
+        // Keep the rendered key stable. Replacing an optimistic ID with the
+        // provider ID remounts the bubble and makes the viewport jump.
+        id: existing.id || incomingMessage.id,
         timestamp: existing.timestamp || incomingMessage.timestamp,
         attachment: existing.attachment || incomingMessage.attachment,
         deliveryStatus: incomingMessage.deliveryStatus || (existing.deliveryStatus === 'sending' ? 'sent' : existing.deliveryStatus)
@@ -279,14 +281,8 @@ const mergeMessageHistory = (current: InboxMessage[], incoming: InboxMessage[]):
     changed = true;
   }
   if (!changed) return current;
-  const toEpoch = (value: string | number | undefined) => {
-    if (typeof value === 'number') return value > 10000000000 ? value : value * 1000;
-    const parsed = value ? new Date(value).getTime() : 0;
-    return Number.isFinite(parsed) ? parsed : 0;
-  };
-  if (next.every(message => toEpoch(message.timestamp) > 0)) {
-    return next.sort((left, right) => toEpoch(left.timestamp) - toEpoch(right.timestamp));
-  }
+  // Never reorder an already-rendered timeline during realtime updates. New
+  // webhook messages are appended in arrival order, like a native inbox.
   return next;
 };
 
@@ -2645,8 +2641,7 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
     const container = messagesScrollRef.current;
     if (!container) return;
     const changedChat = lastRenderedChatRef.current !== activeChatId;
-    const lastMessage = activeChatMessages[activeChatMessages.length - 1];
-    if (changedChat || stickToBottomRef.current || lastMessage?.sender !== 'client') {
+    if (changedChat || stickToBottomRef.current) {
       container.scrollTop = container.scrollHeight;
       stickToBottomRef.current = true;
     }
@@ -5101,6 +5096,7 @@ ${parametersString}
                  ref={messagesScrollRef}
                  onScroll={handleMessagesScroll}
                  className="flex-1 overflow-y-auto p-4 z-10 space-y-3.5 custom-scrollbar"
+                 style={{ overflowAnchor: 'none', scrollBehavior: 'auto' }}
                >
                   <div className="flex justify-center mb-4 mt-2 items-center gap-2 flex-wrap">
                      <span className="bg-[#182229] text-[#8696a0] text-[11px] px-3 py-1 rounded-lg shadow uppercase font-medium flex items-center gap-1.5 border border-gray-800">
