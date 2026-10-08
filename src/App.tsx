@@ -1,34 +1,41 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { lazy, Suspense, useState, useRef, useEffect } from 'react';
 import { ChevronDown, Bot, Lightbulb, Image as ImageIcon, Layout, Megaphone, Smartphone, Settings as SettingsIcon, Menu, X, ArrowRight, ShieldCheck, ChevronRight, Network, Link, Paperclip, Mic, FileImage, Video, FileAudio, Users, Share2, LogOut, GraduationCap, Package, ShoppingCart, BarChart3, HeartHandshake, Send, Calendar, QrCode, Database, MessageCircle, MessageSquare, FileText, Zap, TrendingUp, Sparkles, Flame, Search, Calculator, MonitorPlay, Eye, Bell, CheckCircle, Sun, Moon, PanelLeft, PanelLeftClose, FolderKanban, Terminal, Globe, Radio, CreditCard, Gift } from 'lucide-react';
 import type { ModuleId, AppState } from './types';
 import { translations, FlagES, FlagUK, Language, Theme } from './lib/i18n';
 import { getCachedWhiteLabel, fetchWhiteLabelConfig, WhiteLabelConfig } from './lib/whitelabel';
 
-import BrandingView from './components/BrandingView';
-import MercadoView from './components/MercadoView';
-import ContenidoView from './components/ContenidoView';
-import AdsView from './components/AdsView';
-import WhatsappView from './components/WhatsappView';
-import { RecargasView } from './components/RecargasView';
-import ReferidosView from './components/ReferidosView';
-import AutomatizacionesView from './components/AutomatizacionesView';
-import DashboardMetrics from './components/DashboardMetrics';
-import ComunidadView from './components/ComunidadView';
-import UsuariosView from './components/UsuariosView';
-import LoginView from './components/LoginView';
-import RegisterView from './components/RegisterView';
-import EntrenamientoView from './components/EntrenamientoView';
-import ProveedoresView from './components/ProveedoresView';
-import LandingView from './components/LandingView';
-import IntegracionesView from './components/IntegracionesView';
-import OrganigramaView from './components/OrganigramaView';
-import EditorVideo from './components/EditorVideo';
-import LlamadasView from './components/LlamadasView';
-import EmailMarketingView from './components/EmailMarketingView';
-import ConfiguracionGeneralView from './components/ConfiguracionGeneralView';
-import ProyectosView from './components/ProyectosView';
-import LiveSellingView from './components/LiveSellingView';
-import HerramientasTarjetasView from './components/HerramientasTarjetasView';
+// Las vistas de cada módulo se cargan solo al abrirse. Esto evita descargar
+// charts, editores y módulos de configuración en el primer render del CRM.
+const BrandingView = lazy(() => import('./components/BrandingView'));
+const MercadoView = lazy(() => import('./components/MercadoView'));
+const ContenidoView = lazy(() => import('./components/ContenidoView'));
+const AdsView = lazy(() => import('./components/AdsView'));
+const WhatsappView = lazy(() => import('./components/WhatsappView'));
+const AutomatizacionesView = lazy(() => import('./components/AutomatizacionesView'));
+const DashboardMetrics = lazy(() => import('./components/DashboardMetrics'));
+const ComunidadView = lazy(() => import('./components/ComunidadView'));
+const LoginView = lazy(() => import('./components/LoginView'));
+const RegisterView = lazy(() => import('./components/RegisterView'));
+const EntrenamientoView = lazy(() => import('./components/EntrenamientoView'));
+const ProveedoresView = lazy(() => import('./components/ProveedoresView'));
+const LandingView = lazy(() => import('./components/LandingView'));
+const IntegracionesView = lazy(() => import('./components/IntegracionesView'));
+const OrganigramaView = lazy(() => import('./components/OrganigramaView'));
+const EditorVideo = lazy(() => import('./components/EditorVideo'));
+const LlamadasView = lazy(() => import('./components/LlamadasView'));
+const EmailMarketingView = lazy(() => import('./components/EmailMarketingView'));
+const ConfiguracionGeneralView = lazy(() => import('./components/ConfiguracionGeneralView'));
+const ProyectosView = lazy(() => import('./components/ProyectosView'));
+const LiveSellingView = lazy(() => import('./components/LiveSellingView'));
+const HerramientasTarjetasView = lazy(() => import('./components/HerramientasTarjetasView'));
+
+function ModuleLoading() {
+  return (
+    <div className="flex min-h-[240px] items-center justify-center rounded-2xl border border-gray-800 bg-gray-950/40 text-sm text-gray-400">
+      Cargando módulo…
+    </div>
+  );
+}
 
 export default function App() {
   const [language, setLanguage] = useState<Language>(() => (localStorage.getItem('app_lang') as Language) || 'es');
@@ -595,15 +602,17 @@ type ChatMessage = {
 
   if (!user || currentView === 'login') {
     return (
-      <LoginView
-        onLogin={(loggedInUser) => {
-          setUser(loggedInUser);
-          setCurrentView('app');
-        }}
-        onGoToRegister={() => {
-          window.open('https://xorbit360.com', '_blank');
-        }}
-      />
+      <Suspense fallback={<ModuleLoading />}>
+        <LoginView
+          onLogin={(loggedInUser) => {
+            setUser(loggedInUser);
+            setCurrentView('app');
+          }}
+          onGoToRegister={() => {
+            window.open('https://xorbit360.com', '_blank');
+          }}
+        />
+      </Suspense>
     );
   }
 
@@ -611,15 +620,17 @@ type ChatMessage = {
     const searchParams = new URLSearchParams(window.location.search);
     const initialRef = searchParams.get('ref') || '';
     return (
-      <RegisterView
-        initialReferral={initialRef}
-        onRegisterSuccess={(registeredUser) => {
-          setUser(registeredUser);
-          setCurrentView('app');
-          setActiveModule('dashboard'); if (window.innerWidth < 768) setIsSidebarOpen(false);
-        }}
-        onGoToLogin={() => setCurrentView('login')}
-      />
+      <Suspense fallback={<ModuleLoading />}>
+        <RegisterView
+          initialReferral={initialRef}
+          onRegisterSuccess={(registeredUser) => {
+            setUser(registeredUser);
+            setCurrentView('app');
+            setActiveModule('dashboard'); if (window.innerWidth < 768) setIsSidebarOpen(false);
+          }}
+          onGoToLogin={() => setCurrentView('login')}
+        />
+      </Suspense>
     );
   }
 
@@ -1122,6 +1133,7 @@ type ChatMessage = {
 
         <div className={`flex-1 overflow-auto relative ${activeModule === 'whatsapp' ? 'p-1 sm:p-2 h-full flex flex-col' : activeModule === 'entrenamiento' ? 'p-2 sm:p-4 lg:p-6' : 'p-3 sm:p-6 lg:p-8'}`}>
           <div className={`w-full ${activeModule === 'whatsapp' ? 'h-full flex-1 flex flex-col' : 'pb-24 sm:pb-0'}`}>
+            <Suspense fallback={<ModuleLoading />}>
             {activeModule === 'dashboard' && (
               <div className="animate-fade-in space-y-6">
                 <div className="relative mb-6">
@@ -1450,6 +1462,7 @@ type ChatMessage = {
                 initialTab="general"
               />
             )}
+            </Suspense>
           </div>
         </div>
       </main>
