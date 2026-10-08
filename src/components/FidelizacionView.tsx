@@ -2,6 +2,8 @@ import React from 'react';
 import { HeartHandshake, Filter, Users, Calendar, Plus, MessageSquare } from 'lucide-react';
 
 export default function FidelizacionView() {
+  const [segment, setSegment] = React.useState('Todos');
+  const [flow, setFlow] = React.useState('Todos los flujos');
   const clientes = Array.from({ length: 18 }, (_, index) => ({
     name: ['Laura Gómez', 'Andrés Rojas', 'Camila Torres', 'Juan Martínez', 'Mariana Cárdenas', 'Santiago Pérez'][index % 6],
     channel: ['Instagram', 'WhatsApp', 'Facebook', 'Shopify'][index % 4],
@@ -22,15 +24,22 @@ export default function FidelizacionView() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
            <div>
              <label className="block text-xs text-gray-400 mb-1">Tipo de Cliente</label>
-             <select className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2 text-sm text-gray-200">
+             <select value={segment} onChange={e => setSegment(e.target.value)} className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2 text-sm text-gray-200">
                <option>Todos</option>
                <option>Cliente Nuevo</option>
                <option>Cliente Recurrente</option>
+               <option>Cliente Recuperado</option>
+               <option>Cliente Perdido</option>
              </select>
            </div>
            <div>
              <label className="block text-xs text-gray-400 mb-1">Producto Comprado</label>
-             <select className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2 text-sm text-gray-200">
+             <select value={flow} onChange={e => setFlow(e.target.value)} className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2 text-sm text-gray-200">
+               <option>Todos los flujos</option>
+               <option>Recompra 7 días</option>
+               <option>Recompra 30 días</option>
+               <option>Recuperación de clientes</option>
+               <option>Reactivación de perdidos</option>
                <option>Cualquier producto</option>
                <option>Producto A</option>
                <option>Producto B</option>

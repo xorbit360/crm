@@ -8,11 +8,10 @@ try {
   if (saved) {
     cachedTimezone = saved;
   } else {
-    const resolved = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    if (resolved) {
-      cachedTimezone = resolved;
-      localStorage.setItem('XORBIT 360_TIMEZONE', resolved);
-    }
+    // La operación está fijada a Colombia; no usar la zona del dispositivo
+    // porque puede cambiar las métricas y los horarios entre usuarios.
+    cachedTimezone = 'America/Bogota';
+    localStorage.setItem('XORBIT 360_TIMEZONE', cachedTimezone);
   }
 } catch (_) {
   cachedTimezone = 'America/Bogota';

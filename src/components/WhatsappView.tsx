@@ -1009,7 +1009,7 @@ export default function WhatsappView({
               existing.channelId = existing.platform;
               existing.externalId = conversation.externalId || existing.externalId;
             } else {
-              next.unshift({ id: `zernio-${id}`, name: conversation.externalId || 'Contacto Instagram', time: 'Reciente', msg: 'Conversación social sincronizada', unread: conversation.unreadCount || 0, phone: conversation.externalId || id, columnId: 'nuevo_contacto', tags: ['Instagram'], platform: String(conversation.platform).toLowerCase(), channelId: String(conversation.platform).toLowerCase(), conversationId: id, externalId: conversation.externalId });
+              next.unshift({ id: `zernio-${id}`, name: conversation.externalId || 'Contacto Instagram', time: 'Reciente', msg: 'Conversación social sincronizada', unread: conversation.unreadCount || 0, phone: conversation.externalId || id, columnId: 'nuevo_contacto', tags: ['Instagram'], platform: String(conversation.platform).toLowerCase(), channelId: String(conversation.platform).toLowerCase(), conversationId: id, externalId: conversation.externalId, avatar: conversation.avatar || undefined });
             }
           });
           return next;

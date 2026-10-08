@@ -23,6 +23,7 @@ export interface ImportedConversation {
   lastMessageAt?: string;
   messagesCount?: number;
   unreadCount?: number;
+  avatar?: string;
 }
 
 export async function importZernioConversations(options: ImportOptions = {}) {
@@ -84,6 +85,7 @@ export async function importZernioConversations(options: ImportOptions = {}) {
         lastMessageAt: raw.lastMessageAt || raw.updatedAt,
         messagesCount: raw.messagesCount || 0,
         unreadCount: raw.unreadCount || 0
+        ,avatar: raw.contact?.profilePicture || raw.contact?.avatar || raw.profilePicture || raw.avatar || ''
       });
     }
 
