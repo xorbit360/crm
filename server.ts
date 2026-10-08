@@ -2992,6 +2992,9 @@ async function createServer() {
     const seen = new Map<string, any>();
     const result: any[] = [];
     for (const chat of currentDB.chats) {
+      if (/^\+?social-default$/i.test(String(chat?.phone || '')) || String(chat?.conversationId || '').toLowerCase() === 'default') {
+        continue;
+      }
       const platform = String(chat?.platform || chat?.channelId || '').toLowerCase();
       const phoneKey = String(chat?.phone || '').replace(/\D/g, '');
       const history = currentDB.messagesHistory?.[phoneKey] || [];

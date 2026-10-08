@@ -122,11 +122,12 @@ const dedupeInboxChats = <T extends any>(items: T[]): T[] => {
       : rawChannel.includes('youtube') ? 'youtube'
       : rawChannel || '';
     const isPhoneChannel = channel.startsWith('whatsapp');
-    const identifier = isPhoneChannel
-      ? String(chat.phone || chat.externalId || '').replace(/\D/g, '')
-      : String(chat.externalId || chat.phone || chat.conversationId || chat.name || '').trim().toLowerCase();
-    const accountScope = isPhoneChannel ? '' : String(chat.accountId || '').toLowerCase();
-    const key = channel && identifier ? `${channel}:${accountScope}:${identifier}` : `record:${chat.id}`;
+    const rawIdentifier = String(chat.externalId || chat.phone || chat.conversationId || chat.name || '').trim().toLowerCase();
+    const numericIdentifier = rawIdentifier.replace(/\D/g, '');
+    const identifier = isPhoneChannel || (/^\+?[\d\s()-]+$/.test(rawIdentifier) && numericIdentifier.length >= 6)
+      ? numericIdentifier
+      : rawIdentifier;
+    const key = channel && identifier ? `${channel}:${identifier}` : `record:${chat.id}`;
     const existingPosition = positions.get(key);
     if (existingPosition === undefined) {
       positions.set(key, result.length);
