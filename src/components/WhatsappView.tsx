@@ -1038,6 +1038,8 @@ export default function WhatsappView({
               existing.channelId = existing.platform === 'whatsapp' ? 'zernio_whatsapp' : existing.platform;
               existing.externalId = conversation.externalId || existing.externalId;
               existing.accountId = conversation.accountId || existing.accountId;
+              existing.avatar = conversation.avatar || existing.avatar;
+              existing.name = conversation.participantName || existing.name;
             } else {
               next.unshift({ id: `zernio-${id}`, name: conversation.participantName || conversation.externalId || 'Contacto Social', time: 'Reciente', msg: conversation.lastMessage || 'Conversación social sincronizada', unread: conversation.unreadCount || 0, phone: conversation.externalId || id, columnId: 'nuevo_contacto', tags: [String(conversation.platform)], platform: String(conversation.platform).toLowerCase(), channelId: String(conversation.platform).toLowerCase() === 'whatsapp' ? 'zernio_whatsapp' : String(conversation.platform).toLowerCase(), conversationId: id, externalId: conversation.externalId || conversation.participantId, accountId: conversation.accountId, avatar: conversation.avatar || undefined });
             }
@@ -1049,7 +1051,20 @@ export default function WhatsappView({
       if (Array.isArray(unifiedState?.chats)) {
         setChats(previous => {
           const byId = new Map<string, any>(previous.map(chat => [chat.id, chat] as [string, any]));
-          unifiedState.chats.forEach((chat: any) => byId.set(chat.id, { tags: ['WhatsApp'], unread: 0, columnId: 'nuevo_contacto', ...byId.get(chat.id), ...chat, msg: chat.message || chat.msg || byId.get(chat.id)?.msg }));
+          unifiedState.chats.forEach((chat: any) => {
+            const current = byId.get(chat.id);
+            byId.set(chat.id, {
+              tags: ['WhatsApp'],
+              unread: 0,
+              columnId: 'nuevo_contacto',
+              ...current,
+              ...chat,
+              // Do not let an old empty server value erase the profile picture
+              // just recovered from the connected social account.
+              avatar: chat.avatar || current?.avatar,
+              msg: chat.message || chat.msg || current?.msg
+            });
+          });
           return Array.from(byId.values()).sort((a: any, b: any) => (Number(b.timestamp) || 0) - (Number(a.timestamp) || 0));
         });
       }
