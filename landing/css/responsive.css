@@ -470,3 +470,329 @@ img, video, iframe, svg, canvas {
     font-size: 1.15rem;
   }
 }
+
+/* --------------------------------------------------------------------------
+   6. FLUID POLISH (2026)
+   Mantiene la composición del sitio, pero evita desbordes y saltos visuales
+   en anchos intermedios, pantallas táctiles y dispositivos plegables.
+   -------------------------------------------------------------------------- */
+
+/* Ningún componente hijo debe forzar el ancho del viewport. */
+.container > *,
+.section-header > *,
+.roi-card > *,
+.voice-simulator-card > *,
+.live-selling-preview > *,
+.niche-detail-grid > *,
+.pricing-grid > * {
+  min-width: 0;
+}
+
+.container {
+  width: min(100%, var(--container-max));
+}
+
+.section-title,
+.section-subtitle,
+.hero-title,
+.hero-description,
+.module-title,
+.module-desc,
+.pricing-card,
+.dropdown-desc,
+.crm-modal-overlay p {
+  overflow-wrap: anywhere;
+}
+
+.hero-glow-bg {
+  width: min(900px, 120vw);
+  height: clamp(300px, 52vw, 500px);
+}
+
+.crm-mockup-window {
+  grid-template-columns: minmax(180px, 0.8fr) minmax(220px, 1fr) minmax(0, 1.8fr) minmax(210px, 0.9fr);
+  height: clamp(520px, 46vw, 640px);
+}
+
+.crm-col-thread,
+.crm-col-details,
+.crm-col-chats,
+.crm-col-nav {
+  min-width: 0;
+}
+
+.crm-messages-container,
+.crm-conversation-list,
+.crm-col-details {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
+}
+
+.msg-bubble,
+.msg-bubble.order-card {
+  max-width: min(80%, 420px);
+  width: auto;
+}
+
+.msg-bubble.order-card {
+  width: min(320px, 80%);
+}
+
+.roi-results-display,
+.calculator-controls,
+.pricing-card,
+.voice-call-display,
+.voice-transcript-log {
+  min-width: 0;
+}
+
+.roi-metric-big {
+  font-size: clamp(1.85rem, 4vw, 2.8rem);
+  overflow-wrap: anywhere;
+}
+
+.niche-selector-wrapper,
+.voice-simulator-card,
+.roi-card {
+  overflow: hidden;
+}
+
+@media (max-width: 1200px) {
+  .navbar {
+    gap: 16px;
+  }
+
+  .nav-brand {
+    margin-right: 12px;
+  }
+
+  .nav-menu {
+    gap: clamp(14px, 2vw, 24px);
+  }
+
+  .crm-mockup-window {
+    grid-template-columns: minmax(175px, 0.8fr) minmax(230px, 1fr) minmax(0, 1.8fr);
+  }
+}
+
+@media (max-width: 992px) {
+  .navbar {
+    min-height: 64px;
+    height: auto;
+  }
+
+  .nav-brand {
+    font-size: clamp(1.1rem, 3vw, 1.45rem);
+    margin-right: auto;
+  }
+
+  .nav-brand span:last-child {
+    white-space: nowrap;
+  }
+
+  .nav-actions {
+    gap: 8px;
+  }
+
+  .nav-actions .btn-primary {
+    display: none;
+  }
+
+  .hero-glow-bg {
+    top: -110px;
+  }
+
+  .crm-mockup-window {
+    min-height: 540px;
+  }
+
+  .crm-col-thread {
+    min-height: 540px;
+  }
+
+  .crm-thread-header {
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .thread-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .niche-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .niche-selector-wrapper,
+  .voice-simulator-card,
+  .roi-card {
+    padding: clamp(22px, 4vw, 36px);
+  }
+}
+
+@media (max-width: 640px) {
+  .container {
+    width: 100%;
+  }
+
+  .section-header {
+    text-align: center;
+  }
+
+  .section-title {
+    font-size: clamp(1.65rem, 7.2vw, 2.35rem);
+    line-height: 1.16;
+  }
+
+  .section-subtitle {
+    font-size: 0.92rem;
+  }
+
+  .hero-glow-bg {
+    width: 150vw;
+    height: 360px;
+    filter: blur(46px);
+  }
+
+  .hero-rating-badge {
+    flex-wrap: wrap;
+    line-height: 1.35;
+  }
+
+  .hero-rating-badge > span:last-child {
+    width: 100%;
+  }
+
+  .crm-showcase-wrapper {
+    margin-top: 34px;
+  }
+
+  .crm-mockup-window {
+    min-height: 560px;
+    border-radius: 20px;
+  }
+
+  .crm-col-thread {
+    min-height: 560px;
+  }
+
+  .crm-thread-header {
+    padding: 12px 14px;
+  }
+
+  .thread-actions .btn {
+    font-size: 0.68rem !important;
+    padding: 5px 8px !important;
+  }
+
+  .crm-messages-container {
+    padding: 14px 12px;
+    gap: 10px;
+  }
+
+  .msg-bubble {
+    max-width: 88%;
+    padding: 10px 12px;
+    font-size: 0.8rem;
+  }
+
+  .crm-thread-input-area {
+    padding: 10px 12px;
+  }
+
+  .crm-ai-assist-bar {
+    display: none;
+  }
+
+  .crm-input-box {
+    gap: 6px;
+  }
+
+  .crm-input-box input {
+    min-width: 0;
+    font-size: 0.82rem;
+  }
+
+  .crm-input-box .btn {
+    padding: 6px 10px !important;
+    font-size: 0.72rem;
+  }
+
+  .niche-selector-wrapper,
+  .voice-simulator-card,
+  .roi-card {
+    padding: 20px 16px;
+    border-radius: 20px;
+  }
+
+  .niche-pills-nav {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin: 0 -16px 22px;
+    padding: 0 16px 6px;
+    scrollbar-width: none;
+  }
+
+  .niche-pills-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .niche-pill-btn {
+    flex: 0 0 auto;
+    font-size: 0.78rem;
+    padding: 8px 12px;
+  }
+
+  .niche-prompt-box,
+  .roi-results-display {
+    padding: 18px 14px;
+  }
+
+  .roi-results-display > div:nth-child(2) {
+    gap: 12px !important;
+    flex-wrap: wrap;
+  }
+
+  .roi-results-display > div:nth-child(2) > div {
+    flex: 1 1 120px;
+  }
+
+  .channel-addon-box {
+    padding: 20px 16px;
+  }
+
+  .bold-modal-backdrop,
+  .lead-modal-backdrop {
+    align-items: flex-start;
+    padding-top: max(12px, env(safe-area-inset-top));
+  }
+
+  .lead-modal-card,
+  .bold-checkout-card {
+    margin: 0;
+    max-height: calc(100dvh - 24px);
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 380px) {
+  .nav-brand {
+    gap: 8px;
+  }
+
+  .brand-logo-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .crm-mockup-window,
+  .crm-col-thread {
+    min-height: 520px;
+  }
+
+  .thread-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
