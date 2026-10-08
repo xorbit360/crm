@@ -24,6 +24,11 @@ export interface ImportedConversation {
   messagesCount?: number;
   unreadCount?: number;
   avatar?: string;
+  accountId?: string;
+  messages?: any[];
+  participantName?: string;
+  participantId?: string;
+  lastMessage?: string;
 }
 
 export async function importZernioConversations(options: ImportOptions = {}) {
@@ -77,15 +82,27 @@ export async function importZernioConversations(options: ImportOptions = {}) {
     }
 
     for (const raw of items) {
+      const conversationId = String(raw.id || raw._id);
+      const accountId = String(raw.accountId || options.accountId || '');
+      let recentMessages: any[] = [];
+      if (accountId && conversationId) {
+        const messageResult = await zernioRequest<any>({ method: 'GET', path: `/v1/inbox/conversations/${conversationId}/messages?accountId=${encodeURIComponent(accountId)}&limit=100&sortOrder=asc` });
+        if (messageResult.success) recentMessages = (messageResult.data as any)?.messages || (messageResult.data as any)?.data?.messages || [];
+      }
       allConversations.push({
-        id: String(raw.id || raw._id),
+        id: conversationId,
+        accountId,
         externalId: raw.externalId || raw.platformConversationId,
+        participantName: raw.participantName || raw.contact?.name || raw.name,
+        participantId: raw.participantId || raw.contact?.id,
+        lastMessage: raw.lastMessage || raw.lastMessageText || '',
         recipientPhone: raw.recipient?.phone || raw.phone || raw.contact?.phone,
         platform: raw.platform || 'whatsapp',
         lastMessageAt: raw.lastMessageAt || raw.updatedAt,
         messagesCount: raw.messagesCount || 0,
         unreadCount: raw.unreadCount || 0
         ,avatar: raw.contact?.profilePicture || raw.contact?.avatar || raw.profilePicture || raw.avatar || ''
+        ,messages: recentMessages
       });
     }
 

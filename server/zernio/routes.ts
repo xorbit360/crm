@@ -214,6 +214,16 @@ export function setupZernioRoutes(app: express.Express, onIncomingMessage?: (msg
     res.json(result);
   });
 
+  // Marcar conversación como leída en Zernio (actualiza también el recibo
+  // de lectura del canal cuando la plataforma lo permite).
+  router.post('/conversations/:conversationId/read', async (req, res) => {
+    const accountId = String(req.body?.accountId || '');
+    if (!accountId) return res.status(400).json({ success: false, error: 'accountId requerido' });
+    const result = await zernioRequest({ method: 'POST', path: `/v1/inbox/conversations/${encodeURIComponent(req.params.conversationId)}/read`, body: { accountId } });
+    if (!result.success) return res.status((result as any).error?.status || 400).json(result);
+    res.json({ success: true, data: result.data });
+  });
+
   // 10. Disparadores de Logística Automatizada (Dropi, MasterShop, Effix)
   router.post('/logistics/notify', async (req, res) => {
     const { action, order }: { action: 'confirm' | 'dispatch' | 'novelty' | 'delivered'; order: LogisticsOrderPayload } = req.body;

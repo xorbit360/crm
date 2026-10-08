@@ -1003,13 +1003,27 @@ export default function WhatsappView({
             if (String(conversation.platform).toLowerCase() !== 'instagram' && String(conversation.platform).toLowerCase() !== 'messenger') return;
             const id = String(conversation.id || conversation.externalId);
             const existing = next.find(chat => chat.conversationId === id || chat.externalId === conversation.externalId);
+            const historyKey = existing?.id || `zernio-${id}`;
+            if (Array.isArray(conversation.messages) && conversation.messages.length > 0) {
+              setMessages(previousMessages => ({
+                ...previousMessages,
+                [historyKey]: conversation.messages.map((message: any) => ({
+                  sender: message.direction === 'outgoing' || message.isFromBusiness ? 'agent' : 'client',
+                  text: message.message || message.text || message.body || '',
+                  time: message.timestamp || message.createdAt || 'Ahora',
+                  source: `social_${conversation.platform}`,
+                  attachment: message.attachments?.[0]
+                }))
+              }));
+            }
             if (existing) {
               existing.conversationId = id;
               existing.platform = String(conversation.platform).toLowerCase();
               existing.channelId = existing.platform;
               existing.externalId = conversation.externalId || existing.externalId;
+              existing.accountId = conversation.accountId || existing.accountId;
             } else {
-              next.unshift({ id: `zernio-${id}`, name: conversation.externalId || 'Contacto Instagram', time: 'Reciente', msg: 'Conversación social sincronizada', unread: conversation.unreadCount || 0, phone: conversation.externalId || id, columnId: 'nuevo_contacto', tags: ['Instagram'], platform: String(conversation.platform).toLowerCase(), channelId: String(conversation.platform).toLowerCase(), conversationId: id, externalId: conversation.externalId, avatar: conversation.avatar || undefined });
+              next.unshift({ id: `zernio-${id}`, name: conversation.participantName || conversation.externalId || 'Contacto Social', time: 'Reciente', msg: conversation.lastMessage || 'Conversación social sincronizada', unread: conversation.unreadCount || 0, phone: conversation.externalId || id, columnId: 'nuevo_contacto', tags: [String(conversation.platform)], platform: String(conversation.platform).toLowerCase(), channelId: String(conversation.platform).toLowerCase(), conversationId: id, externalId: conversation.externalId || conversation.participantId, accountId: conversation.accountId, avatar: conversation.avatar || undefined });
             }
           });
           return next;
@@ -3616,7 +3630,7 @@ ${parametersString}
           const ttAccount = allAccounts.find((a: any) => a.platform === 'tiktok');
           const fbAccount = allAccounts.find((a: any) => a.platform === 'facebook' || a.platform === 'messenger');
 
-          const isWaOfficialActive = Boolean(isOfficialConnected || zernioConnected || waAccount);
+          const isWaOfficialActive = false;
           const isIgActive = Boolean(igAccount);
           const isTtActive = Boolean(ttAccount);
           const isFbActive = Boolean(fbAccount);
@@ -3625,15 +3639,15 @@ ${parametersString}
           const channelsList = [
             {
               id: 'CAN-01',
-              name: 'WhatsApp Business Cloud API',
+              name: 'WhatsApp Web / Evolution (QR)',
               category: 'whatsapp',
               platformLabel: 'WhatsApp Cloud API',
               identifier: whatsappConnectedNumber || waAccount?.phoneNumber || (isWaOfficialActive ? 'Línea Oficial Vinculada' : 'No vinculado'),
               type: 'API oficial de Meta',
-              status: isWaOfficialActive ? 'Conectado' : 'Disponible',
-              isActive: isWaOfficialActive,
+              status: isWaQrActive ? 'Conectado' : 'Disponible',
+              isActive: isWaQrActive,
               icon: <MessageCircle size={18} className="text-emerald-400" />,
-              accountId: waAccount?.id || (isWaOfficialActive ? 'local_wa' : null),
+              accountId: 'channel-default',
               actionType: 'whatsapp',
               date: isWaOfficialActive ? 'Sincronizado' : '-'
             },
@@ -4474,6 +4488,12 @@ ${parametersString}
                       key={chat.id}
                       onClick={() => {
                         setActiveChatId(chat.id);
+                        if (chat.conversationId && chat.accountId) {
+                          fetch(`/api/zernio/conversations/${encodeURIComponent(chat.conversationId)}/read`, {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ accountId: chat.accountId })
+                          }).catch(() => undefined);
+                        }
                         setChats(prev => {
                           const next = prev.map(c => c.id === chat.id ? { ...c, unread: 0 } : c);
                           // Persistir la lectura para que el contador sea consistente

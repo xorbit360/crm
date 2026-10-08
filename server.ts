@@ -1847,14 +1847,14 @@ async function createServer() {
       if (!currentDB.chats) currentDB.chats = [];
       const chatIdx = currentDB.chats.findIndex((c: any) => c.phone && c.phone.replace(/\D/g, '') === cleanPhone);
       if (chatIdx !== -1) {
-        currentDB.chats[chatIdx].message = msg.text;
-        currentDB.chats[chatIdx].time = nowStr;
-        currentDB.chats[chatIdx].channelId = socialPlatform === 'instagram' ? 'instagram' : currentDB.chats[chatIdx].channelId;
-        currentDB.chats[chatIdx].platform = socialPlatform;
-        currentDB.chats[chatIdx].conversationId = zernioConversationId || currentDB.chats[chatIdx].conversationId;
-        currentDB.chats[chatIdx].externalId = msg.senderId || currentDB.chats[chatIdx].externalId;
-        if (profileAvatar) currentDB.chats[chatIdx].avatar = profileAvatar;
-        if (incomingMessage) currentDB.chats[chatIdx].unread = (Number(currentDB.chats[chatIdx].unread) || 0) + 1;
+        const updatedChat = { ...currentDB.chats[chatIdx], message: msg.text, time: nowStr,
+          channelId: socialPlatform === 'instagram' ? 'instagram' : currentDB.chats[chatIdx].channelId,
+          platform: socialPlatform, conversationId: zernioConversationId || currentDB.chats[chatIdx].conversationId,
+          externalId: msg.senderId || currentDB.chats[chatIdx].externalId,
+          ...(profileAvatar ? { avatar: profileAvatar } : {}),
+          ...(incomingMessage ? { unread: (Number(currentDB.chats[chatIdx].unread) || 0) + 1 } : {}) };
+        currentDB.chats.splice(chatIdx, 1);
+        currentDB.chats.unshift(updatedChat);
       } else {
         currentDB.chats.unshift({
           id: `CH-${Date.now().toString().slice(-4)}`,
