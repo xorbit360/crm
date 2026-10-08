@@ -451,18 +451,26 @@ async function setupEvolutionWebhook(instanceName: string, appHostUrl?: string) 
   }
 }
 
-// Find actual active instance on VPS (supporting aliases e.g. +573192392853_admin <-> channel-default)
+function isGenericEvolutionInstanceAlias(instanceName: string): boolean {
+  const normalized = String(instanceName || '').trim().toLowerCase();
+  return !normalized || normalized === 'channel-default' || normalized === 'evolution_whatsapp' || normalized === 'whatsapp';
+}
+
+// Find the requested instance without silently routing a message through an
+// unrelated account. Generic legacy aliases may resolve to the sole open
+// instance, while an explicit instance name always remains exact.
 async function resolveActualEvolutionInstance(instanceName: string): Promise<string> {
+  const requestedInstance = String(instanceName || '').trim() || 'channel-default';
   try {
     const listRes = await evolutionRequest('/instance/fetchInstances', { timeoutMs: 5000 });
     if (listRes.ok && Array.isArray(listRes.data)) {
       // 1. Direct match if open
-      const exact = listRes.data.find((i: any) => i.name === instanceName || i.instanceName === instanceName);
+      const exact = listRes.data.find((i: any) => i.name === requestedInstance || i.instanceName === requestedInstance);
       if (exact && exact.connectionStatus === 'open') {
-        return exact.name || instanceName;
+        return exact.name || exact.instanceName || requestedInstance;
       }
       // 2. Phone match if exact is not open
-      const cleanPhoneMatch = instanceName.match(/(\d{8,15})/);
+      const cleanPhoneMatch = requestedInstance.match(/(\d{8,15})/);
       if (cleanPhoneMatch) {
         const phone = cleanPhoneMatch[1];
         const matchByPhone = listRes.data.find((i: any) =>
@@ -470,18 +478,22 @@ async function resolveActualEvolutionInstance(instanceName: string): Promise<str
           ((i.ownerJid && i.ownerJid.includes(phone)) || (i.number && i.number.includes(phone)))
         );
         if (matchByPhone) {
-          return matchByPhone.name || instanceName;
+          return matchByPhone.name || matchByPhone.instanceName || requestedInstance;
         }
       }
-      // 3. Fallback: Any open instance on VPS
-      const anyOpen = listRes.data.find((i: any) => i.connectionStatus === 'open');
-      if (anyOpen && anyOpen.name) {
-        return anyOpen.name;
+
+      // 3. Only generic legacy aliases can fall back, and only when the
+      // destination is unambiguous. This prevents cross-account sends.
+      if (isGenericEvolutionInstanceAlias(requestedInstance)) {
+        const openInstances = listRes.data.filter((i: any) => i.connectionStatus === 'open');
+        if (openInstances.length === 1) {
+          return openInstances[0].name || openInstances[0].instanceName || requestedInstance;
+        }
       }
-      if (exact) return exact.name || instanceName;
+      if (exact) return exact.name || exact.instanceName || requestedInstance;
     }
   } catch (e) {}
-  return instanceName;
+  return requestedInstance;
 }
 
 async function getEvolutionConnectionState(instanceName: string) {
@@ -602,18 +614,73 @@ async function getEvolutionPairingCode(instanceName: string, phoneNumber: string
   }
 }
 
-async function sendEvolutionTextMessage(instanceName: string, number: string, text: string) {
-  const cleanNumber = number.replace(/\D/g, '');
+function normalizeEvolutionRecipient(number: string, remoteJid?: string): string {
+  const preferred = String(remoteJid || number || '').trim();
+  const jidMatch = preferred.match(/^([^@]+)@(lid|s\.whatsapp\.net)$/i);
+  if (jidMatch) {
+    const local = jidMatch[1].split(':')[0].replace(/\D/g, '');
+    if (local) return `${local}@${jidMatch[2].toLowerCase()}`;
+  }
+  return preferred.replace(/\D/g, '');
+}
+
+type RecentEvolutionOutbound = {
+  instance: string;
+  recipient: string;
+  text: string;
+  messageId?: string;
+  timestamp: number;
+};
+const recentEvolutionOutbounds: RecentEvolutionOutbound[] = [];
+
+function rememberEvolutionOutbound(instance: string, recipient: string, text: string, response: any) {
+  const item: RecentEvolutionOutbound = {
+    instance,
+    recipient,
+    text,
+    messageId: response?.data?.key?.id || response?.data?.messageId || response?.data?.id,
+    timestamp: Date.now()
+  };
+  recentEvolutionOutbounds.push(item);
+  const cutoff = Date.now() - 2 * 60 * 1000;
+  while (recentEvolutionOutbounds.length && recentEvolutionOutbounds[0].timestamp < cutoff) {
+    recentEvolutionOutbounds.shift();
+  }
+  return item;
+}
+
+function isEvolutionServerEcho(instance: string, data: any, text: string): boolean {
+  const cutoff = Date.now() - 30 * 1000;
+  const messageId = String(data?.key?.id || '');
+  const remoteJid = String(data?.key?.remoteJid || '');
+  return recentEvolutionOutbounds.some(item =>
+    item.timestamp >= cutoff &&
+    item.instance === instance &&
+    ((messageId && item.messageId === messageId) ||
+      (item.text === text && (!remoteJid || item.recipient === remoteJid || item.recipient.replace(/\D/g, '') === remoteJid.replace(/\D/g, ''))))
+  );
+}
+
+async function sendEvolutionTextMessage(instanceName: string, number: string, text: string, remoteJid?: string) {
+  const recipient = normalizeEvolutionRecipient(number, remoteJid);
   const actualInstance = await resolveActualEvolutionInstance(instanceName);
   const encoded = encodeURIComponent(actualInstance);
-  return await evolutionRequest(`/message/sendText/${encoded}`, {
+  const pending = rememberEvolutionOutbound(actualInstance, recipient, text, {});
+  const response = await evolutionRequest(`/message/sendText/${encoded}`, {
     method: 'POST',
     body: {
-      number: cleanNumber,
+      number: recipient,
       text: text
     },
     timeoutMs: 12000
   });
+  if (response?.ok) {
+    pending.messageId = response?.data?.key?.id || response?.data?.messageId || response?.data?.id;
+  } else {
+    const index = recentEvolutionOutbounds.indexOf(pending);
+    if (index >= 0) recentEvolutionOutbounds.splice(index, 1);
+  }
+  return response;
 }
 
 async function sendEvolutionMediaMessage(
@@ -623,9 +690,10 @@ async function sendEvolutionMediaMessage(
   media: string,
   caption = '',
   fileName = 'archivo',
-  mimetype?: string
+  mimetype?: string,
+  remoteJid?: string
 ) {
-  const cleanNumber = number.replace(/\D/g, '');
+  const recipient = normalizeEvolutionRecipient(number, remoteJid);
   const actualInstance = await resolveActualEvolutionInstance(instanceName);
   const encoded = encodeURIComponent(actualInstance);
 
@@ -645,19 +713,22 @@ async function sendEvolutionMediaMessage(
       const audioRes = await evolutionRequest(`/message/sendWhatsAppAudio/${encoded}`, {
         method: 'POST',
         body: {
-          number: cleanNumber,
+          number: recipient,
           audio: cleanMedia
         },
         timeoutMs: 20000
       });
-      if (audioRes.ok) return audioRes;
+      if (audioRes.ok) {
+        rememberEvolutionOutbound(actualInstance, recipient, caption || '[audio]', audioRes);
+        return audioRes;
+      }
     } catch (e) {
       console.warn('[Evolution API] sendWhatsAppAudio fallback to sendMedia:', e);
     }
   }
 
   const payload: any = {
-    number: cleanNumber,
+    number: recipient,
     mediatype: normalizedType,
     media: cleanMedia,
     caption: caption || '',
@@ -667,22 +738,24 @@ async function sendEvolutionMediaMessage(
     payload.mimetype = extractedMime;
   }
 
-  return await evolutionRequest(`/message/sendMedia/${encoded}`, {
+  const response = await evolutionRequest(`/message/sendMedia/${encoded}`, {
     method: 'POST',
     body: payload,
     timeoutMs: 20000
   });
+  if (response?.ok) rememberEvolutionOutbound(actualInstance, recipient, caption || `[${normalizedType}]`, response);
+  return response;
 }
 
-async function fetchEvolutionProfilePicture(instanceName: string, number: string): Promise<string | null> {
+async function fetchEvolutionProfilePicture(instanceName: string, number: string, remoteJid?: string): Promise<string | null> {
   try {
-    const cleanNumber = number.replace(/\D/g, '');
-    if (!cleanNumber) return null;
+    const recipient = normalizeEvolutionRecipient(number, remoteJid);
+    if (!recipient) return null;
     const actualInstance = await resolveActualEvolutionInstance(instanceName);
     const encoded = encodeURIComponent(actualInstance);
     const res = await evolutionRequest(`/chat/fetchProfilePictureUrl/${encoded}`, {
       method: 'POST',
-      body: { number: cleanNumber },
+      body: { number: recipient },
       timeoutMs: 6000
     });
     if (res.ok && res.data && (res.data.profilePictureUrl || res.data.url)) {
@@ -981,7 +1054,10 @@ Responde ÚNICAMENTE con un objeto JSON en el siguiente formato, sin bloques de 
       if (clientSock) {
         await clientSock.sendMessage(senderJid, { text: cleanReplyText });
       } else {
-        await sendEvolutionTextMessage(channelId, phone, cleanReplyText);
+        const evoResult = await sendEvolutionTextMessage(channelId, phone, cleanReplyText, senderJid);
+        if (!evoResult?.ok) {
+          throw new Error(evoResult?.data?.response?.message || evoResult?.data?.message || `Evolution API rechazó el mensaje (${evoResult?.status || 'sin estado'})`);
+        }
       }
 
       if (!currentDB.messagesHistory) currentDB.messagesHistory = {};
@@ -1031,7 +1107,8 @@ Responde ÚNICAMENTE con un objeto JSON en el siguiente formato, sin bloques de 
               });
             } else {
               const base64Audio = `data:audio/ogg;base64,${oggBuffer.toString('base64')}`;
-              await sendEvolutionMediaMessage(channelId, phone, 'audio', base64Audio, '', attachedMedia.name || 'Nota_de_voz_PTT.ogg');
+              const evoResult = await sendEvolutionMediaMessage(channelId, phone, 'audio', base64Audio, '', attachedMedia.name || 'Nota_de_voz_PTT.ogg', undefined, senderJid);
+              if (!evoResult?.ok) throw new Error(evoResult?.data?.message || `Evolution API rechazó el audio (${evoResult?.status || 'sin estado'})`);
             }
 
             if (!currentDB.messagesHistory[phone]) currentDB.messagesHistory[phone] = [];
@@ -1051,21 +1128,24 @@ Responde ÚNICAMENTE con un objeto JSON en el siguiente formato, sin bloques de 
               await clientSock.sendMessage(senderJid, { image: mediaBuffer, caption: cleanReplyText || '' });
             } else {
               const base64Img = `data:image/jpeg;base64,${mediaBuffer.toString('base64')}`;
-              await sendEvolutionMediaMessage(channelId, phone, 'image', base64Img, cleanReplyText || '', attachedMedia.name || 'imagen.jpg');
+              const evoResult = await sendEvolutionMediaMessage(channelId, phone, 'image', base64Img, cleanReplyText || '', attachedMedia.name || 'imagen.jpg', undefined, senderJid);
+              if (!evoResult?.ok) throw new Error(evoResult?.data?.message || `Evolution API rechazó la imagen (${evoResult?.status || 'sin estado'})`);
             }
           } else if (attachedMedia.type === 'video') {
             if (clientSock) {
               await clientSock.sendMessage(senderJid, { video: mediaBuffer, caption: cleanReplyText || '' });
             } else {
               const base64Vid = `data:video/mp4;base64,${mediaBuffer.toString('base64')}`;
-              await sendEvolutionMediaMessage(channelId, phone, 'video', base64Vid, cleanReplyText || '', attachedMedia.name || 'video.mp4');
+              const evoResult = await sendEvolutionMediaMessage(channelId, phone, 'video', base64Vid, cleanReplyText || '', attachedMedia.name || 'video.mp4', undefined, senderJid);
+              if (!evoResult?.ok) throw new Error(evoResult?.data?.message || `Evolution API rechazó el video (${evoResult?.status || 'sin estado'})`);
             }
           } else if (attachedMedia.type === 'archivo') {
             if (clientSock) {
               await clientSock.sendMessage(senderJid, { document: mediaBuffer, fileName: attachedMedia.name || 'archivo', caption: cleanReplyText || '' });
             } else {
               const base64Doc = `data:application/octet-stream;base64,${mediaBuffer.toString('base64')}`;
-              await sendEvolutionMediaMessage(channelId, phone, 'document', base64Doc, cleanReplyText || '', attachedMedia.name || 'archivo');
+              const evoResult = await sendEvolutionMediaMessage(channelId, phone, 'document', base64Doc, cleanReplyText || '', attachedMedia.name || 'archivo', undefined, senderJid);
+              if (!evoResult?.ok) throw new Error(evoResult?.data?.message || `Evolution API rechazó el archivo (${evoResult?.status || 'sin estado'})`);
             }
           }
         }
@@ -1898,46 +1978,66 @@ async function createServer() {
     try {
       const msg = event.message;
       if (!msg) return;
+      const eventType = String(event.eventType || '').toLowerCase();
+      if (!['message.received', 'message.sent', 'comment.received', 'comment.created'].includes(eventType)) return;
       if (!currentDB.chats) currentDB.chats = [];
-      const stableSocialId = String(msg.conversationId || msg.raw?.conversationId || msg.raw?.data?.conversationId || msg.senderId || msg.senderPhone || '').trim();
-      const zernioConversationId = msg.conversationId || msg.raw?.conversationId || msg.raw?.data?.conversationId || '';
-      const existingConversation = zernioConversationId
-        ? currentDB.chats.find((c: any) => c.conversationId && String(c.conversationId) === String(zernioConversationId))
-        : undefined;
-      const incomingMessage = msg.direction !== 'outgoing';
-      const identitySource = incomingMessage
-        ? (msg.senderPhone || msg.senderId || zernioConversationId)
-        : (existingConversation?.phone || existingConversation?.externalId || zernioConversationId || msg.senderPhone || msg.senderId);
-      const cleanPhone = String(identitySource || '').replace(/\D/g, '') || `social-${stableSocialId.replace(/[^a-zA-Z0-9_-]/g, '')}`;
-      if (!cleanPhone) return;
-
-      const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       const rawEvent: any = event.raw || {};
       const rawData: any = rawEvent.data || {};
       const rawMessage: any = rawEvent.message || rawData.message || {};
       const rawConversation: any = rawEvent.conversation || rawData.conversation || {};
+      const zernioConversationId = msg.conversationId || rawEvent.conversationId || rawData.conversationId || rawConversation.id || '';
+      const incomingMessage = msg.direction !== 'outgoing';
+      const socialPlatform = String(rawEvent.platform || rawData.platform || rawMessage.platform || 'instagram').toLowerCase();
+      const participantId = String(
+        incomingMessage
+          ? (msg.senderId || rawConversation.participantId || rawData.participantId || '')
+          : (rawConversation.participantId || rawData.participantId || rawData.recipientId || rawMessage.recipientId || rawMessage.recipient?.id || '')
+      ).trim();
+      const participantUsername = String(rawConversation.participantUsername || rawData.participantUsername || rawMessage.recipient?.username || '').replace(/^@/, '').trim();
+      const socialAccountId = String(rawEvent.accountId || rawData.accountId || rawMessage.accountId || '').trim();
+      const stableSocialId = String(zernioConversationId || participantId || msg.senderId || msg.senderPhone || '').trim();
+      const existingConversation = currentDB.chats.find((c: any) => {
+        const samePlatform = String(c.platform || c.channelId || '').toLowerCase().includes(socialPlatform === 'facebook' ? 'messenger' : socialPlatform);
+        if (!samePlatform) return false;
+        if (zernioConversationId && c.conversationId && String(c.conversationId) === String(zernioConversationId)) return true;
+        if (participantId && [c.participantId, c.externalId, String(c.phone || '').replace(/\D/g, '')].some((value: any) => String(value || '') === participantId)) return true;
+        if (participantUsername && String(c.participantUsername || '').replace(/^@/, '').toLowerCase() === participantUsername.toLowerCase()) return true;
+        return false;
+      });
+
+      // A message.sent event identifies the business account as sender. When
+      // no customer thread can be resolved, ignoring the echo is safer than
+      // creating a fake chat for our own Instagram account.
+      if (!incomingMessage && !existingConversation) return;
+      const identitySource = incomingMessage
+        ? (msg.senderPhone || participantId || msg.senderId || zernioConversationId)
+        : (existingConversation?.phone || existingConversation?.participantId || existingConversation?.externalId || participantId || zernioConversationId);
+      const cleanPhone = String(identitySource || '').replace(/\D/g, '') || `social-${stableSocialId.replace(/[^a-zA-Z0-9_-]/g, '')}`;
+      if (!cleanPhone) return;
+
+      const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       const profileAvatar = msg.senderAvatar ||
         rawMessage.sender?.profilePicture || rawMessage.sender?.profilePictureUrl || rawMessage.sender?.profile_picture || rawMessage.sender?.avatar ||
         rawConversation.participantPicture || rawConversation.participantProfilePicture ||
         msg.raw?.sender?.profile_picture || msg.raw?.sender?.profilePicture || msg.raw?.sender?.profilePictureUrl || msg.raw?.sender?.avatar ||
         rawData.sender?.profile_picture || rawData.sender?.profilePicture || rawData.sender?.profilePictureUrl || rawData.sender?.avatar ||
         rawData.participantPicture || rawData.profile_picture || rawData.profilePicture || rawData.profilePictureUrl || '';
-      const socialPlatform = String(msg.raw?.platform || msg.raw?.data?.platform || rawEvent.platform || existingConversation?.platform || existingConversation?.channelId || 'instagram').toLowerCase();
       if (!currentDB.messagesHistory) currentDB.messagesHistory = {};
       if (!currentDB.messagesHistory[cleanPhone]) currentDB.messagesHistory[cleanPhone] = [];
 
       currentDB.messagesHistory[cleanPhone].push({
+        id: msg.id || undefined,
         role: msg.direction === 'outgoing' ? 'agent' : 'client',
-        source: `social_${msg.raw?.platform || msg.raw?.data?.platform || 'omnichannel'}`,
+        source: `social_${socialPlatform || 'omnichannel'}`,
         fromMobile: msg.direction === 'outgoing',
         text: msg.text,
         time: nowStr,
-        timestamp: Date.now()
+        timestamp: msg.timestamp || Date.now()
       });
 
       // Los comentarios de publicaciones e historias también deben quedar
       // disponibles en el módulo "Comentarios Redes".
-      if (event.eventType === 'comment.received' || event.eventType === 'comment.created') {
+      if (eventType === 'comment.received' || eventType === 'comment.created') {
         if (!Array.isArray(currentDB.socialComments)) currentDB.socialComments = [];
         const raw: any = event.raw || {};
         const data: any = raw.data || {};
@@ -1970,15 +2070,18 @@ async function createServer() {
       const chatIdx = currentDB.chats.findIndex((c: any) => {
         if (zernioConversationId && c.conversationId && String(c.conversationId) === String(zernioConversationId)) return true;
         if (c?.platform !== socialPlatform && c?.channelId !== socialPlatform) return false;
-        if (msg.senderId && c.externalId && String(c.externalId) === String(msg.senderId)) return true;
+        if (participantId && [c.participantId, c.externalId].some((value: any) => String(value || '') === participantId)) return true;
         return Boolean(c.phone && c.phone.replace(/\D/g, '') === cleanPhone);
       });
       if (chatIdx !== -1) {
         const updatedChat = { ...currentDB.chats[chatIdx], message: msg.text, time: nowStr, timestamp: Date.now(),
           channelId: socialPlatform === 'instagram' ? 'instagram' : currentDB.chats[chatIdx].channelId,
           platform: socialPlatform, conversationId: zernioConversationId || currentDB.chats[chatIdx].conversationId,
-          externalId: incomingMessage ? (msg.senderId || currentDB.chats[chatIdx].externalId) : currentDB.chats[chatIdx].externalId,
-          ...(profileAvatar ? { avatar: profileAvatar } : {}),
+          externalId: participantId || currentDB.chats[chatIdx].externalId,
+          participantId: participantId || currentDB.chats[chatIdx].participantId,
+          participantUsername: participantUsername || currentDB.chats[chatIdx].participantUsername,
+          accountId: socialAccountId || currentDB.chats[chatIdx].accountId,
+          ...(profileAvatar && incomingMessage ? { avatar: profileAvatar } : {}),
           ...(incomingMessage ? { unread: (Number(currentDB.chats[chatIdx].unread) || 0) + 1 } : {}) };
         currentDB.chats.splice(chatIdx, 1);
         currentDB.chats.unshift(updatedChat);
@@ -1996,7 +2099,10 @@ async function createServer() {
           ,channelId: socialPlatform === 'instagram' ? 'instagram' : 'whatsapp'
           ,platform: socialPlatform
           ,conversationId: zernioConversationId || undefined
-          ,externalId: msg.senderId || undefined
+          ,externalId: participantId || msg.senderId || undefined
+          ,participantId: participantId || msg.senderId || undefined
+          ,participantUsername: participantUsername || undefined
+          ,accountId: socialAccountId || undefined
         });
       }
       saveDBData(currentDB);
@@ -2290,9 +2396,15 @@ async function createServer() {
         replies = ["¡Hola! ¿En qué te podemos colaborar hoy con La Mona?"];
       }
 
-      const activeId = channelId || 'channel-default';
-      const clientSock = activeSockets[activeId] || getAnyConnectedSock();
-      const senderJid = `${cleanPhone}@s.whatsapp.net`;
+      const activeId = chatObj?.instanceName || channelId || chatObj?.channelId || 'channel-default';
+      const storedRemoteJid = chatObj?.remoteJid || '';
+      // A stored remote JID identifies an Evolution-backed conversation. Do
+      // not reroute it through an unrelated Baileys socket just because one is
+      // connected elsewhere on the server.
+      const clientSock = storedRemoteJid
+        ? null
+        : (activeSockets[activeId] || (activeId === 'channel-default' ? getAnyConnectedSock() : null));
+      const senderJid = storedRemoteJid || `${cleanPhone}@s.whatsapp.net`;
 
       await sendWhatsAppBotReplies(
         clientSock,
@@ -2379,14 +2491,31 @@ async function createServer() {
   // API Route: Send manual agent replies/files over the WhatsApp connection
   app.post("/api/whatsapp/reply", async (req, res) => {
     try {
-      const { phone, message, type, mediaBase64, isPtt, fileName, channelId } = req.body;
+      const { phone, message, type, mediaBase64, isPtt, fileName, channelId, remoteJid } = req.body;
       const targetPhone = (phone || '').replace(/\D/g, '');
       if (!targetPhone) {
         return res.status(400).json({ success: false, error: "Falta el número de teléfono (phone)" });
       }
 
-      const activeId = channelId || 'channel-default';
-      const clientSock = activeSockets[activeId] || getAnyConnectedSock();
+      const storedChat = (currentDB.chats || []).find((chat: any) =>
+        !/instagram|messenger|facebook|tiktok/i.test(`${chat?.platform || ''} ${chat?.channelId || ''}`) &&
+        String(chat?.phone || '').replace(/\D/g, '') === targetPhone
+      );
+      const requestedChannel = String(channelId || '').trim();
+      const effectiveRemoteJid = remoteJid || storedChat?.remoteJid || '';
+      const activeId = storedChat?.instanceName ||
+        (requestedChannel && requestedChannel !== 'evolution_whatsapp' ? requestedChannel : '') ||
+        'channel-default';
+      const isEvolutionConversation = Boolean(
+        effectiveRemoteJid ||
+        storedChat?.instanceName ||
+        requestedChannel.toLowerCase().includes('evolution')
+      );
+      // Never borrow a socket from another WhatsApp account for an Evolution
+      // conversation.  Its exact instance and remote JID are authoritative.
+      const clientSock = isEvolutionConversation
+        ? null
+        : (activeSockets[activeId] || (activeId === 'channel-default' ? getAnyConnectedSock() : null));
 
       const normalizedType = type === 'imagen' || type === 'image' ? 'imagen' :
                              (type === 'audio' ? 'audio' :
@@ -2418,9 +2547,11 @@ async function createServer() {
         if (evoConfig.isConfigured) {
           if (normalizedType === 'audio' || mediaBase64) {
             const evoMediaType = normalizedType === 'audio' ? 'audio' : (normalizedType === 'imagen' ? 'image' : (normalizedType === 'video' ? 'video' : 'document'));
-            await sendEvolutionMediaMessage(activeId, targetPhone, evoMediaType, mediaBase64, message || "", effectiveFileName, detectedMime);
+            const evoResult = await sendEvolutionMediaMessage(activeId, targetPhone, evoMediaType, mediaBase64, message || "", effectiveFileName, detectedMime, effectiveRemoteJid);
+            if (!evoResult?.ok) throw new Error(evoResult?.data?.response?.message || evoResult?.data?.message || `Evolution API rechazó el archivo (${evoResult?.status || 'sin estado'})`);
           } else {
-            await sendEvolutionTextMessage(activeId, targetPhone, message || "");
+            const evoResult = await sendEvolutionTextMessage(activeId, targetPhone, message || "", effectiveRemoteJid);
+            if (!evoResult?.ok) throw new Error(evoResult?.data?.response?.message || evoResult?.data?.message || `Evolution API rechazó el mensaje (${evoResult?.status || 'sin estado'})`);
           }
 
           if (!currentDB.messagesHistory) currentDB.messagesHistory = {};
@@ -3851,6 +3982,13 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
     const { text, isImage, isAudio, isVideo, isDocument } = extractEvolutionMsgTextAndMedia(data.message);
     const nowStr = new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
 
+    // Evolution emits our own API send again as messages.upsert. The caller
+    // already persisted it, so do not duplicate it or mistake it for a manual
+    // mobile reply (which would incorrectly pause the AI).
+    if (data.key.fromMe && isEvolutionServerEcho(instance, data, text)) {
+      return;
+    }
+
     // Build rich attachment object if message contains media
     let attachment: any = undefined;
     if (isImage) {
@@ -3899,7 +4037,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
     // Fetch and cache profile picture
     if (!currentDB.profilePictures) currentDB.profilePictures = {};
     if (!currentDB.profilePictures[cleanPhone]) {
-      fetchEvolutionProfilePicture(instance, cleanPhone).then(avatarUrl => {
+      fetchEvolutionProfilePicture(instance, cleanPhone, senderJid).then(avatarUrl => {
         if (avatarUrl) {
           currentDB.profilePictures[cleanPhone] = avatarUrl;
           if (currentDB.chats) {
@@ -3941,6 +4079,8 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
         if (chatIdx !== -1) {
           currentDB.chats[chatIdx].message = displayText;
           currentDB.chats[chatIdx].time = nowStr;
+          currentDB.chats[chatIdx].instanceName = instance;
+          currentDB.chats[chatIdx].remoteJid = senderJid;
           if (cachedAvatar && !currentDB.chats[chatIdx].avatar) currentDB.chats[chatIdx].avatar = cachedAvatar;
         } else {
           currentDB.chats.unshift({
@@ -3949,6 +4089,8 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
             phone: `+${cleanPhone}`,
             platform: 'whatsapp',
             channelId: 'evolution_whatsapp',
+            instanceName: instance,
+            remoteJid: senderJid,
             avatar: cachedAvatar,
             message: displayText,
             time: nowStr,
@@ -3979,7 +4121,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
     if (!currentDB.chats) currentDB.chats = [];
     const chatIdx = findEvolutionChatIndex(cleanPhone);
     if (chatIdx !== -1) {
-      const updatedChat = { ...currentDB.chats[chatIdx], message: incomingDisplayText, time: nowStr, timestamp: Date.now(), status: 'en_conversacion', unread: (Number(currentDB.chats[chatIdx].unread) || 0) + 1, platform: 'whatsapp', channelId: 'evolution_whatsapp' };
+      const updatedChat = { ...currentDB.chats[chatIdx], message: incomingDisplayText, time: nowStr, timestamp: Date.now(), status: 'en_conversacion', unread: (Number(currentDB.chats[chatIdx].unread) || 0) + 1, platform: 'whatsapp', channelId: 'evolution_whatsapp', instanceName: instance, remoteJid: senderJid };
       if (shouldReplaceEvolutionAvatar(updatedChat.avatar, cachedAvatar)) updatedChat.avatar = cachedAvatar;
       if (senderName && senderName !== `+${cleanPhone}`) {
         updatedChat.sender = senderName;
@@ -3993,6 +4135,8 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
         phone: `+${cleanPhone}`,
         platform: 'whatsapp',
         channelId: 'evolution_whatsapp',
+        instanceName: instance,
+        remoteJid: senderJid,
         avatar: cachedAvatar,
         message: incomingDisplayText,
         time: nowStr,
@@ -4193,7 +4337,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
 
         // Fetch avatar if not cached
         if (!currentDB.profilePictures[cleanPhone]) {
-          fetchEvolutionProfilePicture(instName, cleanPhone).then(pUrl => {
+          fetchEvolutionProfilePicture(instName, cleanPhone, remoteJid).then(pUrl => {
             if (pUrl) {
               currentDB.profilePictures[cleanPhone] = pUrl;
               const ch = currentDB.chats.find((c: any) => !isSocialChat(c) && c.phone && c.phone.replace(/\D/g, '') === cleanPhone);
@@ -4211,6 +4355,8 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
           currentDB.chats[chatIdx].message = displayText;
           currentDB.chats[chatIdx].platform = 'whatsapp';
           currentDB.chats[chatIdx].channelId = 'evolution_whatsapp';
+          currentDB.chats[chatIdx].instanceName = instName;
+          currentDB.chats[chatIdx].remoteJid = remoteJid;
           currentDB.chats[chatIdx].time = timeStr;
           currentDB.chats[chatIdx].timestamp = timestampMs;
           if (shouldReplaceEvolutionAvatar(currentDB.chats[chatIdx].avatar, avatarUrl)) currentDB.chats[chatIdx].avatar = avatarUrl;
@@ -4224,6 +4370,8 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
             phone: `+${cleanPhone}`,
             platform: 'whatsapp',
             channelId: 'evolution_whatsapp',
+            instanceName: instName,
+            remoteJid,
             avatar: avatarUrl,
             message: displayText,
             time: timeStr,

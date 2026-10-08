@@ -17,7 +17,9 @@ export interface OutboundMessageParams {
   conversationId?: string;
   // O destinatario para abrir conversación nueva
   recipientPhone?: string; // Para WhatsApp
-  platform?: 'whatsapp' | 'instagram' | 'messenger';
+  participantId?: string; // Instagram / Messenger
+  participantUsername?: string;
+  platform?: 'whatsapp' | 'instagram' | 'messenger' | 'facebook';
   // Contenido
   text?: string;
   // Si se usa plantilla
@@ -81,11 +83,97 @@ export function isWithin24Hours(lastInboundAt?: string | number | Date): boolean
   return elapsed <= 24 * 60 * 60 * 1000;
 }
 
+function cleanIdentifier(value: unknown): string {
+  return String(value || '').trim();
+}
+
+function cleanUsername(value: unknown): string {
+  return cleanIdentifier(value).replace(/^@/, '').toLowerCase();
+}
+
+/**
+ * Instagram/Facebook only allow replies to an existing thread. Webhook-created
+ * CRM cards can temporarily be missing the conversation or account identifier,
+ * so recover both from the inbox before sending.
+ */
+async function resolveExistingSocialConversation(params: OutboundMessageParams): Promise<{
+  conversationId?: string;
+  accountId?: string;
+  error?: string;
+}> {
+  const suppliedConversationId = cleanIdentifier(params.conversationId);
+  const suppliedAccountId = cleanIdentifier(params.accountId);
+
+  if (suppliedConversationId && suppliedAccountId) {
+    return { conversationId: suppliedConversationId, accountId: suppliedAccountId };
+  }
+
+  const query = new URLSearchParams({ limit: '100' });
+  if (suppliedAccountId) query.set('accountId', suppliedAccountId);
+  const lookup = await zernioRequest<any>({
+    method: 'GET',
+    path: `/v1/inbox/conversations?${query.toString()}`
+  });
+
+  if (lookup.success === false) {
+    return { error: lookup.error?.message || 'No fue posible consultar la conversación del canal conectado' };
+  }
+
+  const payload: any = lookup.data || {};
+  const conversations: any[] = Array.isArray(payload)
+    ? payload
+    : (Array.isArray(payload.data) ? payload.data : (Array.isArray(payload.conversations) ? payload.conversations : []));
+  const participantId = cleanIdentifier(params.participantId || params.recipientPhone);
+  const participantUsername = cleanUsername(params.participantUsername);
+  const expectedPlatform = params.platform === 'messenger' ? 'facebook' : String(params.platform || '').toLowerCase();
+
+  const matching = conversations
+    .filter((conversation: any) => {
+      const candidatePlatform = String(conversation?.platform || '').toLowerCase();
+      if (expectedPlatform && candidatePlatform && candidatePlatform !== expectedPlatform) return false;
+
+      const candidateIds = [
+        conversation?.id,
+        conversation?._id,
+        conversation?.participantId,
+        conversation?.externalId,
+        conversation?.platformConversationId,
+        conversation?.contact?.id
+      ].map(cleanIdentifier).filter(Boolean);
+      const candidateUsernames = [
+        conversation?.participantUsername,
+        conversation?.username,
+        conversation?.contact?.username
+      ].map(cleanUsername).filter(Boolean);
+
+      return Boolean(
+        (suppliedConversationId && candidateIds.includes(suppliedConversationId)) ||
+        (participantId && candidateIds.includes(participantId)) ||
+        (participantUsername && candidateUsernames.includes(participantUsername))
+      );
+    })
+    .sort((a: any, b: any) => {
+      const aTime = new Date(a?.lastMessageAt || a?.updatedTime || a?.updatedAt || 0).getTime();
+      const bTime = new Date(b?.lastMessageAt || b?.updatedTime || b?.updatedAt || 0).getTime();
+      return bTime - aTime;
+    })[0];
+
+  if (!matching) {
+    return { error: 'No se encontró una conversación activa para este contacto. Sincroniza el canal e inténtalo nuevamente.' };
+  }
+
+  return {
+    conversationId: cleanIdentifier(matching.id || matching._id),
+    accountId: cleanIdentifier(matching.accountId || suppliedAccountId)
+  };
+}
+
 /**
  * Función principal unificada de envío (Prompt 6)
  */
 export async function enviarMensajeZernio(params: OutboundMessageParams): Promise<OutboundMessageResult> {
   const platform = params.platform || 'whatsapp';
+  const isMetaSocial = platform === 'instagram' || platform === 'messenger' || platform === 'facebook';
   const inside24h = isWithin24Hours(params.lastInboundAt);
 
   // Validación de ventana de 24 horas en WhatsApp
@@ -99,11 +187,34 @@ export async function enviarMensajeZernio(params: OutboundMessageParams): Promis
 
   const idempotencyKey = params.idempotencyKey || `msg_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 
+  let conversationId = cleanIdentifier(params.conversationId);
+  let accountId = cleanIdentifier(params.accountId);
+
+  // Avoid falling through to the create-conversation endpoint when a social
+  // chat imported from a webhook is missing one of its identifiers.
+  if (isMetaSocial && (!conversationId || !accountId)) {
+    const resolved = await resolveExistingSocialConversation(params);
+    if (resolved.error || !resolved.conversationId || !resolved.accountId) {
+      return {
+        success: false,
+        error: resolved.error || 'No se pudo identificar la conversación del canal conectado'
+      };
+    }
+    conversationId = resolved.conversationId;
+    accountId = resolved.accountId;
+  }
+
   // CASO A: Conversación existente (POST /v1/inbox/conversations/{id}/messages)
-  if (params.conversationId) {
+  if (conversationId) {
     const body: any = {};
-    if (params.accountId) body.accountId = params.accountId;
+    if (accountId) body.accountId = accountId;
     if (params.platform) body.platform = params.platform;
+    if (isMetaSocial) {
+      const participantId = cleanIdentifier(params.participantId || params.recipientPhone);
+      const participantUsername = cleanIdentifier(params.participantUsername);
+      if (participantId) body.participantId = participantId;
+      if (participantUsername) body.participantUsername = participantUsername;
+    }
     if (params.template) {
       body.template = {
         elements: [
@@ -114,7 +225,10 @@ export async function enviarMensajeZernio(params: OutboundMessageParams): Promis
           }
         ]
       };
-      if (params.text) body.text = params.text;
+      if (params.text) {
+        body.text = params.text;
+        body.message = params.text;
+      }
     } else {
       body.text = params.text;
       body.message = params.text;
@@ -122,7 +236,7 @@ export async function enviarMensajeZernio(params: OutboundMessageParams): Promis
 
     const res = await zernioRequest({
       method: 'POST',
-      path: `/v1/inbox/conversations/${params.conversationId}/messages`,
+      path: `/v1/inbox/conversations/${encodeURIComponent(conversationId)}/messages`,
       body,
       idempotencyKey
     });
@@ -140,7 +254,7 @@ export async function enviarMensajeZernio(params: OutboundMessageParams): Promis
     if (messageId) {
       recordRecentOutbound({
         messageId,
-        conversationId: params.conversationId,
+        conversationId,
         text: params.text,
         phone: params.recipientPhone,
         timestamp: Date.now()
@@ -150,7 +264,16 @@ export async function enviarMensajeZernio(params: OutboundMessageParams): Promis
     return {
       success: true,
       messageId,
-      conversationId: params.conversationId
+      conversationId
+    };
+  }
+
+  // Meta does not allow cold-starting an Instagram/Facebook DM through this
+  // API. Only an existing conversation can be answered.
+  if (isMetaSocial) {
+    return {
+      success: false,
+      error: 'No se encontró una conversación activa para responder. Sincroniza el canal e inténtalo nuevamente.'
     };
   }
 
@@ -166,9 +289,7 @@ export async function enviarMensajeZernio(params: OutboundMessageParams): Promis
     platform,
     recipient: params.recipientPhone
   };
-  if (params.accountId) {
-    body.accountId = params.accountId;
-  }
+  if (accountId) body.accountId = accountId;
 
   if (platform === 'whatsapp') {
     if (!params.template) {
@@ -185,7 +306,7 @@ export async function enviarMensajeZernio(params: OutboundMessageParams): Promis
     body.templateParams = params.template.params || 
       (params.template.components ? flattenComponentsToParams(params.template.components) : []);
   } else {
-    body.text = params.text;
+    body.message = params.text;
   }
 
   const res = await zernioRequest({
@@ -204,12 +325,12 @@ export async function enviarMensajeZernio(params: OutboundMessageParams): Promis
 
   const data = res.data?.data || res.data || {};
   const messageId = data.messageId || (data.messageIds && data.messageIds[0]);
-  const conversationId = data.conversationId;
+  const createdConversationId = data.conversationId;
 
   if (messageId) {
     recordRecentOutbound({
       messageId,
-      conversationId,
+      conversationId: createdConversationId,
       text: params.text,
       phone: params.recipientPhone,
       timestamp: Date.now()
@@ -219,6 +340,6 @@ export async function enviarMensajeZernio(params: OutboundMessageParams): Promis
   return {
     success: true,
     messageId,
-    conversationId
+    conversationId: createdConversationId
   };
 }

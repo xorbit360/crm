@@ -105,48 +105,189 @@ export const ContactAvatar: React.FC<{
   );
 };
 
-const dedupeInboxChats = <T extends any>(items: T[]): T[] => {
+type InboxAttachment = {
+  name: string;
+  type: 'imagen' | 'image' | 'video' | 'audio' | 'archivo' | 'document' | 'pdf';
+  url: string;
+  size?: string;
+};
+
+type InboxMessage = {
+  id?: string;
+  sender: 'bot' | 'client' | 'agent';
+  text: string;
+  time: string;
+  timestamp?: string | number;
+  attachment?: InboxAttachment;
+  fromMobile?: boolean;
+  source?: string;
+  deliveryStatus?: 'sending' | 'sent' | 'failed';
+};
+
+const normalizeInboxChannel = (chat: any): string => {
+  const raw = [chat?.platform, chat?.channelId, ...(Array.isArray(chat?.tags) ? chat.tags : [])]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+  if (raw.includes('instagram')) return 'instagram';
+  if (raw.includes('messenger') || raw.includes('facebook')) return 'messenger';
+  if (raw.includes('tiktok')) return 'tiktok';
+  if (raw.includes('telegram')) return 'telegram';
+  if (raw.includes('threads')) return 'threads';
+  if (raw.includes('linkedin')) return 'linkedin';
+  if (raw.includes('youtube')) return 'youtube';
+  if (raw.includes('zernio_whatsapp') || raw.includes('cloud') || raw.includes('official') || raw.includes('meta')) return 'whatsapp_official';
+  if (raw.includes('evolution') || (chat?.instanceName && !raw.includes('official'))) return 'whatsapp_evolution';
+  if (raw.includes('whatsapp')) return 'whatsapp';
+  return raw.trim();
+};
+
+const normalizeInboxIdentifier = (value: unknown, numericOnly = false): string => {
+  const raw = String(value || '').trim().toLowerCase();
+  if (!raw) return '';
+  const numeric = raw.replace(/\D/g, '');
+  return numericOnly || (/^\+?[\d\s()-]+$/.test(raw) && numeric.length >= 6) ? numeric : raw;
+};
+
+const getInboxChatAliases = (chat: any): string[] => {
+  const channel = normalizeInboxChannel(chat);
+  const isWhatsApp = channel.startsWith('whatsapp');
+  const values = isWhatsApp
+    ? [chat?.phone, chat?.externalId, chat?.participantId, chat?.conversationId]
+    : [chat?.participantId, chat?.participantUsername, chat?.externalId, chat?.phone, chat?.conversationId];
+  const aliases = values
+    .map(value => normalizeInboxIdentifier(value, isWhatsApp))
+    .filter(Boolean)
+    .map(value => `${channel}:${value}`);
+  if (aliases.length === 0 && chat?.name) {
+    aliases.push(`${channel}:name:${normalizeInboxIdentifier(chat.name)}`);
+  }
+  return Array.from(new Set(aliases));
+};
+
+const areSameInboxChat = (left: any, right: any): boolean => {
+  const leftChannel = normalizeInboxChannel(left);
+  const rightChannel = normalizeInboxChannel(right);
+  if (!leftChannel || !rightChannel || leftChannel !== rightChannel) return false;
+  if (left?.accountId && right?.accountId && left.accountId !== right.accountId) return false;
+  const rightAliases = new Set(getInboxChatAliases(right));
+  return getInboxChatAliases(left).some(alias => rightAliases.has(alias));
+};
+
+const mergeInboxChat = <T extends Record<string, any>>(current: T, incoming: T, preferredId?: string): T => {
+  const preferred = incoming?.id === preferredId ? incoming : current;
+  const secondary = preferred === current ? incoming : current;
+  const currentTimestamp = Number(current?.timestamp) || 0;
+  const incomingTimestamp = Number(incoming?.timestamp) || 0;
+  const latest = incomingTimestamp >= currentTimestamp ? incoming : current;
+  return {
+    ...secondary,
+    ...preferred,
+    id: preferred.id,
+    name: preferred.name || secondary.name,
+    msg: latest.msg || latest.message || preferred.msg || secondary.msg,
+    time: latest.time || preferred.time || secondary.time,
+    timestamp: Math.max(currentTimestamp, incomingTimestamp) || preferred.timestamp || secondary.timestamp,
+    avatar: preferred.avatar || secondary.avatar,
+    conversationId: preferred.conversationId || secondary.conversationId,
+    externalId: preferred.externalId || secondary.externalId,
+    participantId: preferred.participantId || secondary.participantId,
+    participantUsername: preferred.participantUsername || secondary.participantUsername,
+    accountId: preferred.accountId || secondary.accountId,
+    instanceName: preferred.instanceName || secondary.instanceName,
+    remoteJid: preferred.remoteJid || secondary.remoteJid,
+    channelId: preferred.channelId || secondary.channelId,
+    platform: preferred.platform || secondary.platform,
+    unread: typeof incoming.unread === 'number' ? incoming.unread : (Number(current.unread) || 0),
+    tags: Array.from(new Set([...(current.tags || []), ...(incoming.tags || [])]))
+  } as T;
+};
+
+const dedupeInboxChats = <T extends Record<string, any>>(items: T[], preferredId?: string): T[] => {
   const result: T[] = [];
-  const positions = new Map<string, number>();
   for (const chat of items) {
-    const rawChannel = String(chat.platform || chat.channelId || '').toLowerCase();
-    const channel = rawChannel.includes('instagram') ? 'instagram'
-      : rawChannel.includes('messenger') || rawChannel.includes('facebook') ? 'messenger'
-      : rawChannel.includes('evolution') ? 'whatsapp_evolution'
-      : rawChannel.includes('zernio_whatsapp') || rawChannel.includes('cloud') ? 'whatsapp_official'
-      : rawChannel.includes('whatsapp') ? 'whatsapp'
-      : rawChannel.includes('tiktok') ? 'tiktok'
-      : rawChannel.includes('telegram') ? 'telegram'
-      : rawChannel.includes('threads') ? 'threads'
-      : rawChannel.includes('linkedin') ? 'linkedin'
-      : rawChannel.includes('youtube') ? 'youtube'
-      : rawChannel || '';
-    const isPhoneChannel = channel.startsWith('whatsapp');
-    const rawIdentifier = String(isPhoneChannel
-      ? (chat.phone || chat.externalId || chat.conversationId || chat.name || '')
-      : (chat.conversationId || chat.externalId || chat.phone || chat.name || '')).trim().toLowerCase();
-    const numericIdentifier = rawIdentifier.replace(/\D/g, '');
-    const identifier = isPhoneChannel || (/^\+?[\d\s()-]+$/.test(rawIdentifier) && numericIdentifier.length >= 6)
-      ? numericIdentifier
-      : rawIdentifier;
-    const key = channel && identifier ? `${channel}:${identifier}` : `record:${chat.id}`;
-    const existingPosition = positions.get(key);
-    if (existingPosition === undefined) {
-      positions.set(key, result.length);
+    const existingPosition = result.findIndex(current => areSameInboxChat(current, chat));
+    if (existingPosition < 0) {
       result.push(chat);
       continue;
     }
-    const current: any = result[existingPosition];
-    result[existingPosition] = {
-      ...chat,
-      ...current,
-      avatar: current.avatar || chat.avatar,
-      conversationId: current.conversationId || chat.conversationId,
-      externalId: current.externalId || chat.externalId,
-      unread: Math.max(Number(current.unread) || 0, Number(chat.unread) || 0)
-    };
+    result[existingPosition] = mergeInboxChat(result[existingPosition], chat, preferredId);
   }
   return result;
+};
+
+const messageContentKey = (message: InboxMessage): string => [
+  message.sender,
+  String(message.text || '').trim(),
+  message.attachment?.url || '',
+  message.attachment?.name || ''
+].join('|');
+
+// Merge server history into the already-rendered timeline without replacing the
+// whole array. Existing message objects and their order stay stable, while only
+// genuinely new webhook messages are appended.
+const mergeMessageHistory = (current: InboxMessage[], incoming: InboxMessage[]): InboxMessage[] => {
+  if (!incoming.length) return current;
+  if (!current.length) return incoming;
+
+  const queues = new Map<string, number[]>();
+  current.forEach((message, index) => {
+    const keys = [`content:${messageContentKey(message)}`];
+    if (message.id) keys.unshift(`id:${message.id}`);
+    keys.forEach(key => {
+      const queue = queues.get(key) || [];
+      queue.push(index);
+      queues.set(key, queue);
+    });
+  });
+
+  const next = [...current];
+  const usedIndexes = new Set<number>();
+  const takeUnusedIndex = (key: string): number | undefined => {
+    const queue = queues.get(key);
+    while (queue?.length) {
+      const index = queue.shift()!;
+      if (!usedIndexes.has(index)) {
+        usedIndexes.add(index);
+        return index;
+      }
+    }
+    return undefined;
+  };
+  let changed = false;
+  for (const incomingMessage of incoming) {
+    const idKey = incomingMessage.id ? `id:${incomingMessage.id}` : '';
+    const contentKey = `content:${messageContentKey(incomingMessage)}`;
+    const matchIndex = (idKey ? takeUnusedIndex(idKey) : undefined) ?? takeUnusedIndex(contentKey);
+    if (matchIndex !== undefined) {
+      const existing = next[matchIndex];
+      const merged = {
+        ...incomingMessage,
+        ...existing,
+        id: existing.deliveryStatus === 'sending' && incomingMessage.id ? incomingMessage.id : (existing.id || incomingMessage.id),
+        timestamp: existing.timestamp || incomingMessage.timestamp,
+        attachment: existing.attachment || incomingMessage.attachment,
+        deliveryStatus: incomingMessage.deliveryStatus || (existing.deliveryStatus === 'sending' ? 'sent' : existing.deliveryStatus)
+      };
+      if (JSON.stringify(existing) !== JSON.stringify(merged)) {
+        next[matchIndex] = merged;
+        changed = true;
+      }
+      continue;
+    }
+    next.push(incomingMessage);
+    changed = true;
+  }
+  if (!changed) return current;
+  const toEpoch = (value: string | number | undefined) => {
+    if (typeof value === 'number') return value > 10000000000 ? value : value * 1000;
+    const parsed = value ? new Date(value).getTime() : 0;
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+  if (next.every(message => toEpoch(message.timestamp) > 0)) {
+    return next.sort((left, right) => toEpoch(left.timestamp) - toEpoch(right.timestamp));
+  }
+  return next;
 };
 
 export default function WhatsappView({
@@ -609,15 +750,12 @@ export default function WhatsappView({
               if (!bChat.phone) return;
               const cleanBPhone = bChat.phone.replace(/\D/g, '');
 
-              const isSocialChat = ['instagram', 'messenger', 'facebook', 'tiktok'].includes(String(bChat.platform || bChat.channelId || '').toLowerCase()) || /instagram/i.test(String(bChat.avatar || ''));
-              const existingIdx = updated.findIndex(c => {
-                if (isSocialChat) {
-                  return (bChat.conversationId && c.conversationId === bChat.conversationId) ||
-                    (bChat.externalId && c.externalId === bChat.externalId) ||
-                    (c.name && bChat.sender && c.name === bChat.sender && /instagram/i.test(String(c.platform || c.channelId || c.avatar || '')));
-                }
-                return c.phone.replace(/\D/g, '') === cleanBPhone || c.id === bChat.id;
-              });
+              const incomingChat = {
+                ...bChat,
+                name: bChat.sender || bChat.name || bChat.phone,
+                msg: bChat.message || bChat.msg
+              };
+              const existingIdx = updated.findIndex(c => c.id === bChat.id || areSameInboxChat(c, incomingChat));
 
                   if (existingIdx >= 0) {
                     const existing = updated[existingIdx];
@@ -632,7 +770,13 @@ export default function WhatsappView({
                       channelId: bChat.channelId || existing.channelId,
                       platform: bChat.platform || existing.platform,
                       conversationId: bChat.conversationId || existing.conversationId,
-                      externalId: bChat.externalId || existing.externalId
+                      externalId: bChat.externalId || existing.externalId,
+                      participantId: bChat.participantId || existing.participantId,
+                      participantUsername: bChat.participantUsername || existing.participantUsername,
+                      instanceName: bChat.instanceName || existing.instanceName,
+                      remoteJid: bChat.remoteJid || existing.remoteJid,
+                      accountId: bChat.accountId || existing.accountId,
+                      timestamp: bChat.timestamp || existing.timestamp
                       };
                     }
                     if (typeof bChat.unread === 'number' && bChat.unread !== existing.unread) {
@@ -652,6 +796,12 @@ export default function WhatsappView({
                   platform: bChat.platform,
                   conversationId: bChat.conversationId,
                   externalId: bChat.externalId,
+                  participantId: bChat.participantId,
+                  participantUsername: bChat.participantUsername,
+                  instanceName: bChat.instanceName,
+                  remoteJid: bChat.remoteJid,
+                  accountId: bChat.accountId,
+                  timestamp: bChat.timestamp,
                   columnId: bChat.status || 'nuevo_contacto',
                   tags: ['WhatsApp Real'],
                   leadStatus: 'caliente' as const
@@ -660,16 +810,7 @@ export default function WhatsappView({
               }
             });
 
-            const seenSocial = new Set<string>();
-            updated = updated.filter(chat => {
-              const social = /instagram/i.test(String(chat.platform || chat.channelId || chat.avatar || ''));
-              if (!social) return true;
-              const key = String(chat.conversationId || chat.externalId || chat.name || chat.phone).toLowerCase();
-              if (seenSocial.has(key)) return false;
-              seenSocial.add(key);
-              return true;
-            });
-            return dedupeInboxChats(updated);
+            return dedupeInboxChats(updated, activeChatId);
           });
         }
 
@@ -688,25 +829,26 @@ export default function WhatsappView({
               const matchingDbChat = dbData.chats?.find((c: any) => c.phone && c.phone.replace(/\D/g, '') === cleanPhone);
               const chatId = matchingDbChat ? matchingDbChat.id : `chat-${cleanPhone}`;
 
-              const formattedHistory = history.map((m: any) => ({
+              const formattedHistory: InboxMessage[] = history.map((m: any) => ({
+                id: m.id || m.messageId || m.eventId,
                 sender: (m.role === 'client' ? 'client' : (m.role === 'agent' ? 'agent' : 'bot')) as 'client' | 'agent' | 'bot',
                 text: m.text,
                 attachment: m.attachment,
                 fromMobile: !!m.fromMobile || m.source === 'mobile',
                 source: m.source,
-                time: m.time || 'Ahora'
+                time: m.time || 'Ahora',
+                timestamp: m.timestamp || m.createdAt
               }));
 
               const currentHistory = nextMsgs[chatId] || nextMsgs[cleanPhone] || [];
-              const isDifferent = currentHistory.length !== formattedHistory.length ||
-                formattedHistory.some((item, idx) => !currentHistory[idx] || currentHistory[idx].text !== item.text);
+              const mergedHistory = mergeMessageHistory(currentHistory, formattedHistory);
 
-              if (isDifferent) {
+              if (mergedHistory !== currentHistory) {
                 // Registrar bajo todas las claves de resolución posibles
                 const keysToSet = new Set([chatId, cleanPhone, `chat-${cleanPhone}`, phoneKey]);
                 if (matchingDbChat?.id) keysToSet.add(matchingDbChat.id);
                 keysToSet.forEach(k => {
-                  if (k) nextMsgs[k] = formattedHistory;
+                  if (k) nextMsgs[k] = mergedHistory;
                 });
                 changed = true;
               }
@@ -1036,18 +1178,21 @@ export default function WhatsappView({
           platform: chat.platform,
           conversationId: chat.conversationId,
           externalId: chat.externalId,
-          accountId: chat.accountId
-          ,timestamp: chat.timestamp
+          accountId: chat.accountId,
+          participantId: chat.participantId,
+          participantUsername: chat.participantUsername,
+          instanceName: chat.instanceName,
+          remoteJid: chat.remoteJid,
+          timestamp: chat.timestamp
         }));
         setChats(previous => {
           const next = [...previous];
           synchronizedChats.forEach((incoming: any) => {
-            const index = next.findIndex(current => current.id === incoming.id ||
-              (!current.platform && !incoming.platform && current.phone.replace(/\D/g, '') === incoming.phone.replace(/\D/g, '')));
-            if (index >= 0) next[index] = { ...next[index], ...incoming };
+            const index = next.findIndex(current => current.id === incoming.id || areSameInboxChat(current, incoming));
+            if (index >= 0) next[index] = mergeInboxChat(next[index], incoming, activeChatId);
             else next.push(incoming);
           });
-          return dedupeInboxChats(next).sort((a: any, b: any) => (Number(b.timestamp) || 0) - (Number(a.timestamp) || 0));
+          return dedupeInboxChats(next, activeChatId).sort((a: any, b: any) => (Number(b.timestamp) || 0) - (Number(a.timestamp) || 0));
         });
         if (data.messagesHistory) {
           setMessages(prev => {
@@ -1056,19 +1201,23 @@ export default function WhatsappView({
               const cleanPhone = phoneKey.replace(/\D/g, '');
               const history = data.messagesHistory[phoneKey];
               if (!Array.isArray(history)) return;
-              const formatted = history.map((m: any) => ({
+              const formatted: InboxMessage[] = history.map((m: any) => ({
+                id: m.id || m.messageId || m.eventId,
                 sender: (m.role === 'client' ? 'client' : (m.role === 'agent' ? 'agent' : 'bot')) as 'client' | 'agent' | 'bot',
                 text: m.text,
                 attachment: m.attachment,
                 fromMobile: !!m.fromMobile || m.source === 'mobile',
                 source: m.source,
-                time: m.time || 'Ahora'
+                time: m.time || 'Ahora',
+                timestamp: m.timestamp || m.createdAt
               }));
-              [cleanPhone, `chat-${cleanPhone}`, phoneKey].forEach(k => {
-                if (k) next[k] = formatted;
-              });
               const matchingChat = data.chats.find((c: any) => c.phone && c.phone.replace(/\D/g, '') === cleanPhone);
-              if (matchingChat?.id) next[matchingChat.id] = formatted;
+              const current = (matchingChat?.id && next[matchingChat.id]) || next[cleanPhone] || next[`chat-${cleanPhone}`] || [];
+              const merged = mergeMessageHistory(current, formatted);
+              [cleanPhone, `chat-${cleanPhone}`, phoneKey].forEach(k => {
+                if (k) next[k] = merged;
+              });
+              if (matchingChat?.id) next[matchingChat.id] = merged;
             });
             return next;
           });
@@ -1090,37 +1239,65 @@ export default function WhatsappView({
             const id = String(conversation.id || conversation.externalId);
             const platform = String(conversation.platform || '').toLowerCase();
             const participantKey = String(conversation.participantId || conversation.participantUsername || conversation.externalId || conversation.recipientPhone || conversation.participantName || id).trim().toLowerCase();
-            const existing = next.find(chat => {
-              const chatPlatform = String(chat.platform || chat.channelId || '').toLowerCase().replace('zernio_', '');
-              const chatParticipant = String(chat.externalId || chat.phone || chat.name || chat.id).trim().toLowerCase();
-              return chatPlatform === platform && (chat.conversationId === id || chatParticipant === participantKey);
-            });
-            const historyKey = existing?.id || `zernio-${platform}-${participantKey}`;
+            const stableSocialChatId = `social-${platform}-${conversation.accountId || 'account'}-${participantKey}`;
+            const incomingChat = {
+              id: stableSocialChatId,
+              platform,
+              channelId: platform === 'whatsapp' ? 'zernio_whatsapp' : platform,
+              conversationId: id,
+              externalId: conversation.externalId || conversation.participantId,
+              participantId: conversation.participantId,
+              participantUsername: conversation.participantUsername,
+              accountId: conversation.accountId,
+              phone: conversation.externalId || conversation.participantId || id,
+              name: conversation.participantName || conversation.participantUsername || conversation.externalId || 'Contacto Social',
+              tags: [platform]
+            };
+            const existing = next.find(chat => chat.conversationId === id || areSameInboxChat(chat, incomingChat));
+            const historyKey = existing?.id || stableSocialChatId;
             if (Array.isArray(conversation.messages) && conversation.messages.length > 0) {
-              setMessages(previousMessages => ({
-                ...previousMessages,
-                [historyKey]: conversation.messages.map((message: any) => ({
+              const incomingHistory: InboxMessage[] = conversation.messages.map((message: any) => ({
+                  id: message.id || message.messageId || message.eventId,
                   sender: message.direction === 'outgoing' || message.isFromBusiness ? 'agent' : 'client',
                   text: message.message || message.text || message.body || '',
                   time: message.timestamp || message.createdAt || 'Ahora',
+                  timestamp: message.timestamp || message.createdAt,
                   source: `social_${conversation.platform}`,
                   attachment: message.attachments?.[0]
-                }))
-              }));
+                }));
+              setMessages(previousMessages => {
+                const currentHistory = previousMessages[historyKey] || [];
+                const mergedHistory = mergeMessageHistory(currentHistory, incomingHistory);
+                return mergedHistory === currentHistory ? previousMessages : { ...previousMessages, [historyKey]: mergedHistory };
+              });
             }
             if (existing) {
               existing.conversationId = id;
               existing.platform = String(conversation.platform).toLowerCase();
               existing.channelId = existing.platform === 'whatsapp' ? 'zernio_whatsapp' : existing.platform;
               existing.externalId = conversation.participantId || conversation.participantUsername || conversation.externalId || existing.externalId;
+              existing.participantId = conversation.participantId || existing.participantId;
+              existing.participantUsername = conversation.participantUsername || existing.participantUsername;
               existing.accountId = conversation.accountId || existing.accountId;
               existing.avatar = conversation.avatar || existing.avatar;
               existing.name = conversation.participantName || existing.name;
+              existing.msg = conversation.lastMessage || existing.msg;
+              existing.time = conversation.lastMessageAt || existing.time;
+              existing.timestamp = conversation.lastMessageAt ? new Date(conversation.lastMessageAt).getTime() : existing.timestamp;
+              existing.unread = Number(conversation.unreadCount) || 0;
             } else {
-              next.unshift({ id: `zernio-${id}`, name: conversation.participantName || conversation.externalId || 'Contacto Social', time: 'Reciente', msg: conversation.lastMessage || 'Conversación social sincronizada', unread: conversation.unreadCount || 0, phone: conversation.externalId || id, columnId: 'nuevo_contacto', tags: [String(conversation.platform)], platform: String(conversation.platform).toLowerCase(), channelId: String(conversation.platform).toLowerCase() === 'whatsapp' ? 'zernio_whatsapp' : String(conversation.platform).toLowerCase(), conversationId: id, externalId: conversation.externalId || conversation.participantId, accountId: conversation.accountId, avatar: conversation.avatar || undefined });
+              next.unshift({
+                ...incomingChat,
+                time: conversation.lastMessageAt || 'Reciente',
+                timestamp: conversation.lastMessageAt ? new Date(conversation.lastMessageAt).getTime() : Date.now(),
+                msg: conversation.lastMessage || 'Conversación social sincronizada',
+                unread: conversation.unreadCount || 0,
+                columnId: 'nuevo_contacto',
+                avatar: conversation.avatar || undefined
+              });
             }
           });
-          return dedupeInboxChats(next);
+          return dedupeInboxChats(next, activeChatId).sort((a: any, b: any) => (Number(b.timestamp) || 0) - (Number(a.timestamp) || 0));
         });
       }
       const unifiedState = await fetch('/api/backoffice/state').then(r => r.ok ? r.json() : null).catch(() => null);
@@ -1151,15 +1328,80 @@ export default function WhatsappView({
     }
   };
 
-  // Mantener la bandeja actualizada sin depender de que el usuario pulse
-  // "Sincronizar". Evolution y el inbox social se revisan periódicamente.
+  // Webhooks already persisted the newest state. Realtime updates fetch only
+  // that lightweight snapshot; provider history remains initial/manual work.
+  const refreshRealtimeInbox = async () => {
+    const dbState = await fetch('/api/backoffice/state', { cache: 'no-store' })
+      .then(response => response.ok ? response.json() : null)
+      .catch(() => null);
+    if (!dbState) return;
+
+    if (Array.isArray(dbState.chats)) {
+      setChats(previous => {
+        const next = [...previous];
+        dbState.chats.forEach((rawChat: any) => {
+          if (!rawChat?.phone) return;
+          const incoming = {
+            ...rawChat,
+            name: rawChat.sender || rawChat.name || rawChat.phone,
+            msg: rawChat.message || rawChat.msg || '',
+            columnId: rawChat.status || rawChat.columnId || 'nuevo_contacto',
+            unread: Number(rawChat.unread) || 0,
+            tags: Array.isArray(rawChat.tags) ? rawChat.tags : ['WhatsApp']
+          };
+          const index = next.findIndex(current => current.id === incoming.id || areSameInboxChat(current, incoming));
+          if (index >= 0) next[index] = mergeInboxChat(next[index], incoming, activeChatId);
+          else next.push(incoming);
+        });
+        return dedupeInboxChats(next, activeChatId)
+          .sort((a: any, b: any) => (Number(b.timestamp) || 0) - (Number(a.timestamp) || 0));
+      });
+    }
+
+    if (dbState.messagesHistory && typeof dbState.messagesHistory === 'object') {
+      setMessages(previous => {
+        const next = { ...previous };
+        let changed = false;
+        Object.entries(dbState.messagesHistory).forEach(([phoneKey, rawHistory]) => {
+          if (!Array.isArray(rawHistory) || rawHistory.length === 0 || phoneKey === 'social-default') return;
+          const cleanPhone = String(phoneKey).replace(/\D/g, '');
+          const dbChat = dbState.chats?.find((chat: any) => chat.phone && chat.phone.replace(/\D/g, '') === cleanPhone);
+          const formatted: InboxMessage[] = rawHistory.map((message: any) => ({
+            id: message.id || message.messageId || message.eventId,
+            sender: message.role === 'client' ? 'client' : (message.role === 'agent' ? 'agent' : 'bot'),
+            text: message.text || '',
+            time: message.time || 'Ahora',
+            timestamp: message.timestamp || message.createdAt,
+            attachment: message.attachment,
+            fromMobile: !!message.fromMobile || message.source === 'mobile',
+            source: message.source
+          }));
+          const localChat = chatsRef.current.find(chat =>
+            (dbChat && (chat.id === dbChat.id || areSameInboxChat(chat, dbChat))) ||
+            (chat.phone && chat.phone.replace(/\D/g, '') === cleanPhone)
+          );
+          const targetId = localChat?.id || dbChat?.id || `chat-${cleanPhone}`;
+          const current = next[targetId] || next[cleanPhone] || [];
+          const merged = mergeMessageHistory(current, formatted);
+          if (merged !== current) changed = true;
+          new Set([targetId, cleanPhone, `chat-${cleanPhone}`, phoneKey, dbChat?.id].filter(Boolean)).forEach(key => {
+            next[String(key)] = merged;
+          });
+        });
+        return changed ? next : previous;
+      });
+    }
+  };
+
+  // Mantener la bandeja actualizada por eventos del backend, sin polling ni
+  // recargas visibles del historial completo.
   useEffect(() => {
     handleSyncRecentChats(true);
     const events = new EventSource('/api/realtime/events');
     let updateTimer: number | undefined;
     const refreshFromEvent = () => {
       if (updateTimer) window.clearTimeout(updateTimer);
-      updateTimer = window.setTimeout(() => handleSyncRecentChats(true), 120);
+      updateTimer = window.setTimeout(() => refreshRealtimeInbox(), 80);
     };
     events.addEventListener('state_changed', refreshFromEvent);
     return () => {
@@ -1882,7 +2124,7 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
   ];
 
   // Dynamic CRM Chat States (con almacenamiento persistente local)
-  const [chats, setChats] = useState<{ id: string, name: string, time: string, msg: string, unread: number, phone: string, columnId: string, tags: string[], leadStatus?: 'frío' | 'tibio' | 'caliente', avatar?: string, channelId?: string, platform?: string, conversationId?: string, externalId?: string, accountId?: string }[]>(() => {
+  const [chats, setChats] = useState<{ id: string, name: string, time: string, msg: string, unread: number, phone: string, columnId: string, tags: string[], leadStatus?: 'frío' | 'tibio' | 'caliente', avatar?: string, channelId?: string, platform?: string, conversationId?: string, externalId?: string, accountId?: string, participantId?: string, participantUsername?: string, instanceName?: string, remoteJid?: string, timestamp?: number }[]>(() => {
     try {
       if (isAdminDemo) return ADMIN_DEMO_CHATS;
       const saved = localStorage.getItem(chatsStorageKey);
@@ -1895,11 +2137,15 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
     }
     return isAdminDemo ? ADMIN_DEMO_CHATS : [];
   });
+  const chatsRef = React.useRef(chats);
+  React.useEffect(() => {
+    chatsRef.current = chats;
+  }, [chats]);
   // Guardia central: cualquier fuente puede actualizar la bandeja, pero nunca
   // puede dejar dos tarjetas para el mismo contacto dentro del mismo canal.
   useEffect(() => {
     setChats(current => {
-      const unique = dedupeInboxChats(current);
+      const unique = dedupeInboxChats(current, activeChatId);
       return unique.length === current.length ? current : unique;
     });
   }, [chats.length]);
@@ -1907,6 +2153,7 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
   const [activeChatId, setActiveChatId] = useState('1');
   const [chatSearch, setChatSearch] = useState('');
   const [chatInput, setChatInput] = useState('');
+  const [sendError, setSendError] = useState('');
   const [isBotTyping, setIsBotTyping] = useState(false);
   const [isBotActive, setIsBotActive] = useState(true);
   const [newTagInput, setNewTagInput] = useState('');
@@ -2323,7 +2570,7 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
     ]
   };
 
-  const [messages, setMessages] = useState<{ [key: string]: { sender: 'bot' | 'client' | 'agent', text: string, time: string, attachment?: { name: string, type: 'imagen' | 'video' | 'audio' | 'archivo', url: string, size?: string } }[] }>(() => {
+  const [messages, setMessages] = useState<Record<string, InboxMessage[]>>(() => {
     try {
       const saved = localStorage.getItem(messagesStorageKey);
       if (saved !== null) {
@@ -2383,11 +2630,32 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
     }
   }, [chats]);
 
-  // Scroll automático hacia el final del historial de la conversación activa
+  // Keep the viewport stable. A chat change jumps directly to the latest
+  // message; realtime updates follow only while the operator is near bottom.
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
+  const messagesScrollRef = React.useRef<HTMLDivElement>(null);
+  const stickToBottomRef = React.useRef(true);
+  const lastRenderedChatRef = React.useRef('');
+  const handleMessagesScroll = () => {
+    const container = messagesScrollRef.current;
+    if (!container) return;
+    stickToBottomRef.current = container.scrollHeight - container.scrollTop - container.clientHeight < 120;
+  };
+  React.useLayoutEffect(() => {
+    const container = messagesScrollRef.current;
+    if (!container) return;
+    const changedChat = lastRenderedChatRef.current !== activeChatId;
+    const lastMessage = activeChatMessages[activeChatMessages.length - 1];
+    if (changedChat || stickToBottomRef.current || lastMessage?.sender !== 'client') {
+      container.scrollTop = container.scrollHeight;
+      stickToBottomRef.current = true;
+    }
+    lastRenderedChatRef.current = activeChatId;
+  }, [activeChatId, activeChatMessages.length, isBotTyping]);
+
   React.useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [activeChatId, messages, isBotTyping]);
+    setSendError('');
+  }, [activeChatId]);
 
   // Sincronización automática de cliente y guía al cambiar de chat
   React.useEffect(() => {
@@ -3306,27 +3574,32 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
   };
 
   const handleSendMessage = async () => {
-    if (!chatInput.trim()) return;
+    if (!chatInput.trim() || !activeChatId) return;
     const text = chatInput;
+    const tempMessageId = `local-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     setChatInput('');
+    setSendError('');
 
     const timeString = formatLocalTime(new Date());
 
-    // 1. Add agent message locally
+    // Optimistic append keeps the conversation instant and avoids a full
+    // history replacement while the channel confirms delivery.
     setMessages(prev => ({
       ...prev,
       [activeChatId]: [
         ...(prev[activeChatId] || []),
-        { sender: 'agent', text, time: timeString }
+        { id: tempMessageId, sender: 'agent', text, time: timeString, timestamp: Date.now(), deliveryStatus: 'sending' }
       ]
     }));
 
-    // 2. Update preview message in chat list
-    setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, msg: text, time: 'Ahora' } : c));
+    setChats(prev => {
+      const selected = prev.find(c => c.id === activeChatId);
+      if (!selected) return prev;
+      const updated = { ...selected, msg: text, time: 'Ahora', timestamp: Date.now() };
+      return [updated, ...prev.filter(c => c.id !== activeChatId)];
+    });
 
-    // 3. Dispatch por Zernio para Instagram/Messenger y por WhatsApp para
-    // números tradicionales. La conversación conserva su ID externo.
-    const activeChat = chats.find(c => c.id === activeChatId);
+    const activeChat = chatsRef.current.find(c => c.id === activeChatId);
     if (activeChat && activeChat.phone) {
       try {
         const isSocial = activeChat.platform === 'instagram' || activeChat.platform === 'messenger' || activeChat.channelId === 'instagram';
@@ -3344,28 +3617,48 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
             platform: activeChat.platform || 'whatsapp',
             conversationId: activeChat.conversationId,
             recipientPhone: activeChat.externalId || activeChat.phone,
+            participantId: activeChat.participantId || activeChat.externalId || activeChat.phone,
+            participantUsername: activeChat.participantUsername,
             text,
             accountId: socialAccountId
           } : {
             phone: activeChat.phone,
             message: text,
-            channelId: activeChat.channelId || userChannelId
+            channelId: activeChat.instanceName || activeChat.channelId || userChannelId,
+            remoteJid: activeChat.remoteJid
           })
         });
         const sendResult = await sendResponse.json().catch(() => ({}));
         if (!sendResponse.ok || sendResult.success === false) {
           throw new Error(sendResult.error || 'El canal no confirmó el envío del mensaje');
         }
-      } catch (e) {
-        console.error("Error enviando mensaje mediante API de WhatsApp:", e);
         setMessages(prev => ({
           ...prev,
-          [activeChatId]: [
-            ...(prev[activeChatId] || []),
-            { sender: 'bot', text: `No se pudo enviar: ${e instanceof Error ? e.message : 'error del canal'}`, time: formatColombiaTime(new Date()) }
-          ]
+          [activeChatId]: (prev[activeChatId] || []).map(message =>
+            message.id === tempMessageId
+              ? { ...message, id: sendResult.messageId || tempMessageId, deliveryStatus: 'sent' }
+              : message
+          )
+        }));
+      } catch (e) {
+        console.error("Error enviando mensaje mediante API de WhatsApp:", e);
+        const detail = (e instanceof Error ? e.message : 'error del canal').replace(/zernio/gi, 'canal conectado');
+        setSendError(`No se pudo enviar. ${detail}`);
+        setMessages(prev => ({
+          ...prev,
+          [activeChatId]: (prev[activeChatId] || []).map(message =>
+            message.id === tempMessageId ? { ...message, deliveryStatus: 'failed' } : message
+          )
         }));
       }
+    } else {
+      setSendError('No se pudo identificar el destinatario de esta conversación. Sincroniza el canal e inténtalo de nuevo.');
+      setMessages(prev => ({
+        ...prev,
+        [activeChatId]: (prev[activeChatId] || []).map(message =>
+          message.id === tempMessageId ? { ...message, deliveryStatus: 'failed' } : message
+        )
+      }));
     }
   };
 
@@ -4657,7 +4950,18 @@ ${parametersString}
                             body: JSON.stringify({ chats: next.map(item => ({
                               id: item.id, sender: item.name, phone: item.phone,
                               message: item.msg, time: item.time, status: item.columnId,
-                              avatar: item.avatar, unread: item.unread
+                              avatar: item.avatar, unread: item.unread,
+                              timestamp: item.timestamp,
+                              platform: item.platform,
+                              channelId: item.channelId,
+                              conversationId: item.conversationId,
+                              externalId: item.externalId,
+                              participantId: item.participantId,
+                              participantUsername: item.participantUsername,
+                              accountId: item.accountId,
+                              instanceName: item.instanceName,
+                              remoteJid: item.remoteJid,
+                              tags: item.tags
                             })) })
                           }).catch(() => undefined);
                           return next;
@@ -4793,7 +5097,11 @@ ${parametersString}
                </div>
 
                {/* Messages Container */}
-               <div className="flex-1 overflow-y-auto p-4 z-10 space-y-3.5 custom-scrollbar">
+               <div
+                 ref={messagesScrollRef}
+                 onScroll={handleMessagesScroll}
+                 className="flex-1 overflow-y-auto p-4 z-10 space-y-3.5 custom-scrollbar"
+               >
                   <div className="flex justify-center mb-4 mt-2 items-center gap-2 flex-wrap">
                      <span className="bg-[#182229] text-[#8696a0] text-[11px] px-3 py-1 rounded-lg shadow uppercase font-medium flex items-center gap-1.5 border border-gray-800">
                         <CheckCircle2 size={12} className="text-green-400" />
@@ -4849,7 +5157,7 @@ ${parametersString}
 
                     return (
                       <div
-                        key={i}
+                        key={msg.id || `${msg.timestamp || msg.time}-${i}`}
                         className={`flex ${msg.sender === 'client' ? 'justify-start' : 'justify-end'} mb-1`}
                       >
                          <div
@@ -4959,7 +5267,11 @@ ${parametersString}
                             ) : null}
                             <span className="text-[10px] text-[#8696a0] absolute right-3 bottom-1.5 flex items-center gap-1">
                               {formatLocalTime(msg.timestamp || msg.time)}
-                              {msg.sender !== 'client' && <CheckCircle2 size={12} className="text-[#53bdeb]" />}
+                              {msg.sender !== 'client' && msg.deliveryStatus === 'failed' ? (
+                                <span className="text-red-400 font-semibold">No enviado</span>
+                              ) : msg.sender !== 'client' ? (
+                                <CheckCircle2 size={12} className={msg.deliveryStatus === 'sending' ? 'text-zinc-500' : 'text-[#53bdeb]'} />
+                              ) : null}
                             </span>
                          </div>
                       </div>
@@ -4967,8 +5279,8 @@ ${parametersString}
                   })}
 
                   {isBotTyping && (
-                    <div className="flex justify-start mb-2">
-                       <div className="bg-[#202c33] text-[#8696a0] text-xs p-3 rounded-xl rounded-tl-none flex items-center gap-2">
+                    <div className="flex justify-end mb-2">
+                       <div className="bg-[#202c33] text-[#8696a0] text-xs p-3 rounded-xl rounded-tr-none flex items-center gap-2">
                           <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-bounce" style={{ animationDelay: '0ms' }}></span>
                           <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-bounce" style={{ animationDelay: '150ms' }}></span>
                           <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-bounce" style={{ animationDelay: '300ms' }}></span>
@@ -4988,6 +5300,16 @@ ${parametersString}
                      onCancel={() => setShowLiveRecorderInChat(false)}
                      title="Grabar Nota de Voz PTT para WhatsApp"
                    />
+                 </div>
+               )}
+
+               {sendError && (
+                 <div className="mx-3 mb-2 rounded-lg border border-red-500/40 bg-red-950/70 px-3 py-2 text-xs text-red-200 flex items-start gap-2 z-20">
+                   <AlertTriangle size={15} className="shrink-0 mt-0.5" />
+                   <span className="flex-1">{sendError}</span>
+                   <button type="button" onClick={() => setSendError('')} className="text-red-300 hover:text-white" aria-label="Cerrar aviso">
+                     <X size={14} />
+                   </button>
                  </div>
                )}
 
