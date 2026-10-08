@@ -105,6 +105,40 @@ export const ContactAvatar: React.FC<{
   );
 };
 
+const dedupeInboxChats = <T extends any>(items: T[]): T[] => {
+  const result: T[] = [];
+  const positions = new Map<string, number>();
+  for (const chat of items) {
+    const rawChannel = String(chat.platform || chat.channelId || '').toLowerCase();
+    const channel = rawChannel.includes('instagram') ? 'instagram'
+      : rawChannel.includes('messenger') || rawChannel.includes('facebook') ? 'messenger'
+      : rawChannel.includes('whatsapp') || rawChannel.includes('evolution') ? 'whatsapp'
+      : '';
+    const identifier = channel === 'instagram' || channel === 'messenger'
+      ? String(chat.externalId || chat.conversationId || chat.phone || chat.name || '').trim().toLowerCase()
+      : channel === 'whatsapp'
+        ? String(chat.phone || '').replace(/\D/g, '')
+        : '';
+    const key = channel && identifier ? `${channel}:${identifier}` : `record:${chat.id}`;
+    const existingPosition = positions.get(key);
+    if (existingPosition === undefined) {
+      positions.set(key, result.length);
+      result.push(chat);
+      continue;
+    }
+    const current: any = result[existingPosition];
+    result[existingPosition] = {
+      ...chat,
+      ...current,
+      avatar: current.avatar || chat.avatar,
+      conversationId: current.conversationId || chat.conversationId,
+      externalId: current.externalId || chat.externalId,
+      unread: Math.max(Number(current.unread) || 0, Number(chat.unread) || 0)
+    };
+  }
+  return result;
+};
+
 export default function WhatsappView({
   activeTab = 'conversaciones',
   onNicheChange,
@@ -626,7 +660,7 @@ export default function WhatsappView({
               seenSocial.add(key);
               return true;
             });
-            return updated;
+            return dedupeInboxChats(updated);
           });
         }
 
@@ -1007,7 +1041,7 @@ export default function WhatsappView({
             if (index >= 0) next[index] = { ...next[index], ...incoming };
             else next.push(incoming);
           });
-          return next;
+          return dedupeInboxChats(next);
         });
         if (data.messagesHistory) {
           setMessages(prev => {
@@ -1080,7 +1114,7 @@ export default function WhatsappView({
               next.unshift({ id: `zernio-${id}`, name: conversation.participantName || conversation.externalId || 'Contacto Social', time: 'Reciente', msg: conversation.lastMessage || 'Conversación social sincronizada', unread: conversation.unreadCount || 0, phone: conversation.externalId || id, columnId: 'nuevo_contacto', tags: [String(conversation.platform)], platform: String(conversation.platform).toLowerCase(), channelId: String(conversation.platform).toLowerCase() === 'whatsapp' ? 'zernio_whatsapp' : String(conversation.platform).toLowerCase(), conversationId: id, externalId: conversation.externalId || conversation.participantId, accountId: conversation.accountId, avatar: conversation.avatar || undefined });
             }
           });
-          return next;
+          return dedupeInboxChats(next);
         });
       }
       const unifiedState = await fetch('/api/backoffice/state').then(r => r.ok ? r.json() : null).catch(() => null);
@@ -1101,7 +1135,7 @@ export default function WhatsappView({
               msg: chat.message || chat.msg || current?.msg
             });
           });
-          return Array.from(byId.values()).sort((a: any, b: any) => (Number(b.timestamp) || 0) - (Number(a.timestamp) || 0));
+          return dedupeInboxChats(Array.from(byId.values())).sort((a: any, b: any) => (Number(b.timestamp) || 0) - (Number(a.timestamp) || 0));
         });
       }
     } catch (e) {
