@@ -982,7 +982,7 @@ export default function WhatsappView({
       });
       const data = await res.json();
       if (data.success && data.chats) {
-        setChats(data.chats.map((chat: any) => ({
+        const synchronizedChats = data.chats.map((chat: any) => ({
           id: chat.id || `chat-${String(chat.phone || Date.now()).replace(/\D/g, '')}`,
           name: chat.name || chat.sender || chat.phone || 'Contacto',
           time: chat.time || 'Ahora',
@@ -998,7 +998,17 @@ export default function WhatsappView({
           conversationId: chat.conversationId,
           externalId: chat.externalId,
           accountId: chat.accountId
-        })));
+        }));
+        setChats(previous => {
+          const next = [...previous];
+          synchronizedChats.forEach((incoming: any) => {
+            const index = next.findIndex(current => current.id === incoming.id ||
+              (!current.platform && !incoming.platform && current.phone.replace(/\D/g, '') === incoming.phone.replace(/\D/g, '')));
+            if (index >= 0) next[index] = { ...next[index], ...incoming };
+            else next.push(incoming);
+          });
+          return next;
+        });
         if (data.messagesHistory) {
           setMessages(prev => {
             const next = { ...prev };
@@ -4781,15 +4791,13 @@ ${parametersString}
                     return (
                       <div
                         key={i}
-                        className={`flex ${msg.sender === 'client' ? 'justify-end' : 'justify-start'} mb-1`}
+                        className={`flex ${msg.sender === 'client' ? 'justify-start' : 'justify-end'} mb-1`}
                       >
                          <div
                            className={`text-[#e9edef] text-sm p-3 rounded-xl max-w-[75%] shadow-sm relative pb-6 ${
                              msg.sender === 'client'
-                               ? 'bg-zinc-800 border border-zinc-700/60 rounded-tr-none'
-                               : msg.sender === 'agent'
-                                 ? 'bg-zinc-900 border border-zinc-800 rounded-tl-none'
-                                 : 'bg-zinc-900 border border-zinc-800 rounded-tl-none'
+                               ? 'bg-zinc-900 border border-zinc-800 rounded-tl-none'
+                               : 'bg-zinc-800 border border-zinc-700/60 rounded-tr-none'
                            }`}
                          >
                             {(msg.fromMobile || (msg as any).source === 'mobile') ? (
@@ -4892,7 +4900,7 @@ ${parametersString}
                             ) : null}
                             <span className="text-[10px] text-[#8696a0] absolute right-3 bottom-1.5 flex items-center gap-1">
                               {formatLocalTime(msg.timestamp || msg.time)}
-                              {msg.sender === 'client' && <CheckCircle2 size={12} className="text-[#53bdeb]" />}
+                              {msg.sender !== 'client' && <CheckCircle2 size={12} className="text-[#53bdeb]" />}
                             </span>
                          </div>
                       </div>
