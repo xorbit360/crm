@@ -12,6 +12,7 @@ export interface NormalizedMessage {
   senderPhone?: string;
   senderBusinessScopedUserId?: string;
   senderName?: string;
+  senderAvatar?: string;
   direction: 'incoming' | 'outgoing';
   text: string;
   timestamp: number;
@@ -84,6 +85,15 @@ export function normalizeWebhookEvent(envelope: any): {
     senderPhone: phone,
     senderBusinessScopedUserId: bsuid,
     senderName: rawSender?.name || rawSender?.pushname,
+    senderAvatar:
+      rawSender?.profilePicture ||
+      rawSender?.profilePictureUrl ||
+      rawSender?.profile_picture ||
+      rawSender?.profile_image_url ||
+      rawSender?.avatar ||
+      rawConv?.participantPicture ||
+      rawConv?.participantProfilePicture ||
+      rawConv?.participantAvatar,
     direction,
     text,
     timestamp: envelope?.timestamp ? new Date(envelope.timestamp).getTime() : Date.now(),

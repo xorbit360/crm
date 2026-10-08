@@ -78,11 +78,11 @@ export const ContactAvatar: React.FC<{
   const initials = getInitials(name, phone);
   const avatarStyle = getAvatarGradient(name + (phone || ''));
 
-  const effectiveAvatar = avatar ? (
-    avatar.includes('pps.whatsapp.net')
-      ? `/api/whatsapp/avatar-proxy?url=${encodeURIComponent(avatar)}`
-      : avatar
-  ) : undefined;
+  // Serve remote WhatsApp/Meta profile pictures through our backend. Meta CDN
+  // URLs are short-lived and frequently reject browser referrers directly.
+  const effectiveAvatar = avatar && /^https?:\/\//i.test(avatar)
+    ? `/api/whatsapp/avatar-proxy?url=${encodeURIComponent(avatar)}`
+    : avatar || undefined;
 
   if (effectiveAvatar && !imgError) {
     return (

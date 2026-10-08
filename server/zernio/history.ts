@@ -27,6 +27,7 @@ export interface ImportedConversation {
   accountId?: string;
   messages?: any[];
   participantName?: string;
+  participantUsername?: string;
   participantId?: string;
   lastMessage?: string;
 }
@@ -94,14 +95,15 @@ export async function importZernioConversations(options: ImportOptions = {}) {
         accountId,
         externalId: raw.externalId || raw.platformConversationId,
         participantName: raw.participantName || raw.contact?.name || raw.name,
+        participantUsername: raw.participantUsername || raw.contact?.username || raw.username,
         participantId: raw.participantId || raw.contact?.id,
         lastMessage: raw.lastMessage || raw.lastMessageText || '',
         recipientPhone: raw.recipient?.phone || raw.phone || raw.contact?.phone,
         platform: raw.platform || 'whatsapp',
-        lastMessageAt: raw.lastMessageAt || raw.updatedAt,
+        lastMessageAt: raw.lastMessageAt || raw.updatedTime || raw.updatedAt,
         messagesCount: raw.messagesCount || 0,
         unreadCount: raw.unreadCount || 0
-        ,avatar: raw.contact?.profilePicture || raw.contact?.profile_picture || raw.contact?.profile_image_url || raw.contact?.avatar || raw.participantProfilePicture || raw.participantAvatar || raw.profilePicture || raw.avatar || ''
+        ,avatar: raw.participantPicture || raw.contact?.profilePicture || raw.contact?.profile_picture || raw.contact?.profile_image_url || raw.contact?.avatar || raw.participantProfilePicture || raw.participantAvatar || raw.profilePictureUrl || raw.profilePicture || raw.avatar || ''
         ,messages: recentMessages
       });
     }

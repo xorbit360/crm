@@ -339,13 +339,29 @@ const DEFAULT_EVOLUTION_API_URL = process.env.EVOLUTION_API_URL || "https://what
 const DEFAULT_EVOLUTION_API_KEY = process.env.EVOLUTION_API_KEY || "06mqaBYA1qN3PA9LejyAUe8YHG3A0YWh";
 const DEFAULT_EVOLUTION_WEBHOOK_BASE = "https://crm.xorbit360.com";
 
+function normalizeEvolutionWebhookBase(value?: string) {
+  const normalized = String(value || '').trim().replace(/\/+$/, '');
+  if (!normalized) return DEFAULT_EVOLUTION_WEBHOOK_BASE;
+  try {
+    const hostname = new URL(normalized).hostname.toLowerCase();
+    // Migrate the former Expert 360 deployment automatically. A stale value in
+    // Supabase previously sent incoming Evolution events to the wrong server.
+    if (hostname === 'expert360.ai.studio' || hostname.endsWith('.expert360.ai.studio')) {
+      return DEFAULT_EVOLUTION_WEBHOOK_BASE;
+    }
+  } catch (_) {
+    return DEFAULT_EVOLUTION_WEBHOOK_BASE;
+  }
+  return normalized;
+}
+
 function getEvolutionConfig() {
   const dbUrl = (typeof currentDB !== 'undefined' && currentDB.evolutionApiUrl) ? currentDB.evolutionApiUrl : '';
   const dbKey = (typeof currentDB !== 'undefined' && currentDB.evolutionApiKey) ? currentDB.evolutionApiKey : '';
   const dbWebhook = (typeof currentDB !== 'undefined' && currentDB.evolutionWebhookBaseUrl) ? currentDB.evolutionWebhookBaseUrl : '';
   const apiUrl = (dbUrl || DEFAULT_EVOLUTION_API_URL || "").trim().replace(/\/+$/, "");
   const apiKey = (dbKey || DEFAULT_EVOLUTION_API_KEY || "").trim();
-  const webhookBaseUrl = (dbWebhook || DEFAULT_EVOLUTION_WEBHOOK_BASE).trim().replace(/\/+$/, "");
+  const webhookBaseUrl = normalizeEvolutionWebhookBase(dbWebhook);
   return { apiUrl, apiKey, webhookBaseUrl, isConfigured: !!(apiUrl && apiKey) };
 }
 
@@ -1497,6 +1513,14 @@ async function initDB() {
     console.log('[Database] Supabase sync error (using local DB state):', err?.message || err);
   }
 
+  const persistedEvolutionWebhook = String(currentDB?.evolutionWebhookBaseUrl || '');
+  const normalizedEvolutionWebhook = normalizeEvolutionWebhookBase(persistedEvolutionWebhook);
+  if (persistedEvolutionWebhook !== normalizedEvolutionWebhook) {
+    currentDB.evolutionWebhookBaseUrl = normalizedEvolutionWebhook;
+    console.log(`[Evolution API] URL de webhook corregida a ${normalizedEvolutionWebhook}.`);
+    saveDBData(currentDB);
+  }
+
   // Clean up any remaining blob attachments in memory and save to Supabase/local
   let hasBlob = false;
   if (currentDB && currentDB.faqsList && Array.isArray(currentDB.faqsList)) {
@@ -1670,7 +1694,7 @@ process.on('unhandledRejection', (reason: any) => {
 });
 
 async function createServer() {
-  initDB().catch(err => console.error('initDB async error:', err));
+  await initDB().catch(err => console.error('initDB async error:', err));
   const app = express();
   const port = Number(process.env.PORT) || 3000;
 
@@ -1842,8 +1866,14 @@ async function createServer() {
       const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       const rawEvent: any = event.raw || {};
       const rawData: any = rawEvent.data || {};
-      const profileAvatar = msg.raw?.sender?.profile_picture || msg.raw?.sender?.profilePicture || msg.raw?.sender?.avatar ||
-        rawData.sender?.profile_picture || rawData.sender?.profilePicture || rawData.sender?.avatar || rawData.profile_picture || rawData.profilePicture || '';
+      const rawMessage: any = rawEvent.message || rawData.message || {};
+      const rawConversation: any = rawEvent.conversation || rawData.conversation || {};
+      const profileAvatar = msg.senderAvatar ||
+        rawMessage.sender?.profilePicture || rawMessage.sender?.profilePictureUrl || rawMessage.sender?.profile_picture || rawMessage.sender?.avatar ||
+        rawConversation.participantPicture || rawConversation.participantProfilePicture ||
+        msg.raw?.sender?.profile_picture || msg.raw?.sender?.profilePicture || msg.raw?.sender?.profilePictureUrl || msg.raw?.sender?.avatar ||
+        rawData.sender?.profile_picture || rawData.sender?.profilePicture || rawData.sender?.profilePictureUrl || rawData.sender?.avatar ||
+        rawData.participantPicture || rawData.profile_picture || rawData.profilePicture || rawData.profilePictureUrl || '';
       const incomingMessage = msg.direction !== 'outgoing';
       const socialPlatform = String(msg.raw?.platform || msg.raw?.data?.platform || rawEvent.platform || 'whatsapp').toLowerCase();
       const zernioConversationId = msg.conversationId || msg.raw?.conversationId || msg.raw?.data?.conversationId || '';
@@ -2001,7 +2031,7 @@ async function createServer() {
       const { apiUrl, apiKey, webhookBaseUrl } = req.body;
       if (apiUrl !== undefined) currentDB.evolutionApiUrl = apiUrl.trim().replace(/\/+$/, "");
       if (apiKey !== undefined) currentDB.evolutionApiKey = apiKey.trim();
-      if (webhookBaseUrl !== undefined) currentDB.evolutionWebhookBaseUrl = webhookBaseUrl.trim().replace(/\/+$/, "");
+      if (webhookBaseUrl !== undefined) currentDB.evolutionWebhookBaseUrl = normalizeEvolutionWebhookBase(webhookBaseUrl);
       saveDBData(currentDB);
       res.json({ success: true, message: "Configuración de Evolution API actualizada exitosamente." });
     } catch (err: any) {
@@ -2014,11 +2044,11 @@ async function createServer() {
     try {
       const { customBaseUrl } = req.body || {};
       if (customBaseUrl) {
-        currentDB.evolutionWebhookBaseUrl = customBaseUrl.trim().replace(/\/+$/, "");
+        currentDB.evolutionWebhookBaseUrl = normalizeEvolutionWebhookBase(customBaseUrl);
         saveDBData(currentDB);
       }
       const evoConfig = getEvolutionConfig();
-      const cleanHost = (customBaseUrl || evoConfig.webhookBaseUrl || "https://crm.xorbit360.com").replace(/\/+$/, "");
+      const cleanHost = normalizeEvolutionWebhookBase(customBaseUrl || evoConfig.webhookBaseUrl);
       const fullWebhook = `${cleanHost}/api/whatsapp/evolution-webhook`;
 
       const listRes = await evolutionRequest('/instance/fetchInstances', { timeoutMs: 6000 });
@@ -2257,13 +2287,23 @@ async function createServer() {
     }
   });
 
-  // Avatar Proxy for WhatsApp CDN images (avoids referrer/CORS blocks)
+  // Avatar proxy for WhatsApp and Meta/Instagram CDN images.
   app.get("/api/whatsapp/avatar-proxy", async (req, res) => {
     try {
       const rawUrl = req.query.url as string;
       if (!rawUrl) return res.status(400).send("Missing URL");
       const parsed = new URL(rawUrl);
-      if (!parsed.hostname.includes("whatsapp.net")) {
+      if (parsed.protocol !== 'https:') {
+        return res.status(403).send("Forbidden protocol");
+      }
+      const hostname = parsed.hostname.toLowerCase();
+      const allowedHosts = [
+        'whatsapp.net',
+        'fbcdn.net',
+        'cdninstagram.com',
+        'instagram.com'
+      ];
+      if (!allowedHosts.some(domain => hostname === domain || hostname.endsWith(`.${domain}`))) {
         return res.status(403).send("Forbidden host");
       }
       const fetchRes = await fetch(rawUrl, {
@@ -3910,6 +3950,24 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
   }
 
   onEvolutionIncomingMessage = handleEvolutionIncomingMessage;
+
+  // Keep every VPS instance pointed at this deployment. This also repairs
+  // instances after a restore or an old Supabase state is loaded.
+  setTimeout(async () => {
+    try {
+      const evoConfig = getEvolutionConfig();
+      if (!evoConfig.isConfigured) return;
+      const listRes = await evolutionRequest('/instance/fetchInstances', { timeoutMs: 6000 });
+      if (!listRes.ok || !Array.isArray(listRes.data)) return;
+      for (const item of listRes.data) {
+        const instanceName = item.name || item.instanceName;
+        if (instanceName) await setupEvolutionWebhook(instanceName, evoConfig.webhookBaseUrl);
+      }
+      console.log(`[Evolution API] Webhooks verificados al iniciar en ${evoConfig.webhookBaseUrl}.`);
+    } catch (err: any) {
+      console.warn('[Evolution API] No se pudieron verificar los webhooks al iniciar:', err?.message || err);
+    }
+  }, 1500);
 
   async function syncChatsFromEvolutionVPS(limit = 60): Promise<{ importedCount: number; chatsCount: number }> {
     const evoConfig = getEvolutionConfig();
