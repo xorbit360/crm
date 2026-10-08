@@ -1,6 +1,6 @@
 /**
  * XORBIT 360 - CRM & WhatsApp Bot Maqueta Interactiva
- * 100% en Español - Inspirado en Respond.io
+ * 100% en Español - Experiencia omnicanal Xorbit 360
  */
 
 document.addEventListener('DOMContentLoaded', () => {

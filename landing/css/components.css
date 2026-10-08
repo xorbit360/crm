@@ -1,5 +1,5 @@
 /* ==========================================================================
-   XORBIT 360 - COMPONENTS & INTERACTIVE MODULES (ESTILO RESPOND.IO)
+   XORBIT 360 - COMPONENTS & INTERACTIVE MODULES
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
@@ -311,7 +311,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   4. INTERACTIVE CRM MOCKUP (REPLICA ESTILO RESPOND.IO SCREENSHOT)
+   4. INTERACTIVE CRM MOCKUP
    -------------------------------------------------------------------------- */
 .crm-showcase-wrapper {
   margin-top: 50px;
@@ -1187,7 +1187,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   SHOWCASE DE LLAMADAS Y CORREOS EN UN SOLO HILO (IMAGEN 5 RESPOND.IO)
+   SHOWCASE DE LLAMADAS Y CORREOS EN UN SOLO HILO
    -------------------------------------------------------------------------- */
 .omnichannel-call-showcase {
   background: #090d18;
@@ -1608,6 +1608,102 @@
   flex-direction: column;
   justify-content: space-between;
   padding: 20px;
+}
+
+/* Poster animado local: siempre muestra contenido aunque no haya un GIF/video remoto. */
+.live-video-preview {
+  position: relative;
+  min-height: 210px;
+  flex: 1;
+  margin: 16px 0;
+  overflow: hidden;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: 18px;
+  background: linear-gradient(135deg, #102a43 0%, #132238 42%, #4c1d4f 100%);
+  box-shadow: inset 0 0 60px rgba(4, 7, 15, 0.55), 0 14px 35px rgba(0, 0, 0, 0.35);
+  isolation: isolate;
+}
+
+.live-video-preview::before,
+.live-video-preview::after {
+  content: "";
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  filter: blur(8px);
+  opacity: 0.65;
+  z-index: -1;
+  animation: liveOrbFloat 7s ease-in-out infinite alternate;
+}
+
+.live-video-preview::before {
+  top: -80px;
+  right: -45px;
+  background: rgba(14, 165, 233, 0.55);
+}
+
+.live-video-preview::after {
+  bottom: -100px;
+  left: -30px;
+  background: rgba(244, 63, 94, 0.5);
+  animation-delay: -2s;
+}
+
+@keyframes liveOrbFloat {
+  to { transform: translate3d(18px, 12px, 0) scale(1.08); }
+}
+
+.live-video-grid {
+  position: absolute;
+  inset: 0;
+  opacity: 0.22;
+  background-image: linear-gradient(rgba(255,255,255,.22) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.22) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: linear-gradient(to bottom, black, transparent 85%);
+}
+
+.live-video-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: #fff;
+  text-align: center;
+  padding: 18px;
+  text-shadow: 0 2px 16px rgba(0,0,0,.45);
+}
+
+.live-video-play {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  padding-left: 3px;
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(244, 63, 94, 0.9);
+  box-shadow: 0 8px 24px rgba(244, 63, 94, 0.38);
+  font-size: 1.2rem;
+}
+
+.live-video-label {
+  color: #67e8f9;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+}
+
+.live-video-content strong {
+  font-size: clamp(1.15rem, 2vw, 1.55rem);
+}
+
+.live-video-content small {
+  color: rgba(226, 232, 240, 0.82);
+  font-size: 0.75rem;
 }
 
 .live-badge-top {
@@ -2402,4 +2498,3 @@
   margin-bottom: 14px;
   text-align: center;
 }
-

@@ -260,7 +260,7 @@ export default function IntegracionesView() {
     },
     {
       id: 'respondio',
-      name: 'Respond.io',
+      name: 'Hub Omnicanal',
       description: 'Conecta tu plataforma de mensajería para extraer métricas de atención.',
       icon: '💬',
       status: 'disconnected',

@@ -668,6 +668,15 @@ img, video, iframe, svg, canvas {
     margin-top: 34px;
   }
 
+  .crm-modal-overlay {
+    padding: 22px 18px;
+    width: calc(100% - 24px);
+  }
+
+  .modal-hub-graphic {
+    height: 86px;
+  }
+
   .crm-mockup-window {
     min-height: 560px;
     border-radius: 20px;
@@ -760,6 +769,56 @@ img, video, iframe, svg, canvas {
 
   .channel-addon-box {
     padding: 20px 16px;
+  }
+
+  .live-selling-preview {
+    grid-template-columns: 1fr;
+  }
+
+  .live-video-side {
+    min-height: 430px;
+    padding: 14px;
+  }
+
+  .live-video-side > div:first-child,
+  .pinned-product-card {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .live-badge-top {
+    max-width: 100%;
+    font-size: 0.68rem;
+    line-height: 1.25;
+  }
+
+  .live-video-preview {
+    min-height: 220px;
+  }
+
+  .pinned-product-card > div:first-child {
+    min-width: 0;
+    flex: 1 1 190px;
+  }
+
+  .pinned-product-card .btn {
+    width: 100%;
+  }
+
+  .live-chat-stream-side {
+    border-left: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 16px 14px;
+  }
+
+  .live-comments-stream {
+    max-height: 260px;
+  }
+
+  .live-comment-bubble {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
   }
 
   .bold-modal-backdrop,

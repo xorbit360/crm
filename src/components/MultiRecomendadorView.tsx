@@ -958,7 +958,7 @@ export default function MultiRecomendadorView() {
                       <Link size={14} className="text-blue-400" /> Sincronización Avanzada con Plataformas Externas
                     </p>
                     <p className="leading-relaxed">
-                      Conecta tus CRM (Kommo, Respond.io) o plataformas de Dropshipping (MasterShop, Shopify, Dropi, Effix) mediante tokens. Esto permite a la Inteligencia Artificial de la plataforma consultar el inventario, verificar disponibilidad local y actualizar existencias directamente mediante el túnel seguro de la plataforma.
+                      Conecta tus CRM (Kommo y otros hubs omnicanal) o plataformas de Dropshipping (MasterShop, Shopify, Dropi, Effix) mediante tokens. Esto permite a la Inteligencia Artificial de la plataforma consultar el inventario, verificar disponibilidad local y actualizar existencias directamente mediante el túnel seguro de la plataforma.
                     </p>
                   </div>
 
@@ -979,7 +979,7 @@ export default function MultiRecomendadorView() {
                             <option value="shopify">Shopify Store API</option>
                             <option value="mastershop">MasterShop Dropshipping API</option>
                             <option value="kommo">Kommo CRM (Anteriormente amoCRM)</option>
-                            <option value="respond_io">respond.io Omnichannel Hub</option>
+                            <option value="respond_io">Hub Omnicanal</option>
                             <option value="ghl">GoHighLevel (GHL) OAuth API</option>
                             <option value="effix">Effix Logística & ERP</option>
                           </select>
