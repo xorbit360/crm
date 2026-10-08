@@ -3726,14 +3726,36 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
     return { text, isImage, isAudio, isVideo, isDocument };
   }
 
+  // Evolution puede entregar un LID en remoteJid y el número real en
+  // remoteJidAlt.  Siempre usamos el número real como identidad del chat.
+  function getEvolutionContact(data: any): { phone: string; jid: string } | null {
+    const key = data?.key || {};
+    const remoteJid = String(key.remoteJid || '');
+    const altJid = String(key.remoteJidAlt || '');
+    if (!remoteJid || remoteJid.includes('@g.us') || remoteJid.includes('broadcast')) return null;
+    const digits = (jid: string) => jid.split('@')[0].split(':')[0].replace(/\D/g, '');
+    const remoteDigits = digits(remoteJid);
+    const altDigits = digits(altJid);
+    const useAlt = remoteJid.includes('@lid') && altDigits.length >= 6;
+    const phone = useAlt ? altDigits : (remoteDigits || altDigits);
+    if (!phone || phone.length < 6) return null;
+    return { phone, jid: remoteJid };
+  }
+
+  function isSocialChat(chat: any): boolean {
+    const value = `${chat?.platform || ''} ${chat?.channelId || ''} ${chat?.source || ''}`.toLowerCase();
+    return /instagram|messenger|facebook|tiktok/.test(value);
+  }
+
+  function findEvolutionChatIndex(phone: string): number {
+    return (currentDB.chats || []).findIndex((c: any) => !isSocialChat(c) && c.phone && c.phone.replace(/\D/g, '') === phone);
+  }
+
   async function handleEvolutionIncomingMessage(instance: string, data: any) {
     if (!data || !data.key) return;
-    const senderJid = data.key.remoteJid;
-    if (!senderJid) return;
-    if (senderJid.includes('@g.us') || senderJid === 'status@broadcast') return;
-
-    const cleanPhone = senderJid.split('@')[0].split(':')[0].replace(/\D/g, '');
-    if (!cleanPhone || cleanPhone.length < 6) return;
+    const contact = getEvolutionContact(data);
+    if (!contact) return;
+    const { phone: cleanPhone, jid: senderJid } = contact;
 
     const senderName = data.pushName || `+${cleanPhone}`;
     const { text, isImage, isAudio, isVideo, isDocument } = extractEvolutionMsgTextAndMedia(data.message);
@@ -3791,7 +3813,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
         if (avatarUrl) {
           currentDB.profilePictures[cleanPhone] = avatarUrl;
           if (currentDB.chats) {
-            const chIdx = currentDB.chats.findIndex((c: any) => c.phone && c.phone.replace(/\D/g, '') === cleanPhone);
+            const chIdx = findEvolutionChatIndex(cleanPhone);
             if (chIdx !== -1) {
               currentDB.chats[chIdx].avatar = avatarUrl;
             }
@@ -3825,7 +3847,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
         if (currentDB.messagesHistory[cleanPhone].length > 35) currentDB.messagesHistory[cleanPhone].shift();
 
         if (!currentDB.chats) currentDB.chats = [];
-        const chatIdx = currentDB.chats.findIndex((c: any) => c.phone && c.phone.replace(/\D/g, '') === cleanPhone);
+        const chatIdx = findEvolutionChatIndex(cleanPhone);
         if (chatIdx !== -1) {
           currentDB.chats[chatIdx].message = displayText;
           currentDB.chats[chatIdx].time = nowStr;
@@ -3835,6 +3857,8 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
             id: `CH-${Date.now().toString().slice(-4)}`,
             sender: senderName,
             phone: `+${cleanPhone}`,
+            platform: 'whatsapp',
+            channelId: 'evolution_whatsapp',
             avatar: cachedAvatar,
             message: displayText,
             time: nowStr,
@@ -3863,9 +3887,9 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
 
     // Update CRM Chats list
     if (!currentDB.chats) currentDB.chats = [];
-    const chatIdx = currentDB.chats.findIndex((c: any) => c.phone && c.phone.replace(/\D/g, '') === cleanPhone);
+    const chatIdx = findEvolutionChatIndex(cleanPhone);
     if (chatIdx !== -1) {
-      const updatedChat = { ...currentDB.chats[chatIdx], message: incomingDisplayText, time: nowStr, status: 'en_conversacion', unread: (Number(currentDB.chats[chatIdx].unread) || 0) + 1 };
+      const updatedChat = { ...currentDB.chats[chatIdx], message: incomingDisplayText, time: nowStr, status: 'en_conversacion', unread: (Number(currentDB.chats[chatIdx].unread) || 0) + 1, platform: 'whatsapp', channelId: 'evolution_whatsapp' };
       if (cachedAvatar && !updatedChat.avatar) updatedChat.avatar = cachedAvatar;
       if (senderName && senderName !== `+${cleanPhone}`) {
         updatedChat.sender = senderName;
@@ -3877,6 +3901,8 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
         id: `CH-${Date.now().toString().slice(-4)}`,
         sender: senderName,
         phone: `+${cleanPhone}`,
+        platform: 'whatsapp',
+        channelId: 'evolution_whatsapp',
         avatar: cachedAvatar,
         message: incomingDisplayText,
         time: nowStr,
@@ -4003,12 +4029,13 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
 
       for (const record of reversedRecords) {
         if (!record.key || !record.key.remoteJid) continue;
-        const remoteJid = record.key.remoteJid;
+        const contact = getEvolutionContact(record);
+        if (!contact) continue;
+        const remoteJid = contact.jid;
         // Exclude WhatsApp groups and broadcast status
         if (remoteJid.includes('@g.us') || remoteJid.includes('broadcast')) continue;
 
-        const cleanPhone = remoteJid.split('@')[0].split(':')[0].replace(/\D/g, '');
-        if (!cleanPhone || cleanPhone.length < 6) continue;
+        const cleanPhone = contact.phone;
 
         const fromMe = !!record.key.fromMe;
         const rawPushName = record.pushName;
@@ -4078,7 +4105,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
           fetchEvolutionProfilePicture(instName, cleanPhone).then(pUrl => {
             if (pUrl) {
               currentDB.profilePictures[cleanPhone] = pUrl;
-              const ch = currentDB.chats.find((c: any) => c.phone && c.phone.replace(/\D/g, '') === cleanPhone);
+              const ch = currentDB.chats.find((c: any) => !isSocialChat(c) && c.phone && c.phone.replace(/\D/g, '') === cleanPhone);
               if (ch) ch.avatar = pUrl;
               saveDBData(currentDB);
             }
@@ -4088,9 +4115,11 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
         const avatarUrl = currentDB.profilePictures[cleanPhone] || undefined;
 
         // Upsert in CRM chats list
-        const chatIdx = currentDB.chats.findIndex((c: any) => c.phone && c.phone.replace(/\D/g, '') === cleanPhone);
+        const chatIdx = findEvolutionChatIndex(cleanPhone);
         if (chatIdx !== -1) {
           currentDB.chats[chatIdx].message = displayText;
+          currentDB.chats[chatIdx].platform = 'whatsapp';
+          currentDB.chats[chatIdx].channelId = 'evolution_whatsapp';
           currentDB.chats[chatIdx].time = timeStr;
           if (avatarUrl && !currentDB.chats[chatIdx].avatar) currentDB.chats[chatIdx].avatar = avatarUrl;
           if (senderName && senderName !== `+${cleanPhone}`) {
@@ -4101,6 +4130,8 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
             id: `CH-${Date.now().toString().slice(-4)}-${cleanPhone.slice(-4)}`,
             sender: senderName,
             phone: `+${cleanPhone}`,
+            platform: 'whatsapp',
+            channelId: 'evolution_whatsapp',
             avatar: avatarUrl,
             message: displayText,
             time: timeStr,
