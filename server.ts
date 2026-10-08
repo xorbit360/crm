@@ -3751,6 +3751,10 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
     return (currentDB.chats || []).findIndex((c: any) => !isSocialChat(c) && c.phone && c.phone.replace(/\D/g, '') === phone);
   }
 
+  function shouldReplaceEvolutionAvatar(current: any, next: any): boolean {
+    return Boolean(next) && (!current || /instagram|facebook|cdninstagram/i.test(String(current)));
+  }
+
   async function handleEvolutionIncomingMessage(instance: string, data: any) {
     if (!data || !data.key) return;
     const contact = getEvolutionContact(data);
@@ -3890,7 +3894,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
     const chatIdx = findEvolutionChatIndex(cleanPhone);
     if (chatIdx !== -1) {
       const updatedChat = { ...currentDB.chats[chatIdx], message: incomingDisplayText, time: nowStr, status: 'en_conversacion', unread: (Number(currentDB.chats[chatIdx].unread) || 0) + 1, platform: 'whatsapp', channelId: 'evolution_whatsapp' };
-      if (cachedAvatar && !updatedChat.avatar) updatedChat.avatar = cachedAvatar;
+      if (shouldReplaceEvolutionAvatar(updatedChat.avatar, cachedAvatar)) updatedChat.avatar = cachedAvatar;
       if (senderName && senderName !== `+${cleanPhone}`) {
         updatedChat.sender = senderName;
       }
@@ -4121,7 +4125,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
           currentDB.chats[chatIdx].platform = 'whatsapp';
           currentDB.chats[chatIdx].channelId = 'evolution_whatsapp';
           currentDB.chats[chatIdx].time = timeStr;
-          if (avatarUrl && !currentDB.chats[chatIdx].avatar) currentDB.chats[chatIdx].avatar = avatarUrl;
+          if (shouldReplaceEvolutionAvatar(currentDB.chats[chatIdx].avatar, avatarUrl)) currentDB.chats[chatIdx].avatar = avatarUrl;
           if (senderName && senderName !== `+${cleanPhone}`) {
             currentDB.chats[chatIdx].sender = senderName;
           }
