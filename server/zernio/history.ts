@@ -101,7 +101,7 @@ export async function importZernioConversations(options: ImportOptions = {}) {
         lastMessageAt: raw.lastMessageAt || raw.updatedAt,
         messagesCount: raw.messagesCount || 0,
         unreadCount: raw.unreadCount || 0
-        ,avatar: raw.contact?.profilePicture || raw.contact?.avatar || raw.profilePicture || raw.avatar || ''
+        ,avatar: raw.contact?.profilePicture || raw.contact?.profile_picture || raw.contact?.profile_image_url || raw.contact?.avatar || raw.participantProfilePicture || raw.participantAvatar || raw.profilePicture || raw.avatar || ''
         ,messages: recentMessages
       });
     }
