@@ -62,7 +62,6 @@ class ErrorBoundary extends React.Component<{children: ReactNode}, {hasError: bo
             <button
               onClick={() => {
                 (this as any).setState({ hasError: false, error: null });
-                window.location.reload();
               }}
               style={{
                 backgroundColor: '#2563eb',
