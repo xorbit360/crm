@@ -2957,7 +2957,27 @@ async function createServer() {
     }
   });
 
+  function collapseInstagramChats() {
+    if (!Array.isArray(currentDB.chats)) return;
+    const seen = new Map<string, any>();
+    const result: any[] = [];
+    for (const chat of currentDB.chats) {
+      const platform = String(chat?.platform || chat?.channelId || '').toLowerCase();
+      const instagram = platform.includes('instagram') || /cdninstagram|instagram\.com/i.test(String(chat?.avatar || ''));
+      if (!instagram) { result.push(chat); continue; }
+      const key = String(chat.sender || chat.externalId || chat.phone || '').trim().toLowerCase();
+      if (!key) { result.push(chat); continue; }
+      const previous = seen.get(key);
+      if (!previous) { seen.set(key, chat); result.push(chat); continue; }
+      previous.unread = (Number(previous.unread) || 0) + (Number(chat.unread) || 0);
+      if (!previous.avatar && chat.avatar) previous.avatar = chat.avatar;
+      if (!previous.conversationId && chat.conversationId) previous.conversationId = chat.conversationId;
+    }
+    if (result.length !== currentDB.chats.length) { currentDB.chats = result; saveDBData(currentDB); }
+  }
+
   app.get("/api/backoffice/state", (req, res) => {
+    collapseInstagramChats();
     res.json(currentDB);
   });
 
