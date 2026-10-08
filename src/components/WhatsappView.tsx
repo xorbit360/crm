@@ -514,7 +514,6 @@ export default function WhatsappView({
 
   // Sincronización en tiempo real de Chats e Historial de Conversaciones
   React.useEffect(() => {
-    let syncInterval: NodeJS.Timeout;
 
     const syncChatsAndHistory = async () => {
       try {
@@ -719,11 +718,7 @@ export default function WhatsappView({
     };
 
     syncChatsAndHistory();
-    syncInterval = setInterval(syncChatsAndHistory, 2500);
-
-    return () => {
-      if (syncInterval) clearInterval(syncInterval);
-    };
+    return undefined;
   }, []);
 
 
@@ -1157,8 +1152,18 @@ export default function WhatsappView({
   // "Sincronizar". Evolution y el inbox social se revisan periódicamente.
   useEffect(() => {
     handleSyncRecentChats(true);
-    const timer = window.setInterval(() => { handleSyncRecentChats(true); }, 20000);
-    return () => window.clearInterval(timer);
+    const events = new EventSource('/api/realtime/events');
+    let updateTimer: number | undefined;
+    const refreshFromEvent = () => {
+      if (updateTimer) window.clearTimeout(updateTimer);
+      updateTimer = window.setTimeout(() => handleSyncRecentChats(true), 120);
+    };
+    events.addEventListener('state_changed', refreshFromEvent);
+    return () => {
+      if (updateTimer) window.clearTimeout(updateTimer);
+      events.removeEventListener('state_changed', refreshFromEvent);
+      events.close();
+    };
   }, []);
 
   const handleVerifyCredentials = async () => {

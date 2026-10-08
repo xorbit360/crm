@@ -1414,12 +1414,22 @@ function getDBData() {
   };
 }
 
+const realtimeClients = new Set<any>();
+
+function broadcastRealtimeChange() {
+  const payload = `event: state_changed\ndata: ${JSON.stringify({ at: Date.now() })}\n\n`;
+  for (const client of realtimeClients) {
+    try { client.write(payload); } catch { realtimeClients.delete(client); }
+  }
+}
+
 function saveDBData(data: any) {
   try {
     fs.writeFileSync(dbPath, JSON.stringify(data, null, 2), 'utf-8');
     if (isSupabaseConfigured()) {
       saveToSupabase(data).catch(err => console.warn('[Supabase Save Warning]:', err?.message || err));
     }
+    broadcastRealtimeChange();
   } catch (err) {
     console.error('Error saving DB file:', err);
   }
@@ -1724,6 +1734,25 @@ async function createServer() {
 
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok" });
+  });
+
+  // Canal servidor -> navegador. Los webhooks actualizan currentDB y este
+  // stream avisa inmediatamente al CRM sin recargar la página ni hacer polling.
+  app.get('/api/realtime/events', (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.flushHeaders?.();
+    realtimeClients.add(res);
+    res.write(`event: connected\ndata: ${JSON.stringify({ at: Date.now() })}\n\n`);
+    const heartbeat = setInterval(() => {
+      try { res.write(`: heartbeat ${Date.now()}\n\n`); } catch { clearInterval(heartbeat); }
+    }, 25000);
+    req.on('close', () => {
+      clearInterval(heartbeat);
+      realtimeClients.delete(res);
+    });
   });
 
   // Strict Authentication & Access Validation (Paid / Active Users Only)
