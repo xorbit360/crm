@@ -1044,6 +1044,14 @@ export default function WhatsappView({
     }
   };
 
+  // Mantener la bandeja actualizada sin depender de que el usuario pulse
+  // "Sincronizar". Evolution y el inbox social se revisan periódicamente.
+  useEffect(() => {
+    handleSyncRecentChats();
+    const timer = window.setInterval(() => { handleSyncRecentChats(); }, 20000);
+    return () => window.clearInterval(timer);
+  }, []);
+
   const handleVerifyCredentials = async () => {
     if (!guideToken || !guidePhoneId) {
       alert('Por favor ingrese el Token permanente de Meta y el Phone ID.');
