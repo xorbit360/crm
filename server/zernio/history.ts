@@ -125,6 +125,40 @@ export async function importZernioConversations(options: ImportOptions = {}) {
     pagesLoaded: page,
     failedAccounts: Array.from(new Set(failedAccounts)),
     hasAccountDegradation: failedAccounts.length > 0,
-    conversations: allConversations
+    conversations: (() => {
+      const grouped = new Map<string, ImportedConversation>();
+      for (const conversation of allConversations) {
+        const platform = String(conversation.platform || '').toLowerCase();
+        const participant = String(
+          conversation.participantId || conversation.participantUsername ||
+          conversation.externalId || conversation.recipientPhone || conversation.participantName || conversation.id
+        ).trim().toLowerCase();
+        const key = `${platform}|${conversation.accountId || ''}|${participant}`;
+        const existing = grouped.get(key);
+        if (!existing) {
+          grouped.set(key, { ...conversation, messages: [...(conversation.messages || [])] });
+          continue;
+        }
+        const combined = [...(existing.messages || []), ...(conversation.messages || [])];
+        const unique = new Map<string, any>();
+        for (const message of combined) {
+          const messageKey = String(message.id || message.messageId || `${message.timestamp || message.createdAt || ''}|${message.text || message.message || message.body || ''}`);
+          unique.set(messageKey, message);
+        }
+        existing.messages = Array.from(unique.values()).sort((a: any, b: any) =>
+          new Date(a.timestamp || a.createdAt || 0).getTime() - new Date(b.timestamp || b.createdAt || 0).getTime()
+        );
+        existing.unreadCount = (Number(existing.unreadCount) || 0) + (Number(conversation.unreadCount) || 0);
+        const currentTime = new Date(existing.lastMessageAt || 0).getTime();
+        const nextTime = new Date(conversation.lastMessageAt || 0).getTime();
+        if (nextTime >= currentTime) {
+          existing.id = conversation.id;
+          existing.lastMessage = conversation.lastMessage;
+          existing.lastMessageAt = conversation.lastMessageAt;
+        }
+        if (!existing.avatar && conversation.avatar) existing.avatar = conversation.avatar;
+      }
+      return Array.from(grouped.values());
+    })()
   };
 }

@@ -2963,15 +2963,33 @@ async function createServer() {
     const result: any[] = [];
     for (const chat of currentDB.chats) {
       const platform = String(chat?.platform || chat?.channelId || '').toLowerCase();
-      const instagram = platform.includes('instagram') || /cdninstagram|instagram\.com/i.test(String(chat?.avatar || ''));
+      const phoneKey = String(chat?.phone || '').replace(/\D/g, '');
+      const history = currentDB.messagesHistory?.[phoneKey] || [];
+      const legacyInstagram = !platform && history.some((message: any) => /social_instagram|social_omnichannel/.test(String(message?.source || '').toLowerCase()));
+      const instagram = platform.includes('instagram') || legacyInstagram;
       if (!instagram) { result.push(chat); continue; }
-      const key = String(chat.sender || chat.externalId || chat.phone || '').trim().toLowerCase();
+      const identity = String(chat.externalId || chat.sender || chat.phone || '').trim().toLowerCase();
+      const key = `instagram|${chat.accountId || ''}|${identity}`;
       if (!key) { result.push(chat); continue; }
       const previous = seen.get(key);
-      if (!previous) { seen.set(key, chat); result.push(chat); continue; }
+      if (!previous) {
+        chat.platform = 'instagram';
+        chat.channelId = 'instagram';
+        seen.set(key, chat);
+        result.push(chat);
+        continue;
+      }
       previous.unread = (Number(previous.unread) || 0) + (Number(chat.unread) || 0);
       if (!previous.avatar && chat.avatar) previous.avatar = chat.avatar;
       if (!previous.conversationId && chat.conversationId) previous.conversationId = chat.conversationId;
+      const previousPhone = String(previous.phone || '').replace(/\D/g, '');
+      if (phoneKey && previousPhone && phoneKey !== previousPhone && Array.isArray(currentDB.messagesHistory?.[phoneKey])) {
+        const combined = [...(currentDB.messagesHistory[previousPhone] || []), ...currentDB.messagesHistory[phoneKey]];
+        const unique = new Map<string, any>();
+        for (const message of combined) unique.set(`${message.timestamp || message.time || ''}|${message.role || ''}|${message.text || ''}`, message);
+        currentDB.messagesHistory[previousPhone] = Array.from(unique.values()).sort((a: any, b: any) => (Number(a.timestamp) || 0) - (Number(b.timestamp) || 0));
+        delete currentDB.messagesHistory[phoneKey];
+      }
     }
     if (result.length !== currentDB.chats.length) { currentDB.chats = result; saveDBData(currentDB); }
   }

@@ -1038,8 +1038,14 @@ export default function WhatsappView({
           zernioHistory.conversations.forEach((conversation: any) => {
             if (!['instagram', 'messenger', 'whatsapp'].includes(String(conversation.platform).toLowerCase())) return;
             const id = String(conversation.id || conversation.externalId);
-            const existing = next.find(chat => chat.conversationId === id || chat.externalId === conversation.externalId);
-            const historyKey = existing?.id || `zernio-${id}`;
+            const platform = String(conversation.platform || '').toLowerCase();
+            const participantKey = String(conversation.participantId || conversation.participantUsername || conversation.externalId || conversation.recipientPhone || conversation.participantName || id).trim().toLowerCase();
+            const existing = next.find(chat => {
+              const chatPlatform = String(chat.platform || chat.channelId || '').toLowerCase().replace('zernio_', '');
+              const chatParticipant = String(chat.externalId || chat.phone || chat.name || chat.id).trim().toLowerCase();
+              return chatPlatform === platform && (chat.conversationId === id || chatParticipant === participantKey);
+            });
+            const historyKey = existing?.id || `zernio-${platform}-${participantKey}`;
             if (Array.isArray(conversation.messages) && conversation.messages.length > 0) {
               setMessages(previousMessages => ({
                 ...previousMessages,
@@ -1056,7 +1062,7 @@ export default function WhatsappView({
               existing.conversationId = id;
               existing.platform = String(conversation.platform).toLowerCase();
               existing.channelId = existing.platform === 'whatsapp' ? 'zernio_whatsapp' : existing.platform;
-              existing.externalId = conversation.externalId || existing.externalId;
+              existing.externalId = conversation.participantId || conversation.participantUsername || conversation.externalId || existing.externalId;
               existing.accountId = conversation.accountId || existing.accountId;
               existing.avatar = conversation.avatar || existing.avatar;
               existing.name = conversation.participantName || existing.name;
