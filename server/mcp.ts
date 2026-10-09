@@ -19,6 +19,9 @@ const USER_TOKEN = () => process.env.MCP_USER_TOKEN || '';
 const HOSTINGER_TOKEN = () => String(process.env.HOSTINGER_API_TOKEN || '').trim();
 const SUPABASE_URL = () => String(process.env.SUPABASE_URL || '').replace(/\/$/, '');
 const SUPABASE_KEY = () => process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || '';
+const VPS_SSH_HOST = () => process.env.VPS_SSH_HOST || '2.25.221.151';
+const VPS_SSH_USER = () => process.env.VPS_SSH_USER || 'root';
+const VPS_SSH_KEY = () => process.env.VPS_SSH_KEY_PATH || '/run/secrets/mcp_vps_ed25519';
 
 function tokenFor(req: Request, role: McpRole): boolean {
   const header = String(req.headers.authorization || '');
@@ -50,6 +53,7 @@ const userTools = [
 const providerTools = [
   { name: 'hostinger_api', description: 'Ejecuta una operación autenticada de la API de Hostinger sobre rutas /api/.', inputSchema: { type: 'object', required: ['method', 'path'], properties: { method: { type: 'string', enum: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] }, path: { type: 'string', pattern: '^/api/[A-Za-z0-9_./?=&%-]+$' }, body: { type: 'object' } }, additionalProperties: false } },
   { name: 'supabase_rest', description: 'Ejecuta una operación REST autenticada de Supabase con la service key privada.', inputSchema: { type: 'object', required: ['method', 'path'], properties: { method: { type: 'string', enum: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] }, path: { type: 'string', pattern: '^/(rest|auth|storage|functions)/[A-Za-z0-9_./?=&%-]+$' }, body: {} }, additionalProperties: false } }
+  ,{ name: 'vps_ssh_exec', description: 'Ejecuta un comando administrativo en el VPS por SSH con la clave privada protegida del servidor.', inputSchema: { type: 'object', required: ['command'], properties: { command: { type: 'string', minLength: 1, maxLength: 20000 }, timeoutMs: { type: 'number', minimum: 1000, maximum: 120000 } }, additionalProperties: false } }
 ];
 
 const superTools = [
@@ -174,6 +178,13 @@ async function callTool(role: McpRole, name: string, args: any, deps: McpDeps): 
     if (!/^\/(rest|auth|storage|functions)\/[A-Za-z0-9_./?=&%-]+$/.test(apiPath)) throw new Error('Ruta Supabase inválida');
     const key = SUPABASE_KEY();
     return callProvider(String(args?.method || 'GET').toUpperCase(), `${SUPABASE_URL()}${apiPath}`, key, args?.body, { apikey: key });
+  }
+  if (name === 'vps_ssh_exec') {
+    const command = String(args?.command || '').trim();
+    if (!command) throw new Error('El comando SSH es obligatorio');
+    const timeout = Math.min(120000, Math.max(1000, Number(args?.timeoutMs) || 30000));
+    const result = await execFileAsync('ssh', ['-i', VPS_SSH_KEY(), '-o', 'IdentitiesOnly=yes', '-o', 'StrictHostKeyChecking=no', `${VPS_SSH_USER()}@${VPS_SSH_HOST()}`, '--', command], { timeout, maxBuffer: 2 * 1024 * 1024 });
+    return redact({ stdout: result.stdout, stderr: result.stderr });
   }
   throw new Error(`Herramienta desconocida: ${name}`);
 }
