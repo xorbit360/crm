@@ -3316,10 +3316,35 @@ async function createServer() {
       for (const field of chatFields) if (chat?.[field] !== undefined) compact[field] = chat[field];
       return compact;
       });
+    // Realtime refreshes only need the recent tail of each conversation. Sending
+    // every stored message on each webhook event made the inbox re-render and
+    // feel frozen as soon as histories grew.
+    const historyLimit = Math.min(200, Math.max(0, Number(req.query.historyLimit) || 80));
+    const messagesHistory: Record<string, any[]> = {};
+    if (historyLimit > 0) {
+      for (const [historyKey, history] of Object.entries(currentDB.messagesHistory || {})) {
+        if (Array.isArray(history)) messagesHistory[historyKey] = history.slice(-historyLimit);
+      }
+    }
     res.json({
       chats,
-      messagesHistory: currentDB.messagesHistory || {}
+      messagesHistory
     });
+  });
+
+  // Mark one conversation as read without uploading or returning the whole
+  // backoffice state. The previous flow posted every chat and received the
+  // complete state back, which made a simple click feel like a freeze.
+  app.post("/api/backoffice/chats/read", (req, res) => {
+    const chatId = String(req.body?.chatId || req.body?.id || "");
+    if (!chatId) return res.status(400).json({ success: false, error: "chatId requerido" });
+    const chat = (Array.isArray(currentDB.chats) ? currentDB.chats : []).find((item: any) => item?.id === chatId);
+    if (!chat) return res.status(404).json({ success: false, error: "Conversación no encontrada" });
+    if (Number(chat.unread) !== 0) {
+      chat.unread = 0;
+      saveDBData(currentDB);
+    }
+    res.json({ success: true, chatId, unread: 0 });
   });
 
   // WhatsApp view bootstrap: only the configuration fields that the bot UI
@@ -3337,12 +3362,16 @@ async function createServer() {
     for (const key of configKeys) if (currentDB[key] !== undefined) config[key] = currentDB[key];
     const chats = (Array.isArray(currentDB.chats) ? currentDB.chats : [])
       .slice().sort((a: any, b: any) => (Number(b?.timestamp) || 0) - (Number(a?.timestamp) || 0)).slice(0, 300);
+    const recentMessagesHistory: Record<string, any[]> = {};
+    for (const [historyKey, history] of Object.entries(currentDB.messagesHistory || {})) {
+      if (Array.isArray(history)) recentMessagesHistory[historyKey] = history.slice(-80);
+    }
     res.setHeader('Cache-Control', 'no-store');
     res.json({
       ...config,
       customApiKeyConfigured: Boolean(String(currentDB.customApiKey || '').trim()),
       chats: sanitizeForClient(chats),
-      messagesHistory: sanitizeForClient(currentDB.messagesHistory || {})
+      messagesHistory: sanitizeForClient(recentMessagesHistory)
     });
   });
 

@@ -502,7 +502,9 @@ export default function WhatsappView({
     if (currentViewTab === 'training' && (trainingSubTab === 'debug' || trainingSubTab === 'ai_models')) {
       fetchDebugLogs();
       if (autoRefreshDebugLogs) {
-        const interval = setInterval(fetchDebugLogs, 4000);
+        const interval = setInterval(() => {
+          if (!document.hidden) fetchDebugLogs();
+        }, 10000);
         return () => clearInterval(interval);
       }
     }
@@ -651,12 +653,18 @@ export default function WhatsappView({
                   }
                 }
               } else if (!data.hasWASock) {
-                // Trigger real QR generation on server if socket isn't active yet
-                fetch('/api/whatsapp/reconnect', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ channelId: userChannelId })
-                }).catch(() => {});
+                // Trigger real QR generation on server if socket isn't active yet.
+                // Throttle it: reconnecting every few seconds destabilizes the
+                // socket and makes this screen feel stuck.
+                const now = Date.now();
+                if (now - lastWhatsappReconnectRef.current > 60000) {
+                  lastWhatsappReconnectRef.current = now;
+                  fetch('/api/whatsapp/reconnect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ channelId: userChannelId })
+                  }).catch(() => {});
+                }
               }
             }
           }
@@ -665,7 +673,7 @@ export default function WhatsappView({
         }
       };
       checkStatus();
-      interval = setInterval(checkStatus, 3000);
+      interval = setInterval(checkStatus, 10000);
     }
     return () => {
       if (interval) clearInterval(interval);
@@ -907,6 +915,8 @@ export default function WhatsappView({
   // Estados para la Guía Paso a Paso de Credenciales WhatsApp API
   const [isSyncingChats, setIsSyncingChats] = useState(false);
   const syncStartedRef = useRef(false);
+  const realtimeRefreshInFlightRef = useRef(false);
+  const lastWhatsappReconnectRef = useRef(0);
   const [activeGuideStep, setActiveGuideStep] = useState(1);
   const [guideToken, setGuideToken] = useState('');
   const [guidePhoneId, setGuidePhoneId] = useState('');
@@ -1317,7 +1327,7 @@ export default function WhatsappView({
           return dedupeInboxChats(next, activeChatId).sort((a: any, b: any) => (Number(b.timestamp) || 0) - (Number(a.timestamp) || 0));
         });
       }
-      const unifiedState = await fetch('/api/backoffice/inbox?limit=300').then(r => r.ok ? r.json() : null).catch(() => null);
+      const unifiedState = await fetch('/api/backoffice/inbox?limit=300&historyLimit=60').then(r => r.ok ? r.json() : null).catch(() => null);
       if (Array.isArray(unifiedState?.chats)) {
         setChats(previous => {
           const byId = new Map<string, any>(previous.map(chat => [chat.id, chat] as [string, any]));
@@ -1348,10 +1358,13 @@ export default function WhatsappView({
   // Webhooks already persisted the newest state. Realtime updates fetch only
   // that lightweight snapshot; provider history remains initial/manual work.
   const refreshRealtimeInbox = async () => {
-    const dbState = await fetch('/api/backoffice/inbox', { cache: 'no-store' })
+    if (realtimeRefreshInFlightRef.current || document.hidden) return;
+    realtimeRefreshInFlightRef.current = true;
+    window.setTimeout(() => { realtimeRefreshInFlightRef.current = false; }, 15000);
+    const dbState = await fetch('/api/backoffice/inbox?limit=300&historyLimit=60', { cache: 'no-store' })
       .then(response => response.ok ? response.json() : null)
       .catch(() => null);
-    if (!dbState) return;
+    if (!dbState) { realtimeRefreshInFlightRef.current = false; return; }
 
     if (Array.isArray(dbState.chats)) {
       setChats(previous => {
@@ -1408,6 +1421,7 @@ export default function WhatsappView({
         return changed ? next : previous;
       });
     }
+    realtimeRefreshInFlightRef.current = false;
   };
 
   // Mantener la bandeja actualizada por eventos del backend, sin polling ni
@@ -1415,12 +1429,22 @@ export default function WhatsappView({
   useEffect(() => {
     if (syncStartedRef.current) return;
     syncStartedRef.current = true;
-    handleSyncRecentChats(true);
+    // Opening this module used to import provider history on every mount. That
+    // external sync is useful as a recovery action, but doing it on each visit
+    // made the WhatsApp tool hang before the user could work.
+    const providerSyncKey = 'xorbit-whatsapp-last-provider-sync';
+    const lastProviderSync = Number(sessionStorage.getItem(providerSyncKey) || 0);
+    if (Date.now() - lastProviderSync > 10 * 60 * 1000) {
+      sessionStorage.setItem(providerSyncKey, String(Date.now()));
+      handleSyncRecentChats(true);
+    } else {
+      refreshRealtimeInbox();
+    }
     const events = new EventSource('/api/realtime/events');
     let updateTimer: number | undefined;
     const refreshFromEvent = () => {
       if (updateTimer) window.clearTimeout(updateTimer);
-      updateTimer = window.setTimeout(() => refreshRealtimeInbox(), 80);
+      updateTimer = window.setTimeout(() => refreshRealtimeInbox(), 300);
     };
     events.addEventListener('state_changed', refreshFromEvent);
     return () => {
@@ -4957,33 +4981,18 @@ ${parametersString}
                             body: JSON.stringify({ accountId: chat.accountId })
                           }).catch(() => undefined);
                         }
-                        setChats(prev => {
-                          const next = prev.map(c => c.id === chat.id ? { ...c, unread: 0 } : c);
-                          // Persistir la lectura para que el contador sea consistente
-                          // entre dispositivos y sesiones del mismo usuario.
-                          fetch('/api/backoffice/state', {
+                        setChats(prev => prev.map(c => c.id === chat.id ? { ...c, unread: 0 } : c));
+                        if ((chat.unread || 0) > 0) {
+                          // Persist only the read flag. Posting the whole chat list
+                          // used to save and return the complete backoffice state,
+                          // so a simple click could freeze the inbox.
+                          fetch('/api/backoffice/chats/read', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             credentials: 'include',
-                            body: JSON.stringify({ chats: next.map(item => ({
-                              id: item.id, sender: item.name, phone: item.phone,
-                              message: item.msg, time: item.time, status: item.columnId,
-                              avatar: item.avatar, unread: item.unread,
-                              timestamp: item.timestamp,
-                              platform: item.platform,
-                              channelId: item.channelId,
-                              conversationId: item.conversationId,
-                              externalId: item.externalId,
-                              participantId: item.participantId,
-                              participantUsername: item.participantUsername,
-                              accountId: item.accountId,
-                              instanceName: item.instanceName,
-                              remoteJid: item.remoteJid,
-                              tags: item.tags
-                            })) })
+                            body: JSON.stringify({ chatId: chat.id })
                           }).catch(() => undefined);
-                          return next;
-                        });
+                        }
                         setMobileView('chat');
                       }}
                       className={`flex items-center px-3 py-3 cursor-pointer hover:bg-[#202c33] transition-colors ${chat.id === activeChatId ? 'bg-[#2a3942]' : ''}`}
