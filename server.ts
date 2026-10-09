@@ -1,4 +1,5 @@
 import express from 'express';
+import compression from 'compression';
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
@@ -1797,6 +1798,11 @@ async function createServer() {
   await initDB().catch(err => console.error('initDB async error:', err));
   const app = express();
   const port = Number(process.env.PORT) || 3000;
+
+  // Compress JSON snapshots (especially the inbox) before sending them to
+  // browsers and external MCP clients. This keeps realtime updates small
+  // without changing the event/webhook flow.
+  app.use(compression({ threshold: 1024 }));
 
   // Set json limit to 15mb and preserve rawBody for HMAC verification (Zernio Webhook)
   app.use(express.json({
