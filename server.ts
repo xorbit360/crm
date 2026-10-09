@@ -3224,6 +3224,25 @@ async function createServer() {
     });
   });
 
+  // Module-scoped snapshots avoid loading the complete backoffice object when
+  // opening Catalog or Social Comments.
+  app.get("/api/backoffice/catalog", (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ products: Array.isArray(currentDB.products) ? currentDB.products : [] });
+  });
+  app.post("/api/backoffice/catalog", (req, res) => {
+    const products = Array.isArray(req.body?.products) ? req.body.products : null;
+    if (!products) return res.status(400).json({ success: false, error: 'products debe ser un arreglo' });
+    currentDB.products = products;
+    currentDB.catalogUpdatedAt = req.body?.catalogUpdatedAt || Date.now();
+    saveDBData(currentDB);
+    res.json({ success: true });
+  });
+  app.get("/api/backoffice/social-comments", (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ socialComments: Array.isArray(currentDB.socialComments) ? currentDB.socialComments : [] });
+  });
+
   app.get("/api/credits/balance", (_req, res) => {
     const balance = currentDB.aiBalance || {
       conversations: 0,

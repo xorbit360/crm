@@ -99,7 +99,7 @@ export default function ComentariosSocialesView() {
     let active = true;
     const loadSocialComments = async () => {
       try {
-        const response = await fetch('/api/backoffice/state', { credentials: 'include' });
+        const response = await fetch('/api/backoffice/social-comments', { credentials: 'include' });
         if (!response.ok) return;
         const state: any = await response.json();
         const incoming = Array.isArray(state?.socialComments) ? state.socialComments : [];
@@ -128,8 +128,19 @@ export default function ComentariosSocialesView() {
       }
     };
     loadSocialComments();
-    const timer = window.setInterval(loadSocialComments, 15000);
-    return () => { active = false; window.clearInterval(timer); };
+    const events = new EventSource('/api/realtime/events');
+    let refreshTimer: number | undefined;
+    const refreshFromWebhook = () => {
+      if (refreshTimer) window.clearTimeout(refreshTimer);
+      refreshTimer = window.setTimeout(loadSocialComments, 80);
+    };
+    events.addEventListener('state_changed', refreshFromWebhook);
+    return () => {
+      active = false;
+      if (refreshTimer) window.clearTimeout(refreshTimer);
+      events.removeEventListener('state_changed', refreshFromWebhook);
+      events.close();
+    };
   }, []);
 
   // UI state filters

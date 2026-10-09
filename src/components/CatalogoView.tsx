@@ -195,7 +195,7 @@ export default function CatalogoView() {
 
     const loadCatalog = async () => {
       try {
-        const response = await fetch('/api/backoffice/state');
+        const response = await fetch('/api/backoffice/catalog');
         if (!response.ok) throw new Error('No fue posible cargar el catálogo central');
         const state = await response.json();
         if (!cancelled && Array.isArray(state?.products)) {
@@ -235,7 +235,7 @@ export default function CatalogoView() {
 
     const timer = window.setTimeout(async () => {
       try {
-        const response = await fetch('/api/backoffice/state', {
+        const response = await fetch('/api/backoffice/catalog', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ products, catalogUpdatedAt: Date.now() }),
