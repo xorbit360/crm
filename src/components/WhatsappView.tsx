@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Terminal, Activity, Cpu, Smartphone, Search, MoreVertical, Smile, Paperclip, Image as ImageIcon, Mic, UploadCloud, MessageCircle, FileText, Database, Shield, Zap, Settings, Play, QrCode, Layout, Plus, CheckCircle, CheckCircle2, UserCircle, Camera, Wand2, X, Facebook, Instagram, Send, Globe, Video, Clock, ShoppingCart, BarChart3, HeartHandshake, Calendar, HelpCircle, Eye, EyeOff, Key, Lock, Users, Sparkles, MessageSquare, Package, Bell, AlertTriangle, Music, Headphones, ArrowLeft, ArrowRight, Edit3, Trash2, RefreshCw, Utensils, Copy, Bot, Save, Power, Layers, ExternalLink, Filter, Radio, Truck, PanelLeft, PanelLeftClose } from 'lucide-react';
 
 import CatalogoView from './CatalogoView';
@@ -168,10 +168,30 @@ const getInboxChatAliases = (chat: any): string[] => {
 const areSameInboxChat = (left: any, right: any): boolean => {
   const leftChannel = normalizeInboxChannel(left);
   const rightChannel = normalizeInboxChannel(right);
-  if (!leftChannel || !rightChannel || leftChannel !== rightChannel) return false;
+  if (!leftChannel || !rightChannel) return false;
+  // A webhook can arrive first without platform metadata and be enriched a
+  // moment later by the provider. Treat that legacy row as the same social
+  // conversation instead of rendering a second card.
+  const legacySocial = (channel: string, chat: any) =>
+    (!channel || channel === 'whatsapp' || channel === 'whatsapp_evolution') &&
+    (chat?.participantId || chat?.participantUsername || chat?.conversationId) &&
+    (String(chat?.source || '').toLowerCase().includes('social') ||
+      (Array.isArray(chat?.tags) && chat.tags.some((tag: any) => /instagram|messenger|tiktok/i.test(String(tag)))));
+  if (leftChannel !== rightChannel && !(legacySocial(leftChannel, left) || legacySocial(rightChannel, right))) return false;
   if (left?.accountId && right?.accountId && left.accountId !== right.accountId) return false;
-  const rightAliases = new Set(getInboxChatAliases(right));
-  return getInboxChatAliases(left).some(alias => rightAliases.has(alias));
+  const leftAliases = getInboxChatAliases(left);
+  const rightAliases = getInboxChatAliases(right);
+  const rightAliasesSet = new Set(rightAliases);
+  if (leftAliases.some(alias => rightAliasesSet.has(alias))) return true;
+  // Provider conversation IDs are stable even when participant metadata is
+  // temporarily missing. Compare them without the channel prefix as a final
+  // fallback, but only for social channels.
+  if ((leftChannel === 'instagram' || rightChannel === 'instagram' || legacySocial(leftChannel, left) || legacySocial(rightChannel, right))) {
+    const ids = [left?.conversationId, left?.participantId, left?.externalId].map(v => normalizeInboxIdentifier(v)).filter(Boolean);
+    const otherIds = new Set([right?.conversationId, right?.participantId, right?.externalId].map(v => normalizeInboxIdentifier(v)).filter(Boolean));
+    return ids.some(id => otherIds.has(id));
+  }
+  return false;
 };
 
 const mergeInboxChat = <T extends Record<string, any>>(current: T, incoming: T, preferredId?: string): T => {
@@ -886,6 +906,7 @@ export default function WhatsappView({
 
   // Estados para la Guía Paso a Paso de Credenciales WhatsApp API
   const [isSyncingChats, setIsSyncingChats] = useState(false);
+  const syncStartedRef = useRef(false);
   const [activeGuideStep, setActiveGuideStep] = useState(1);
   const [guideToken, setGuideToken] = useState('');
   const [guidePhoneId, setGuidePhoneId] = useState('');
@@ -1327,7 +1348,7 @@ export default function WhatsappView({
   // Webhooks already persisted the newest state. Realtime updates fetch only
   // that lightweight snapshot; provider history remains initial/manual work.
   const refreshRealtimeInbox = async () => {
-    const dbState = await fetch('/api/backoffice/state', { cache: 'no-store' })
+    const dbState = await fetch('/api/backoffice/inbox', { cache: 'no-store' })
       .then(response => response.ok ? response.json() : null)
       .catch(() => null);
     if (!dbState) return;
@@ -1392,6 +1413,8 @@ export default function WhatsappView({
   // Mantener la bandeja actualizada por eventos del backend, sin polling ni
   // recargas visibles del historial completo.
   useEffect(() => {
+    if (syncStartedRef.current) return;
+    syncStartedRef.current = true;
     handleSyncRecentChats(true);
     const events = new EventSource('/api/realtime/events');
     let updateTimer: number | undefined;

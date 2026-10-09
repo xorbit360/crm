@@ -3190,6 +3190,18 @@ async function createServer() {
     res.json(currentDB);
   });
 
+  // Lightweight realtime snapshot for the inbox. The full backoffice state
+  // also contains AI logs and billing history; sending those on every webhook
+  // event made the CRM transfer ~776 KB and caused visible chat jumps.
+  app.get("/api/backoffice/inbox", (_req, res) => {
+    collapseInstagramChats();
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({
+      chats: Array.isArray(currentDB.chats) ? currentDB.chats : [],
+      messagesHistory: currentDB.messagesHistory || {}
+    });
+  });
+
   app.get("/api/credits/balance", (_req, res) => {
     const balance = currentDB.aiBalance || {
       conversations: 0,
