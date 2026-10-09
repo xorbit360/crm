@@ -7937,8 +7937,15 @@ Respuesta de remarketing (sin etiquetas JSON, solo texto plano):`;
   const distExists = fs.existsSync(path.join(process.cwd(), 'dist', 'index.html'));
   if (distExists) {
     const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
+    // Vite assets are content-hashed, so they can be cached for a year. The
+    // HTML shell remains uncached so a deployment is visible immediately.
+    app.use('/assets', express.static(path.join(distPath, 'assets'), {
+      maxAge: '1y',
+      immutable: true
+    }));
+    app.use(express.static(distPath, { maxAge: 0 }));
     app.get('*', (req, res) => {
+      res.setHeader('Cache-Control', 'no-store, max-age=0');
       res.sendFile(path.join(distPath, 'index.html'));
     });
   } else {

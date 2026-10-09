@@ -10,6 +10,9 @@ coverage/
 .env.local
 .env.production
 !.env.example
+CredencialesSupabase.md
+*.env.backup*
+*.env.bak
 
 # Sesiones de WhatsApp / Baileys
 baileys_auth_info*

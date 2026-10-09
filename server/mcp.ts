@@ -126,13 +126,30 @@ async function callTool(role: McpRole, name: string, args: any, deps: McpDeps): 
   if (name === 'health_check') return { status: 'ok', service: 'crm', at: new Date().toISOString() };
   if (name === 'analytics_summary') return redact({ analytics: db.analytics || {}, orders: Array.isArray(db.orders) ? db.orders.length : 0, chats: Array.isArray(db.chats) ? db.chats.length : 0 });
   if (name === 'catalog_list') return redact({ products: (Array.isArray(db.products) ? db.products : []).slice(0, Math.min(100, Math.max(1, Number(args?.limit) || 50))) });
-  if (name === 'chatbot_config_get') return redact({ chatbot: db.chatbotConfig || db.whatsappBotConfig || {} });
+  if (name === 'chatbot_config_get') return redact({ chatbot: {
+    ...(db.chatbotConfig || db.whatsappBotConfig || {}),
+    prompt: db.botPrompt || db.prompt || '',
+    greeting: db.customGreeting || db.customGreetingMessage || (db.chatbotConfig || {}).greeting || '',
+    faqs: db.faqsList || db.faqs || [],
+    rules: db.aiAutomationRules || (db.chatbotConfig || {}).rules || [],
+    provider: db.apiProvider || '',
+    model: db.aiModel || ''
+  } });
   if (name === 'chatbot_config_update') {
     const patch = args || {};
     const next = { ...(db.chatbotConfig || db.whatsappBotConfig || {}) };
-    if (typeof patch.greeting === 'string') next.greeting = patch.greeting;
-    if (Array.isArray(patch.rules)) next.rules = patch.rules;
-    if (typeof patch.enabled === 'boolean') next.enabled = patch.enabled;
+    if (typeof patch.greeting === 'string') {
+      next.greeting = patch.greeting;
+      db.customGreeting = patch.greeting;
+    }
+    if (Array.isArray(patch.rules)) {
+      next.rules = patch.rules;
+      db.aiAutomationRules = patch.rules;
+    }
+    if (typeof patch.enabled === 'boolean') {
+      next.enabled = patch.enabled;
+      db.whatsappBotEnabled = patch.enabled;
+    }
     db.chatbotConfig = next;
     deps.saveDB(db);
     return { success: true, chatbot: redact(next) };
