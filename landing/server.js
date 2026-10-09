@@ -6,16 +6,16 @@ const crypto = require('crypto');
 const PORT = process.env.PORT || 80;
 const BASE_DIR = __dirname;
 
-// Credenciales oficiales de Bold
+// Credenciales de Bold: solo variables de entorno del servidor.
 const BOLD_CONFIG = {
-  merchantId: 'FFVSR3C7Y1',
+  merchantId: process.env.BOLD_MERCHANT_ID || '',
   production: {
-    apiKey: 'l_5Wz-8KQmld8Vb_iyy05KWBQ0A3zz5LOtAgMmCjfbk',
-    secretKey: '53nBWst7REiVw9So1Zf5aQ'
+    apiKey: process.env.BOLD_API_KEY || '',
+    secretKey: process.env.BOLD_SECRET_KEY || ''
   },
   sandbox: {
-    apiKey: '4WNmFtfCADr2E95U0Wdqn-ita0l1K3jw5P-N7VmeP-E',
-    secretKey: 'Am5e0hFkKAO_OUrl_K7ycQ'
+    apiKey: process.env.BOLD_SANDBOX_API_KEY || '',
+    secretKey: process.env.BOLD_SANDBOX_SECRET_KEY || ''
   }
 };
 

@@ -36,7 +36,7 @@ const ZERNIO_BASE_URL = 'https://zernio.com/api/v1';
 const DEFAULT_TIMEOUT_MS = 15000;
 const MAX_RETRIES = 3;
 const RETRY_STATUS_CODES = new Set([429, 502, 503, 504]);
-export const ZERNIO_DEFAULT_KEY = 'sk_305e0df2308675c5b824973fc215331a9f366b61656b6ac8ce63bcb4da5aa1d5';
+export const ZERNIO_DEFAULT_KEY = '';
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));

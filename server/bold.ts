@@ -12,9 +12,9 @@ export interface BoldConfig {
 }
 
 export const BOLD_PRODUCTION_CONFIG: BoldConfig = {
-  merchantId: process.env.BOLD_MERCHANT_ID || 'FFVSR3C7Y1',
-  apiKey: process.env.BOLD_API_KEY || 'l_5Wz-8KQmld8Vb_iyy05KWBQ0A3zz5LOtAgMmCjfbk',
-  secretKey: process.env.BOLD_SECRET_KEY || '53nBWst7REiVw9So1Zf5aQ',
+  merchantId: process.env.BOLD_MERCHANT_ID || '',
+  apiKey: process.env.BOLD_API_KEY || '',
+  secretKey: process.env.BOLD_SECRET_KEY || '',
   checkoutUrl: 'https://checkout.bold.co',
   webhookUrl: 'https://crm.xorbit360.com/api/integrations/bold/webhook',
   environment: 'production'
@@ -57,9 +57,8 @@ export function setupBoldRoutes(app: express.Express, getCurrentDB?: () => any, 
       service: 'Bold Payments Integration',
       status: 'active',
       environment: BOLD_PRODUCTION_CONFIG.environment,
-      merchantId: BOLD_PRODUCTION_CONFIG.merchantId,
-      merchantIdIntegrated: BOLD_PRODUCTION_CONFIG.merchantId === 'FFVSR3C7Y1',
-      apiKeyMasked: `${BOLD_PRODUCTION_CONFIG.apiKey.substring(0, 8)}...${BOLD_PRODUCTION_CONFIG.apiKey.slice(-4)}`,
+      merchantIdConfigured: Boolean(BOLD_PRODUCTION_CONFIG.merchantId),
+      apiKeyConfigured: Boolean(BOLD_PRODUCTION_CONFIG.apiKey),
       secretKeyConfigured: Boolean(BOLD_PRODUCTION_CONFIG.secretKey),
       webhookUrl: BOLD_PRODUCTION_CONFIG.webhookUrl,
       webhookConfigured: true,
@@ -245,6 +244,9 @@ export function setupBoldRoutes(app: express.Express, getCurrentDB?: () => any, 
   // 3. Create Real Payment Order & Signed Checkout URL
   const createPaymentHandler = async (req: express.Request, res: express.Response) => {
     try {
+      if (!BOLD_PRODUCTION_CONFIG.merchantId || !BOLD_PRODUCTION_CONFIG.apiKey || !BOLD_PRODUCTION_CONFIG.secretKey) {
+        return res.status(503).json({ success: false, error: 'La pasarela de pagos no está configurada en el servidor.' });
+      }
       const body = req.body || {};
       const { description, customerEmail, customerName, currency = 'COP', orderId: reqOrderId } = body;
       

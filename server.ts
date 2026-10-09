@@ -15,6 +15,7 @@ import makeWASocketDirect, { useMultiFileAuthState as useMultiFileAuthStateDirec
 import * as baileysNamespace from '@whiskeysockets/baileys';
 import * as libsignalModule from 'libsignal';
 import OpenAI from 'openai';
+import bcrypt from 'bcryptjs';
 import {
   saveToSupabase,
   loadFromSupabase,
@@ -27,6 +28,48 @@ import { setupZernioRoutes } from './server/zernio/routes.ts';
 import { handleZernioWebhook } from './server/zernio/webhook.ts';
 import { setupBoldRoutes } from './server/bold.ts';
 import { setupMcpRoutes } from './server/mcp.ts';
+import {
+  clearSessionCookie,
+  getSession,
+  requireApiSession,
+  requireRole,
+  requireSession,
+  safeCompareSecret,
+  setSessionCookie,
+} from './server/auth.ts';
+
+const SENSITIVE_RESPONSE_FIELD = /(password|passcode|secret|mnemonic|private.?key|api.?key|access.?token|refresh.?token|bot.?token|token)$/i;
+
+function sanitizeForClient(value: any): any {
+  if (Array.isArray(value)) return value.map(sanitizeForClient);
+  if (!value || typeof value !== 'object') return value;
+
+  const sanitized: Record<string, any> = {};
+  for (const [key, fieldValue] of Object.entries(value)) {
+    if (SENSITIVE_RESPONSE_FIELD.test(key)) {
+      sanitized[`${key}Configured`] = Boolean(String(fieldValue ?? '').trim());
+      continue;
+    }
+    sanitized[key] = sanitizeForClient(fieldValue);
+  }
+  return sanitized;
+}
+
+async function verifyPassword(candidate: string, stored: unknown): Promise<boolean> {
+  const value = String(stored ?? '');
+  if (!candidate || !value) return false;
+  if (/^\$2[aby]\$/.test(value)) return bcrypt.compare(candidate, value);
+  return safeCompareSecret(candidate, value);
+}
+
+function verifyWebhookHmac(req: express.Request, secret: unknown, headerName: string): boolean {
+  const configuredSecret = String(secret ?? '').trim();
+  const supplied = String(req.headers[headerName.toLowerCase()] || '').replace(/^sha256=/i, '').trim();
+  const rawBody = String((req as any).rawBody || '');
+  if (!configuredSecret || !supplied || !rawBody) return false;
+  const expected = crypto.createHmac('sha256', configuredSecret).update(rawBody).digest('hex');
+  return safeCompareSecret(supplied, expected);
+}
 
 let makeWASocket: any = null;
 let useMultiFileAuthState: any = null;
@@ -1799,6 +1842,23 @@ async function createServer() {
   const app = express();
   const port = Number(process.env.PORT) || 3000;
 
+  app.disable('x-powered-by');
+  app.use((_req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader('Permissions-Policy', 'camera=(), geolocation=(), payment=(self), microphone=(self)');
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+    if (process.env.NODE_ENV === 'production') {
+      res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    }
+    res.setHeader(
+      'Content-Security-Policy',
+      "default-src 'self' https: data: blob:; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self' https://checkout.bold.co; script-src 'self' 'unsafe-inline' https:; style-src 'self' 'unsafe-inline' https:; connect-src 'self' https: wss:; img-src 'self' https: data: blob:; media-src 'self' https: data: blob:; frame-src https:;"
+    );
+    next();
+  });
+
   // Compress JSON snapshots (especially the inbox) before sending them to
   // browsers and external MCP clients. This keeps realtime updates small
   // without changing the event/webhook flow.
@@ -1836,7 +1896,7 @@ async function createServer() {
 
   // Canal servidor -> navegador. Los webhooks actualizan currentDB y este
   // stream avisa inmediatamente al CRM sin recargar la página ni hacer polling.
-  app.get('/api/realtime/events', (req, res) => {
+  app.get('/api/realtime/events', requireSession, (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache, no-transform');
     res.setHeader('Connection', 'keep-alive');
@@ -1854,7 +1914,7 @@ async function createServer() {
   });
 
   // Strict Authentication & Access Validation (Paid / Active Users Only)
-  app.post("/api/auth/login", (req, res) => {
+  app.post("/api/auth/login", async (req, res) => {
     try {
       const { username, password } = req.body || {};
       if (!username || !password) {
@@ -1864,18 +1924,23 @@ async function createServer() {
       const normUser = String(username).trim().toLowerCase();
       const pass = String(password).trim();
 
-      // 1. Superadmin master accounts
-      if ((normUser === 'admin' || normUser === 'admin@xorbit360.com') && (pass === 'Colombi1' || pass === 'Colombia1')) {
+      // 1. Cuenta maestra: credenciales solo desde el entorno del servidor.
+      const adminUsername = String(process.env.ADMIN_USERNAME || 'admin').trim().toLowerCase();
+      const adminEmail = String(process.env.ADMIN_EMAIL || 'admin@xorbit360.com').trim().toLowerCase();
+      const adminPassword = process.env.ADMIN_PASSWORD_HASH || process.env.ADMIN_PASSWORD;
+      if ((normUser === adminUsername || normUser === adminEmail) && await verifyPassword(pass, adminPassword)) {
+        const user = {
+          name: process.env.ADMIN_DISPLAY_NAME || 'Administrador Xorbit 360',
+          email: adminEmail,
+          role: 'superadmin',
+          username: adminUsername,
+          phone: process.env.ADMIN_PHONE || '',
+          plan: 'SuperAdmin Master'
+        };
+        setSessionCookie(res, user);
         return res.json({
           success: true,
-          user: {
-            name: 'Oscar Molina',
-            email: 'admin@xorbit360.com',
-            role: 'superadmin',
-            username: 'admin',
-            phone: '573192392853',
-            plan: 'SuperAdmin Master'
-          }
+          user
         });
       }
 
@@ -1887,7 +1952,7 @@ async function createServer() {
       );
 
       if (matchedUser) {
-        const validPass = matchedUser.password === pass || matchedUser.tempPassword === pass;
+        const validPass = await verifyPassword(pass, matchedUser.password) || await verifyPassword(pass, matchedUser.tempPassword);
         if (!validPass) {
           return res.status(401).json({ success: false, error: "Contraseña incorrecta." });
         }
@@ -1900,16 +1965,23 @@ async function createServer() {
           });
         }
 
+        const user = {
+          name: matchedUser.name || normUser,
+          email: matchedUser.email || normUser,
+          role: matchedUser.role || 'droshipper',
+          username: matchedUser.username || normUser,
+          phone: matchedUser.phone || '',
+          plan: matchedUser.plan || 'Paquete Pro'
+        };
+        if (!/^\$2[aby]\$/.test(String(matchedUser.password || ''))) {
+          matchedUser.password = await bcrypt.hash(pass, 12);
+          delete matchedUser.tempPassword;
+          saveDBData(currentDB);
+        }
+        setSessionCookie(res, user);
         return res.json({
           success: true,
-          user: {
-            name: matchedUser.name || normUser,
-            email: matchedUser.email || normUser,
-            role: matchedUser.role || 'droshipper',
-            username: matchedUser.username || normUser,
-            phone: matchedUser.phone || '',
-            plan: matchedUser.plan || 'Paquete Pro'
-          }
+          user
         });
       }
 
@@ -1927,6 +1999,11 @@ async function createServer() {
 
   // Strict Google Login: User must be active/paid in database to enter
   app.post("/api/auth/google-login", (req, res) => {
+    return res.status(501).json({
+      success: false,
+      error: 'El acceso con Google está temporalmente deshabilitado mientras se configura OAuth seguro.'
+    });
+    /* Legacy flow retained temporarily for reference; unreachable by design.
     try {
       const { email, name } = req.body || {};
       if (!email) {
@@ -1986,7 +2063,27 @@ async function createServer() {
       console.error("[Google Auth Error]:", err);
       res.status(500).json({ success: false, error: "Error en el servidor de autenticación." });
     }
+    */
   });
+
+  app.get('/api/auth/session', (req, res) => {
+    const session = getSession(req);
+    if (!session) return res.status(401).json({ authenticated: false });
+    const { iat: _iat, exp: _exp, sub: _sub, ...user } = session;
+    return res.json({ authenticated: true, user });
+  });
+
+  app.post('/api/auth/logout', (_req, res) => {
+    clearSessionCookie(res);
+    return res.json({ success: true });
+  });
+
+  // Default-deny for APIs not explicitly classified as public webhooks.
+  app.use('/api/admin', requireRole('superadmin', 'admin'));
+  app.use('/api/supabase', requireRole('superadmin', 'admin'));
+  app.use('/api/integrations/chatbot-tokens', requireRole('superadmin', 'admin'));
+  app.use('/api/telegram-pay', requireRole('superadmin', 'admin'));
+  app.use('/api', requireApiSession);
 
   // Setup Bold Payments Gateway (Merchant ID FFVSR3C7Y1) Routes & Webhook
   setupBoldRoutes(app, () => currentDB, (db) => saveDBData(db));
@@ -2880,7 +2977,7 @@ async function createServer() {
         };
         saveDBData(currentDB);
       }
-      res.json({ success: true, config: currentDB.liveSelling });
+      res.json({ success: true, config: sanitizeForClient(currentDB.liveSelling) });
     } catch (e: any) {
       res.status(500).json({ success: false, error: e.message });
     }
@@ -2893,7 +2990,7 @@ async function createServer() {
         ...req.body
       };
       saveDBData(currentDB);
-      res.json({ success: true, config: currentDB.liveSelling });
+      res.json({ success: true, config: sanitizeForClient(currentDB.liveSelling) });
     } catch (e: any) {
       res.status(500).json({ success: false, error: e.message });
     }
@@ -3193,7 +3290,8 @@ async function createServer() {
 
   app.get("/api/backoffice/state", (req, res) => {
     collapseInstagramChats();
-    res.json(currentDB);
+    res.setHeader('Cache-Control', 'no-store');
+    res.json(sanitizeForClient(currentDB));
   });
 
   // Lightweight realtime snapshot for the inbox. The full backoffice state
@@ -3231,7 +3329,7 @@ async function createServer() {
     const configKeys = [
       'whatsappConnected', 'connectedPhone', 'customGreeting',
       'greetingAttachments', 'faqsList', 'reactivationTrigger', 'botPrompt',
-      'apiProvider', 'aiModel', 'customApiKey', 'blacklistedBots', 'apiTokens',
+      'apiProvider', 'aiModel', 'blacklistedBots', 'apiTokens',
       'remarketingCount', 'remarketingInterval', 'remarketingAvoidSpam',
       'remarketingMessages', 'remarketingUseAI', 'remarketingAttachments'
     ];
@@ -3240,7 +3338,12 @@ async function createServer() {
     const chats = (Array.isArray(currentDB.chats) ? currentDB.chats : [])
       .slice().sort((a: any, b: any) => (Number(b?.timestamp) || 0) - (Number(a?.timestamp) || 0)).slice(0, 300);
     res.setHeader('Cache-Control', 'no-store');
-    res.json({ ...config, chats, messagesHistory: currentDB.messagesHistory || {} });
+    res.json({
+      ...config,
+      customApiKeyConfigured: Boolean(String(currentDB.customApiKey || '').trim()),
+      chats: sanitizeForClient(chats),
+      messagesHistory: sanitizeForClient(currentDB.messagesHistory || {})
+    });
   });
 
   // Module-scoped snapshots avoid loading the complete backoffice object when
@@ -3343,11 +3446,15 @@ async function createServer() {
         currency = 'COP',
         description = 'Recarga Saldo Xorbit 360 AI',
         orderId = `REC-BOLD-${Date.now()}`,
-        apiKey = 'l_5Wz-8KQmld8Vb_iyy05KWBQ0A3zz5LOtAgMmCjfbk',
-        secretKey = '53nBWst7REiVw9So1Zf5aQ',
-        merchantId = 'FFVSR3C7Y1',
         originUrl
       } = req.body;
+
+      const apiKey = String(process.env.BOLD_API_KEY || '');
+      const secretKey = String(process.env.BOLD_SECRET_KEY || '');
+      const merchantId = String(process.env.BOLD_MERCHANT_ID || '');
+      if (!apiKey || !secretKey || !merchantId) {
+        return res.status(503).json({ success: false, error: 'La pasarela de pagos no está configurada en el servidor.' });
+      }
 
       const amountStr = String(Math.round(Number(amount) || 76000));
       const integrityHash = crypto.createHash('sha256').update(orderId + amountStr + currency + secretKey).digest('hex');
@@ -5261,9 +5368,9 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
     res.json({
       success: true,
       botUsername: currentDB.telegramBotUsername || process.env.TELEGRAM_BOT_USERNAME || 'expertecom_bot',
-      botToken: currentDB.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN || '8652525887:AAFdgRYzhAX_Z5L2Ien9tc4oauShl0QgjiI',
-      masterWallet: currentDB.superAdminWallet || process.env.SUPERADMIN_WALLET || 'UQCL7H-UGIwxtwONsAaSWdBECdXLOZJbJkXK4qjatvXNqKNI',
-      superAdminMnemonic: currentDB.superAdminMnemonic || ''
+      botTokenConfigured: Boolean(currentDB.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN),
+      masterWallet: currentDB.superAdminWallet || process.env.SUPERADMIN_WALLET || '',
+      superAdminMnemonicConfigured: Boolean(currentDB.superAdminMnemonic || process.env.SUPERADMIN_MNEMONIC)
     });
   });
 
@@ -5294,7 +5401,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
     res.json({
       telegramBotUsername: currentDB.telegramBotUsername || '',
       superAdminWallet: currentDB.superAdminWallet || '',
-      superAdminMnemonic: currentDB.superAdminMnemonic || ''
+      superAdminMnemonicConfigured: Boolean(currentDB.superAdminMnemonic || process.env.SUPERADMIN_MNEMONIC)
     });
   });
 
@@ -5314,7 +5421,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
       res.json({
         ...status,
         hasUrl: Boolean(process.env.SUPABASE_URL),
-        hasKey: Boolean(process.env.SUPABASE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY),
+        hasKey: Boolean(process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY),
       });
     } catch (err: any) {
       res.status(500).json({ configured: false, connected: false, error: err?.message || err });
@@ -5389,7 +5496,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
       const invoiceId = `TG-INV-${Math.floor(100000 + Math.random() * 900000)}`;
 
       const telegramBot = currentDB.telegramBotUsername || process.env.TELEGRAM_BOT_USERNAME || 'expertecom_bot';
-      const superAdminWallet = currentDB.superAdminWallet || process.env.SUPERADMIN_WALLET || 'UQCL7H-UGIwxtwONsAaSWdBECdXLOZJbJkXK4qjatvXNqKNI';
+      const superAdminWallet = currentDB.superAdminWallet || process.env.SUPERADMIN_WALLET || '';
 
       // 1. Bot Official Pay link (deep linking to bot)
       const payLink = `https://t.me/${telegramBot}?start=pay_${invoiceId}`;
@@ -5459,7 +5566,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
     // Distribute MLM commissions with Roll-Up Overflow to SuperAdmin
     const sponsorWallet = invoice.sponsorWallet || '';
     const hasSponsors = !!sponsorWallet;
-    const superAdminWallet = currentDB.superAdminWallet || process.env.SUPERADMIN_WALLET || 'UQCL7H-UGIwxtwONsAaSWdBECdXLOZJbJkXK4qjatvXNqKNI';
+    const superAdminWallet = currentDB.superAdminWallet || process.env.SUPERADMIN_WALLET || '';
 
     const u1_share = invoice.planValue * 0.50; // 50%
     const u2_share = invoice.planValue * 0.10; // 10%
@@ -5598,7 +5705,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
       metaAppSecret: '',
       metaAccessToken: '',
       metaWebhookUrl: `${req.protocol}://${req.get('host')}/api/webhooks/meta`,
-      metaWebhookVerifyToken: 'mona_meta_verify_token',
+      metaWebhookVerifyToken: '',
       metaWebhookEvents: ['leadgen', 'messages', 'ads_insights'],
       metaConnected: false,
       metaConnectedUser: null,
@@ -5606,7 +5713,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
       tiktokAppSecret: '',
       tiktokAccessToken: '',
       tiktokWebhookUrl: `${req.protocol}://${req.get('host')}/api/webhooks/tiktok`,
-      tiktokWebhookVerifyToken: 'mona_tiktok_verify_token',
+      tiktokWebhookVerifyToken: '',
       tiktokWebhookEvents: ['lead_group_generation', 'ads_insights'],
       tiktokConnected: false,
       tiktokConnectedUser: null
@@ -5618,8 +5725,8 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
 
     res.json({
       success: true,
-      config,
-      webhookLogs: currentDB.webhookLogs || []
+      config: sanitizeForClient(config),
+      webhookLogs: (currentDB.webhookLogs || []).map(({ payload: _payload, ...log }: any) => log)
     });
   });
 
@@ -5631,7 +5738,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
         ...config
       };
       saveDBData(currentDB);
-      res.json({ success: true, config: currentDB.metaAndTiktokConfig });
+      res.json({ success: true, config: sanitizeForClient(currentDB.metaAndTiktokConfig) });
     } catch (err: any) {
       res.status(500).json({ success: false, error: err.message || 'Error saving integration config' });
     }
@@ -5653,7 +5760,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
         currentDB.metaAndTiktokConfig.tiktokAccessToken = '';
       }
       saveDBData(currentDB);
-      res.json({ success: true, config: currentDB.metaAndTiktokConfig });
+      res.json({ success: true, config: sanitizeForClient(currentDB.metaAndTiktokConfig) });
     } catch (err: any) {
       res.status(500).json({ success: false, error: err.message || 'Error disconnecting' });
     }
@@ -5731,7 +5838,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
       if (tokens.dropi) tokens.dropi.webhookUrl = `${defaultHost}/api/integrations/dropi/webhook`;
       if (tokens.chateapro) tokens.chateapro.webhookUrl = `${defaultHost}/api/integrations/chateapro/webhook`;
 
-      res.json({ success: true, tokens });
+      res.json({ success: true, tokens: sanitizeForClient(tokens) });
     } catch (err: any) {
       res.status(500).json({ success: false, error: err.message || 'Error fetching chatbot tokens' });
     }
@@ -5826,7 +5933,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
       }
 
       saveDBData(currentDB);
-      res.json({ success: true, tokens: currentDB.chatbotIntegrationTokens });
+      res.json({ success: true, tokens: sanitizeForClient(currentDB.chatbotIntegrationTokens) });
     } catch (err: any) {
       res.status(500).json({ success: false, error: err.message || 'Error saving chatbot tokens' });
     }
@@ -7129,7 +7236,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
         updatedAt: new Date().toISOString()
       };
       saveDBData(currentDB);
-      res.json({ success: true, config: currentDB.whatsappOauthConfig, verifiedMeta });
+      res.json({ success: true, config: sanitizeForClient(currentDB.whatsappOauthConfig), verifiedMeta });
     } catch (err: any) {
       res.status(500).json({ success: false, error: err.message || 'Error guardando OAuth de WhatsApp' });
     }
@@ -7172,7 +7279,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
     const hasRealCredentials = Boolean(savedConfig?.apiToken && savedConfig?.phoneNumberId);
     res.json({
       success: true,
-      config: hasRealCredentials ? savedConfig : null
+      config: hasRealCredentials ? sanitizeForClient(savedConfig) : null
     });
   });
 
@@ -7308,7 +7415,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
       }
 
       saveDBData(currentDB);
-      res.json({ success: true, config: currentDB.metaAndTiktokConfig });
+      res.json({ success: true, config: sanitizeForClient(currentDB.metaAndTiktokConfig) });
     } catch (err: any) {
       res.status(500).json({ success: false, error: err.message || 'Error saving OAuth credentials' });
     }
@@ -7319,22 +7426,18 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
     const mode = req.query['hub.mode'];
     const token = req.query['hub.verify_token'];
     const challenge = req.query['hub.challenge'] || req.query['challenge'] || req.query['zernio.challenge'];
-    const configToken = currentDB.metaAndTiktokConfig?.metaWebhookVerifyToken || 'mona_meta_verify_token';
+    const configToken = process.env.META_WEBHOOK_VERIFY_TOKEN || currentDB.metaAndTiktokConfig?.metaWebhookVerifyToken || '';
 
-    if (mode === 'subscribe' && token === configToken) {
+    if (mode === 'subscribe' && challenge && safeCompareSecret(token, configToken)) {
       console.log('✓ Meta Webhook Verificado Correctamente!');
       return res.status(200).send(challenge);
     }
-    if (challenge) {
-      return res.status(200).send(String(challenge));
-    }
+    if (challenge) return res.status(403).json({ error: 'Verificacion invalida' });
     // Verificación o ping general
-    res.status(200).json({ status: 'ok', service: 'meta-webhook' });
+    res.status(configToken ? 403 : 503).json({ error: configToken ? 'Verificacion invalida' : 'Webhook no configurado' });
   });
 
   app.post('/api/webhooks/meta', (req, res) => {
-    console.log('Meta/Zernio Webhook recibido:', JSON.stringify(req.body, null, 2));
-
     // Si es un evento de Zernio (prueba o evento real)
     const isZernioEvent = Boolean(
       req.headers['x-zernio-signature'] ||
@@ -7378,6 +7481,11 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
       });
     }
 
+    const metaSecret = process.env.META_APP_SECRET || currentDB.metaAndTiktokConfig?.metaAppSecret;
+    if (!verifyWebhookHmac(req, metaSecret, 'x-hub-signature-256')) {
+      return res.status(401).json({ error: 'Firma de webhook invalida' });
+    }
+
     if (!currentDB.webhookLogs) {
       currentDB.webhookLogs = [];
     }
@@ -7407,13 +7515,18 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
   });
 
   app.get('/api/webhooks/tiktok', (req, res) => {
-    // TikTok webhooks validation challenge is sometimes sent via standard verify_token, or simple echo. Let's return challenge.
     const challenge = req.query['challenge'] || req.query['hub.challenge'];
-    res.status(200).send(challenge || 'OK');
+    const supplied = req.query['verify_token'] || req.query['hub.verify_token'];
+    const expected = process.env.TIKTOK_WEBHOOK_VERIFY_TOKEN || currentDB.metaAndTiktokConfig?.tiktokWebhookVerifyToken || '';
+    if (challenge && safeCompareSecret(supplied, expected)) return res.status(200).send(String(challenge));
+    return res.status(expected ? 403 : 503).json({ error: expected ? 'Verificacion invalida' : 'Webhook no configurado' });
   });
 
   app.post('/api/webhooks/tiktok', (req, res) => {
-    console.log('TikTok Webhook recibido:', JSON.stringify(req.body, null, 2));
+    const tiktokSecret = process.env.TIKTOK_WEBHOOK_SECRET || currentDB.metaAndTiktokConfig?.tiktokAppSecret;
+    if (!verifyWebhookHmac(req, tiktokSecret, 'x-tiktok-signature')) {
+      return res.status(401).json({ error: 'Firma de webhook invalida' });
+    }
     if (!currentDB.webhookLogs) {
       currentDB.webhookLogs = [];
     }
@@ -7559,7 +7672,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
             const invoice = currentDB.telegramInvoices[invoiceId];
             invoice.status = 'COMPLETED';
 
-            const superAdminWallet = currentDB.superAdminWallet || process.env.SUPERADMIN_WALLET || 'UQCL7H-UGIwxtwONsAaSWdBECdXLOZJbJkXK4qjatvXNqKNI';
+            const superAdminWallet = currentDB.superAdminWallet || process.env.SUPERADMIN_WALLET || '';
             const sponsorWallet = invoice.sponsorWallet || '';
             const hasSponsors = !!sponsorWallet;
 
@@ -7700,12 +7813,12 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
 
   async function startTelegramBotPolling() {
     const getActiveToken = () => {
-      return currentDB.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN || '8652525887:AAFdgRYzhAX_Z5L2Ien9tc4oauShl0QgjiI';
+      return currentDB.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN || '';
     };
 
     const isValidToken = (tok: string | undefined): boolean => {
       if (!tok) return false;
-      return /^\d+:[A-Za-z0-9_-]+$/.test(tok) && !tok.includes('8652525887:AAFdgRYzhAX_Z5L2Ien9tc4oauShl0QgjiI');
+      return /^\d+:[A-Za-z0-9_-]+$/.test(tok);
     };
 
     let activeToken = getActiveToken();

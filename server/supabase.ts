@@ -5,10 +5,9 @@ let supabaseClient: SupabaseClient | null = null;
 export function getSupabaseCredentials() {
   const url = (process.env.SUPABASE_URL || '').trim();
   const key = (
-    process.env.SUPABASE_KEY ||
+    process.env.SUPABASE_SECRET_KEY ||
     process.env.SUPABASE_SERVICE_KEY ||
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    process.env.SUPABASE_ANON_KEY ||
     ''
   ).trim();
 
@@ -53,10 +52,9 @@ CREATE TABLE IF NOT EXISTS app_state (
 ALTER TABLE app_state ENABLE ROW LEVEL SECURITY;
 
 -- Política de lectura y escritura para el Service Role o Anon Key:
-CREATE POLICY "Allow full access to app_state" ON app_state
-  FOR ALL
-  USING (true)
-  WITH CHECK (true);
+DROP POLICY IF EXISTS "Allow full access to app_state" ON app_state;
+REVOKE ALL ON TABLE app_state FROM anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE app_state TO service_role;
 `;
 
 /**

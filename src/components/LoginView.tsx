@@ -49,58 +49,14 @@ export default function LoginView({ onLogin }: LoginViewProps) {
         }
       }
     } catch (err: any) {
-      // Fallback local check for master account
-      const lower = normUser.toLowerCase();
-      if ((lower === 'admin' || lower === 'admin@xorbit360.com') && (pass === 'Colombi1' || pass === 'Colombia1')) {
-        const adminUser = {
-          name: 'Oscar Molina',
-          email: 'admin@xorbit360.com',
-          role: 'superadmin',
-          username: 'admin',
-          phone: '573192392853',
-          plan: 'SuperAdmin Master'
-        };
-        localStorage.setItem('xorbit_user', JSON.stringify(adminUser));
-        onLogin(adminUser);
-      } else {
-        setError('Error al verificar credenciales con el servidor. Si aún no tienes acceso activo, ingresa a xorbit360.com');
-        setRequirePayment(true);
-      }
+      setError('No se pudo verificar la sesión con el servidor. Inténtalo nuevamente.');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleGoogleLogin = async () => {
-    setError('');
-    setRequirePayment(false);
-
-    const googleEmail = window.prompt('Ingresa el correo electrónico de tu cuenta de Google para verificar tu acceso activo:');
-    if (!googleEmail || !googleEmail.trim()) return;
-
-    setIsLoading(true);
-    try {
-      const res = await fetch('/api/auth/google-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: googleEmail.trim() })
-      });
-
-      const data = await res.json();
-
-      if (res.ok && data.success && data.user) {
-        localStorage.setItem('xorbit_user', JSON.stringify(data.user));
-        onLogin(data.user);
-      } else {
-        setError(data.error || `La cuenta de Google (${googleEmail}) no tiene un paquete activo. Debes adquirir tu plan en xorbit360.com para ingresar.`);
-        setRequirePayment(true);
-      }
-    } catch (err: any) {
-      setError(`No se pudo verificar la cuenta (${googleEmail}). Debes adquirir tu plan en xorbit360.com.`);
-      setRequirePayment(true);
-    } finally {
-      setIsLoading(false);
-    }
+    setError('El acceso con Google estará disponible cuando finalice la configuración OAuth segura. Usa tus credenciales mientras tanto.');
   };
 
   return (

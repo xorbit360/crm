@@ -101,8 +101,8 @@ export default function PasarelaPagoView() {
         passFeeToCustomer: false,
         keys: [
           { label: 'ID de Comercio (Merchant ID)', keyName: 'merchant_id', value: '' },
-          { label: 'API Key de Integración Bold', keyName: 'bold_api_key', value: 'l_5Wz-8KQmld8Vb_iyy05KWBQ0A3zz5LOtAgMmCjfbk' },
-          { label: 'Llave Secreta de Firma (Signing Key)', keyName: 'bold_secret_key', value: '53nBWst7REiVw9So1Zf5aQ', isSecret: true },
+          { label: 'API Key de Integración Bold', keyName: 'bold_api_key', value: '' },
+          { label: 'Llave Secreta de Firma (Signing Key)', keyName: 'bold_secret_key', value: '', isSecret: true },
           { label: 'Link de Pago Personalizado / Checkout URL', keyName: 'bold_checkout_url', value: '' }
         ],
         webhookUrl: `https://crm.xorbit360.com/api/integrations/bold/webhook`
@@ -121,8 +121,8 @@ export default function PasarelaPagoView() {
         passFeeToCustomer: true,
         keys: [
           { label: 'ID de Comercio / Public Key', keyName: 'merchant_id', value: 'pub_prod_X89210948120_WOMPI' },
-          { label: 'Llave Secreta de Integridad', keyName: 'secret_key', value: 'prod_integrity_821940a92b0c412', isSecret: true },
-          { label: 'Llave Eventos Webhook', keyName: 'event_key', value: 'wh_prod_9018241029', isSecret: true }
+          { label: 'Llave Secreta de Integridad', keyName: 'secret_key', value: '', isSecret: true },
+          { label: 'Llave Eventos Webhook', keyName: 'event_key', value: '', isSecret: true }
         ],
         webhookUrl: `${window.location.origin}/api/payments/wompi/webhook`
       },
@@ -140,8 +140,8 @@ export default function PasarelaPagoView() {
         passFeeToCustomer: false,
         keys: [
           { label: 'Clave Pública (Publishable Key)', keyName: 'pk_live', value: 'pk_live_51M90X84x9A...kS2' },
-          { label: 'Clave Secreta (Secret Key)', keyName: 'sk_live', value: 'sk_live_51M90X84x9A...92Z', isSecret: true },
-          { label: 'Firma de Webhook (Signing Secret)', keyName: 'whsec', value: 'whsec_92f08a12bc44...', isSecret: true }
+          { label: 'Clave Secreta (Secret Key)', keyName: 'sk_live', value: '', isSecret: true },
+          { label: 'Firma de Webhook (Signing Secret)', keyName: 'whsec', value: '', isSecret: true }
         ],
         webhookUrl: `${window.location.origin}/api/payments/stripe/webhook`
       },
@@ -159,7 +159,7 @@ export default function PasarelaPagoView() {
         passFeeToCustomer: false,
         keys: [
           { label: 'Public Key', keyName: 'public_key', value: 'APP_USR-78219084-219024...' },
-          { label: 'Access Token (Producción)', keyName: 'access_token', value: 'APP_USR-3902184-290148...', isSecret: true }
+          { label: 'Access Token (Producción)', keyName: 'access_token', value: '', isSecret: true }
         ],
         webhookUrl: `${window.location.origin}/api/payments/mercadopago/webhook`
       }
@@ -181,13 +181,9 @@ export default function PasarelaPagoView() {
               mIdKey.value = '';
             }
             const apiKey = bold.keys.find((k: any) => k.keyName === 'bold_api_key');
-            if (apiKey && (!apiKey.value || apiKey.value === 'x_live_bold_89210928412' || apiKey.value === 'l_5Wz-8KQmld8Vb_iyy05KWBQ0A3zz5LOtagMmCjfbk')) {
-              apiKey.value = 'l_5Wz-8KQmld8Vb_iyy05KWBQ0A3zz5LOtAgMmCjfbk';
-            }
+            if (apiKey) apiKey.value = '';
             const secKey = bold.keys.find((k: any) => k.keyName === 'bold_secret_key');
-            if (secKey && (!secKey.value || secKey.value === 'secret_live_bold_9210982')) {
-              secKey.value = '53nBWst7REiVw9So1Zf5aQ';
-            }
+            if (secKey) secKey.value = '';
             const urlKey = bold.keys.find((k: any) => k.keyName === 'bold_checkout_url');
             if (urlKey && (urlKey.value === 'sss' || urlKey.value.includes('FFVSR3C7Y1'))) {
               urlKey.value = '';

@@ -111,14 +111,6 @@ export default function App() {
     try {
       const searchParams = new URLSearchParams(window.location.search);
       if (searchParams.has('ref') || window.location.pathname.includes('/join/')) return 'register';
-      const emailParam = searchParams.get('email');
-      const autoLogin = searchParams.get('auto_login');
-      const paymentStatus = searchParams.get('payment_status');
-      if (emailParam && (autoLogin === '1' || autoLogin === 'true' || paymentStatus === 'completed')) {
-        return 'app';
-      }
-      const cached = localStorage.getItem('xorbit_user');
-      if (cached) return 'app';
     } catch (_) {}
     return 'login';
   });
@@ -137,29 +129,40 @@ export default function App() {
     answers: { [qId: string]: string };
   } | null>(null);
 
-  const [user, setUser] = useState<{name: string, role: string, email: string, plan?: string, username?: string, phone?: string} | null>(() => {
-    try {
-      const searchParams = new URLSearchParams(window.location.search);
-      const emailParam = searchParams.get('email');
-      const autoLogin = searchParams.get('auto_login');
-      const paymentStatus = searchParams.get('payment_status');
-      if (emailParam && (autoLogin === '1' || autoLogin === 'true' || paymentStatus === 'completed')) {
-        const u = {
-          name: searchParams.get('name') || emailParam.split('@')[0],
-          email: emailParam,
-          role: 'droshipper',
-          plan: 'Paquete Pro',
-          username: (searchParams.get('name') || emailParam.split('@')[0]).toLowerCase().replace(/[^a-zA-Z0-9_-]/g, ''),
-          phone: searchParams.get('phone') || ''
-        };
-        localStorage.setItem('xorbit_user', JSON.stringify(u));
-        return u;
-      }
-      const cached = localStorage.getItem('xorbit_user');
-      if (cached) return JSON.parse(cached);
-    } catch (_) {}
-    return null;
-  });
+  const [user, setUser] = useState<{name: string, role: string, email: string, plan?: string, username?: string, phone?: string} | null>(null);
+  const [authChecking, setAuthChecking] = useState(true);
+
+  useEffect(() => {
+    if (currentView === 'register') {
+      setAuthChecking(false);
+      return;
+    }
+    let mounted = true;
+    fetch('/api/auth/session', { credentials: 'same-origin' })
+      .then(async (res) => ({ ok: res.ok, data: await res.json().catch(() => null) }))
+      .then(({ ok, data }) => {
+        if (!mounted) return;
+        if (ok && data?.authenticated && data.user) {
+          setUser(data.user);
+          localStorage.setItem('xorbit_user', JSON.stringify(data.user));
+          setCurrentView('app');
+        } else {
+          localStorage.removeItem('xorbit_user');
+          setUser(null);
+          setCurrentView('login');
+        }
+      })
+      .catch(() => {
+        if (!mounted) return;
+        localStorage.removeItem('xorbit_user');
+        setUser(null);
+        setCurrentView('login');
+      })
+      .finally(() => {
+        if (mounted) setAuthChecking(false);
+      });
+    return () => { mounted = false; };
+  }, []);
 
   useEffect(() => {
     const userEmail = user?.email;
@@ -593,12 +596,15 @@ type ChatMessage = {
   };
 
   const handleLogout = () => {
+    fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).catch(() => undefined);
     try {
       localStorage.removeItem('xorbit_user');
     } catch (_) {}
     setUser(null);
     setCurrentView('login');
   };
+
+  if (authChecking) return <ModuleLoading />;
 
   if (!user || currentView === 'login') {
     return (

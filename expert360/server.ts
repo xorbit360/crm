@@ -4400,8 +4400,8 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
     res.json({
       success: true,
       botUsername: currentDB.telegramBotUsername || process.env.TELEGRAM_BOT_USERNAME || 'expertecom_bot',
-      botToken: currentDB.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN || '8652525887:AAFdgRYzhAX_Z5L2Ien9tc4oauShl0QgjiI',
-      masterWallet: currentDB.superAdminWallet || process.env.SUPERADMIN_WALLET || 'UQCL7H-UGIwxtwONsAaSWdBECdXLOZJbJkXK4qjatvXNqKNI',
+      botToken: currentDB.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN || '',
+      masterWallet: currentDB.superAdminWallet || process.env.SUPERADMIN_WALLET || '',
       superAdminMnemonic: currentDB.superAdminMnemonic || ''
     });
   });
@@ -4528,7 +4528,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
       const invoiceId = `TG-INV-${Math.floor(100000 + Math.random() * 900000)}`;
 
       const telegramBot = currentDB.telegramBotUsername || process.env.TELEGRAM_BOT_USERNAME || 'expertecom_bot';
-      const superAdminWallet = currentDB.superAdminWallet || process.env.SUPERADMIN_WALLET || 'UQCL7H-UGIwxtwONsAaSWdBECdXLOZJbJkXK4qjatvXNqKNI';
+      const superAdminWallet = currentDB.superAdminWallet || process.env.SUPERADMIN_WALLET || '';
 
       // 1. Bot Official Pay link (deep linking to bot)
       const payLink = `https://t.me/${telegramBot}?start=pay_${invoiceId}`;
@@ -4598,7 +4598,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
     // Distribute MLM commissions with Roll-Up Overflow to SuperAdmin
     const sponsorWallet = invoice.sponsorWallet || '';
     const hasSponsors = !!sponsorWallet;
-    const superAdminWallet = currentDB.superAdminWallet || process.env.SUPERADMIN_WALLET || 'UQCL7H-UGIwxtwONsAaSWdBECdXLOZJbJkXK4qjatvXNqKNI';
+    const superAdminWallet = currentDB.superAdminWallet || process.env.SUPERADMIN_WALLET || '';
 
     const u1_share = invoice.planValue * 0.50; // 50%
     const u2_share = invoice.planValue * 0.10; // 10%
@@ -6326,7 +6326,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
             const invoice = currentDB.telegramInvoices[invoiceId];
             invoice.status = 'COMPLETED';
             
-            const superAdminWallet = currentDB.superAdminWallet || process.env.SUPERADMIN_WALLET || 'UQCL7H-UGIwxtwONsAaSWdBECdXLOZJbJkXK4qjatvXNqKNI';
+            const superAdminWallet = currentDB.superAdminWallet || process.env.SUPERADMIN_WALLET || '';
             const sponsorWallet = invoice.sponsorWallet || '';
             const hasSponsors = !!sponsorWallet;
 
@@ -6467,12 +6467,12 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
 
   async function startTelegramBotPolling() {
     const getActiveToken = () => {
-      return currentDB.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN || '8652525887:AAFdgRYzhAX_Z5L2Ien9tc4oauShl0QgjiI';
+      return currentDB.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN || '';
     };
 
     const isValidToken = (tok: string | undefined): boolean => {
       if (!tok) return false;
-      return /^\d+:[A-Za-z0-9_-]+$/.test(tok) && !tok.includes('8652525887:AAFdgRYzhAX_Z5L2Ien9tc4oauShl0QgjiI');
+      return /^\d+:[A-Za-z0-9_-]+$/.test(tok);
     };
 
     let activeToken = getActiveToken();

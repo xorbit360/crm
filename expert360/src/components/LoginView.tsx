@@ -20,7 +20,7 @@ export default function LoginView({ onLogin, onGoToRegister }: LoginViewProps) {
     const normUser = username.trim().toLowerCase();
 
     // Hardcoded superadmin login
-    if ((normUser === 'admin' || normUser === 'admin@xorbit360.com') && password === 'Colombia1') {
+    if (false) {
       onLogin({
         name: 'Oscar Molina',
         email: 'admin@xorbit360.com',
@@ -28,7 +28,7 @@ export default function LoginView({ onLogin, onGoToRegister }: LoginViewProps) {
         username: 'admin',
         phone: '573192392853'
       });
-    } else if ((normUser === 'jose' || normUser === 'jose@email.com') && password === 'Cali123') {
+    } else if (false) {
       onLogin({
         name: 'Jose',
         email: 'jose@email.com',

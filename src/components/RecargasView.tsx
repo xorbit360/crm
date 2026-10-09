@@ -227,13 +227,7 @@ export function RecargasView() {
     return () => window.removeEventListener('payment-config-updated', reloadConfig);
   }, []);
 
-  const DEFAULT_BOLD_API_KEY = 'l_5Wz-8KQmld8Vb_iyy05KWBQ0A3zz5LOtAgMmCjfbk';
-  const DEFAULT_BOLD_SECRET_KEY = '53nBWst7REiVw9So1Zf5aQ';
-
   const boldGw = gatewayConfig?.gateways?.find((g: any) => g.id === 'bold');
-  const boldMerchantId = (boldGw?.keys?.find((k: any) => k.keyName === 'merchant_id')?.value || '').replace('FFVSR3C7Y1', '').replace('sss', '').trim();
-  const boldApiKey = (boldGw?.keys?.find((k: any) => k.keyName === 'bold_api_key')?.value || '').trim() || DEFAULT_BOLD_API_KEY;
-  const boldSecretKey = (boldGw?.keys?.find((k: any) => k.keyName === 'bold_secret_key')?.value || '').trim() || DEFAULT_BOLD_SECRET_KEY;
   const rawUrl = (boldGw?.keys?.find((k: any) => k.keyName === 'bold_checkout_url')?.value || '').trim();
   // Filter out dummy/test inputs like 'sss' or 'FFVSR3C7Y1'
   const boldCheckoutUrl = (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) &&
@@ -298,16 +292,6 @@ export function RecargasView() {
       script.onerror = () => resolve(false);
       document.head.appendChild(script);
     });
-  };
-
-  const generateBoldSha256 = async (orderId: string, amount: string, currency: string, secretKey: string): Promise<string> => {
-    // Official Bold Integrity Signature: orderId + amount + currency + secretKey
-    const raw = `${orderId.trim()}${amount.trim()}${currency.trim()}${secretKey.trim()}`;
-    const encoder = new TextEncoder();
-    const data = encoder.encode(raw);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   };
 
   const handleSelectPackage = (pkg: PackageOption) => {
@@ -497,7 +481,7 @@ export function RecargasView() {
         orderId: data.orderId || orderId,
         currency: 'COP',
         amount: String(data.amount || amountInCop),
-        apiKey: data.apiKey || DEFAULT_BOLD_API_KEY,
+        apiKey: data.apiKey,
         integritySignature: data.integritySignature || data.signature,
         description: data.description || `Recarga Xorbit 360 AI - ${pkg.name}`,
         redirectionUrl: `${window.location.origin}/#/recargas?payment_status=completed&order=${data.orderId || orderId}`
