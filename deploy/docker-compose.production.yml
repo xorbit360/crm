@@ -1,0 +1,25 @@
+services:
+  crm:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: crm-web-1
+    env_file:
+      - ./app/.env
+    environment:
+      MCP_WORKSPACE_ROOT: /workspace
+      VPS_SSH_KEY_PATH: /run/secrets/mcp_vps_ed25519
+    restart: always
+    ports:
+      - "32850:3000"
+    volumes:
+      - ./app:/workspace
+      - ./secrets/mcp_vps_ed25519:/run/secrets/mcp_vps_ed25519:ro
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.crm.rule=Host(`crm.xorbit360.com`)
+      - traefik.http.routers.crm.entrypoints=websecure
+      - traefik.http.routers.crm.tls.certresolver=letsencrypt
+      - traefik.http.services.crm.loadbalancer.server.port=3000
+      - traefik.http.routers.crm-http.rule=Host(`crm.xorbit360.com`)
+      - traefik.http.routers.crm-http.entrypoints=web
