@@ -1317,7 +1317,7 @@ export default function WhatsappView({
           return dedupeInboxChats(next, activeChatId).sort((a: any, b: any) => (Number(b.timestamp) || 0) - (Number(a.timestamp) || 0));
         });
       }
-      const unifiedState = await fetch('/api/backoffice/state').then(r => r.ok ? r.json() : null).catch(() => null);
+      const unifiedState = await fetch('/api/backoffice/inbox?limit=300').then(r => r.ok ? r.json() : null).catch(() => null);
       if (Array.isArray(unifiedState?.chats)) {
         setChats(previous => {
           const byId = new Map<string, any>(previous.map(chat => [chat.id, chat] as [string, any]));

@@ -3193,7 +3193,7 @@ async function createServer() {
   // Lightweight realtime snapshot for the inbox. The full backoffice state
   // also contains AI logs and billing history; sending those on every webhook
   // event made the CRM transfer ~776 KB and caused visible chat jumps.
-  app.get("/api/backoffice/inbox", (_req, res) => {
+  app.get("/api/backoffice/inbox", (req, res) => {
     collapseInstagramChats();
     res.setHeader('Cache-Control', 'no-store');
     const chatFields = [
@@ -3202,11 +3202,16 @@ async function createServer() {
       'conversationId', 'externalId', 'accountId', 'participantId',
       'participantUsername', 'instanceName', 'remoteJid', 'timestamp', 'sender'
     ];
-    const chats = (Array.isArray(currentDB.chats) ? currentDB.chats : []).map((chat: any) => {
+    const limit = Math.min(500, Math.max(50, Number(req.query.limit) || 300));
+    const chats = (Array.isArray(currentDB.chats) ? currentDB.chats : [])
+      .slice()
+      .sort((a: any, b: any) => (Number(b?.timestamp) || 0) - (Number(a?.timestamp) || 0))
+      .slice(0, limit)
+      .map((chat: any) => {
       const compact: any = {};
       for (const field of chatFields) if (chat?.[field] !== undefined) compact[field] = chat[field];
       return compact;
-    });
+      });
     res.json({
       chats,
       messagesHistory: currentDB.messagesHistory || {}
