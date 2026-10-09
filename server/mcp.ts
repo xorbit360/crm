@@ -16,6 +16,9 @@ type McpDeps = {
 const PROTOCOL_VERSION = '2025-06-18';
 const SUPER_TOKEN = () => process.env.MCP_SUPERADMIN_TOKEN || '';
 const USER_TOKEN = () => process.env.MCP_USER_TOKEN || '';
+const HOSTINGER_TOKEN = () => process.env.HOSTINGER_API_TOKEN || '';
+const SUPABASE_URL = () => String(process.env.SUPABASE_URL || '').replace(/\/$/, '');
+const SUPABASE_KEY = () => process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || '';
 
 function tokenFor(req: Request, role: McpRole): boolean {
   const header = String(req.headers.authorization || '');
@@ -44,8 +47,14 @@ const userTools = [
   { name: 'chatbot_config_update', description: 'Actualiza campos permitidos de configuración del chatbot.', inputSchema: { type: 'object', properties: { greeting: { type: 'string', maxLength: 2000 }, rules: { type: 'array', maxItems: 50 }, enabled: { type: 'boolean' } }, additionalProperties: false } }
 ];
 
+const providerTools = [
+  { name: 'hostinger_api', description: 'Ejecuta una operación autenticada de la API de Hostinger sobre rutas /api/.', inputSchema: { type: 'object', required: ['method', 'path'], properties: { method: { type: 'string', enum: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] }, path: { type: 'string', pattern: '^/api/[A-Za-z0-9_./?=&%-]+$' }, body: { type: 'object' } }, additionalProperties: false } },
+  { name: 'supabase_rest', description: 'Ejecuta una operación REST autenticada de Supabase con la service key privada.', inputSchema: { type: 'object', required: ['method', 'path'], properties: { method: { type: 'string', enum: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] }, path: { type: 'string', pattern: '^/(rest|auth|storage|functions)/[A-Za-z0-9_./?=&%-]+$' }, body: {} }, additionalProperties: false } }
+];
+
 const superTools = [
   ...userTools,
+  ...providerTools,
   { name: 'project_read_file', description: 'Lee un archivo de código permitido del proyecto. Nunca devuelve secretos.', inputSchema: { type: 'object', required: ['path'], properties: { path: { type: 'string', maxLength: 240 } }, additionalProperties: false } },
   { name: 'project_write_file', description: 'Escribe un archivo de código permitido del proyecto sin secretos.', inputSchema: { type: 'object', required: ['path', 'content'], properties: { path: { type: 'string', maxLength: 240 }, content: { type: 'string', maxLength: 300000 } }, additionalProperties: false } },
   { name: 'git_status', description: 'Consulta el estado del repositorio Git.', inputSchema: { type: 'object', properties: {}, additionalProperties: false } },
@@ -92,6 +101,16 @@ function redact(value: any): any {
 async function runGit(projectRoot: string, args: string[]) {
   const result = await execFileAsync('git', args, { cwd: projectRoot, maxBuffer: 1024 * 1024 });
   return { stdout: result.stdout.trim(), stderr: result.stderr.trim() };
+}
+
+async function callProvider(method: string, url: string, token: string, body?: unknown, headers: Record<string, string> = {}) {
+  if (!token) throw new Error('Credencial del proveedor no configurada en el servidor');
+  const response = await fetch(url, { method, headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}), ...headers }, body: body === undefined ? undefined : JSON.stringify(body) });
+  const text = await response.text();
+  let data: unknown = text;
+  try { data = text ? JSON.parse(text) : null; } catch { /* no JSON */ }
+  if (!response.ok) throw new Error(`${response.status} ${response.statusText}: ${typeof data === 'string' ? data.slice(0, 1000) : JSON.stringify(data).slice(0, 1000)}`);
+  return redact(data);
 }
 
 async function callTool(role: McpRole, name: string, args: any, deps: McpDeps): Promise<unknown> {
@@ -144,6 +163,17 @@ async function callTool(role: McpRole, name: string, args: any, deps: McpDeps): 
     if (forbidden.length) throw new Error(`Campos protegidos: ${forbidden.join(', ')}`);
     deps.saveDB({ ...db, ...patch });
     return { success: true, updated: Object.keys(patch) };
+  }
+  if (name === 'hostinger_api') {
+    const apiPath = String(args?.path || '');
+    if (!/^\/api\/[A-Za-z0-9_./?=&%-]+$/.test(apiPath)) throw new Error('Ruta Hostinger inválida');
+    return callProvider(String(args?.method || 'GET').toUpperCase(), `https://developers.hostinger.com${apiPath}`, HOSTINGER_TOKEN(), args?.body);
+  }
+  if (name === 'supabase_rest') {
+    const apiPath = String(args?.path || '');
+    if (!/^\/(rest|auth|storage|functions)\/[A-Za-z0-9_./?=&%-]+$/.test(apiPath)) throw new Error('Ruta Supabase inválida');
+    const key = SUPABASE_KEY();
+    return callProvider(String(args?.method || 'GET').toUpperCase(), `${SUPABASE_URL()}${apiPath}`, key, args?.body, { apikey: key });
   }
   throw new Error(`Herramienta desconocida: ${name}`);
 }
