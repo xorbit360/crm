@@ -25,7 +25,11 @@ const VPS_SSH_KEY = () => process.env.VPS_SSH_KEY_PATH || '/run/secrets/mcp_vps_
 
 function tokenFor(req: Request, role: McpRole): boolean {
   const header = String(req.headers.authorization || '');
-  const token = header.startsWith('Bearer ') ? header.slice(7).trim() : '';
+  // Custom connector clients (Muse, Make and similar tools) often expose a
+  // single “API key” field and send X-API-Key instead of Authorization.
+  const token = header.startsWith('Bearer ')
+    ? header.slice(7).trim()
+    : String(req.headers['x-api-key'] || '').trim();
   const expected = role === 'superadmin' ? SUPER_TOKEN() : USER_TOKEN();
   return Boolean(expected && token && token.length >= 32 && token === expected);
 }
