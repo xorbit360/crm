@@ -26,7 +26,12 @@ import {
 } from 'lucide-react';
 import { getEffectiveDomain, getCachedWhiteLabel } from '../lib/whitelabel';
 
-export default function McpApiView() {
+type McpApiViewProps = {
+  currentUser?: { role?: string; email?: string; username?: string } | null;
+};
+
+export default function McpApiView({ currentUser }: McpApiViewProps) {
+  const isAdmin = currentUser?.role === 'superadmin' || currentUser?.role === 'admin';
   const [activeTab, setActiveTab] = useState<'mcp' | 'api' | 'webhooks'>('mcp');
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -355,9 +360,9 @@ export default function McpApiView() {
   const claudeConfigSnippet = JSON.stringify({
     mcpServers: {
       xorbit360: {
-        url: `${currentDomain}/api/mcp/superadmin`,
+        url: `${currentDomain}/api/mcp/${isAdmin ? 'superadmin' : 'user'}`,
         headers: {
-          Authorization: 'Bearer MCP_SUPERADMIN_TOKEN'
+          Authorization: `Bearer MCP_${isAdmin ? 'SUPERADMIN' : 'USER'}_TOKEN`
         }
       }
     }
@@ -367,9 +372,9 @@ export default function McpApiView() {
     mcpServers: {
       xorbit360: {
         type: "streamable-http",
-        url: `${currentDomain}/api/mcp/superadmin`,
+        url: `${currentDomain}/api/mcp/${isAdmin ? 'superadmin' : 'user'}`,
         headers: {
-          Authorization: 'Bearer MCP_SUPERADMIN_TOKEN'
+          Authorization: `Bearer MCP_${isAdmin ? 'SUPERADMIN' : 'USER'}_TOKEN`
         }
       }
     }
@@ -467,6 +472,7 @@ export default function McpApiView() {
 
           {/* Quick MCP Info Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {isAdmin && (
             <div className="panel p-5 rounded-2xl border border-gray-800 bg-gray-900/60 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wider text-blue-400">Super Admin MCP</span>
@@ -483,6 +489,7 @@ export default function McpApiView() {
                 <span>{copiedId === 'superadmin_url' ? 'Copiado' : 'Copiar URL Super Admin'}</span>
               </button>
             </div>
+            )}
 
             <div className="panel p-5 rounded-2xl border border-gray-800 bg-gray-900/60 space-y-2">
               <div className="flex items-center justify-between">

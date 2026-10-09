@@ -242,7 +242,7 @@ export default function ConfiguracionGeneralView({
       )}
 
       {activeTab === 'mcp_api' && (
-        <McpApiView />
+        <McpApiView currentUser={currentUser} />
       )}
 
       {activeTab === 'dominio' && (

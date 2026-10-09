@@ -400,7 +400,7 @@ type ChatMessage = {
 
   const configModules = [
     { id: 'configuracion_general' as ModuleId, label: t.configuracionGeneral, icon: <SettingsIcon size={18} /> },
-    { id: 'mcp_api' as ModuleId, label: t.mcp_api || 'MCP y API', icon: <Terminal size={18} />, reqRole: ['superadmin', 'admin'] },
+    { id: 'mcp_api' as ModuleId, label: t.mcp_api || 'MCP y API', icon: <Terminal size={18} /> },
     { id: 'dominio' as ModuleId, label: t.dominio || 'Dominio Personalizado', icon: <Globe size={18} /> },
     { id: 'usuarios' as ModuleId, label: t.usuarios, icon: <Users size={18} />, reqRole: ['superadmin', 'admin'] },
     { id: 'automatizaciones' as ModuleId, label: t.automatizaciones, icon: <Network size={18} /> },
@@ -1420,7 +1420,7 @@ type ChatMessage = {
                 initialTab="dominio"
               />
             )}
-            {activeModule === 'mcp_api' && (user?.role === 'superadmin' || user?.role === 'admin') && (
+            {activeModule === 'mcp_api' && (
               <ConfiguracionGeneralView
                 currentLanguage={language}
                 onLanguageChange={setLanguage}
@@ -1429,6 +1429,7 @@ type ChatMessage = {
                 hiddenItems={hiddenItems}
                 toggleVisibility={toggleVisibility}
                 initialTab="mcp_api"
+                currentUser={user}
               />
             )}
             {activeModule === 'herramientas' && (
