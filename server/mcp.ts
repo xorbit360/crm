@@ -105,7 +105,7 @@ async function runGit(projectRoot: string, args: string[]) {
 
 async function callProvider(method: string, url: string, token: string, body?: unknown, headers: Record<string, string> = {}) {
   if (!token) throw new Error('Credencial del proveedor no configurada en el servidor');
-  const response = await fetch(url, { method, headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}), ...headers }, body: body === undefined ? undefined : JSON.stringify(body) });
+  const response = await fetch(url, { method, headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'User-Agent': 'xorbit360-superadmin-mcp/1.0', ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}), ...headers }, body: body === undefined ? undefined : JSON.stringify(body) });
   const text = await response.text();
   let data: unknown = text;
   try { data = text ? JSON.parse(text) : null; } catch { /* no JSON */ }
