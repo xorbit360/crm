@@ -22,3 +22,7 @@ auth_info_baileys*
 *.zip
 *.tar.gz
 bundle_b64.txt
+*.zip
+*.tar.gz
+dist/
+zernio-status.tmp
