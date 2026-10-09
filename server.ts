@@ -3415,7 +3415,10 @@ async function createServer() {
       console.log("[WhatsApp API] Estado de configuración actualizado con éxito.");
 
       saveDBData(currentDB);
-      res.json({ success: true, state: currentDB });
+      // Do not return the full state here: it contains large AI debug logs and
+      // made every settings save download hundreds of KB on slow phones. The UI
+      // only checks whether the save succeeded.
+      res.json({ success: true });
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Error updating state" });
     }

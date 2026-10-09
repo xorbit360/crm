@@ -1,23 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Terminal, Activity, Cpu, Smartphone, Search, MoreVertical, Smile, Paperclip, Image as ImageIcon, Mic, UploadCloud, MessageCircle, FileText, Database, Shield, Zap, Settings, Play, QrCode, Layout, Plus, CheckCircle, CheckCircle2, UserCircle, Camera, Wand2, X, Facebook, Instagram, Send, Globe, Video, Clock, ShoppingCart, BarChart3, HeartHandshake, Calendar, HelpCircle, Eye, EyeOff, Key, Lock, Users, Sparkles, MessageSquare, Package, Bell, AlertTriangle, Music, Headphones, ArrowLeft, ArrowRight, Edit3, Trash2, RefreshCw, Utensils, Copy, Bot, Save, Power, Layers, ExternalLink, Filter, Radio, Truck, PanelLeft, PanelLeftClose } from 'lucide-react';
 
-import CatalogoView from './CatalogoView';
-import ReportesView from './ReportesView';
-import FidelizacionView from './FidelizacionView';
-import CampanasView from './CampanasView';
-import CitasView from './CitasView';
-import ComentariosSocialesView from './ComentariosSocialesView';
-import ClientesView from './ClientesView';
-import PedidosView from './PedidosView';
-import AlertasView from './AlertasView';
-import ProgramacionesBotView from './ProgramacionesBotView';
-import { RecargasView } from './RecargasView';
-import ReferidosView from './ReferidosView';
 import { VoiceNotePlayer } from './VoiceNotePlayer';
 import { LiveAudioRecorder } from './LiveAudioRecorder';
-import ChatbotIntegracionesView from './ChatbotIntegracionesView';
 import { formatLocalTime, formatLocalDateTime, formatColombiaTime, getTimezone } from '../utils/timezone';
 import { buildAdminDemoClients, buildAdminDemoOrders, isPrincipalAdmin, scopedStorageKey } from '../lib/demoSales';
+
+// Secondary tabs are loaded only when opened. Keeping them out of the first
+// WhatsApp chunk makes the Conversaciones entry much lighter on mobile.
+const CatalogoView = React.lazy(() => import('./CatalogoView'));
+const ReportesView = React.lazy(() => import('./ReportesView'));
+const FidelizacionView = React.lazy(() => import('./FidelizacionView'));
+const CampanasView = React.lazy(() => import('./CampanasView'));
+const CitasView = React.lazy(() => import('./CitasView'));
+const ComentariosSocialesView = React.lazy(() => import('./ComentariosSocialesView'));
+const ClientesView = React.lazy(() => import('./ClientesView'));
+const PedidosView = React.lazy(() => import('./PedidosView'));
+const AlertasView = React.lazy(() => import('./AlertasView'));
+const ProgramacionesBotView = React.lazy(() => import('./ProgramacionesBotView'));
+const RecargasView = React.lazy(() => import('./RecargasView'));
+const ReferidosView = React.lazy(() => import('./ReferidosView'));
+const ChatbotIntegracionesView = React.lazy(() => import('./ChatbotIntegracionesView'));
 
 
 // Helper functions for stylish initials and distinct enterprise avatars
@@ -710,6 +713,7 @@ export default function WhatsappView({
           setReactivationTrigger(dbData.reactivationTrigger);
         }
         if (dbData.botPrompt && typeof dbData.botPrompt === 'string') {
+          botPromptSaveRef.current = dbData.botPrompt;
           setBotPrompt(dbData.botPrompt);
         }
         if (Array.isArray(dbData.products)) {
@@ -1429,17 +1433,11 @@ export default function WhatsappView({
   useEffect(() => {
     if (syncStartedRef.current) return;
     syncStartedRef.current = true;
-    // Opening this module used to import provider history on every mount. That
-    // external sync is useful as a recovery action, but doing it on each visit
-    // made the WhatsApp tool hang before the user could work.
-    const providerSyncKey = 'xorbit-whatsapp-last-provider-sync';
-    const lastProviderSync = Number(sessionStorage.getItem(providerSyncKey) || 0);
-    if (Date.now() - lastProviderSync > 10 * 60 * 1000) {
-      sessionStorage.setItem(providerSyncKey, String(Date.now()));
-      handleSyncRecentChats(true);
-    } else {
-      refreshRealtimeInbox();
-    }
+    // Do not import provider history on entry. That external sync is a manual
+    // recovery action; running it when the module opens made this screen hang
+    // before the operator could work. Webhooks already persist the inbox and
+    // realtime events keep it fresh.
+    refreshRealtimeInbox();
     const events = new EventSource('/api/realtime/events');
     let updateTimer: number | undefined;
     const refreshFromEvent = () => {
@@ -1730,11 +1728,18 @@ d) Nombre y teléfono de contacto.
 - Zona de cobertura de domicilios: Hasta 8 km sin recargo.`;
   });
 
+  const botPromptSaveRef = useRef(botPrompt);
+
   React.useEffect(() => {
     try {
       localStorage.setItem('whatsapp_bot_prompt_v1', botPrompt);
     } catch (e) {}
+    // The server bootstrap also sets this prompt. Saving it back on entry used
+    // to post to /api/backoffice/state and download the full state again, which
+    // made the tool feel frozen on slow phones.
+    if (botPromptSaveRef.current === botPrompt) return;
     const timer = setTimeout(() => {
+      botPromptSaveRef.current = botPrompt;
       fetch('/api/backoffice/state', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2658,19 +2663,30 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
 
   // Guardado automático persistente de mensajes y chats en LocalStorage
   React.useEffect(() => {
-    try {
-      localStorage.setItem(messagesStorageKey, JSON.stringify(messages));
-    } catch (e) {
-      console.warn('Error guardando mensajes en localStorage:', e);
-    }
+    // Persisting on every realtime tick stringified the whole history on the
+    // main thread. Debounce it and keep only the recent tail per conversation.
+    const timer = window.setTimeout(() => {
+      try {
+        const compactMessages = Object.fromEntries(
+          Object.entries(messages).map(([key, history]) => [key, Array.isArray(history) ? history.slice(-50) : history])
+        );
+        localStorage.setItem(messagesStorageKey, JSON.stringify(compactMessages));
+      } catch (e) {
+        console.warn('Error guardando mensajes en localStorage:', e);
+      }
+    }, 800);
+    return () => window.clearTimeout(timer);
   }, [messages]);
 
   React.useEffect(() => {
-    try {
-      localStorage.setItem(chatsStorageKey, JSON.stringify(chats));
-    } catch (e) {
-      console.warn('Error guardando chats en localStorage:', e);
-    }
+    const timer = window.setTimeout(() => {
+      try {
+        localStorage.setItem(chatsStorageKey, JSON.stringify(chats));
+      } catch (e) {
+        console.warn('Error guardando chats en localStorage:', e);
+      }
+    }, 800);
+    return () => window.clearTimeout(timer);
   }, [chats]);
 
   // Keep the viewport stable. A chat change jumps directly to the latest
@@ -10134,6 +10150,7 @@ ${parametersString}
           </div>
         </div>
       )}
+      <React.Suspense fallback={<div className="pt-4 text-sm text-zinc-400">Cargando módulo…</div>}>
       {currentViewTab === 'catalogo' && (
         <div className="pt-4"><CatalogoView /></div>
       )}
@@ -10173,6 +10190,7 @@ ${parametersString}
       {currentViewTab === 'referidos' && (
         <div className="pt-4"><ReferidosView currentUser={currentUser} /></div>
       )}
+      </React.Suspense>
 
       {/* Lightbox Modal for Fullscreen Image Viewing */}
       {selectedImageLightbox && (

@@ -22,6 +22,24 @@ class ErrorBoundary extends React.Component<{children: ReactNode}, {hasError: bo
         (this as any).setState({ hasError: false, error: null });
       }, 500);
     }
+    // After a deploy, a phone may still hold an old lazy chunk name. Reload
+    // once instead of leaving the operator on this screen.
+    const isChunkError = msg.includes('Failed to fetch dynamically imported module') ||
+      msg.includes('Importing a module script failed') ||
+      msg.includes('ChunkLoadError') ||
+      msg.includes('Loading chunk');
+    if (isChunkError) {
+      try {
+        const key = 'xorbit-chunk-reload-at';
+        const last = Number(sessionStorage.getItem(key) || 0);
+        if (Date.now() - last > 15000) {
+          sessionStorage.setItem(key, String(Date.now()));
+          window.location.reload();
+        }
+      } catch (_) {
+        window.location.reload();
+      }
+    }
   }
 
   render() {
@@ -60,9 +78,7 @@ class ErrorBoundary extends React.Component<{children: ReactNode}, {hasError: bo
                 : 'La aplicación ha detectado un evento inesperado. Puedes recargar para continuar sin perder tu información.'}
             </p>
             <button
-              onClick={() => {
-                (this as any).setState({ hasError: false, error: null });
-              }}
+              onClick={() => window.location.reload()}
               style={{
                 backgroundColor: '#2563eb',
                 color: '#ffffff',
