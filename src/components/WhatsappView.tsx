@@ -677,7 +677,7 @@ export default function WhatsappView({
 
     const syncChatsAndHistory = async () => {
       try {
-        const res = await fetch('/api/backoffice/state');
+        const res = await fetch('/api/backoffice/whatsapp');
         if (!res.ok) return;
         const dbData = await res.json();
 

@@ -3224,6 +3224,25 @@ async function createServer() {
     });
   });
 
+  // WhatsApp view bootstrap: only the configuration fields that the bot UI
+  // needs plus the recent inbox. This replaces the 776 KB global state fetch
+  // performed when opening the WhatsApp module.
+  app.get("/api/backoffice/whatsapp", (_req, res) => {
+    const configKeys = [
+      'whatsappConnected', 'connectedPhone', 'customGreeting',
+      'greetingAttachments', 'faqsList', 'reactivationTrigger', 'botPrompt',
+      'apiProvider', 'aiModel', 'customApiKey', 'blacklistedBots', 'apiTokens',
+      'remarketingCount', 'remarketingInterval', 'remarketingAvoidSpam',
+      'remarketingMessages', 'remarketingUseAI', 'remarketingAttachments'
+    ];
+    const config: any = {};
+    for (const key of configKeys) if (currentDB[key] !== undefined) config[key] = currentDB[key];
+    const chats = (Array.isArray(currentDB.chats) ? currentDB.chats : [])
+      .slice().sort((a: any, b: any) => (Number(b?.timestamp) || 0) - (Number(a?.timestamp) || 0)).slice(0, 300);
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ ...config, chats, messagesHistory: currentDB.messagesHistory || {} });
+  });
+
   // Module-scoped snapshots avoid loading the complete backoffice object when
   // opening Catalog or Social Comments.
   app.get("/api/backoffice/catalog", (_req, res) => {
