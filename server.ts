@@ -3196,8 +3196,19 @@ async function createServer() {
   app.get("/api/backoffice/inbox", (_req, res) => {
     collapseInstagramChats();
     res.setHeader('Cache-Control', 'no-store');
+    const chatFields = [
+      'id', 'name', 'time', 'msg', 'message', 'unread', 'phone', 'columnId',
+      'status', 'tags', 'leadStatus', 'avatar', 'channelId', 'platform',
+      'conversationId', 'externalId', 'accountId', 'participantId',
+      'participantUsername', 'instanceName', 'remoteJid', 'timestamp', 'sender'
+    ];
+    const chats = (Array.isArray(currentDB.chats) ? currentDB.chats : []).map((chat: any) => {
+      const compact: any = {};
+      for (const field of chatFields) if (chat?.[field] !== undefined) compact[field] = chat[field];
+      return compact;
+    });
     res.json({
-      chats: Array.isArray(currentDB.chats) ? currentDB.chats : [],
+      chats,
       messagesHistory: currentDB.messagesHistory || {}
     });
   });
