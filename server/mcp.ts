@@ -16,7 +16,7 @@ type McpDeps = {
 const PROTOCOL_VERSION = '2025-06-18';
 const SUPER_TOKEN = () => process.env.MCP_SUPERADMIN_TOKEN || '';
 const USER_TOKEN = () => process.env.MCP_USER_TOKEN || '';
-const HOSTINGER_TOKEN = () => process.env.HOSTINGER_API_TOKEN || '';
+const HOSTINGER_TOKEN = () => String(process.env.HOSTINGER_API_TOKEN || '').trim();
 const SUPABASE_URL = () => String(process.env.SUPABASE_URL || '').replace(/\/$/, '');
 const SUPABASE_KEY = () => process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || '';
 
