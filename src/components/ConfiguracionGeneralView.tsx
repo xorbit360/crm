@@ -13,6 +13,7 @@ import PasarelaPagoView from './PasarelaPagoView';
 import McpApiView from './McpApiView';
 import PersonalizacionPlataformaView from './PersonalizacionPlataformaView';
 import ProyectosView from './ProyectosView';
+import ProveedorIaOpenRouter from './ProveedorIaOpenRouter';
 
 interface ConfiguracionGeneralViewProps {
   currentLanguage: Language;
@@ -287,6 +288,11 @@ export default function ConfiguracionGeneralView({
 
       {activeTab === 'general' && (
         <div className="space-y-8 animate-fade-in">
+          {currentUser?.role === 'superadmin' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <ProveedorIaOpenRouter />
+            </div>
+          )}
           {savedToast && (
             <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 p-4 rounded-xl flex items-center justify-between animate-fade-in">
               <div className="flex items-center gap-2">

@@ -46,8 +46,15 @@ import {
   safeCompareSecret,
   setSessionCookie,
 } from './server/auth.ts';
+import {
+  decryptSecret,
+  encryptSecret,
+  isEncryptedSecret,
+  isSecretEncryptionEnabled,
+  maskSecret,
+} from './server/secretBox.ts';
 
-const SENSITIVE_RESPONSE_FIELD = /(password|passcode|secret|mnemonic|private.?key|api.?key|access.?token|refresh.?token|bot.?token|token)$/i;
+const SENSITIVE_RESPONSE_FIELD = /(password|passcode|secret|mnemonic|private.?key|api.?key|api.?key.?backup|access.?token|refresh.?token|bot.?token|token)$/i;
 
 function sanitizeForClient(value: any): any {
   if (Array.isArray(value)) return value.map(sanitizeForClient);
@@ -1722,6 +1729,29 @@ async function initDB() {
     console.log('[Startup Cleanup] Cleaned up browser blob attachments from memory and database.');
     saveDBData(currentDB);
   }
+
+  // Migracion transparente: las claves de IA heredadas en texto plano
+  // pasan a formato cifrado (AES-256-GCM). Si la llave maestra no esta
+  // configurada, se dejan como estan y se cifran en el proximo guardado.
+  if (isSecretEncryptionEnabled()) {
+    let migratedSecrets = false;
+    for (const field of ['customApiKey', 'customApiKeyBackup', 'openrouterApiKey']) {
+      const legacyValue = (currentDB as any)[field];
+      if (typeof legacyValue === 'string' && legacyValue.trim() && !isEncryptedSecret(legacyValue)) {
+        (currentDB as any)[field] = encryptSecret(legacyValue.trim());
+        migratedSecrets = true;
+      }
+    }
+    const blobToken = currentDB?.chatbotIntegrationTokens?.openrouter?.token;
+    if (typeof blobToken === 'string' && blobToken.trim() && !isEncryptedSecret(blobToken)) {
+      currentDB.chatbotIntegrationTokens.openrouter.token = encryptSecret(blobToken.trim());
+      migratedSecrets = true;
+    }
+    if (migratedSecrets) {
+      console.log('[SecretBox] Claves de IA heredadas migradas a almacenamiento cifrado.');
+      saveDBData(currentDB);
+    }
+  }
 }
 
 // Utility to construct unified dynamic prompt for WhatsApp Chatbot
@@ -3249,7 +3279,7 @@ async function createServer() {
       maxTokensLimit: currentDB.maxTokensLimit || 1000000,
       activeProvider: currentDB.apiProvider || "openai",
       activeModel: currentDB.aiModel || "gpt-4o",
-      openrouterRouteActive: !!OPENROUTER_API_KEY,
+      openrouterRouteActive: !!resolveOpenRouterApiKey(),
       openrouterClassifierModel: OR_CLASSIFIER_MODEL,
       openrouterResponseModel: OR_RESPONSE_MODEL,
       hasCustomKey: !!(currentDB.customApiKey && currentDB.customApiKey.trim().length > 0),
@@ -3264,10 +3294,69 @@ async function createServer() {
     res.json({ success: true, message: "Logs de depuración borrados con éxito." });
   });
 
+  // ===== Proveedor IA (solo super admin): clave de OpenRouter cifrada =====
+  // La clave vive cifrada (AES-256-GCM) en el estado y NUNCA se devuelve:
+  // la API solo expone si existe, su origen y la mascara (•••• + ultimos 4).
+  function openRouterKeyInfo() {
+    const envKey = String(process.env.OPENROUTER_API_KEY || '').trim();
+    const dbKey = decryptSecret(currentDB.openrouterApiKey).trim();
+    return {
+      configured: !!(envKey || dbKey),
+      source: (envKey ? 'env' : (dbKey ? 'db' : null)) as 'env' | 'db' | null,
+      masked: maskSecret(envKey || currentDB.openrouterApiKey),
+      routeActive: !!(envKey || dbKey),
+      classifierModel: OR_CLASSIFIER_MODEL,
+      responseModel: OR_RESPONSE_MODEL,
+      classifierMaxTokens: AI_CLASSIFIER_MAX_TOKENS,
+      responseMaxTokens: AI_RESPONSE_MAX_TOKENS,
+      encryptionEnabled: isSecretEncryptionEnabled(),
+    };
+  }
+
+  function requireSuperAdmin(req: any, res: any): boolean {
+    if (req?.authUser?.role !== 'superadmin') {
+      res.status(403).json({ success: false, error: 'Solo el super admin de la plataforma puede gestionar la clave de OpenRouter.' });
+      return false;
+    }
+    return true;
+  }
+
+  app.get('/api/admin/ai-provider', (req, res) => {
+    if (!requireSuperAdmin(req, res)) return;
+    res.json({ success: true, openrouter: openRouterKeyInfo() });
+  });
+
+  app.put('/api/admin/ai-provider/openrouter-key', (req, res) => {
+    if (!requireSuperAdmin(req, res)) return;
+    const apiKey = String(req.body?.apiKey || '').trim();
+    if (!apiKey) {
+      return res.status(400).json({ success: false, error: 'Pega tu clave de OpenRouter.' });
+    }
+    if (apiKey.length < 12) {
+      return res.status(400).json({ success: false, error: 'La clave parece incompleta; revisa que la copiaste completa.' });
+    }
+    try {
+      currentDB.openrouterApiKey = encryptSecret(apiKey);
+    } catch (err: any) {
+      return res.status(500).json({ success: false, error: err?.message || 'No se pudo cifrar la clave en el servidor.' });
+    }
+    saveDBData(currentDB);
+    console.log('[OpenRouter] Clave guardada cifrada desde Configuracion General (super admin).');
+    res.json({ success: true, openrouter: openRouterKeyInfo() });
+  });
+
+  app.delete('/api/admin/ai-provider/openrouter-key', (req, res) => {
+    if (!requireSuperAdmin(req, res)) return;
+    currentDB.openrouterApiKey = '';
+    saveDBData(currentDB);
+    console.log('[OpenRouter] Clave de la configuracion eliminada por el super admin.');
+    res.json({ success: true, openrouter: openRouterKeyInfo() });
+  });
+
   app.post("/api/backoffice/test-ai-connection", async (req, res) => {
     try {
       const provider = req.body.provider || currentDB.apiProvider || 'openai';
-      let customKey = req.body.customKey?.trim() || currentDB.customApiKey?.trim();
+      let customKey = req.body.customKey?.trim() || decryptSecret(currentDB.customApiKey).trim();
       if (!customKey && provider === 'gemini') {
         customKey = defaultGeminiApiKey;
       }
@@ -3500,9 +3589,21 @@ async function createServer() {
 
   app.post("/api/backoffice/state", (req, res) => {
     try {
+      const incoming: Record<string, any> = { ...(req.body || {}) };
+      // Las claves de IA nunca se guardan en texto plano: se cifran al escribir.
+      for (const field of ['customApiKey', 'customApiKeyBackup', 'openrouterApiKey']) {
+        const value = incoming[field];
+        if (typeof value === 'string' && value.trim() && !isEncryptedSecret(value)) {
+          try {
+            incoming[field] = encryptSecret(value.trim());
+          } catch (encErr: any) {
+            return res.status(500).json({ error: encErr?.message || 'No se pudo cifrar la clave de IA.' });
+          }
+        }
+      }
       currentDB = {
         ...currentDB,
-        ...req.body
+        ...incoming
       };
 
       // save state without resetting messagesHistory
@@ -3756,6 +3857,14 @@ async function createServer() {
   const OR_RESPONSE_MODEL = String(process.env.OPENROUTER_RESPONSE_MODEL || 'openai/gpt-4o-mini').trim();
   const AI_CLASSIFIER_MAX_TOKENS = parseInt(process.env.AI_CLASSIFIER_MAX_TOKENS || '', 10) || 48;
   const AI_RESPONSE_MAX_TOKENS = parseInt(process.env.AI_RESPONSE_MAX_TOKENS || '', 10) || 300;
+  // La clave de OpenRouter sale primero del entorno y, si no hay, de la
+  // configuracion del super admin (guardada cifrada; se descifra solo en
+  // memoria al momento de llamar a la API).
+  function resolveOpenRouterApiKey(): string {
+    const envKey = String(process.env.OPENROUTER_API_KEY || '').trim();
+    if (envKey) return envKey;
+    return decryptSecret(currentDB.openrouterApiKey).trim();
+  }
   // Precios USD por 1M de tokens (entrada/salida) del catalogo publico de
   // OpenRouter consultado el 2026-10-10; solo estiman el costo en los logs.
   const AI_MODEL_PRICES: Record<string, { input: number; output: number }> = {
@@ -4034,9 +4143,10 @@ async function createServer() {
     // Ruta economica OpenRouter (activable por entorno): clasificador barato
     // y respuesta economica con salida corta. Si no hay clave o la ruta
     // falla, continua con el proveedor configurado en el panel (fallback).
-    if (OPENROUTER_API_KEY) {
+    const openRouterKey = resolveOpenRouterApiKey();
+    if (openRouterKey) {
       try {
-        return await callAIWithProvider('openrouter', OPENROUTER_API_KEY, promptText, mediaBase64, mediaMimeType, {
+        return await callAIWithProvider('openrouter', openRouterKey, promptText, mediaBase64, mediaMimeType, {
           purpose,
           modelOverride: purpose === 'classifier' ? OR_CLASSIFIER_MODEL : OR_RESPONSE_MODEL,
           maxTokens: purpose === 'classifier' ? AI_CLASSIFIER_MAX_TOKENS : AI_RESPONSE_MAX_TOKENS,
@@ -4047,7 +4157,7 @@ async function createServer() {
       }
     }
     const primaryProvider = currentDB.apiProvider || 'gemini';
-    let primaryKey = currentDB.customApiKey?.trim();
+    let primaryKey = decryptSecret(currentDB.customApiKey).trim() || undefined;
 
     // Key routing and validation
     if (primaryProvider === 'gemini' && primaryKey && primaryKey.startsWith('sk-')) {
@@ -4063,7 +4173,7 @@ async function createServer() {
     primaryKey = primaryKey || (primaryProvider === 'gemini' ? defaultGeminiApiKey : undefined);
 
     let primaryError: any = null;
-    const hasCustomKey = !!(currentDB.customApiKey && currentDB.customApiKey.trim().length > 0);
+    const hasCustomKey = !!decryptSecret(currentDB.customApiKey).trim();
     const limit = currentDB.maxTokensLimit || 1000000;
     const currentTokens = currentDB.apiTokens?.total || 0;
 
@@ -4090,7 +4200,7 @@ async function createServer() {
 
     // Attempt backup failover
     const backupProvider = currentDB.apiProviderBackup || 'gemini';
-    let backupKey = currentDB.customApiKeyBackup?.trim();
+    let backupKey = decryptSecret(currentDB.customApiKeyBackup).trim() || undefined;
     if (backupKey) {
       if (backupProvider === 'gemini' && backupKey.startsWith('sk-')) backupKey = undefined;
       if (backupProvider === 'openai' && backupKey.startsWith('AIza')) backupKey = undefined;
@@ -6098,8 +6208,9 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
 
         // If OpenRouter token was updated, configure AI provider & API key
         if (target === 'openrouter' && data.token) {
-          currentDB.openrouterApiKey = data.token.trim();
-          currentDB.customApiKey = data.token.trim();
+          const orEncrypted = encryptSecret(data.token.trim());
+          currentDB.openrouterApiKey = orEncrypted;
+          currentDB.customApiKey = orEncrypted;
           currentDB.apiProvider = 'openrouter';
           console.log('[OpenRouter] API Key de OpenRouter configurada exitosamente como motor de IA.');
         }
@@ -6109,13 +6220,23 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
           ...req.body.tokens
         };
         if (req.body.tokens.openrouter?.token) {
-          const key = req.body.tokens.openrouter.token.trim();
-          currentDB.openrouterApiKey = key;
-          currentDB.customApiKey = key;
+          const orEncrypted2 = encryptSecret(req.body.tokens.openrouter.token.trim());
+          currentDB.openrouterApiKey = orEncrypted2;
+          currentDB.customApiKey = orEncrypted2;
           currentDB.apiProvider = 'openrouter';
         }
       }
 
+      // La copia del token de OpenRouter dentro del blob de integraciones
+      // tambien queda cifrada; nunca texto plano.
+      const storedOrToken = currentDB.chatbotIntegrationTokens?.openrouter?.token;
+      if (typeof storedOrToken === 'string' && storedOrToken.trim() && !isEncryptedSecret(storedOrToken)) {
+        try {
+          currentDB.chatbotIntegrationTokens.openrouter.token = encryptSecret(storedOrToken.trim());
+        } catch (encErr: any) {
+          return res.status(500).json({ success: false, error: encErr?.message || 'No se pudo cifrar el token de OpenRouter.' });
+        }
+      }
       saveDBData(currentDB);
       res.json({ success: true, tokens: sanitizeForClient(currentDB.chatbotIntegrationTokens) });
     } catch (err: any) {
