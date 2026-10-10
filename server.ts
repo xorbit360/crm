@@ -914,7 +914,7 @@ Responde ÚNICAMENTE con un objeto JSON en el siguiente formato, sin bloques de 
 }`;
 
           console.log(`[AI Semantic Match] Evaluando frase del cliente: "${userIncomingText}"`);
-          const aiResponse = await globalExecuteAIInternal(matchingPrompt);
+          const aiResponse = await globalExecuteAIInternal(matchingPrompt, null, null, 'classifier');
           if (aiResponse) {
             const cleanJson = aiResponse.replace(/```json/i, '').replace(/```/g, '').trim();
             try {
@@ -3249,6 +3249,9 @@ async function createServer() {
       maxTokensLimit: currentDB.maxTokensLimit || 1000000,
       activeProvider: currentDB.apiProvider || "openai",
       activeModel: currentDB.aiModel || "gpt-4o",
+      openrouterRouteActive: !!OPENROUTER_API_KEY,
+      openrouterClassifierModel: OR_CLASSIFIER_MODEL,
+      openrouterResponseModel: OR_RESPONSE_MODEL,
       hasCustomKey: !!(currentDB.customApiKey && currentDB.customApiKey.trim().length > 0),
       lastAiError: currentDB.lastAiError || null,
       lastAiTimestamp: currentDB.lastAiTimestamp || null
@@ -3710,6 +3713,7 @@ async function createServer() {
     status: 'success' | 'error';
     durationMs: number;
     tokens?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
+    purpose?: string;
     response?: string;
     error?: string;
   }) {
@@ -3727,6 +3731,8 @@ async function createServer() {
       status: entry.status,
       durationMs: entry.durationMs,
       tokens: entry.tokens || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
+      purpose: entry.purpose || 'general',
+      costUsd: entry.status === 'success' ? estimateAiCostUsd(entry.model, entry.tokens?.prompt_tokens, entry.tokens?.completion_tokens) : null,
       responseSnippet: entry.response ? (entry.response.length > 300 ? entry.response.substring(0, 300) + '...' : entry.response) : undefined,
       responseFull: entry.response,
       error: entry.error
@@ -3739,7 +3745,37 @@ async function createServer() {
     saveDBData(currentDB);
   }
 
-  async function callAIWithProvider(provider: string, customKey: string, promptText: string, mediaBase64: string | null, mediaMimeType: string | null) {
+  // ===== IA economica por proposito (OpenRouter, activable por entorno) =====
+  // La ruta OpenRouter se activa solo si existe OPENROUTER_API_KEY en el
+  // entorno; sin clave (o si la ruta falla) el bot sigue con el proveedor
+  // configurado en el panel, sin cambios (fallback). Modelos y topes de
+  // salida se ajustan por entorno, sin tocar codigo.
+  type AiPurpose = 'classifier' | 'response' | 'general';
+  const OPENROUTER_API_KEY = String(process.env.OPENROUTER_API_KEY || '').trim();
+  const OR_CLASSIFIER_MODEL = String(process.env.OPENROUTER_CLASSIFIER_MODEL || 'meta-llama/llama-3.1-8b-instruct').trim();
+  const OR_RESPONSE_MODEL = String(process.env.OPENROUTER_RESPONSE_MODEL || 'openai/gpt-4o-mini').trim();
+  const AI_CLASSIFIER_MAX_TOKENS = parseInt(process.env.AI_CLASSIFIER_MAX_TOKENS || '', 10) || 48;
+  const AI_RESPONSE_MAX_TOKENS = parseInt(process.env.AI_RESPONSE_MAX_TOKENS || '', 10) || 300;
+  // Precios USD por 1M de tokens (entrada/salida) del catalogo publico de
+  // OpenRouter consultado el 2026-10-10; solo estiman el costo en los logs.
+  const AI_MODEL_PRICES: Record<string, { input: number; output: number }> = {
+    'gpt-4o': { input: 2.5, output: 10 },
+    'openai/gpt-4o': { input: 2.5, output: 10 },
+    'gpt-4o-mini': { input: 0.15, output: 0.6 },
+    'openai/gpt-4o-mini': { input: 0.15, output: 0.6 },
+    'meta-llama/llama-3.1-8b-instruct': { input: 0.05, output: 0.08 },
+    'google/gemini-2.5-flash-lite': { input: 0.1, output: 0.4 },
+    'google/gemini-2.5-flash': { input: 0.3, output: 2.5 },
+    'gemini-2.5-flash': { input: 0.3, output: 2.5 },
+  };
+  function estimateAiCostUsd(model: string, promptTokens?: number, completionTokens?: number): number | null {
+    const price = AI_MODEL_PRICES[model];
+    if (!price) return null;
+    const total = ((promptTokens || 0) * price.input + (completionTokens || 0) * price.output) / 1000000;
+    return Math.round(total * 10000000) / 10000000;
+  }
+
+  async function callAIWithProvider(provider: string, customKey: string, promptText: string, mediaBase64: string | null, mediaMimeType: string | null, opts: { purpose?: AiPurpose; modelOverride?: string; maxTokens?: number; temperature?: number } = {}) {
     const expectsJSON = promptText.toLowerCase().includes('json');
     const startTime = Date.now();
 
@@ -3780,8 +3816,10 @@ async function createServer() {
 
         messages.push({ role: 'user', content: contentPart });
         const response = await openai.chat.completions.create({
-          model: modelUsed,
+          model: opts.modelOverride || modelUsed,
           messages,
+          ...(opts.maxTokens ? { max_tokens: opts.maxTokens } : {}),
+          ...(typeof opts.temperature === 'number' ? { temperature: opts.temperature } : {}),
           ...(expectsJSON ? { response_format: { type: "json_object" } } : {})
         });
 
@@ -3802,9 +3840,9 @@ async function createServer() {
         incrementAiUsage(provider);
         const replyContent = response.choices[0]?.message?.content || "{}";
 
-        logAiCall({
+        logAiCall({ purpose: opts.purpose,
           provider: 'openai',
-          model: modelUsed,
+          model: opts.modelOverride || modelUsed,
           prompt: promptText,
           status: 'success',
           durationMs,
@@ -3816,9 +3854,9 @@ async function createServer() {
       } catch (err: any) {
         const durationMs = Date.now() - startTime;
         const errMsg = err?.message || String(err);
-        logAiCall({
+        logAiCall({ purpose: opts.purpose,
           provider: 'openai',
-          model: modelUsed,
+          model: opts.modelOverride || modelUsed,
           prompt: promptText,
           status: 'error',
           durationMs,
@@ -3828,7 +3866,7 @@ async function createServer() {
       }
 
     } else if (provider === 'openrouter') {
-      const modelUsed = currentDB.aiModel || "google/gemini-2.5-flash";
+      const modelUsed = opts.modelOverride || (opts.purpose === 'classifier' ? OR_CLASSIFIER_MODEL : (String(process.env.OPENROUTER_RESPONSE_MODEL || '').trim() || currentDB.aiModel || OR_RESPONSE_MODEL));
       try {
         const oai = new OpenAI({
           apiKey: customKey,
@@ -3858,6 +3896,8 @@ async function createServer() {
         const response = await oai.chat.completions.create({
           model: modelUsed,
           messages,
+          max_tokens: opts.maxTokens ?? (opts.purpose === 'classifier' ? AI_CLASSIFIER_MAX_TOKENS : AI_RESPONSE_MAX_TOKENS),
+          temperature: opts.temperature ?? (opts.purpose === 'classifier' ? 0 : 0.6),
           ...(expectsJSON ? { response_format: { type: "json_object" } } : {})
         });
 
@@ -3877,9 +3917,9 @@ async function createServer() {
         }
         const replyContent = response.choices[0]?.message?.content || "{}";
 
-        logAiCall({
+        logAiCall({ purpose: opts.purpose,
           provider: 'openrouter',
-          model: modelUsed,
+          model: opts.modelOverride || modelUsed,
           prompt: promptText,
           status: 'success',
           durationMs,
@@ -3891,9 +3931,9 @@ async function createServer() {
       } catch (err: any) {
         const durationMs = Date.now() - startTime;
         const errMsg = err?.message || String(err);
-        logAiCall({
+        logAiCall({ purpose: opts.purpose,
           provider: 'openrouter',
-          model: modelUsed,
+          model: opts.modelOverride || modelUsed,
           prompt: promptText,
           status: 'error',
           durationMs,
@@ -3944,9 +3984,9 @@ async function createServer() {
 
           if (retries === 0 || !isRetryable) {
             const durationMs = Date.now() - startTime;
-            logAiCall({
+            logAiCall({ purpose: opts.purpose,
               provider: 'gemini',
-              model: modelUsed,
+              model: opts.modelOverride || modelUsed,
               prompt: promptText,
               status: 'error',
               durationMs,
@@ -3974,9 +4014,9 @@ async function createServer() {
         saveDBData(currentDB);
       }
 
-      logAiCall({
+      logAiCall({ purpose: opts.purpose,
         provider: 'gemini',
-        model: modelUsed,
+        model: opts.modelOverride || modelUsed,
         prompt: promptText,
         status: 'success',
         durationMs,
@@ -3988,8 +4028,24 @@ async function createServer() {
     }
   }
 
-  async function executeAIInternal(promptText: string, mediaBase64: string | null = null, mediaMimeType: string | null = null) {
+  async function executeAIInternal(promptText: string, mediaBase64: string | null = null, mediaMimeType: string | null = null, purpose: AiPurpose = 'general') {
     globalExecuteAIInternal = executeAIInternal;
+
+    // Ruta economica OpenRouter (activable por entorno): clasificador barato
+    // y respuesta economica con salida corta. Si no hay clave o la ruta
+    // falla, continua con el proveedor configurado en el panel (fallback).
+    if (OPENROUTER_API_KEY) {
+      try {
+        return await callAIWithProvider('openrouter', OPENROUTER_API_KEY, promptText, mediaBase64, mediaMimeType, {
+          purpose,
+          modelOverride: purpose === 'classifier' ? OR_CLASSIFIER_MODEL : OR_RESPONSE_MODEL,
+          maxTokens: purpose === 'classifier' ? AI_CLASSIFIER_MAX_TOKENS : AI_RESPONSE_MAX_TOKENS,
+          temperature: purpose === 'classifier' ? 0 : 0.6,
+        });
+      } catch (orErr: any) {
+        console.error('[IA] OpenRouter no respondio; fallback al proveedor del panel:', orErr?.message || String(orErr));
+      }
+    }
     const primaryProvider = currentDB.apiProvider || 'gemini';
     let primaryKey = currentDB.customApiKey?.trim();
 
@@ -4018,7 +4074,7 @@ async function createServer() {
     if (primaryKey) {
       try {
         console.log(`[IA] Intentando con Proveedor Principal: ${primaryProvider}...`);
-        const result = await callAIWithProvider(primaryProvider, primaryKey, promptText, mediaBase64, mediaMimeType);
+        const result = await callAIWithProvider(primaryProvider, primaryKey, promptText, mediaBase64, mediaMimeType, { purpose });
         return result;
       } catch (err: any) {
         primaryError = err;
@@ -4044,7 +4100,7 @@ async function createServer() {
     if (backupKey && backupKey !== primaryKey) { // Ensure backup key exists and is different to avoid retry loop
       try {
         console.log(`[IA Failover] Intentando con Proveedor de Respaldo: ${backupProvider}...`);
-        const result = await callAIWithProvider(backupProvider, backupKey, promptText, mediaBase64, mediaMimeType);
+        const result = await callAIWithProvider(backupProvider, backupKey, promptText, mediaBase64, mediaMimeType, { purpose });
         // Clear old error since we succeeded on backup
         currentDB.lastAiError = null;
         currentDB.lastAiTimestamp = null;
@@ -4178,7 +4234,7 @@ Responde ÚNICAMENTE con una sola palabra de la categoría: MENU, SOPORTE, SALUD
 
     let intent = "OTRO";
     try {
-       const intentRaw = await executeAIInternal(classPrompt);
+       const intentRaw = await executeAIInternal(classPrompt, null, null, 'classifier');
        intent = intentRaw.trim().toUpperCase().replace(/[^A-Z]/g, '');
        if (!['MENU', 'SOPORTE', 'SALUDO', 'OTRO'].includes(intent)) intent = 'OTRO';
     } catch(e) {
@@ -4220,7 +4276,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
 
     console.log(`[Agente de Respuesta] Procesando respuesta JSON...`);
     try {
-      return await executeAIInternal(responsePrompt, mediaBase64, mediaMimeType);
+      return await executeAIInternal(responsePrompt, mediaBase64, mediaMimeType, 'response');
     } catch (err: any) {
       console.error("[processWithAgents Error / Quota Exceeded]:", err?.message || err);
       const fallback = currentDB.fallbackMessage || "Estoy un poco ocupada en este momento, dame un momento y te atiendo con gusto 😅.";
@@ -8089,7 +8145,7 @@ Historial de chat:
 ${history.slice(-6).map((h: any) => `${h.role === 'client' ? 'Cliente' : 'IA'}: ${h.text}`).join('\n')}
 Respuesta de remarketing (sin etiquetas JSON, solo texto plano):`;
 
-            const aiResponse = await executeAIInternal(prompt);
+            const aiResponse = await executeAIInternal(prompt, null, null, 'response');
             msgText = aiResponse || "¡Hola! ¿Quedó alguna duda sobre tu solicitud? Quedo a tu disposición.";
           } catch (err) {
             msgText = "¡Hola! ¿Quedó alguna duda sobre tu solicitud? Quedo a tu disposición.";
