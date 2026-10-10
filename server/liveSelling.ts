@@ -1195,8 +1195,8 @@ export function setupLiveSellingAdminRoutes(app: Express): void {
       cnameMatch,
       addressMatch,
       checkedAt: new Date().toISOString(),
-      instructions: `Crea un CNAME de ${domain} hacia ${target}. La raíz del dominio no admite CNAME en todos los proveedores: usa ALIAS/ANAME o un subdominio como live.${domain}.`,
-      tls: 'El enrutamiento por Host ya está soportado por la API. El certificado TLS del dominio propio depende del proxy/Traefik del VPS: si el dominio aún no está permitido allí, debe agregarse su router/certificado.',
+      instructions: `En tu proveedor de DNS (Namecheap, GoDaddy, Hostinger, Cloudflare, etc.) crea un CNAME de ${domain} hacia ${target}, o un registro A a 2.25.221.151. La raíz del dominio no admite CNAME en la mayoría de proveedores: usa un subdominio como live.${domain}.`,
+      tls: 'El certificado HTTPS se emite automáticamente cuando el dominio apunta al servidor (puede tardar unos minutos en el primer acceso). Sin dominio propio, tu landing ya vende con el link de la plataforma /live/<slug>. Para subdominios de la plataforma (<slug>.xorbit360.com) aún falta crear en Namecheap el registro comodín * -> 2.25.221.151.',
     };
 
     const { data, error: updateError } = await client
