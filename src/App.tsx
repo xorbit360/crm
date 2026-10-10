@@ -1142,7 +1142,7 @@ type ChatMessage = {
           </div>
         </header>
 
-        {!isSidebarOpen && (activeModule === 'whatsapp' || activeModule === 'entrenamiento') && (
+        {!isSidebarOpen && activeModule === 'entrenamiento' && (
           <button
             type="button"
             onClick={() => setIsSidebarOpen(true)}
