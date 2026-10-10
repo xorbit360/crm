@@ -15,8 +15,26 @@ class ErrorBoundary extends React.Component<{children: ReactNode}, {hasError: bo
 
   componentDidCatch(error: Error, errorInfo: any) {
     console.error("ErrorBoundary caught an error:", error, errorInfo);
-    // If it's a DOM manipulation error caused by Google Translate or extensions, auto-recover
     const msg = error?.message || '';
+    // Send the real exception to the server; the generic screen alone hides
+    // whether this was a stale chunk, a browser DOM conflict or a code bug.
+    try {
+      fetch('/api/client-errors', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        keepalive: true,
+        body: JSON.stringify({
+          name: error?.name || 'Error',
+          message: msg,
+          stack: error?.stack || '',
+          componentStack: errorInfo?.componentStack || '',
+          url: window.location.href,
+          userAgent: navigator.userAgent,
+        }),
+      }).catch(() => undefined);
+    } catch (_) {}
+    // If it's a DOM manipulation error caused by Google Translate or extensions, auto-recover
     if (msg.includes('insertBefore') || msg.includes('removeChild') || msg.includes('Node')) {
       setTimeout(() => {
         (this as any).setState({ hasError: false, error: null });
@@ -26,6 +44,9 @@ class ErrorBoundary extends React.Component<{children: ReactNode}, {hasError: bo
     // once instead of leaving the operator on this screen.
     const isChunkError = msg.includes('Failed to fetch dynamically imported module') ||
       msg.includes('Importing a module script failed') ||
+      msg.includes('Failed to load module script') ||
+      msg.includes('Expected a JavaScript module script') ||
+      msg.includes('Unable to preload CSS') ||
       msg.includes('ChunkLoadError') ||
       msg.includes('Loading chunk');
     if (isChunkError) {
@@ -77,6 +98,11 @@ class ErrorBoundary extends React.Component<{children: ReactNode}, {hasError: bo
                 ? 'El traductor automático de tu navegador modificó la estructura visual de la página. Te recomendamos desactivar la traducción automática en este sitio.'
                 : 'La aplicación ha detectado un evento inesperado. Puedes recargar para continuar sin perder tu información.'}
             </p>
+            {state.error?.message && !isDomError && (
+              <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '16px', lineHeight: '1.5', overflowWrap: 'anywhere' }}>
+                {String(state.error.message).slice(0, 240)}
+              </p>
+            )}
             <button
               onClick={() => window.location.reload()}
               style={{

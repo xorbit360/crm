@@ -2085,6 +2085,25 @@ async function createServer() {
   app.use('/api/telegram-pay', requireRole('superadmin', 'admin'));
   app.use('/api', requireApiSession);
 
+  // Receives the real browser exception behind the generic error screen. The
+  // payload is truncated and never includes cookies, tokens or request bodies.
+  app.post('/api/client-errors', (req, res) => {
+    const body = (req.body && typeof req.body === 'object') ? req.body : {};
+    const clip = (value: unknown, max = 4000) => String(value ?? '').slice(0, max);
+    const authUser = (req as any).authUser;
+    console.error('[ClientError]', JSON.stringify({
+      at: new Date().toISOString(),
+      user: authUser ? { id: authUser.sub || null, role: authUser.role || null } : null,
+      name: clip(body.name, 120),
+      message: clip(body.message, 1000),
+      stack: clip(body.stack),
+      componentStack: clip(body.componentStack),
+      url: clip(body.url, 500),
+      userAgent: clip(body.userAgent, 500),
+    }));
+    res.status(204).end();
+  });
+
   // Setup Bold Payments Gateway (Merchant ID FFVSR3C7Y1) Routes & Webhook
   setupBoldRoutes(app, () => currentDB, (db) => saveDBData(db));
 
@@ -8088,6 +8107,13 @@ Respuesta de remarketing (sin etiquetas JSON, solo texto plano):`;
       maxAge: '1y',
       immutable: true
     }));
+    // A missing hashed asset belongs to an older deployment. Returning the SPA
+    // shell for it makes module imports fail with a confusing MIME error, so
+    // answer 404 and let the client recover with a clean reload.
+    app.use('/assets', (req, res) => {
+      res.setHeader('Cache-Control', 'no-store, max-age=0');
+      res.status(404).type('text/plain').send('Asset not found');
+    });
     app.use(express.static(distPath, { maxAge: 0 }));
     app.get('*', (req, res) => {
       res.setHeader('Cache-Control', 'no-store, max-age=0');
