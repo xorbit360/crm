@@ -143,7 +143,7 @@ export const LiveAudioRecorder: React.FC<LiveAudioRecorderProps> = ({
             });
             const data = await resp.json();
             if (data.success && data.dataUrl) {
-              setAudioBase64(data.dataUrl);
+              // El envío usa el data URL original; la ruta /uploads es solo respaldo.
             }
           } catch (e) {
             console.warn('Backend conversion check warning:', e);
@@ -208,7 +208,7 @@ export const LiveAudioRecorder: React.FC<LiveAudioRecorderProps> = ({
         });
         const data = await resp.json();
         if (data.success && data.dataUrl) {
-          setAudioBase64(data.dataUrl);
+          // El envío usa el data URL original; la ruta /uploads es solo respaldo.
         }
       } catch (err) {
         console.warn('Audio convert error:', err);

@@ -2706,10 +2706,19 @@ async function createServer() {
   // API Route: Send manual agent replies/files over the WhatsApp connection
   app.post("/api/whatsapp/reply", async (req, res) => {
     try {
-      const { phone, message, type, mediaBase64, isPtt, fileName, channelId, remoteJid } = req.body;
+      const { phone, message, type, isPtt, fileName, channelId, remoteJid } = req.body;
+      let mediaBase64: any = req.body.mediaBase64;
       const targetPhone = (phone || '').replace(/\D/g, '');
       if (!targetPhone) {
         return res.status(400).json({ success: false, error: "Falta el número de teléfono (phone)" });
+      }
+
+      // La grabadora puede entregar la nota como ruta local (/uploads/...) tras
+      // su pre-conversión: resolverla a base64 real antes de enviar, porque los
+      // canales exigen URL pública o base64, nunca una ruta del servidor.
+      if (typeof mediaBase64 === 'string' && mediaBase64 && !mediaBase64.startsWith('data:')) {
+        const resolvedMedia = await getMediaBuffer(mediaBase64).catch(() => null);
+        if (resolvedMedia) mediaBase64 = resolvedMedia.toString('base64');
       }
 
       const storedChat = (currentDB.chats || []).find((chat: any) =>

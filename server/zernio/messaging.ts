@@ -416,7 +416,29 @@ async function uploadMediaToZernio(params: {
     if (!base64) return { error: 'La nota de voz llegó sin contenido de audio' };
     if (!mime) mime = 'audio/webm';
 
-    let buffer: Buffer = Buffer.from(base64, 'base64');
+    let buffer: Buffer;
+    const looksLikePath = base64.startsWith('/uploads/') || base64.includes('/uploads/');
+    const looksLikeUrl = /^https?:\/\//i.test(base64);
+    if (looksLikePath || looksLikeUrl) {
+      try {
+        if (looksLikePath) {
+          const fileName = base64.split('/uploads/')[1]?.split(/[?#]/)[0] || '';
+          buffer = await fs.promises.readFile(path.join(process.cwd(), 'uploads', fileName));
+          if (fileName.endsWith('.ogg')) mime = 'audio/ogg';
+          else if (fileName.endsWith('.mp3')) mime = 'audio/mpeg';
+          else if (fileName.endsWith('.wav')) mime = 'audio/wav';
+          else if (fileName.endsWith('.m4a') || fileName.endsWith('.mp4')) mime = 'audio/mp4';
+        } else {
+          const fetched = await fetch(base64);
+          if (!fetched.ok) return { error: 'No se pudo leer la nota de voz grabada' };
+          buffer = Buffer.from(await fetched.arrayBuffer());
+        }
+      } catch {
+        return { error: 'No se pudo leer la nota de voz grabada' };
+      }
+    } else {
+      buffer = Buffer.from(base64, 'base64');
+    }
     let ext = mime.includes('mp4') || mime.includes('m4a')
       ? 'm4a'
       : mime.includes('mpeg') || mime.includes('mp3')
@@ -434,7 +456,8 @@ async function uploadMediaToZernio(params: {
         buffer = await convertAudioToM4a(buffer);
         mime = 'audio/mp4';
         ext = 'm4a';
-      } catch {
+      } catch (convErr: any) {
+        console.error('[Zernio] Error convirtiendo la nota de voz a M4A:', convErr?.message || convErr);
         return { error: 'No se pudo convertir la nota de voz al formato que acepta Instagram (M4A).' };
       }
     }
