@@ -395,13 +395,20 @@ window.__LIVE_SLUG__ = ${safeSlug};
   $('btn-heart').addEventListener('click', function(e){ var r = e.currentTarget.getBoundingClientRect(); spawnHeart(r.left + 10, r.top - 6); });
 
   // ---------- WhatsApp ----------
-  $('btn-wa').addEventListener('click', function(){
-    if (!cfg || !cfg.whatsappNumber) return;
-    var num = String(cfg.whatsappNumber).replace(/\\D/g,'');
-    var url = 'https://wa.me/' + num + (cfg.whatsappText ? ('?text=' + encodeURIComponent(cfg.whatsappText)) : '');
+  function openWhatsApp(){
+    if (!cfg) return;
+    var url = '';
+    if (cfg.whatsappLink) {
+      url = cfg.whatsappLink;
+    } else if (cfg.whatsappNumber) {
+      var num = String(cfg.whatsappNumber).replace(/[^0-9]/g, '');
+      if (num) url = 'https://wa.me/' + num + (cfg.whatsappText ? ('?text=' + encodeURIComponent(cfg.whatsappText)) : '');
+    }
+    if (!url) return;
     post('/api/public/live/' + landingId + '/whatsapp-click', { visitorId: visitorId(), utm: UTM }).catch(function(){});
     window.open(url, '_blank');
-  });
+  }
+  $('btn-wa').addEventListener('click', openWhatsApp);
 
   // ---------- Checkout ----------
   function recalc(){
@@ -414,7 +421,13 @@ window.__LIVE_SLUG__ = ${safeSlug};
   }
   $('qty-minus').addEventListener('click', function(){ if (qty>1){ qty--; recalc(); } });
   $('qty-plus').addEventListener('click', function(){ if (qty<99){ qty++; recalc(); } });
-  $('btn-buy').addEventListener('click', function(){ $('checkout').classList.add('open'); });
+  $('btn-buy').addEventListener('click', function(){
+    if (!cfg || !landingId) return;
+    post('/api/public/live/' + landingId + '/checkout-click', { visitorId: visitorId(), utm: UTM }).catch(function(){});
+    if (cfg.checkoutMode === 'whatsapp') { openWhatsApp(); return; }
+    if (cfg.checkoutMode === 'shopify' && cfg.shopifyUrl) { window.open(cfg.shopifyUrl, '_blank'); return; }
+    $('checkout').classList.add('open');
+  });
   $('co-close').addEventListener('click', function(){ $('checkout').classList.remove('open'); });
   $('btn-coupon').addEventListener('click', function(){
     $('coupon-msg').textContent = $('f-coupon').value.trim() ? 'Cupón agregado: el descuento se aplica y confirma con tu pedido.' : '';
@@ -478,7 +491,7 @@ window.__LIVE_SLUG__ = ${safeSlug};
     if (cfg.disclosureText) $('disclosure').textContent = cfg.disclosureText;
     $('btn-buy').textContent = cfg.buttonText || 'COMPRAR';
     if (cfg.buttonColor) $('btn-buy').style.background = cfg.buttonColor;
-    if (cfg.whatsappNumber) $('btn-wa').style.display = '';
+    if (cfg.whatsappNumber || cfg.whatsappLink) $('btn-wa').style.display = '';
     if (cfg.productName) {
       $('product-card').style.display = 'block';
       $('pc-name').textContent = cfg.productName;
@@ -493,6 +506,7 @@ window.__LIVE_SLUG__ = ${safeSlug};
     $('ship-note').textContent = cfg.shippingText || '';
     var s = loadState(); if (s.phone) knownPhone = s.phone; if (s.leadId) leadId = s.leadId;
     visitorId();
+    post('/api/public/live/' + landingId + '/pageview', { visitorId: visitorId(), utm: UTM }).catch(function(){});
     recalc();
     if (cfg.videoProvider === 'vimeo') loadVimeo(cfg.videoId); else loadYouTube(cfg.videoId);
     startTimePolling();
