@@ -20,12 +20,15 @@ interface Landing {
   whatsappNumber: string; whatsappText: string; whatsappLink: string; checkoutMode: string; shopifyUrl: string;
   commentMode: string; viewersMin: number; viewersMax: number;
   domainVerified: boolean; domainStatus: string; counts?: LandingCounts;
+  products: LandingProduct[]; paymentMethods: string[];
 }
+interface LandingProduct { name: string; price: number; comparePrice: number | null; imageUrl: string }
 interface FakeComment { id?: string; author: string; content: string; avatarUrl: string; second: number | null; sortOrder: number }
 interface VisitorComment { id: string; content: string; phone: string; visitorId: string; createdAt: string }
 interface LiveOrder {
   id: string; orderRef: string; status: string; productName: string; quantity: number;
   total: number; customerName: string; phone: string; city: string; department: string; createdAt: string;
+  paymentMethod?: string;
 }
 
 type PanelTab = 'config' | 'comments' | 'inbox' | 'metrics' | 'domain';
@@ -137,7 +140,12 @@ function parseWizardComments(text: string): FakeComment[] {
 }
 
 function toForm(landing: Landing): Landing {
-  return { ...landing, videoUrl: landing.videoUrl || landing.videoId || '' };
+  return {
+    ...landing,
+    videoUrl: landing.videoUrl || landing.videoId || '',
+    products: Array.isArray(landing.products) ? landing.products : [],
+    paymentMethods: Array.isArray(landing.paymentMethods) && landing.paymentMethods.length ? landing.paymentMethods : ['cod', 'prepaid'],
+  };
 }
 
 export default function LiveSellingView() {
@@ -319,6 +327,13 @@ export default function LiveSellingView() {
       whatsappLink: source.whatsappLink, checkoutMode: source.checkoutMode || 'crm', shopifyUrl: source.shopifyUrl,
       commentMode: source.commentMode, viewersMin: Number(source.viewersMin) || 40, viewersMax: Number(source.viewersMax) || 60,
       customDomain: source.customDomain,
+      products: (source.products || []).map((p) => ({
+        name: p.name || '',
+        price: Number(p.price) || 0,
+        comparePrice: p.comparePrice === null || (p.comparePrice as any) === '' ? null : Number(p.comparePrice),
+        imageUrl: p.imageUrl || '',
+      })),
+      paymentMethods: source.paymentMethods && source.paymentMethods.length ? source.paymentMethods : ['cod', 'prepaid'],
     };
   }
 
@@ -432,6 +447,17 @@ export default function LiveSellingView() {
       await api(`/api/live-selling/orders/${order.id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });
       setOrders(orders.map((o) => (o.id === order.id ? { ...o, status } : o)));
     } catch (e: any) { fail(e); }
+  }
+
+  function updateProduct(idx: number, patch: Partial<LandingProduct>) {
+    if (!form) return;
+    set('products', form.products.map((p, i) => (i === idx ? { ...p, ...patch } : p)));
+  }
+
+  function togglePaymentMethod(method: string, on: boolean) {
+    if (!form) return;
+    const next = on ? [...form.paymentMethods, method] : form.paymentMethods.filter((m) => m !== method);
+    set('paymentMethods', next.length ? next : form.paymentMethods);
   }
 
   function copyPublicLink() {
@@ -628,6 +654,23 @@ export default function LiveSellingView() {
                     <div><label className={labelCls}>Descuento del cupón (%)</label><input className={inputCls} type="number" min={0} max={90} value={form.couponDiscountPercent} onChange={(e) => set('couponDiscountPercent', Number(e.target.value))} /></div>
                   </div>
 
+                  <div className="rounded-xl border border-gray-800 bg-gray-950/60 p-4 space-y-3">
+                    <div>
+                      <label className={labelCls}>Catálogo del live (al tocar la tarjeta del producto)</label>
+                      <p className="text-xs text-gray-500">El producto principal de arriba ya aparece primero en el catálogo. Agrega aquí productos relacionados: en el live se abren sin salir de la página y cada COMPRAR abre el checkout con ese producto seleccionado.</p>
+                    </div>
+                    {(form.products || []).map((prod, idx) => (
+                      <div key={idx} className="grid grid-cols-1 gap-2 rounded-xl border border-gray-800 bg-gray-950/40 p-3 sm:grid-cols-[1.4fr_0.8fr_0.8fr_1.2fr_auto]">
+                        <input className={inputCls} value={prod.name} placeholder="Nombre del producto" onChange={(e) => updateProduct(idx, { name: e.target.value })} />
+                        <input className={inputCls} type="number" min={0} value={prod.price} placeholder="Precio COP" onChange={(e) => updateProduct(idx, { price: Number(e.target.value) })} />
+                        <input className={inputCls} type="number" min={0} value={prod.comparePrice ?? ''} placeholder="Antes (opcional)" onChange={(e) => updateProduct(idx, { comparePrice: e.target.value === '' ? null : Number(e.target.value) })} />
+                        <input className={inputCls} value={prod.imageUrl} placeholder="URL de la foto (opcional)" onChange={(e) => updateProduct(idx, { imageUrl: e.target.value })} />
+                        <button type="button" className={btnGhost} onClick={() => set('products', form.products.filter((_, i) => i !== idx))}><Trash2 size={13} /></button>
+                      </div>
+                    ))}
+                    <button type="button" className={btnGhost} onClick={() => set('products', [...form.products, { name: '', price: 0, comparePrice: null, imageUrl: '' }])}><Plus size={13} /> Agregar producto al catálogo</button>
+                  </div>
+
                   <div className="rounded-xl border border-gray-800 bg-gray-950/60 p-4 space-y-4">
                     <div>
                       <label className={labelCls}>Checkout de esta landing</label>
@@ -653,6 +696,16 @@ export default function LiveSellingView() {
                       <div>
                         <label className={labelCls}>URL de Shopify (producto o checkout)</label>
                         <input className={inputCls} value={form.shopifyUrl} onChange={(e) => set('shopifyUrl', e.target.value)} placeholder="https://tutienda.myshopify.com/products/mi-producto" />
+                      </div>
+                    )}
+                    {form.checkoutMode === 'crm' && (
+                      <div>
+                        <label className={labelCls}>Métodos de pago permitidos en el checkout del CRM</label>
+                        <div className="flex flex-wrap gap-4">
+                          <label className="flex items-center gap-2 text-sm text-slate-300"><input type="checkbox" checked={form.paymentMethods.includes('cod')} onChange={(e) => togglePaymentMethod('cod', e.target.checked)} /> Pago contraentrega (al recibir)</label>
+                          <label className="flex items-center gap-2 text-sm text-slate-300"><input type="checkbox" checked={form.paymentMethods.includes('prepaid')} onChange={(e) => togglePaymentMethod('prepaid', e.target.checked)} /> Pago anticipado (por WhatsApp)</label>
+                        </div>
+                        <p className="mt-1.5 text-xs text-gray-500">El pago anticipado no cobra en línea: el cliente recibe por WhatsApp el link o los datos de pago y el pedido queda marcado como Anticipado.</p>
                       </div>
                     )}
                   </div>
@@ -772,6 +825,7 @@ export default function LiveSellingView() {
                             <th className="px-3 py-2 font-bold uppercase">Ref / Fecha</th>
                             <th className="px-3 py-2 font-bold uppercase">Cliente</th>
                             <th className="px-3 py-2 font-bold uppercase">Producto</th>
+                            <th className="px-3 py-2 font-bold uppercase">Pago</th>
                             <th className="px-3 py-2 font-bold uppercase">Total</th>
                             <th className="px-3 py-2 font-bold uppercase">Estado</th>
                           </tr>
@@ -782,6 +836,7 @@ export default function LiveSellingView() {
                               <td className="px-3 py-2"><div className="font-mono text-emerald-300">{o.orderRef}</div><div className="text-gray-500">{formatDate(o.createdAt)}</div></td>
                               <td className="px-3 py-2"><div className="font-semibold text-white">{o.customerName || 'Lead sin nombre'}</div><div className="text-gray-500">{o.phone} · {o.city} {o.department}</div></td>
                               <td className="px-3 py-2 text-gray-300">{o.productName} × {o.quantity}</td>
+                              <td className="px-3 py-2"><span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${o.paymentMethod === 'prepaid' ? 'bg-violet-500/20 text-violet-300' : 'bg-gray-700/40 text-gray-300'}`}>{o.paymentMethod === 'prepaid' ? 'Anticipado' : 'Contraentrega'}</span></td>
                               <td className="px-3 py-2 font-bold text-white">{money(o.total)}</td>
                               <td className="px-3 py-2">
                                 <select className="rounded-lg border border-gray-800 bg-gray-950 px-2 py-1 text-xs text-white" value={o.status} onChange={(e) => handleOrderStatus(o, e.target.value)}>
@@ -795,7 +850,7 @@ export default function LiveSellingView() {
                               </td>
                             </tr>
                           ))}
-                          {!orders.length && <tr><td colSpan={5} className="px-3 py-6 text-center text-gray-500">Todavía no hay pedidos ni leads. Comparte el enlace público para empezar.</td></tr>}
+                          {!orders.length && <tr><td colSpan={6} className="px-3 py-6 text-center text-gray-500">Todavía no hay pedidos ni leads. Comparte el enlace público para empezar.</td></tr>}
                         </tbody>
                       </table>
                     </div>
