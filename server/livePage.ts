@@ -406,42 +406,52 @@ window.__LIVE_SLUG__ = ${safeSlug};
   function startFakeComments(){
     if (!fake.length || startFakeComments.started) return;
     startFakeComments.started = true;
-    var ordered = fake.slice().sort(function(a,b){ return (a.second||0)-(b.second||0); });
-    var nextIdx = 0;
-    var lastShownAt = 0;
+    var ordered = fake.slice().sort(function(a,b){
+      var as = a.second == null ? Number.MAX_SAFE_INTEGER : a.second;
+      var bs = b.second == null ? Number.MAX_SAFE_INTEGER : b.second;
+      return as - bs;
+    });
+    var hasTimes = ordered.some(function(c){ return c.second != null; });
+    var rotateIdx = 0;
+    var timedIdx = null;
+    var lastShownAt = Date.now();
     function pushComment(c){
       if (!c) return;
       addComment(c.author, c.content, c.avatarUrl, false);
+      if (c.id) shownSeconds[c.id] = 1;
       lastShownAt = Date.now();
     }
-    function nextComment(){
-      var c = ordered[nextIdx % ordered.length];
-      nextIdx++;
-      return c;
+    function firstTimedIndexAtOrAfter(t){
+      for (var i = 0; i < ordered.length; i++) {
+        if (ordered[i].second != null && ordered[i].second >= t) return i;
+      }
+      return ordered.length;
     }
-    ordered.slice(0, 3).forEach(function(c, i){
-      setTimeout(function(){ pushComment(c); if (nextIdx < i + 1) nextIdx = i + 1; }, 350 + i*650);
-    });
-    nextIdx = Math.min(3, ordered.length);
+    function showRotating(){
+      var c = ordered[rotateIdx % ordered.length];
+      rotateIdx++;
+      pushComment(c);
+    }
     setInterval(function(){
       var now = Date.now();
       var t = Math.floor(currentTimeSec || 0);
-      if (t < lastCountdownT - 2) shownSeconds = {};
-      if (cfg.commentMode === 'countdown' && t > 0) {
-        var due = [];
-        ordered.forEach(function(c){
-          if (c.second != null && c.second <= t && !shownSeconds[c.id]) due.push(c);
-        });
-        if (due.length) {
-          due.forEach(function(c){ shownSeconds[c.id] = 1; });
-          due.slice(-3).forEach(pushComment);
-          lastCountdownT = t;
+      if (t < lastCountdownT - 2) { timedIdx = null; shownSeconds = {}; }
+      lastCountdownT = t;
+      if (cfg.commentMode === 'countdown' && hasTimes && t > 0) {
+        if (timedIdx == null) timedIdx = firstTimedIndexAtOrAfter(t);
+        while (timedIdx < ordered.length && ordered[timedIdx].second < t - 1) timedIdx++;
+        while (timedIdx < ordered.length && ordered[timedIdx].second <= t && shownSeconds[ordered[timedIdx].id]) timedIdx++;
+        if (timedIdx < ordered.length && ordered[timedIdx].second <= t) {
+          pushComment(ordered[timedIdx]);
+          timedIdx++;
           return;
         }
+        if (now - lastShownAt >= 9000) showRotating();
+        return;
       }
-      lastCountdownT = t;
-      if (now - lastShownAt >= 4200) pushComment(nextComment());
-    }, 800);
+      var pace = cfg.commentMode === 'countdown' ? 5200 : 3600;
+      if (now - lastShownAt >= pace) showRotating();
+    }, 700);
   }
   var lastCountdownT = 0;
 
