@@ -70,6 +70,21 @@ export function renderLivePage(slug: string | null): string {
   #toast { position:fixed; left:50%; bottom:120px; transform:translateX(-50%); z-index:80; background:rgba(17,24,39,.92); color:#fff; padding:10px 16px; border-radius:999px; font-size:13px; display:none; max-width:88vw; text-align:center; }
   #ended, #fatal { position:fixed; inset:0; z-index:70; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.82); font-size:22px; font-weight:800; text-align:center; padding:24px; }
   .prodline { display:flex; gap:10px; align-items:center; background:#f9fafb; border:1px solid #e5e7eb; border-radius:12px; padding:8px; margin-bottom:12px; }
+  #product-card { cursor:pointer; }
+  #catalog-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .cat-item { border:1px solid #e5e7eb; border-radius:14px; overflow:hidden; background:#fff; display:flex; flex-direction:column; }
+  .cat-item img { width:100%; height:110px; object-fit:cover; background:#eef2f7; }
+  .cat-ph { height:110px; display:flex; align-items:center; justify-content:center; font-size:34px; background:#eef2f7; }
+  .cat-body { padding:9px; display:flex; flex-direction:column; gap:3px; flex:1; }
+  .cat-name { font-size:13px; font-weight:700; line-height:1.3; }
+  .cat-price { color:#e11d48; font-weight:800; font-size:15px; }
+  .cat-compare { color:#9ca3af; font-size:12px; text-decoration:line-through; font-weight:600; }
+  .cat-buy { margin-top:auto; border:0; border-radius:10px; padding:10px; font-size:13px; font-weight:800; color:#fff; background:#e11d48; cursor:pointer; }
+  .payopt { display:flex; gap:10px; align-items:flex-start; border:1px solid #d1d5db; border-radius:12px; padding:10px 12px; cursor:pointer; }
+  .payopt input { margin-top:3px; }
+  .payopt .pt { font-weight:700; font-size:14px; }
+  .payopt .pd { font-size:12px; color:#6b7280; margin-top:1px; }
+  .payopt.sel { border-color:#111827; background:#f9fafb; }
   .prodline img { width:52px; height:52px; border-radius:10px; object-fit:cover; background:#eef2f7; }
   .qtywrap { display:flex; align-items:center; gap:8px; }
   .qtywrap button { width:32px; height:32px; border-radius:50%; border:1px solid #d1d5db; background:#fff; font-size:16px; cursor:pointer; }
@@ -113,7 +128,7 @@ export function renderLivePage(slug: string | null): string {
     <div class="sheet-card">
       <button class="closex" id="co-close">✕</button>
       <h2>Finaliza tu pedido</h2>
-      <div class="sub">Pagas en efectivo al recibir. Sin pagos en línea.</div>
+      <div class="sub" id="co-sub">Pagas en efectivo al recibir. Sin pagos en línea.</div>
       <div class="prodline">
         <img id="co-img" alt="">
         <div style="flex:1;min-width:0">
@@ -139,6 +154,7 @@ export function renderLivePage(slug: string | null): string {
           <div style="display:flex;gap:8px"><input id="f-coupon" style="flex:1"><button type="button" id="btn-coupon" style="border:1px solid #d1d5db;background:#fff;border-radius:10px;padding:0 14px;cursor:pointer">Aplicar</button></div>
           <div id="coupon-msg" style="font-size:12px;color:#059669;margin-top:4px"></div>
         </div>
+        <div class="fld"><label>¿Cómo quieres pagar?</label><div class="payopts" id="pay-opts"></div></div>
         <div class="totals">
           <div class="trow"><span>Subtotal</span><strong id="t-sub">$0</strong></div>
           <div class="trow"><span>Envío</span><strong id="t-ship">$0</strong></div>
@@ -167,6 +183,15 @@ export function renderLivePage(slug: string | null): string {
     </div>
   </div>
 
+  <div class="sheet" id="catalog">
+    <div class="sheet-card">
+      <button class="closex" id="cat-close">✕</button>
+      <h2>Catálogo del live</h2>
+      <div class="sub">Elige tu producto y compra sin salir del live.</div>
+      <div id="catalog-grid"></div>
+    </div>
+  </div>
+
   <div class="sheet" id="reg-thanks">
     <div class="sheet-card" style="text-align:center">
       <div style="font-size:44px">✅</div>
@@ -181,7 +206,7 @@ export function renderLivePage(slug: string | null): string {
       <div style="font-size:44px">✅</div>
       <h2>¡Pedido recibido!</h2>
       <p class="sub" id="thanks-detail"></p>
-      <p style="font-weight:800;font-size:17px">PAGAS EN EFECTIVO AL RECIBIR</p>
+      <p style="font-weight:800;font-size:17px" id="thanks-pay">PAGAS EN EFECTIVO AL RECIBIR</p>
       <button id="btn-thanks-close" style="border:0;border-radius:12px;padding:13px 22px;font-weight:800;background:#111827;color:#fff;cursor:pointer">Seguir viendo</button>
     </div>
   </div>
@@ -199,7 +224,7 @@ window.__LIVE_SLUG__ = ${safeSlug};
     var parts = location.pathname.split('/').filter(Boolean);
     if (parts[0] === 'live' && parts[1]) slug = parts[1];
   }
-  var cfg = null, landingId = '', fake = [], qty = 1, leadId = '', knownPhone = '';
+  var cfg = null, landingId = '', fake = [], qty = 1, leadId = '', knownPhone = '', selected = null;
   var currentTimeSec = 0, lastTimeSec = 0, durationSec = 0, player = null, playerKind = '', endedHandled = false;
 
   function utm(){
@@ -462,9 +487,95 @@ window.__LIVE_SLUG__ = ${safeSlug};
   }
   $('btn-wa').addEventListener('click', openWhatsApp);
 
+  // ---------- Catalogo dentro del live ----------
+  function catalogProducts(){
+    var list = (cfg && Array.isArray(cfg.products)) ? cfg.products.slice() : [];
+    if (cfg && cfg.productName) {
+      var main = { name: cfg.productName, price: Number(cfg.productPrice)||0, comparePrice: cfg.productComparePrice == null ? null : Number(cfg.productComparePrice), imageUrl: cfg.productImageUrl || '' };
+      var hasMain = list.some(function(p){ return p && p.name === main.name; });
+      if (!hasMain) list.unshift(main);
+    }
+    return list;
+  }
+  function selectedPrice(){ return selected ? (Number(selected.price)||0) : (Number(cfg && cfg.productPrice)||0); }
+  function renderCatalog(){
+    var grid = $('catalog-grid'); grid.innerHTML = '';
+    catalogProducts().forEach(function(prod){
+      var box = document.createElement('div'); box.className = 'cat-item';
+      if (prod.imageUrl) { var im = document.createElement('img'); im.src = prod.imageUrl; im.alt = ''; box.appendChild(im); }
+      else { var ph = document.createElement('div'); ph.className = 'cat-ph'; ph.textContent = '🛍️'; box.appendChild(ph); }
+      var body = document.createElement('div'); body.className = 'cat-body';
+      var nm = document.createElement('div'); nm.className = 'cat-name'; nm.textContent = prod.name; body.appendChild(nm);
+      var pr = document.createElement('div'); pr.className = 'cat-price'; pr.textContent = money(prod.price);
+      if (prod.comparePrice) { var sp = document.createElement('span'); sp.className = 'cat-compare'; sp.textContent = ' ' + money(prod.comparePrice); pr.appendChild(sp); }
+      body.appendChild(pr);
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'cat-buy'; b.textContent = 'COMPRAR';
+      (function(pp){ b.addEventListener('click', function(){
+        post('/api/public/live/' + landingId + '/checkout-click', { visitorId: visitorId(), utm: UTM }).catch(function(){});
+        selectProduct(pp);
+        $('catalog').classList.remove('open');
+        $('checkout').classList.add('open');
+      }); })(prod);
+      body.appendChild(b);
+      box.appendChild(body);
+      grid.appendChild(box);
+    });
+  }
+  function openCatalog(){ renderCatalog(); $('catalog').classList.add('open'); }
+  function selectProduct(prod){
+    selected = prod || null;
+    qty = 1;
+    $('co-name').textContent = selected ? selected.name : (cfg.productName || '');
+    $('co-price').textContent = money(selectedPrice());
+    var hasImg = !!(selected && selected.imageUrl) || !!(cfg && cfg.productImageUrl);
+    $('co-img').style.display = hasImg ? '' : 'none';
+    if (selected && selected.imageUrl) $('co-img').src = selected.imageUrl;
+    else if (cfg && cfg.productImageUrl) $('co-img').src = cfg.productImageUrl;
+    recalc();
+  }
+  $('cat-close').addEventListener('click', function(){ $('catalog').classList.remove('open'); });
+  $('product-card').addEventListener('click', function(){
+    if (catalogProducts().length) openCatalog();
+    else $('checkout').classList.add('open');
+  });
+
+  // ---------- Pago ----------
+  function paymentMethods(){ return (cfg && Array.isArray(cfg.paymentMethods) && cfg.paymentMethods.length) ? cfg.paymentMethods : ['cod', 'prepaid']; }
+  function paintPaySelection(){
+    var els = $('pay-opts').querySelectorAll('.payopt');
+    Array.prototype.forEach.call(els, function(el){ el.classList.toggle('sel', !!el.querySelector('input:checked')); });
+  }
+  function renderPayment(){
+    var box = $('pay-opts'); box.innerHTML = '';
+    var methods = paymentMethods();
+    var defs = [
+      { id: 'cod', t: 'Pago contraentrega', d: 'Pagas en efectivo al recibir tu pedido.' },
+      { id: 'prepaid', t: 'Pago anticipado', d: 'Recibes el link o los datos de pago por WhatsApp y aseguras tu pedido ya.' },
+    ];
+    defs.forEach(function(def, i){
+      if (methods.indexOf(def.id) === -1) return;
+      var label = document.createElement('label'); label.className = 'payopt' + (i === 0 ? ' sel' : '');
+      var radio = document.createElement('input'); radio.type = 'radio'; radio.name = 'paymethod'; radio.value = def.id;
+      if (i === 0 || methods.length === 1) radio.checked = true;
+      var tx = document.createElement('div');
+      var tt = document.createElement('div'); tt.className = 'pt'; tt.textContent = def.t; tx.appendChild(tt);
+      var dd = document.createElement('div'); dd.className = 'pd'; dd.textContent = def.d; tx.appendChild(dd);
+      label.appendChild(radio); label.appendChild(tx);
+      label.addEventListener('click', function(){ setTimeout(paintPaySelection, 0); });
+      box.appendChild(label);
+    });
+    $('co-sub').textContent = methods.indexOf('prepaid') !== -1
+      ? 'Paga contraentrega o anticipado: el cobro anticipado se coordina por WhatsApp.'
+      : 'Pagas en efectivo al recibir. Sin pagos en línea.';
+  }
+  function selectedPayment(){
+    var r = $('pay-opts').querySelector('input[name=paymethod]:checked');
+    return r ? r.value : paymentMethods()[0];
+  }
+
   // ---------- Checkout ----------
   function recalc(){
-    var sub = (Number(cfg.productPrice)||0) * qty;
+    var sub = selectedPrice() * qty;
     var ship = Number(cfg.shippingPrice)||0;
     $('qty-val').textContent = qty;
     $('t-sub').textContent = money(sub);
@@ -501,7 +612,7 @@ window.__LIVE_SLUG__ = ${safeSlug};
       var phone = normalizePhone($('f-phone').value);
       if (!phone || !landingId) return;
       knownPhone = phone;
-      post('/api/public/live/' + landingId + '/leads', { visitorId: visitorId(), phone: phone, quantity: qty, utm: UTM, leadId: leadId || undefined })
+      post('/api/public/live/' + landingId + '/leads', { visitorId: visitorId(), phone: phone, quantity: qty, productName: selected ? selected.name : (cfg && cfg.productName) || undefined, utm: UTM, leadId: leadId || undefined })
         .then(function(j){ if (j.leadId) { leadId = j.leadId; saveState({ leadId: leadId, phone: phone, visitorId: visitorId() }); } })
         .catch(function(){});
     }, 700);
@@ -515,6 +626,7 @@ window.__LIVE_SLUG__ = ${safeSlug};
       visitorId: visitorId(), leadId: leadId || undefined, quantity: qty,
       couponCode: $('f-coupon').value.trim() || undefined,
       customerName: $('f-name').value.trim(), phone: phone,
+      productName: selected ? selected.name : (cfg && cfg.productName) || undefined, paymentMethod: selectedPayment(),
       address: $('f-address').value.trim(), department: $('f-dept').value.trim(),
       city: $('f-city').value.trim(), email: $('f-email').value.trim() || undefined,
       utm: UTM
@@ -528,7 +640,14 @@ window.__LIVE_SLUG__ = ${safeSlug};
         knownPhone = phone;
         saveState({ phone: phone, visitorId: visitorId() });
         $('checkout').classList.remove('open');
-        $('thanks-detail').textContent = 'Pedido ' + (j.orderRef || '') + ' · Total a pagar al recibir: ' + money(j.total) + '. Te contactaremos por WhatsApp para confirmar la entrega.';
+        var pm = j.paymentMethod || selectedPayment();
+        if (pm === 'prepaid') {
+          $('thanks-detail').textContent = 'Pedido ' + (j.orderRef || '') + ' · ' + (j.productName || '') + ' · Total: ' + money(j.total) + '. Elegiste pago anticipado: en unos minutos recibes por WhatsApp el link o los datos para pagar y asegurar tu pedido.';
+          $('thanks-pay').textContent = 'PAGO ANTICIPADO: TE ENVIAMOS EL LINK DE PAGO POR WHATSAPP';
+        } else {
+          $('thanks-detail').textContent = 'Pedido ' + (j.orderRef || '') + ' · Total a pagar al recibir: ' + money(j.total) + '. Te contactaremos por WhatsApp para confirmar la entrega.';
+          $('thanks-pay').textContent = 'PAGAS EN EFECTIVO AL RECIBIR';
+        }
         $('thanks').classList.add('open');
       })
       .catch(function(ex){ err.textContent = ex.message || 'No se pudo enviar el pedido. Intenta de nuevo.'; })
@@ -584,6 +703,8 @@ window.__LIVE_SLUG__ = ${safeSlug};
       $('co-price').textContent = money(cfg.productPrice);
       if (cfg.productImageUrl) $('co-img').src = cfg.productImageUrl; else $('co-img').style.display='none';
     }
+    renderPayment();
+    if (catalogProducts().length > 1) $('pc-name').textContent = cfg.productName + ' · ver catálogo ›';
     $('ship-note').textContent = cfg.shippingText || '';
     var s = loadState(); if (s.phone) knownPhone = s.phone; if (s.leadId) leadId = s.leadId;
     visitorId();
