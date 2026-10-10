@@ -4718,10 +4718,26 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
 
     // Handle outgoing message from mobile phone / human operator
     if (data.key.fromMe) {
-      // Si un asesor responde desde el teléfono, entregar la conversación al
-      // humano y pausar automáticamente la IA para ese contacto.
+      // Reactivación desde el dispositivo: si el asesor envía el carácter o
+      // frase especial configurado en Entrenamiento ("Casilla de
+      // Reactivación de la IA"), la IA se reactiva sin necesidad del CRM.
+      const triggerRaw = String(currentDB.reactivationTrigger || '🤖').trim();
+      const triggerLower = triggerRaw.toLowerCase();
+      const advisorText = String(text || '');
+      const advisorLower = advisorText.toLowerCase().trim();
+      const defaultTriggers = ['🤖', '🔄', '⭐', '✅'];
+      const isReactivateTrigger = (triggerRaw && (advisorLower === triggerLower || advisorText.includes(triggerRaw) || advisorLower.includes(triggerLower)))
+        || defaultTriggers.some(e => advisorText.includes(e));
       if (!currentDB.disabledBots) currentDB.disabledBots = [];
-      if (!currentDB.disabledBots.includes(cleanPhone)) currentDB.disabledBots.push(cleanPhone);
+      if (isReactivateTrigger) {
+        const wasPaused = currentDB.disabledBots.includes(cleanPhone);
+        currentDB.disabledBots = currentDB.disabledBots.filter((p) => p !== cleanPhone);
+        if (wasPaused) console.log('[Evolution API] IA reactivada para +' + cleanPhone + ' con disparador desde el dispositivo');
+      } else {
+        // Si un asesor responde desde el teléfono, entregar la conversación al
+        // humano y pausar automáticamente la IA para ese contacto.
+        if (!currentDB.disabledBots.includes(cleanPhone)) currentDB.disabledBots.push(cleanPhone);
+      }
       if (text || isImage || isAudio || isVideo || isDocument) {
         const displayText = text || (isImage ? '📷 [Imagen enviada desde móvil]' : (isAudio ? '🎤 [Nota de voz enviada desde móvil]' : (isVideo ? '🎥 [Video enviado desde móvil]' : '📎 [Archivo enviado desde móvil]')));
         if (!currentDB.messagesHistory) currentDB.messagesHistory = {};
