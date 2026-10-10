@@ -36,6 +36,7 @@ import { setupLiveSellingAdminRoutes, setupLiveSellingPublicRoutes } from './ser
 import { setupDiagnosticAdminRoutes, setupDiagnosticPublicRoutes } from './server/diagnostic.ts';
 import { setupZernioRoutes } from './server/zernio/routes.ts';
 import { handleZernioWebhook } from './server/zernio/webhook.ts';
+import { enviarMensajeZernio } from './server/zernio/messaging.ts';
 import { setupBoldRoutes } from './server/bold.ts';
 import { setupMcpRoutes } from './server/mcp.ts';
 import {
@@ -1627,6 +1628,10 @@ function saveDBData(data: any) {
 
 // In-memory load
 let currentDB = getDBData();
+
+// Ref al auto-bot de canales sociales (Zernio). Se asigna donde processWithAgents es visible;
+// el webhook de ingesta Zernio vive en otro scope y lo invoca por esta referencia.
+let handleSocialAutoBotRef: ((ctx: any) => Promise<void>) | null = null;
 let globalExecuteAIInternal: any = null;
 
 const AI_CONVERSATION_WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -2362,6 +2367,12 @@ async function createServer() {
           ,accountId: socialAccountId || undefined
         });
       }
+      // Auto-Bot IA social (Instagram/Facebook/Messenger/WhatsApp via Zernio).
+      // Corre en segundo plano para no bloquear el webhook (<5s).
+      if (handleSocialAutoBotRef) {
+        handleSocialAutoBotRef({ msg, incomingMessage, eventType, socialPlatform, participantId, participantUsername, zernioConversationId, socialAccountId, stableSocialId })
+          .catch((e: any) => console.error('[Zernio AutoBot] Error no controlado:', e?.message || e));
+      }
       saveDBData(currentDB);
     } catch (err) {
       console.error('[Zernio Event Ingest Error]:', err);
@@ -2680,25 +2691,57 @@ async function createServer() {
     }
   });
 
-  // Endpoint: Activar / Desactivar Bot IA para un número específico
+  // Endpoint: Activar / Desactivar Bot IA para un contacto (telefono o id social tipo social:instagram:...)
   app.post("/api/whatsapp/toggle-bot-phone", (req, res) => {
     try {
-      const { phone, active } = req.body;
-      const cleanPhone = (phone || '').replace(/\D/g, '');
-      if (!cleanPhone) {
-        return res.status(400).json({ success: false, error: "Falta número de teléfono" });
+      const { phone, active, key } = req.body;
+      const rawKey = String(key || phone || '').trim();
+      if (!rawKey) {
+        return res.status(400).json({ success: false, error: "Falta identificador del contacto" });
       }
+      // Los telefonos se normalizan a digitos; los ids sociales se comparan exactos
+      const normKey = /^\d[\d\s+().-]*$/.test(rawKey) ? rawKey.replace(/\D/g, '') : rawKey;
+      const sameBotKey = (p: string) => {
+        const e = String(p || '').trim();
+        if (!e) return false;
+        if (e === normKey) return true;
+        const de = e.replace(/\D/g, '');
+        const dk = normKey.replace(/\D/g, '');
+        return !!de && !!dk && de === dk && !/[a-zA-Z:]/.test(e) && !/[a-zA-Z:]/.test(normKey);
+      };
       if (!currentDB.disabledBots) currentDB.disabledBots = [];
       if (active) {
-        currentDB.disabledBots = currentDB.disabledBots.filter((p: string) => p.replace(/\D/g, '') !== cleanPhone);
+        currentDB.disabledBots = currentDB.disabledBots.filter((p: string) => !sameBotKey(p));
       } else {
-        if (!currentDB.disabledBots.some((p: string) => p.replace(/\D/g, '') === cleanPhone)) {
-          currentDB.disabledBots.push(cleanPhone);
+        if (!currentDB.disabledBots.some((p: string) => sameBotKey(p))) {
+          currentDB.disabledBots.push(normKey);
         }
       }
       saveDBData(currentDB);
-      console.log(`[Bot Toggle] IA para +${cleanPhone} ahora está: ${active ? 'ACTIVADA' : 'PAUSADA'}`);
-      res.json({ success: true, isBotActive: active, disabledBots: currentDB.disabledBots });
+      console.log(`[Bot Toggle] IA para ${normKey} ahora está: ${active ? 'ACTIVADA' : 'PAUSADA'}`);
+      res.json({ success: true, isBotActive: !!active, botKey: normKey, disabledBots: currentDB.disabledBots });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // Endpoint: Estado del Bot IA para un contacto (telefono o id social)
+  app.get("/api/whatsapp/bot-status", (req, res) => {
+    try {
+      const q: any = req.query || {};
+      const rawKey = String(q.key || q.phone || '').trim();
+      const normKey = /^\d[\d\s+().-]*$/.test(rawKey) ? rawKey.replace(/\D/g, '') : rawKey;
+      const sameBotKey = (p: string) => {
+        const e = String(p || '').trim();
+        if (!e) return false;
+        if (e === normKey) return true;
+        const de = e.replace(/\D/g, '');
+        const dk = normKey.replace(/\D/g, '');
+        return !!de && !!dk && de === dk && !/[a-zA-Z:]/.test(e) && !/[a-zA-Z:]/.test(normKey);
+      };
+      const pausedForChat = !!rawKey && (currentDB.disabledBots || []).some((p: string) => sameBotKey(p));
+      const globalActive = currentDB.isAiGlobalActive !== false;
+      res.json({ success: true, botKey: normKey, isPausedForChat: pausedForChat, isGlobalActive: globalActive, isBotActive: globalActive && !pausedForChat });
     } catch (err: any) {
       res.status(500).json({ success: false, error: err.message });
     }
@@ -4486,6 +4529,219 @@ async function createServer() {
 
     return false;
   }
+
+
+  // ============================================================
+  // AUTO-BOT IA PARA CANALES SOCIALES (Instagram / Facebook / Messenger / WhatsApp via Zernio)
+  // Mismas reglas que el bot de WhatsApp (Evolution):
+  //  - IA 100% activa para todos; disabledBots vacio = todos activos
+  //  - Si el asesor responde desde su app/dispositivo -> auto-pausa SOLO en ese chat
+  //  - El caracter de "Casilla de Reactivacion de la IA" (Entrenamiento, por defecto el emoji robot)
+  //    enviado desde el dispositivo reactiva la IA sin abrir el CRM
+  //  - Pausado o no, todo queda en messagesHistory para retomar contexto al reactivar
+  // ============================================================
+  function socialBotKeyMatches(entry: any, key: string): boolean {
+    const e = String(entry || '').trim();
+    const k = String(key || '').trim();
+    if (!e || !k) return false;
+    if (e === k) return true;
+    const de = e.replace(/\D/g, '');
+    const dk = k.replace(/\D/g, '');
+    return !!de && !!dk && de === dk && !/[a-zA-Z:]/.test(e) && !/[a-zA-Z:]/.test(k);
+  }
+
+  function isSocialBotPausedFor(key: string): boolean {
+    if (!key) return false;
+    const list: any[] = currentDB.disabledBots || [];
+    return list.some((p: any) => socialBotKeyMatches(p, key));
+  }
+
+  function setSocialBotPausedFor(key: string, paused: boolean): void {
+    if (!key) return;
+    if (!currentDB.disabledBots) currentDB.disabledBots = [];
+    if (paused) {
+      if (!isSocialBotPausedFor(key)) currentDB.disabledBots.push(key);
+    } else {
+      currentDB.disabledBots = (currentDB.disabledBots as any[]).filter((p: any) => !socialBotKeyMatches(p, key));
+    }
+  }
+
+  function makeSocialBotKey(stableSocialId: string, zernioConversationId: string, socialPlatform: string): string {
+    const base = String(stableSocialId || zernioConversationId || '').trim();
+    if (!base) return '';
+    return 'social:' + String(socialPlatform || 'instagram').toLowerCase() + ':' + base;
+  }
+
+  function socialBotIsReactivation(text: string): boolean {
+    const triggerRaw = String(currentDB.reactivationTrigger || '🤖').trim();
+    const triggerLower = triggerRaw.toLowerCase();
+    const t = String(text || '');
+    const tl = t.toLowerCase().trim();
+    const defaultTriggers = ['🤖', '🔄', '⭐', '✅'];
+    return (triggerRaw.length > 0 && (tl === triggerLower || t.includes(triggerRaw) || tl.includes(triggerLower)))
+      || defaultTriggers.some((e) => t.includes(e));
+  }
+
+  function pushSocialHistory(historyKey: string, role: string, htext: string, msgId: string, nowStr: string): void {
+    if (!currentDB.messagesHistory) currentDB.messagesHistory = {};
+    if (!currentDB.messagesHistory[historyKey]) currentDB.messagesHistory[historyKey] = [];
+    const hist: any[] = currentDB.messagesHistory[historyKey];
+    const last = hist[hist.length - 1];
+    if (last) {
+      if (msgId && last.remoteId === msgId) return;
+      if (last.text === htext && last.timestamp && (Date.now() - Number(last.timestamp)) < 120000) return;
+    }
+    hist.push({ role, remoteId: msgId || undefined, source: 'zernio', fromSocial: true, text: htext, time: nowStr, timestamp: Date.now() });
+    if (hist.length > 35) hist.shift();
+  }
+
+  async function sendSocialBotReply(opts: {
+    botKey: string; historyKey: string; senderName: string; text: string;
+    attachmentUrl?: string; attachmentType?: string;
+    zernioConversationId: string; socialAccountId: string; socialPlatform: string;
+    participantId: string; participantUsername: string;
+  }): Promise<void> {
+    const hist: any[] = (currentDB.messagesHistory && currentDB.messagesHistory[opts.historyKey]) || [];
+    let mediaInfo = '';
+    let mediaBase64: string | null = null;
+    let mediaMimeType: string | null = null;
+    const attUrl = String(opts.attachmentUrl || '');
+    const attType = String(opts.attachmentType || '').toLowerCase();
+    const looksImage = attType.includes('image') || /\.(jpg|jpeg|png|gif|webp)(\?|#|$)/i.test(attUrl);
+    const looksAudio = attType.includes('audio') || /\.(ogg|oga|mp3|wav|m4a)(\?|#|$)/i.test(attUrl);
+    if (attUrl && (looksImage || looksAudio)) {
+      try {
+        const buf = await getMediaBuffer(attUrl);
+        if (buf && buf.length > 0) {
+          mediaBase64 = buf.toString('base64');
+          mediaMimeType = looksImage ? 'image/jpeg' : 'audio/ogg';
+          mediaInfo = looksImage ? 'El cliente adjuntó una imagen.' : 'El cliente envió un audio de voz.';
+        }
+      } catch { /* continuar solo con texto */ }
+    }
+    const fullText = [opts.text, mediaInfo].filter(Boolean).join(' ');
+    if (!fullText && !mediaBase64) return;
+    let replyText = '';
+    try {
+      replyText = await processWithAgents({
+        phone: opts.botKey,
+        senderName: opts.senderName,
+        text: fullText,
+        history: hist,
+        mediaInfo,
+        mediaBase64,
+        mediaMimeType,
+      });
+    } catch (e: any) {
+      console.error('[Zernio AutoBot] Error generando respuesta IA:', e?.message || e);
+      return;
+    }
+    const clean = String(replyText || '').trim();
+    if (!clean) return;
+    const parsed: any = safeParseJSON(clean);
+    let replies: string[] = [];
+    if (parsed && Array.isArray(parsed.replies) && parsed.replies.length > 0) replies = parsed.replies;
+    else if (parsed && typeof parsed.reply === 'string' && parsed.reply.trim()) replies = [parsed.reply.trim()];
+    else replies = [clean];
+    const nowStr = new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+    const plat = ['whatsapp', 'instagram', 'messenger', 'facebook'].includes(String(opts.socialPlatform).toLowerCase())
+      ? String(opts.socialPlatform).toLowerCase() : 'instagram';
+    for (const r of replies.slice(0, 3)) {
+      const txt = String(r || '').trim();
+      if (!txt) continue;
+      try {
+        const res: any = await enviarMensajeZernio({
+          accountId: opts.socialAccountId || undefined,
+          conversationId: opts.zernioConversationId || undefined,
+          participantId: opts.participantId || undefined,
+          participantUsername: opts.participantUsername || undefined,
+          platform: plat as any,
+          text: txt,
+          idempotencyKey: 'socialbot-' + Date.now() + '-' + Math.random().toString(36).slice(2),
+        });
+        if (res && res.success) {
+          pushSocialHistory(opts.historyKey, 'assistant', txt, String(res.messageId || ''), nowStr);
+          console.log('[Zernio AutoBot] Respuesta IA enviada en ' + plat + ' (' + opts.botKey + ')');
+        } else {
+          console.error('[Zernio AutoBot] No se pudo enviar la respuesta:', (res && res.error) || 'error desconocido');
+        }
+      } catch (e: any) {
+        console.error('[Zernio AutoBot] Error enviando respuesta:', e?.message || e);
+      }
+      await new Promise((r2) => setTimeout(r2, 1200));
+    }
+    saveDBData(currentDB);
+  }
+
+  async function handleSocialAutoBot(ctx: {
+    msg: any; incomingMessage: boolean; eventType: string; socialPlatform: string;
+    participantId: string; participantUsername: string;
+    zernioConversationId: string; socialAccountId: string; stableSocialId: string;
+  }): Promise<void> {
+    const evt = String(ctx.eventType || '').toLowerCase();
+    if (evt !== 'message.received' && evt !== 'message.sent') return; // solo DMs, no comentarios
+    const botKey = makeSocialBotKey(ctx.stableSocialId, ctx.zernioConversationId, ctx.socialPlatform);
+    if (!botKey) return;
+    const historyKey = botKey;
+    const text = String(ctx.msg?.text || '').trim();
+    const attachment = ctx.msg?.attachment || null;
+    const attUrl = String((attachment && (attachment.url || attachment.link || attachment.src)) || '');
+    const attType = String((attachment && (attachment.type || attachment.mimeType)) || '');
+    const isSelfEcho = !!ctx.msg?.isSelfEcho;
+    const senderName = String(ctx.participantUsername || (ctx.msg && ctx.msg.senderName) || 'cliente').replace(/^@/, '').trim() || 'cliente';
+    const nowStr = new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+    const msgId = String((ctx.msg && ctx.msg.id) || '');
+
+    // ---- Saliente: lo envio la cuenta del negocio ----
+    if (!ctx.incomingMessage) {
+      if (isSelfEcho) {
+        if (text) pushSocialHistory(historyKey, 'agent', text, msgId, nowStr);
+        return; // eco de CRM/bot: historial sin pausar
+      }
+      if (socialBotIsReactivation(text)) {
+        const wasPaused = isSocialBotPausedFor(botKey);
+        setSocialBotPausedFor(botKey, false);
+        if (text) pushSocialHistory(historyKey, 'agent', text, msgId, nowStr);
+        saveDBData(currentDB);
+        if (wasPaused) console.log('[Zernio AutoBot] IA reactivada en ' + ctx.socialPlatform + ' para ' + botKey + ' (disparador desde el dispositivo)');
+        await sendSocialBotReply({
+          botKey, historyKey, senderName, text: 'Hola',
+          zernioConversationId: ctx.zernioConversationId, socialAccountId: ctx.socialAccountId,
+          socialPlatform: ctx.socialPlatform, participantId: ctx.participantId, participantUsername: ctx.participantUsername,
+        });
+        return;
+      }
+      // El asesor respondio desde su app -> auto-pausa y se guarda el contexto
+      setSocialBotPausedFor(botKey, true);
+      pushSocialHistory(historyKey, 'agent', text || (attUrl ? '[Adjunto enviado desde el dispositivo]' : ''), msgId, nowStr);
+      saveDBData(currentDB);
+      console.log('[Zernio AutoBot] IA auto-pausada en ' + ctx.socialPlatform + ' para ' + botKey + ' (asesor respondió desde su dispositivo)');
+      return;
+    }
+
+    // ---- Entrante: el cliente escribio. Guardar siempre; responder solo si la IA esta activa ----
+    if (text || attUrl) pushSocialHistory(historyKey, 'user', text || '[Adjunto del cliente]', msgId, nowStr);
+    if (currentDB.isAiGlobalActive === false) {
+      console.log('[Zernio AutoBot] IA global pausada, no se responde en ' + botKey);
+      saveDBData(currentDB);
+      return;
+    }
+    if (isSocialBotPausedFor(botKey)) {
+      console.log('[Zernio AutoBot] Bot pausado para ' + botKey + ', se guarda historial sin responder');
+      saveDBData(currentDB);
+      return;
+    }
+    await sendSocialBotReply({
+      botKey, historyKey, senderName, text,
+      attachmentUrl: attUrl || undefined, attachmentType: attType || undefined,
+      zernioConversationId: ctx.zernioConversationId, socialAccountId: ctx.socialAccountId,
+      socialPlatform: ctx.socialPlatform, participantId: ctx.participantId, participantUsername: ctx.participantUsername,
+    });
+  }
+
+  // Exponer al webhook de ingesta Zernio (vive en otro scope)
+  handleSocialAutoBotRef = handleSocialAutoBot;
+  console.log('[Zernio AutoBot] handler social registrado');
 
   async function processWithAgents(params: {
     phone: string;

@@ -2752,6 +2752,32 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
     setSendError('');
   }, [activeChatId]);
 
+  // Clave del bot para un chat: telefono normalizado o id social (igual que el servidor).
+  // Sin esto, el boton de pausa no hacia nada en Instagram (esos chats no tienen `phone`).
+  const getChatBotKey = (c: any): string => {
+    if (!c) return '';
+    const phoneDigits = String(c.phone || '').replace(/\D/g, '');
+    if (/^\d{7,15}$/.test(phoneDigits)) return phoneDigits;
+    const plat = String(c.platform || c.channelId || 'instagram').toLowerCase().replace(/^channel-/, '');
+    const sid = String(c.conversationId || c.participantId || c.externalId || '').trim();
+    if (sid) return `social:${plat}:${sid}`;
+    return String(c.id || '');
+  };
+
+  // Sincronizar el estado real del bot IA al cambiar de chat (pausado o activo en ESTE chat)
+  React.useEffect(() => {
+    const key = getChatBotKey(activeChatObj);
+    if (!key) { setIsBotActive(true); return; }
+    let cancelled = false;
+    fetch(`/api/whatsapp/bot-status?key=${encodeURIComponent(key)}`)
+      .then(r => r.json())
+      .then(d => {
+        if (!cancelled && d && typeof d.isBotActive === 'boolean') setIsBotActive(d.isBotActive);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [activeChatId]);
+
   // Sincronización automática de cliente y guía al cambiar de chat
   React.useEffect(() => {
     if (!activeChatObj) return;
@@ -3158,20 +3184,26 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
   const handleToggleBotForChat = async () => {
     const nextState = !isBotActive;
     setIsBotActive(nextState);
-    const activeChat = chats.find(c => c.id === activeChatId);
-    if (activeChat && activeChat.phone) {
-      try {
-        await fetch('/api/whatsapp/toggle-bot-phone', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            phone: activeChat.phone,
-            active: nextState
-          })
-        });
-      } catch (e) {
-        console.error("Error sincronizando toggle de bot:", e);
+    const key = getChatBotKey(chats.find(c => c.id === activeChatId));
+    if (!key) return;
+    try {
+      const res = await fetch('/api/whatsapp/toggle-bot-phone', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          key,
+          active: nextState
+        })
+      });
+      const data = await res.json().catch(() => null);
+      if (data && typeof data.isBotActive === 'boolean') {
+        setIsBotActive(data.isBotActive);
+      } else if (!res.ok) {
+        setIsBotActive(!nextState);
       }
+    } catch (e) {
+      console.error("Error sincronizando toggle de bot:", e);
+      setIsBotActive(!nextState);
     }
   };
 
@@ -5231,8 +5263,8 @@ ${parametersString}
                         {chats.find(c => c.id === activeChatId)?.name || 'Conversación'}
                       </h3>
                       <div className="flex items-center gap-1.5 mt-0.5 truncate">
-                        <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0"></span>
-                        <span className="text-[#8696a0] text-[10px] font-medium truncate">Asistente IA activo</span>
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${isBotActive ? "bg-green-500 animate-pulse" : "bg-amber-500"}`}></span>
+                        <span className={`text-[10px] font-medium truncate ${isBotActive ? "text-[#8696a0]" : "text-amber-400"}`}>{isBotActive ? "Asistente IA activo" : "IA pausada en este chat"}</span>
                       </div>
                     </div>
                   </div>
