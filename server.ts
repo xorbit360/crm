@@ -33,6 +33,7 @@ import {
   loadStateFromNormalizedTables,
 } from './server/normalizedDb.ts';
 import { setupLiveSellingAdminRoutes, setupLiveSellingPublicRoutes } from './server/liveSelling.ts';
+import { setupDiagnosticAdminRoutes, setupDiagnosticPublicRoutes } from './server/diagnostic.ts';
 import { setupZernioRoutes } from './server/zernio/routes.ts';
 import { handleZernioWebhook } from './server/zernio/webhook.ts';
 import { setupBoldRoutes } from './server/bold.ts';
@@ -2154,8 +2155,10 @@ async function createServer() {
   app.use('/api/integrations/chatbot-tokens', requireRole('superadmin', 'admin'));
   app.use('/api/telegram-pay', requireRole('superadmin', 'admin'));
   setupLiveSellingPublicRoutes(app);
+  setupDiagnosticPublicRoutes(app);
   app.use('/api', requireApiSession);
   setupLiveSellingAdminRoutes(app);
+  setupDiagnosticAdminRoutes(app);
 
   // Receives the real browser exception behind the generic error screen. The
   // payload is truncated and never includes cookies, tokens or request bodies.
