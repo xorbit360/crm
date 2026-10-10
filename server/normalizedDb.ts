@@ -63,7 +63,16 @@ function idFor(item: any, fallbackSeed: string): string {
 
 async function upsertRows(client: any, table: string, rows: any[], onConflict: string): Promise<void> {
   if (!rows.length) return;
-  const { error } = await client.from(table).upsert(rows, { onConflict });
+  // Postgres rejects a multi-row upsert when the same conflict key appears
+  // twice in one batch (possible with legacy duplicate log/chat objects).
+  const conflictColumns = onConflict.split(',').map(column => column.trim()).filter(Boolean);
+  const unique = new Map<string, any>();
+  for (const row of rows) {
+    const key = conflictColumns.map(column => String(row?.[column] ?? '')).join('|');
+    if (!unique.has(key)) unique.set(key, row);
+  }
+  const dedupedRows = Array.from(unique.values());
+  const { error } = await client.from(table).upsert(dedupedRows, { onConflict });
   if (error) throw new Error(`${table}: ${error.message}`);
 }
 
