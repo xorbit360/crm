@@ -38,8 +38,13 @@ export function renderLivePage(slug: string | null): string {
   #product-card .pprice { color:#e11d48; font-weight:800; font-size:14px; margin-top:2px; }
   #product-card .pcompare { color:#9ca3af; font-size:11px; text-decoration:line-through; }
   .bottombar { position:fixed; left:0; right:0; bottom:0; z-index:25; padding:10px; padding-bottom:calc(10px + env(safe-area-inset-bottom)); background:linear-gradient(to top, rgba(0,0,0,.72), rgba(0,0,0,0)); display:flex; align-items:center; gap:8px; }
-  #comment-input { flex:1; min-width:0; border:0; border-radius:999px; padding:11px 14px; font-size:14px; background:rgba(255,255,255,.16); color:#fff; outline:none; }
+  #comment-input { width:100%; min-width:0; border:0; border-radius:999px; padding:11px 14px; font-size:14px; background:rgba(255,255,255,.16); color:#fff; outline:none; }
   #comment-input::placeholder { color:rgba(255,255,255,.75); }
+  .comment-wrap { position:relative; flex:1; min-width:0; }
+  #comment-input.has-text { padding-right:46px; }
+  #btn-send { position:absolute; right:5px; top:50%; transform:translateY(-50%); width:32px; height:32px; border-radius:50%; border:0; background:#e11d48; color:#fff; font-size:14px; cursor:pointer; align-items:center; justify-content:center; padding:0; }
+  #btn-reg-submit { width:100%; border:0; border-radius:12px; padding:14px; font-size:15px; font-weight:800; color:#fff; background:#4db103; cursor:pointer; margin-top:12px; }
+  #btn-reg-submit:disabled { opacity:.55; }
   .iconbtn { flex:none; width:42px; height:42px; border-radius:50%; border:0; font-size:18px; cursor:pointer; background:rgba(255,255,255,.16); color:#fff; }
   #btn-wa { background:#25D366; }
   #btn-wa svg { width:22px; height:22px; display:block; margin:auto; }
@@ -95,10 +100,13 @@ export function renderLivePage(slug: string | null): string {
   <div id="comments"></div>
 
   <div class="bottombar">
-    <input id="comment-input" maxlength="500" placeholder="Deja tu comentario aquí 👇" autocomplete="off">
-    <button class="iconbtn" id="btn-send" title="Enviar comentario" style="display:none">➤</button>
-    <button class="iconbtn" id="btn-wa" title="WhatsApp" style="display:none"><svg viewBox="0 0 24 24" fill="#ffffff" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg></button>
     <button id="btn-buy">COMPRAR</button>
+    <div class="comment-wrap">
+      <input id="comment-input" maxlength="500" placeholder="Deja tu comentario" autocomplete="off">
+      <button id="btn-send" title="Enviar comentario" style="display:none">➤</button>
+    </div>
+    <button class="iconbtn" id="btn-wa" title="WhatsApp" style="display:none"><svg viewBox="0 0 24 24" fill="#ffffff" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg></button>
+    <button class="iconbtn" id="btn-heart" title="Me gusta">🤍</button>
   </div>
 
   <div class="sheet" id="checkout">
@@ -141,6 +149,30 @@ export function renderLivePage(slug: string | null): string {
         <div class="err" id="co-err"></div>
         <button id="btn-submit" type="submit">COMPRAR AHORA</button>
       </form>
+    </div>
+  </div>
+
+  <div class="sheet" id="register">
+    <div class="sheet-card">
+      <button class="closex" id="reg-close">✕</button>
+      <h2>Regístrate</h2>
+      <div class="sub">Déjanos tus datos y te contactamos por WhatsApp con toda la información.</div>
+      <form id="reg-form">
+        <div class="fld"><label>Nombre y apellido *</label><input id="r-name" autocomplete="name" required></div>
+        <div class="fld"><label>Número de WhatsApp *</label><input id="r-phone" inputmode="tel" autocomplete="tel" placeholder="3001234567" required></div>
+        <div class="fld"><label>Ciudad / Municipio</label><input id="r-city" autocomplete="address-level2"></div>
+        <div class="err" id="reg-err"></div>
+        <button id="btn-reg-submit" type="submit">Registrarme</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="sheet" id="reg-thanks">
+    <div class="sheet-card" style="text-align:center">
+      <div style="font-size:44px">✅</div>
+      <h2>¡Ya quedaste registrado!</h2>
+      <p class="sub">Te abrimos WhatsApp para darte toda la información. Si no se abrió, toca el botón verde de WhatsApp del live.</p>
+      <button id="btn-reg-thanks-close" style="border:0;border-radius:12px;padding:13px 22px;font-weight:800;background:#111827;color:#fff;cursor:pointer">Seguir viendo</button>
     </div>
   </div>
 
@@ -385,14 +417,14 @@ window.__LIVE_SLUG__ = ${safeSlug};
   $('btn-send').addEventListener('click', sendComment);
   // El boton Enviar solo aparece mientras el visitante escribe (tipo TikTok).
   var commentInputEl = $('comment-input');
-  function syncSendBtn(){ $('btn-send').style.display = commentInputEl.value.trim() ? 'inline-flex' : 'none'; }
+  function syncSendBtn(){ var has = !!commentInputEl.value.trim(); $('btn-send').style.display = has ? 'flex' : 'none'; commentInputEl.classList.toggle('has-text', has); }
   commentInputEl.addEventListener('input', syncSendBtn);
   $('comment-input').addEventListener('keydown', function(e){ if (e.key === 'Enter') sendComment(); });
 
   // ---------- Corazones ----------
   var lastHeart = 0;
-  function spawnHeart(x, y){
-    var now = Date.now(); if (now - lastHeart < 200) return; lastHeart = now;
+  function spawnHeart(x, y, force){
+    var now = Date.now(); if (!force && now - lastHeart < 200) return; lastHeart = now;
     var h = document.createElement('div'); h.className = 'heart'; h.textContent = '❤️';
     var size = 20 + Math.floor(Math.random()*16);
     h.style.fontSize = size + 'px'; h.style.left = x + 'px'; h.style.top = y + 'px';
@@ -404,7 +436,15 @@ window.__LIVE_SLUG__ = ${safeSlug};
     if ($('btn-unmute-big').style.display === 'block') unmute();
     spawnHeart(e.clientX, e.clientY);
   });
-  // Sin boton fijo de corazon: los corazones nacen al tocar el video (tap-layer).
+  // Corazon fijo a la derecha de la barra: dispara corazones flotantes
+  // (ademas de los que nacen al tocar el video en el tap-layer).
+  $('btn-heart').addEventListener('click', function(){
+    var r = $('btn-heart').getBoundingClientRect();
+    var cx = r.left + r.width / 2, cy = r.top;
+    for (var i = 0; i < 4; i++) {
+      (function(k){ setTimeout(function(){ spawnHeart(cx + (Math.floor(Math.random()*25)-12), cy - 6, true); }, k*90); })(i);
+    }
+  });
 
   // ---------- WhatsApp ----------
   function openWhatsApp(){
@@ -438,6 +478,9 @@ window.__LIVE_SLUG__ = ${safeSlug};
     post('/api/public/live/' + landingId + '/checkout-click', { visitorId: visitorId(), utm: UTM }).catch(function(){});
     if (cfg.checkoutMode === 'whatsapp') { openWhatsApp(); return; }
     if (cfg.checkoutMode === 'shopify' && cfg.shopifyUrl) { window.open(cfg.shopifyUrl, '_blank'); return; }
+    // Landing sin producto (registro/captacion): el boton principal abre
+    // el formulario de registro, no el checkout de compra.
+    if (cfg.checkoutMode === 'crm' && !cfg.productName) { $('register').classList.add('open'); return; }
     $('checkout').classList.add('open');
   });
   $('co-close').addEventListener('click', function(){ $('checkout').classList.remove('open'); });
@@ -493,6 +536,30 @@ window.__LIVE_SLUG__ = ${safeSlug};
   });
   $('btn-thanks-close').addEventListener('click', function(){ $('thanks').classList.remove('open'); });
 
+  // ---------- Registro (landing sin producto) ----------
+  $('reg-close').addEventListener('click', function(){ $('register').classList.remove('open'); });
+  $('btn-reg-thanks-close').addEventListener('click', function(){ $('reg-thanks').classList.remove('open'); });
+  $('reg-form').addEventListener('submit', function(e){
+    e.preventDefault();
+    var err = $('reg-err'); err.textContent = '';
+    var phone = normalizePhone($('r-phone').value);
+    var name = $('r-name').value.trim();
+    if (!name) { err.textContent = 'Escribe tu nombre y apellido.'; return; }
+    if (!phone) { err.textContent = 'Escribe un WhatsApp colombiano válido (10 dígitos, ej. 3001234567).'; return; }
+    var btn = $('btn-reg-submit'); btn.disabled = true; btn.textContent = 'Registrando…';
+    post('/api/public/live/' + landingId + '/leads', { visitorId: visitorId(), leadId: leadId || undefined, name: name, phone: phone, city: $('r-city').value.trim() || undefined, utm: UTM })
+      .then(function(j){
+        if (j.leadId) leadId = j.leadId;
+        knownPhone = phone;
+        saveState({ leadId: leadId, phone: phone, visitorId: visitorId() });
+        $('register').classList.remove('open');
+        $('reg-thanks').classList.add('open');
+        openWhatsApp();
+      })
+      .catch(function(ex){ err.textContent = ex.message || 'No se pudo registrar. Intenta de nuevo.'; })
+      .finally(function(){ btn.disabled = false; btn.textContent = (cfg && cfg.buttonText) || 'Registrarme'; });
+  });
+
   // ---------- Carga de configuración ----------
   var apiUrl = slug ? ('/api/public/live/' + encodeURIComponent(slug)) : '/api/public/live/by-host';
   fetch(apiUrl).then(function(r){ return r.json(); }).then(function(j){
@@ -503,6 +570,8 @@ window.__LIVE_SLUG__ = ${safeSlug};
     if (cfg.showDisclosure && cfg.disclosureText) { var dEl = $('disclosure'); dEl.textContent = cfg.disclosureText; dEl.style.display = ''; }
     $('btn-buy').textContent = cfg.buttonText || 'COMPRAR';
     if (cfg.buttonColor) $('btn-buy').style.background = cfg.buttonColor;
+    $('btn-reg-submit').textContent = cfg.buttonText || 'Registrarme';
+    if (cfg.buttonColor) $('btn-reg-submit').style.background = cfg.buttonColor;
     if (cfg.whatsappNumber || cfg.whatsappLink) $('btn-wa').style.display = '';
     if (cfg.productName) {
       $('product-card').style.display = 'block';
