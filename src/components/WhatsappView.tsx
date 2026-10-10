@@ -1897,6 +1897,8 @@ Te guiaré paso a paso para crear el **Prompt Definitivo** de tu negocio de form
 
   // Live Audio Recorder States for WhatsApp PTT Voice Notes
   const [showLiveRecorderInChat, setShowLiveRecorderInChat] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [activeFaqAudioIndex, setActiveFaqAudioIndex] = useState<number | null>(null);
   const [activeRuleAudioIndex, setActiveRuleAudioIndex] = useState<number | null>(null);
   const isGreetingFocusedRef = React.useRef(false);
@@ -5162,10 +5164,11 @@ ${parametersString}
                     <button
                       type="button"
                       onClick={() => setMobileView('list')}
-                      className="md:hidden text-white hover:text-emerald-300 mr-2 p-2.5 -ml-1 rounded-full bg-[#00a884]/20 border border-[#00a884]/40 shadow-sm"
+                      className="md:hidden text-[#e9edef] hover:text-white active:bg-white/10 rounded-full p-1.5 -ml-1.5 mr-0.5 transition shrink-0"
                       title="Volver a la lista de chats"
+                      aria-label="Volver a la lista de chats"
                     >
-                      <ArrowLeft size={25} strokeWidth={2.5} />
+                      <ArrowLeft size={24} />
                     </button>
 
                     <div className="shrink-0">
@@ -5308,7 +5311,7 @@ ${parametersString}
 
                     // If text is just a placeholder like "🎤 [Nota de voz enviada]" or "🎤 Nota de voz enviada", hide it when an audio attachment exists
                     if ((msg.attachment?.type === 'audio' || audioRefMatch) &&
-                        (cleanText === '🎤 [Nota de voz enviada]' || cleanText === '🎤 Nota de voz enviada' || cleanText === '[Nota de voz enviada]')) {
+                        ['🎤 [Nota de voz enviada]', '🎤 Nota de voz enviada', '[Nota de voz enviada]', '🎤 [Audio de voz]', '[Audio de voz]', '🎤 [Nota de voz recibida]', '🎤 [Nota de voz]', '[Nota de voz]', '🎤 Nota de voz'].includes(cleanText)) {
                       cleanText = '';
                     }
 
@@ -5477,6 +5480,24 @@ ${parametersString}
                  </div>
                )}
 
+               {/* Emoji Picker */}
+               {showEmojiPicker && (
+                 <div className="mx-3 mb-2 rounded-2xl border border-[#2a3942] bg-[#233138] p-3 z-20 shadow-xl">
+                   <div className="grid grid-cols-8 gap-1 text-[22px] leading-none">
+                     {['😀','😁','😂','🤣','😊','😍','😘','🥰','😎','🤩','😏','🙂','😉','😌','😴','🤔','🤨','😐','😑','🙄','😬','🤐','😷','🤒','🤕','🤢','🤮','🥴','😵','🤯','🥳','🥺','😢','😭','😤','😡','👍','👎','👏','🙌','🙏','💪','🔥','✨','🎉','❤️','💯','✅','⭐','🚀','💰','📦','🛵','📍','⏰','📲','💬','👀','🤝','🎁','🏆','📈','🍔','🍕','🌮','☕','⚽','🎵','💡','🔒','💳'].map((emoji) => (
+                       <button
+                         key={emoji}
+                         type="button"
+                         onClick={() => setChatInput((prev) => prev + emoji)}
+                         className="p-1.5 rounded-lg hover:bg-white/10 active:scale-90 transition"
+                       >
+                         {emoji}
+                       </button>
+                     ))}
+                   </div>
+                 </div>
+               )}
+
                {/* Input Area */}
                <form
                  onSubmit={(e) => {
@@ -5494,51 +5515,63 @@ ${parametersString}
                     accept={attachmentAccept}
                   />
 
-                  <button type="button" className="text-[#aebac1] hover:text-[#d1d7db] transition-colors p-1">
+                  <button
+                    type="button"
+                    onClick={() => { setShowEmojiPicker((v) => !v); setShowAttachMenu(false); }}
+                    className={`transition-colors p-1 ${showEmojiPicker ? 'text-emerald-400' : 'text-[#aebac1] hover:text-[#d1d7db]'}`}
+                    title="Emojis"
+                  >
                      <Smile size={24} />
                   </button>
-                  <div className="relative group">
-                     <button type="button" className="text-[#aebac1] hover:text-[#d1d7db] transition-colors p-1 cursor-pointer">
+                  <div className="relative">
+                     <button
+                       type="button"
+                       onClick={() => { setShowAttachMenu((v) => !v); setShowEmojiPicker(false); }}
+                       className={`transition-colors p-1 cursor-pointer ${showAttachMenu ? 'text-emerald-400' : 'text-[#aebac1] hover:text-[#d1d7db]'}`}
+                       title="Adjuntar"
+                     >
                         <Paperclip size={24} />
                      </button>
                      {/* Attachment Menu */}
-                     <div className="absolute bottom-12 left-0 bg-[#233138] rounded-2xl shadow-xl p-2 hidden group-hover:flex flex-col w-48 border border-[#2a3942] z-50">
+                     {showAttachMenu && (
+                     <div className="absolute bottom-12 left-0 bg-[#233138] rounded-2xl shadow-xl p-2 flex flex-col w-52 border border-[#2a3942] z-50">
                         <div
-                          onClick={() => triggerAttachmentUpload('imagen')}
+                          onClick={() => { setShowAttachMenu(false); triggerAttachmentUpload('imagen'); }}
                           className="flex items-center gap-3 p-2 hover:bg-[#111b21] rounded-xl cursor-pointer text-[#d1d7db] transition-colors"
                         >
                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white"><ImageIcon size={16}/></div>
                            <span className="text-sm font-medium text-left">Foto / Imagen</span>
                         </div>
                         <div
-                          onClick={() => triggerAttachmentUpload('video')}
+                          onClick={() => { setShowAttachMenu(false); triggerAttachmentUpload('video'); }}
                           className="flex items-center gap-3 p-2 hover:bg-[#111b21] rounded-xl cursor-pointer text-[#d1d7db] transition-colors"
                         >
                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white"><Video size={16}/></div>
                            <span className="text-sm font-medium text-left">Video</span>
                         </div>
                         <div
-                          onClick={() => triggerAttachmentUpload('audio')}
+                          onClick={() => { setShowAttachMenu(false); triggerAttachmentUpload('audio'); }}
                           className="flex items-center gap-3 p-2 hover:bg-[#111b21] rounded-xl cursor-pointer text-[#d1d7db] transition-colors"
                         >
                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-white"><Headphones size={16}/></div>
                            <span className="text-sm font-medium text-left">Audio / Música</span>
                         </div>
                         <div
-                          onClick={() => triggerAttachmentUpload('archivo')}
+                          onClick={() => { setShowAttachMenu(false); triggerAttachmentUpload('archivo'); }}
                           className="flex items-center gap-3 p-2 hover:bg-[#111b21] rounded-xl cursor-pointer text-[#d1d7db] transition-colors"
                         >
                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white"><FileText size={16}/></div>
                            <span className="text-sm font-medium text-left">Documento / PDF</span>
                         </div>
                         <div
-                          onClick={() => setShowLiveRecorderInChat(true)}
+                          onClick={() => { setShowAttachMenu(false); setShowLiveRecorderInChat(true); }}
                           className="flex items-center gap-3 p-2 hover:bg-[#111b21] rounded-xl cursor-pointer text-[#d1d7db] transition-colors"
                         >
                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center text-white"><Mic size={16}/></div>
                            <span className="text-sm font-medium text-left">Grabar Nota de Voz PTT</span>
                         </div>
                      </div>
+                     )}
                   </div>
                   <input
                      type="text"

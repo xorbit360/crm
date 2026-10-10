@@ -214,7 +214,7 @@ export const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({
   const isGreenTheme = sender === 'agent' || sender === 'user' || sender === 'bot' || sender === 'ai' || isPtt;
 
   return (
-    <div className={`p-3 rounded-2xl border transition-all ${
+    <div className={`p-2.5 rounded-2xl border transition-all ${
       isGreenTheme
         ? 'bg-[#005c4b]/90 border-[#007a63] text-white shadow-md'
         : 'bg-[#1f2937] border-gray-700 text-gray-100'
@@ -245,16 +245,6 @@ export const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({
 
         {/* Waveform & Time */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs font-semibold tracking-wide truncate flex items-center gap-1">
-              <Radio size={12} className={isPlaying ? 'animate-pulse text-emerald-300' : 'text-emerald-400/70'} />
-              {title}
-            </span>
-            <span className="text-[10px] font-mono text-emerald-200/80 shrink-0 ml-2">
-              {isPlaying ? formatTime(currentTime) : formatTime(duration || 0)}
-            </span>
-          </div>
-
           {/* Waveform Bars */}
           <div className="flex items-center gap-[2.5px] h-7 cursor-pointer" onClick={(e) => {
             const rect = e.currentTarget.getBoundingClientRect();
@@ -287,24 +277,12 @@ export const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({
               );
             })}
           </div>
+          <div className="flex justify-end mt-0.5">
+            <span className="text-[10px] font-mono text-emerald-200/80">
+              {isPlaying ? formatTime(currentTime) : formatTime(duration || 0)}
+            </span>
+          </div>
         </div>
-      </div>
-
-      {/* PTT Wave Badge */}
-      <div className="mt-2 pt-1.5 border-t border-emerald-500/20 flex items-center justify-between text-[10px] text-emerald-200/70">
-        <span className="flex items-center gap-1 font-mono">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping inline-block" />
-          Formato OGG OPUS (Ondas WhatsApp PTT)
-        </span>
-        {hasError ? (
-          <span className="bg-amber-950/60 text-amber-300 px-1.5 py-0.5 rounded border border-amber-500/30 font-semibold flex items-center gap-1">
-            <AlertCircle size={10} /> Audio Alternativo
-          </span>
-        ) : (
-          <span className="bg-emerald-950/60 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/30 font-semibold">
-            Sin marca "Reenviado"
-          </span>
-        )}
       </div>
     </div>
   );

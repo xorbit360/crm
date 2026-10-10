@@ -264,7 +264,7 @@ export const LiveAudioRecorder: React.FC<LiveAudioRecorderProps> = ({
             </div>
             <div>
               <h4 className="text-sm font-semibold text-white">{title}</h4>
-              <p className="text-[11px] text-gray-400">Se convertirá a formato OGG OPUS con ondas reales de WhatsApp PTT</p>
+              <p className="text-[11px] text-gray-400">Graba o sube un audio y envíalo al instante</p>
             </div>
           </div>
           {onCancel && (
