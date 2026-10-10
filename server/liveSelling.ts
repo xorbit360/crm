@@ -212,6 +212,7 @@ function landingToAdmin(row: AnyRow): AnyRow {
     title: row.title,
     liveLabel: row.live_label || '',
     disclosureText: row.disclosure_text || 'Transmisión pregrabada',
+    showDisclosure: row.show_disclosure === true,
     titleBackground: row.title_background || '#e898db',
     buttonText: row.button_text || '¡COMPRAR!',
     buttonColor: row.button_color || '#e11d48',
@@ -252,6 +253,7 @@ function landingToPublic(row: AnyRow, fakeComments: AnyRow[]): AnyRow {
     title: admin.title,
     liveLabel: admin.liveLabel,
     disclosureText: admin.disclosureText,
+    showDisclosure: admin.showDisclosure,
     titleBackground: admin.titleBackground,
     buttonText: admin.buttonText,
     buttonColor: admin.buttonColor,
@@ -365,6 +367,7 @@ function parseLandingBody(body: AnyRow, partial: boolean): AnyRow {
   if (!partial || body.disclosureText !== undefined) {
     set('disclosure_text', cleanText(body.disclosureText, 120) || 'Transmisión pregrabada');
   }
+  if (!partial || body.showDisclosure !== undefined) set('show_disclosure', body.showDisclosure === true);
   if (!partial || body.titleBackground !== undefined) set('title_background', cleanText(body.titleBackground, 40) || '#e898db');
   if (!partial || body.buttonText !== undefined) set('button_text', cleanText(body.buttonText, 60) || '¡COMPRAR!');
   if (!partial || body.buttonColor !== undefined) set('button_color', cleanText(body.buttonColor, 40) || '#e11d48');

@@ -24,7 +24,8 @@ export function renderLivePage(slug: string | null): string {
   .pill-label { background:#e898db; color:#1f1025; max-width:46vw; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .pill-viewers { background:rgba(0,0,0,.45); color:#fff; }
   .pill-pre { background:rgba(0,0,0,.45); color:#fde68a; font-weight:500; }
-  #btn-sound { position:fixed; top:10px; right:10px; z-index:30; width:38px; height:38px; border-radius:50%; border:0; background:rgba(0,0,0,.5); color:#fff; font-size:17px; cursor:pointer; }
+  .top-right { margin-left:auto; display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+  #btn-sound { border:0; border-radius:999px; background:rgba(0,0,0,.55); color:#fff; font-size:12px; font-weight:700; padding:6px 11px; cursor:pointer; pointer-events:auto; align-items:center; justify-content:center; }
   #btn-unmute-big { position:fixed; left:50%; top:42%; transform:translate(-50%,-50%); z-index:30; border:0; border-radius:999px; background:rgba(0,0,0,.65); color:#fff; padding:14px 22px; font-size:16px; font-weight:700; cursor:pointer; display:none; }
   #comments { position:fixed; left:10px; right:10px; bottom:158px; z-index:15; height:205px; overflow:hidden; display:flex; flex-direction:column; justify-content:flex-end; gap:8px; -webkit-mask-image:linear-gradient(to bottom, transparent, #000 22%); mask-image:linear-gradient(to bottom, transparent, #000 22%); pointer-events:none; }
   .cmt { display:flex; gap:8px; align-items:flex-start; text-shadow:0 1px 2px rgba(0,0,0,.6); }
@@ -40,7 +41,8 @@ export function renderLivePage(slug: string | null): string {
   #comment-input { flex:1; min-width:0; border:0; border-radius:999px; padding:11px 14px; font-size:14px; background:rgba(255,255,255,.16); color:#fff; outline:none; }
   #comment-input::placeholder { color:rgba(255,255,255,.75); }
   .iconbtn { flex:none; width:42px; height:42px; border-radius:50%; border:0; font-size:18px; cursor:pointer; background:rgba(255,255,255,.16); color:#fff; }
-  #btn-wa { background:#22c55e; }
+  #btn-wa { background:#25D366; }
+  #btn-wa svg { width:22px; height:22px; display:block; margin:auto; }
   #btn-buy { flex:none; border:0; border-radius:999px; padding:12px 18px; font-size:14px; font-weight:800; color:#fff; background:#e11d48; cursor:pointer; }
   .heart { position:fixed; z-index:40; pointer-events:none; animation:floatUp 1.3s ease-out forwards; }
   @keyframes floatUp { 0%{ transform:translate(0,0) scale(.7); opacity:0;} 12%{opacity:1;} 100%{ transform:translate(var(--dx,0px),-130px) scale(1.5); opacity:0;} }
@@ -74,11 +76,13 @@ export function renderLivePage(slug: string | null): string {
 
   <div class="topbar">
     <span class="pill pill-live"><span class="dot"></span>EN VIVO</span>
-    <span class="pill pill-pre" id="disclosure">Transmisión pregrabada</span>
+    <span class="pill pill-pre" id="disclosure" style="display:none"></span>
     <span class="pill pill-label" id="live-label" style="display:none"></span>
-    <span class="pill pill-viewers">👁 <span id="viewers">–</span></span>
+    <div class="top-right">
+      <span class="pill pill-viewers">👁 <span id="viewers">–</span></span>
+      <button id="btn-sound" title="Activar sonido" style="display:none">🔇 Activar sonido</button>
+    </div>
   </div>
-  <button id="btn-sound" title="Sonido">🔊</button>
   <button id="btn-unmute-big">🔊 Toca para activar el sonido</button>
 
   <div id="product-card">
@@ -92,9 +96,8 @@ export function renderLivePage(slug: string | null): string {
 
   <div class="bottombar">
     <input id="comment-input" maxlength="500" placeholder="Deja tu comentario aquí 👇" autocomplete="off">
-    <button class="iconbtn" id="btn-send" title="Enviar comentario">➤</button>
-    <button class="iconbtn" id="btn-heart" title="Me gusta">❤️</button>
-    <button class="iconbtn" id="btn-wa" title="WhatsApp" style="display:none">💬</button>
+    <button class="iconbtn" id="btn-send" title="Enviar comentario" style="display:none">➤</button>
+    <button class="iconbtn" id="btn-wa" title="WhatsApp" style="display:none"><svg viewBox="0 0 24 24" fill="#ffffff" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg></button>
     <button id="btn-buy">COMPRAR</button>
   </div>
 
@@ -245,22 +248,26 @@ window.__LIVE_SLUG__ = ${safeSlug};
   // Safari y navegadores móviles), se muestra el overlay y el primer toque
   // del visitante activa play + sonido. No se promete sonido automático
   // donde el navegador lo prohíbe.
-  function showTapToSound(){ $('btn-unmute-big').style.display = 'block'; $('btn-sound').textContent = '🔇'; }
-  function hideTapToSound(){ $('btn-unmute-big').style.display = 'none'; $('btn-sound').textContent = '🔊'; }
-  function verifySoundPlayback(){
-    setTimeout(function(){
-      try {
-        if (playerKind === 'youtube' && player && player.getPlayerState) {
-          var playing = player.getPlayerState() === 1;
-          var muted = player.isMuted ? player.isMuted() : true;
-          if (playing && !muted) hideTapToSound(); else showTapToSound();
-        }
-        if (playerKind === 'vimeo' && player && player.getMuted) {
-          player.getMuted().then(function(m){ if (m) showTapToSound(); else hideTapToSound(); }).catch(function(){ showTapToSound(); });
-        }
-      } catch(e){ showTapToSound(); }
-    }, 1600);
+  function showTapToSound(){ $('btn-unmute-big').style.display = 'block'; $('btn-sound').style.display = 'inline-flex'; }
+  function hideTapToSound(){ $('btn-unmute-big').style.display = 'none'; $('btn-sound').style.display = 'none'; }
+  // El aviso de sonido solo existe mientras el audio esta bloqueado o el
+  // video esta en pausa: en cuanto el video suena, ambos controles
+  // desaparecen y no vuelven mientras siga sonando (revision periodica).
+  function refreshSoundUI(){
+    try {
+      if (playerKind === 'youtube' && player && player.getPlayerState) {
+        var st = player.getPlayerState();
+        var mutedYt = player.isMuted ? player.isMuted() : true;
+        if (st === 1 && !mutedYt) hideTapToSound(); else if (st === 1 || st === 2) showTapToSound();
+      }
+      if (playerKind === 'vimeo' && player && player.getMuted) {
+        player.getPaused().then(function(paused){
+          return player.getMuted().then(function(m){ if (!paused && !m) hideTapToSound(); else showTapToSound(); });
+        }).catch(function(){});
+      }
+    } catch(e){}
   }
+  function verifySoundPlayback(){ setTimeout(refreshSoundUI, 1600); }
   function loadYouTube(id){
     playerKind = 'youtube';
     var tag = document.createElement('script'); tag.src = 'https://www.youtube.com/iframe_api'; document.head.appendChild(tag);
@@ -370,11 +377,16 @@ window.__LIVE_SLUG__ = ${safeSlug};
     var text = input.value.trim();
     if (!text || !landingId) return;
     input.value = '';
+    syncSendBtn();
     addComment('Tú', text, '', true);
     post('/api/public/live/' + landingId + '/comments', { visitorId: visitorId(), content: text, phone: knownPhone || undefined, utm: UTM })
       .catch(function(){ toast('No se pudo guardar tu comentario'); });
   }
   $('btn-send').addEventListener('click', sendComment);
+  // El boton Enviar solo aparece mientras el visitante escribe (tipo TikTok).
+  var commentInputEl = $('comment-input');
+  function syncSendBtn(){ $('btn-send').style.display = commentInputEl.value.trim() ? 'inline-flex' : 'none'; }
+  commentInputEl.addEventListener('input', syncSendBtn);
   $('comment-input').addEventListener('keydown', function(e){ if (e.key === 'Enter') sendComment(); });
 
   // ---------- Corazones ----------
@@ -392,7 +404,7 @@ window.__LIVE_SLUG__ = ${safeSlug};
     if ($('btn-unmute-big').style.display === 'block') unmute();
     spawnHeart(e.clientX, e.clientY);
   });
-  $('btn-heart').addEventListener('click', function(e){ var r = e.currentTarget.getBoundingClientRect(); spawnHeart(r.left + 10, r.top - 6); });
+  // Sin boton fijo de corazon: los corazones nacen al tocar el video (tap-layer).
 
   // ---------- WhatsApp ----------
   function openWhatsApp(){
@@ -488,7 +500,7 @@ window.__LIVE_SLUG__ = ${safeSlug};
     cfg = j.landing; landingId = cfg.id; fake = cfg.fakeComments || [];
     document.title = cfg.title || 'Live';
     if (cfg.liveLabel) { var l=$('live-label'); l.textContent = cfg.liveLabel; l.style.display=''; if (cfg.titleBackground) l.style.background = cfg.titleBackground; }
-    if (cfg.disclosureText) $('disclosure').textContent = cfg.disclosureText;
+    if (cfg.showDisclosure && cfg.disclosureText) { var dEl = $('disclosure'); dEl.textContent = cfg.disclosureText; dEl.style.display = ''; }
     $('btn-buy').textContent = cfg.buttonText || 'COMPRAR';
     if (cfg.buttonColor) $('btn-buy').style.background = cfg.buttonColor;
     if (cfg.whatsappNumber || cfg.whatsappLink) $('btn-wa').style.display = '';
@@ -512,6 +524,7 @@ window.__LIVE_SLUG__ = ${safeSlug};
     startTimePolling();
     initViewers();
     startFakeComments();
+    setInterval(refreshSoundUI, 1500);
   }).catch(function(){ $('fatal').style.display = 'flex'; });
 })();
 </script>

@@ -13,7 +13,7 @@ import {
 interface LandingCounts { fakeComments: number; visitorComments: number; leads: number; orders: number; whatsappClicks: number }
 interface Landing {
   id: string; slug: string; customDomain: string; status: string; title: string;
-  liveLabel: string; disclosureText: string; titleBackground: string; buttonText: string; buttonColor: string;
+  liveLabel: string; disclosureText: string; showDisclosure: boolean; titleBackground: string; buttonText: string; buttonColor: string;
   productName: string; productImageUrl: string; productPrice: number; productComparePrice: number | null;
   shippingPrice: number; shippingText: string; couponCode: string; couponDiscountPercent: number;
   videoProvider: string; videoId: string; videoUrl: string; allowLoop: boolean;
@@ -250,6 +250,7 @@ export default function LiveSellingView() {
         allowLoop: wiz.allowLoop,
         liveLabel: wiz.liveLabel || undefined,
         disclosureText: 'Transmisión pregrabada',
+        showDisclosure: false,
         buttonText: wiz.buttonText || '¡COMPRAR!',
         whatsappLink: wiz.whatsappLink,
         whatsappNumber: wizWa?.number || wiz.whatsappNumber,
@@ -306,7 +307,7 @@ export default function LiveSellingView() {
   function landingPayload(source: Landing) {
     return {
       title: source.title, slug: source.slug, status: source.status,
-      liveLabel: source.liveLabel, disclosureText: source.disclosureText,
+      liveLabel: source.liveLabel, disclosureText: source.disclosureText, showDisclosure: source.showDisclosure,
       titleBackground: source.titleBackground, buttonText: source.buttonText, buttonColor: source.buttonColor,
       productName: source.productName, productImageUrl: source.productImageUrl,
       productPrice: Number(source.productPrice) || 0,
@@ -594,6 +595,7 @@ export default function LiveSellingView() {
                     <div><label className={labelCls}>Slug (ruta pública)</label><input className={inputCls} value={form.slug} onChange={(e) => set('slug', e.target.value)} /></div>
                     <div><label className={labelCls}>Texto de la pastilla del live</label><input className={inputCls} value={form.liveLabel} onChange={(e) => set('liveLabel', e.target.value)} placeholder="PRECIO DE LANZAMIENTO ✨" /></div>
                     <div><label className={labelCls}>Rótulo visible</label><input className={inputCls} value={form.disclosureText} onChange={(e) => set('disclosureText', e.target.value)} /></div>
+                    <div><label className={labelCls}>Aviso en la página</label><label className="flex items-center gap-2 pt-2 text-sm text-slate-300"><input type="checkbox" checked={!!form.showDisclosure} onChange={(e) => set('showDisclosure', e.target.checked)} /> Mostrar el rótulo en el live</label></div>
                   </div>
 
                   <div className="rounded-xl border border-red-500/25 bg-red-500/5 p-4">
