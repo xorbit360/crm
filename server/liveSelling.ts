@@ -72,6 +72,65 @@ export function normalizeDomain(value: unknown): string {
   return domain;
 }
 
+const PLATFORM_SUFFIX = (process.env.LIVE_PLATFORM_DOMAIN || 'xorbit360.com').toLowerCase().replace(/^\./, '');
+
+function requestHost(req: Request): string {
+  return normalizeDomain(String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0]);
+}
+
+function isMainHost(host: string): boolean {
+  if (!host) return true;
+  if (MAIN_HOSTS.has(host)) return true;
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host)) return true; // acceso directo por IP (uso interno/MCP)
+  return false;
+}
+
+// Subdominio de plataforma: <slug>.<dominio-plataforma>. Los subdominios ya
+// usados por la plataforma (crm, www, api, mail) quedan excluidos.
+function platformSubdomainSlug(host: string): string {
+  const suffix = `.${PLATFORM_SUFFIX}`;
+  if (!host.endsWith(suffix)) return '';
+  const label = host.slice(0, -suffix.length);
+  if (!label || label.includes('.')) return '';
+  if (['crm', 'www', 'api', 'mail'].includes(label)) return '';
+  return slugify(label);
+}
+
+// Extrae numero y mensaje de un link completo de WhatsApp pegado por el
+// usuario (wa.me/<numero>?text=... o api.whatsapp.com/send?phone=...&text=...).
+// Los acortadores (wa.link y similares) no se pueden descomponer sin seguir
+// el redirect; en ese caso el link se guarda tal cual y la pagina lo abre.
+export function parseWhatsAppLink(raw: unknown): { number: string; text: string } | null {
+  const value = cleanText(raw, 1200);
+  if (!value) return null;
+  let url: URL;
+  try { url = new URL(value.startsWith('http') ? value : `https://${value}`); } catch { return null; }
+  const host = url.hostname.toLowerCase();
+  let number = '';
+  let text = '';
+  if (host === 'wa.me' || host.endsWith('.wa.me')) {
+    number = url.pathname.replace(/\D/g, '');
+    text = url.searchParams.get('text') || '';
+  } else if (host.endsWith('whatsapp.com')) {
+    number = String(url.searchParams.get('phone') || '').replace(/\D/g, '');
+    text = url.searchParams.get('text') || '';
+  } else {
+    return null;
+  }
+  if (!number) return null;
+  return { number: number.slice(0, 20), text: cleanText(text, 300) };
+}
+
+export function cleanHttpUrl(value: unknown): string {
+  const raw = cleanText(value, 1200);
+  if (!raw) return '';
+  try {
+    const url = new URL(raw.startsWith('http') ? raw : `https://${raw}`);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return '';
+    return url.toString().slice(0, 1200);
+  } catch { return ''; }
+}
+
 export function extractVideo(
   rawValue: unknown,
   providerHint?: unknown,
@@ -170,6 +229,9 @@ function landingToAdmin(row: AnyRow): AnyRow {
     allowLoop: row.allow_loop !== false,
     whatsappNumber: row.whatsapp_number || '',
     whatsappText: row.whatsapp_text || '',
+    checkoutMode: row.checkout_mode || 'crm',
+    shopifyUrl: row.shopify_url || '',
+    whatsappLink: row.whatsapp_link || '',
     commentMode: row.comment_mode || 'sequence',
     viewersMin: Number(row.viewers_min ?? 40),
     viewersMax: Number(row.viewers_max ?? 60),
@@ -204,6 +266,9 @@ function landingToPublic(row: AnyRow, fakeComments: AnyRow[]): AnyRow {
     allowLoop: admin.allowLoop,
     whatsappNumber: admin.whatsappNumber,
     whatsappText: admin.whatsappText,
+    whatsappLink: admin.whatsappLink,
+    checkoutMode: admin.checkoutMode,
+    shopifyUrl: admin.shopifyUrl,
     commentMode: admin.commentMode,
     viewersMin: admin.viewersMin,
     viewersMax: admin.viewersMax,
@@ -322,6 +387,26 @@ function parseLandingBody(body: AnyRow, partial: boolean): AnyRow {
   if (!partial || body.whatsappText !== undefined) set('whatsapp_text', cleanText(body.whatsappText, 300) || null);
   if (!partial || body.commentMode !== undefined) {
     set('comment_mode', body.commentMode === 'countdown' ? 'countdown' : 'sequence');
+  }
+  if (!partial || body.checkoutMode !== undefined) {
+    set('checkout_mode', ['crm', 'shopify', 'whatsapp'].includes(body.checkoutMode) ? body.checkoutMode : 'crm');
+  }
+  if (!partial || body.shopifyUrl !== undefined) {
+    set('shopify_url', cleanHttpUrl(body.shopifyUrl) || null);
+  }
+  if (!partial || body.whatsappLink !== undefined) {
+    // Si el usuario pego el link completo de WhatsApp, el link manda: se
+    // guarda tal cual y, cuando es wa.me/api.whatsapp.com, numero y mensaje
+    // se extraen solos para mostrarlos en el panel y construir el boton.
+    const link = cleanHttpUrl(body.whatsappLink);
+    patch.whatsapp_link = link || null;
+    if (link) {
+      const parsed = parseWhatsAppLink(link);
+      if (parsed) {
+        patch.whatsapp_number = parsed.number;
+        if (parsed.text) patch.whatsapp_text = parsed.text;
+      }
+    }
   }
   if (!partial || body.viewersMin !== undefined) set('viewers_min', cleanInt(body.viewersMin, 40, 0, 100000));
   if (!partial || body.viewersMax !== undefined) set('viewers_max', cleanInt(body.viewersMax, 60, 1, 100000));
@@ -559,6 +644,47 @@ export function setupLiveSellingPublicRoutes(app: Express): void {
     res.status(201).json({ success: true, orderId: data.id, orderRef: data.order_ref, ...totals, status: 'order' });
   }));
 
+  app.post('/api/public/live/:id/pageview', route(async (req, res) => {
+    if (!checkRate(req, res, 'live-pageview', 120)) return;
+    const client = db();
+    const landing = await fetchLandingByRef(client, req.params.id, true);
+    if (!landing) { res.status(404).json({ success: false, error: 'Live no encontrado o no activo' }); return; }
+    const { data, error } = await client
+      .from('live_pageviews')
+      .insert({
+        landing_id: landing.id,
+        tenant_id: landing.tenant_id,
+        visitor_id: cleanText(req.body?.visitorId, 80) || null,
+        utm: cleanUtm(req.body?.utm),
+        user_agent: cleanText(req.headers['user-agent'], 400) || null,
+      })
+      .select('id')
+      .single();
+    if (error) throw new Error(error.message);
+    res.status(201).json({ success: true, pageviewId: data.id });
+  }));
+
+  app.post('/api/public/live/:id/checkout-click', route(async (req, res) => {
+    if (!checkRate(req, res, 'live-checkout', 60)) return;
+    const client = db();
+    const landing = await fetchLandingByRef(client, req.params.id, true);
+    if (!landing) { res.status(404).json({ success: false, error: 'Live no encontrado o no activo' }); return; }
+    const { data, error } = await client
+      .from('live_checkout_clicks')
+      .insert({
+        landing_id: landing.id,
+        tenant_id: landing.tenant_id,
+        mode: landing.checkout_mode || 'crm',
+        visitor_id: cleanText(req.body?.visitorId, 80) || null,
+        utm: cleanUtm(req.body?.utm),
+        user_agent: cleanText(req.headers['user-agent'], 400) || null,
+      })
+      .select('id')
+      .single();
+    if (error) throw new Error(error.message);
+    res.status(201).json({ success: true, clickId: data.id });
+  }));
+
   app.post('/api/public/live/:id/whatsapp-click', route(async (req, res) => {
     if (!checkRate(req, res, 'live-wa', 40)) return;
     const client = db();
@@ -591,19 +717,42 @@ export function setupLiveSellingPublicRoutes(app: Express): void {
     res.type('html').send(renderLivePage(landing.slug));
   }));
 
-  // Resolución por Host en la raíz para dominios propios. Si el Host es uno
-  // de los principales (o no tiene live activo), se deja pasar la petición
-  // hacia la SPA del CRM.
+  // Resolución por Host en la raíz: dominios propios registrados y
+  // subdominios de plataforma (<slug>.<dominio-plataforma>). Un Host que no
+  // sea principal, no tenga landing activa y no sea IP/local recibe 404 en
+  // la raíz en vez de la SPA del CRM.
   app.get('/', (req, res, next) => {
     (async () => {
-      const host = normalizeDomain(String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0]);
-      if (!host || MAIN_HOSTS.has(host)) { next(); return; }
+      const host = requestHost(req);
+      if (isMainHost(host)) { next(); return; }
       const client = db();
-      const landing = await fetchLandingByDomain(client, host);
-      if (!landing) { next(); return; }
-      res.setHeader('Cache-Control', 'no-store');
-      res.type('html').send(renderLivePage(landing.slug));
+      const byDomain = await fetchLandingByDomain(client, host);
+      if (byDomain) {
+        res.setHeader('Cache-Control', 'no-store');
+        res.type('html').send(renderLivePage(byDomain.slug));
+        return;
+      }
+      const subdomainSlug = platformSubdomainSlug(host);
+      if (subdomainSlug) {
+        const bySlug = await fetchLandingBySlug(client, subdomainSlug, true);
+        if (bySlug) {
+          res.setHeader('Cache-Control', 'no-store');
+          res.type('html').send(renderLivePage(bySlug.slug));
+          return;
+        }
+      }
+      res.status(404).type('html').send('<!doctype html><html lang="es"><body style="background:#000;color:#fff;font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;margin:0">Dominio no conectado.</body></html>');
     })().catch(next);
+  });
+
+  // Bajo un dominio propio o subdominio de plataforma solo se sirven la
+  // pagina del vivo y su API publica; cualquier otra ruta es 404 (la SPA y
+  // el panel del CRM no se exponen bajo dominios de clientes).
+  app.use((req, res, next) => {
+    const host = requestHost(req);
+    if (isMainHost(host)) { next(); return; }
+    if (req.path === '/' || req.path.startsWith('/live/') || req.path.startsWith('/api/public/')) { next(); return; }
+    res.status(404).json({ success: false, error: 'No encontrado' });
   });
 }
 
@@ -645,6 +794,72 @@ export function setupLiveSellingAdminRoutes(app: Express): void {
   });
 
   app.get('/api/live-selling/landings', listLandings);
+
+  app.get('/api/live-selling/metrics', route(async (req, res) => {
+    const client = db();
+    const tenant = tenantId(req);
+    const days = cleanInt(req.query.days, 30, 0, 3650);
+    const since = days > 0 ? new Date(Date.now() - days * 86_400_000).toISOString() : null;
+
+    const countFor = async (table: string, landingId?: string, extra?: (q: any) => any) => {
+      let query = client.from(table).select('id', { count: 'exact', head: true }).eq('tenant_id', tenant);
+      if (landingId) query = query.eq('landing_id', landingId);
+      if (since) query = query.gte('created_at', since);
+      if (extra) query = extra(query);
+      const { count, error } = await query;
+      if (error) throw new Error(error.message);
+      return count || 0;
+    };
+
+    const { data: landingRows, error: landingsError } = await client
+      .from('live_landings')
+      .select('id, slug, title, status')
+      .eq('tenant_id', tenant)
+      .neq('status', 'archived')
+      .order('updated_at', { ascending: false })
+      .limit(200);
+    if (landingsError) throw new Error(landingsError.message);
+
+    const pct = (num: number, den: number) => (den > 0 ? Math.round((num / den) * 1000) / 10 : 0);
+
+    const landings = await Promise.all((landingRows || []).map(async (row: AnyRow) => {
+      const [pageviews, whatsappClicks, checkoutClicks, visitorComments, leads, orders] = await Promise.all([
+        countFor('live_pageviews', row.id),
+        countFor('live_whatsapp_clicks', row.id),
+        countFor('live_checkout_clicks', row.id),
+        countFor('live_visitor_comments', row.id),
+        countFor('live_orders', row.id, (q) => q.eq('status', 'lead')),
+        countFor('live_orders', row.id, (q) => q.neq('status', 'lead')),
+      ]);
+      return {
+        landingId: row.id, slug: row.slug, title: row.title, status: row.status,
+        pageviews, whatsappClicks, checkoutClicks, visitorComments, leads, orders,
+        leadConversion: pct(leads, pageviews),
+        orderConversion: pct(orders, pageviews),
+      };
+    }));
+
+    const [tPageviews, tWa, tCheckout, tComments, tLeads, tOrders] = await Promise.all([
+      countFor('live_pageviews'),
+      countFor('live_whatsapp_clicks'),
+      countFor('live_checkout_clicks'),
+      countFor('live_visitor_comments'),
+      countFor('live_orders', undefined, (q) => q.eq('status', 'lead')),
+      countFor('live_orders', undefined, (q) => q.neq('status', 'lead')),
+    ]);
+
+    res.json({
+      success: true,
+      days,
+      totals: {
+        pageviews: tPageviews, whatsappClicks: tWa, checkoutClicks: tCheckout,
+        visitorComments: tComments, leads: tLeads, orders: tOrders,
+        leadConversion: pct(tLeads, tPageviews),
+        orderConversion: pct(tOrders, tPageviews),
+      },
+      landings,
+    });
+  }));
 
   app.post('/api/live-selling/landings', route(async (req, res) => {
     const client = db();
