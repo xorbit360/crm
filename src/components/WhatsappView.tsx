@@ -764,8 +764,8 @@ export default function WhatsappView({
           (!dbData.messagesHistory || Object.keys(dbData.messagesHistory).length === 0);
 
         if (isServerCleared) {
-          setChats([]);
-          setMessages({});
+          setChats(isAdminDemo ? buildAdminDemoChats() as any : []);
+          setMessages(isAdminDemo ? buildAdminDemoMessages() : {});
           try {
             localStorage.removeItem(chatsStorageKey);
             localStorage.removeItem(messagesStorageKey);
@@ -887,6 +887,8 @@ export default function WhatsappView({
         }
       } catch (e) {
         // Ignorar errores transitorios durante recargas
+      } finally {
+        setIsInboxLoading(false);
       }
     };
 
@@ -2106,7 +2108,9 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
     { id: '10', name: "Sofía Castro", time: "08:45 a. m.", msg: "Mi paquete ya aparece despachado en Coordinadora", unread: 0, phone: "+57 301 777 2211", columnId: 'en_transito', tags: ['Despachado'], leadStatus: 'tibio' as const, avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=150&h=150&q=80' }
   ];
 
-  const ADMIN_DEMO_CHATS = [
+  // Build the large demo inbox only if an explicitly cleared demo workspace
+  // asks for it. Building 1.300+ objects on every render froze this screen.
+  const buildAdminDemoChats = () => [
     ...DEFAULT_CHATS.map((chat, index) => ({
     ...chat,
     columnId: ['entregado', 'entregado', 'en_transito', 'en_transito', 'entregado', 'en_transito', 'novedad', 'devolucion', 'novedad', 'en_transito'][index],
@@ -2174,17 +2178,18 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
   // Dynamic CRM Chat States (con almacenamiento persistente local)
   const [chats, setChats] = useState<{ id: string, name: string, time: string, msg: string, unread: number, phone: string, columnId: string, tags: string[], leadStatus?: 'frío' | 'tibio' | 'caliente', avatar?: string, channelId?: string, platform?: string, conversationId?: string, externalId?: string, accountId?: string, participantId?: string, participantUsername?: string, instanceName?: string, remoteJid?: string, timestamp?: number }[]>(() => {
     try {
-      if (isAdminDemo) return ADMIN_DEMO_CHATS;
       const saved = localStorage.getItem(chatsStorageKey);
       if (saved !== null) {
         const parsed = JSON.parse(saved);
-        if (isAdminDemo && Array.isArray(parsed) && parsed.length > 0) return parsed;
+        // A real cache is useful; a persisted 1.300-row demo inbox is not.
+        if (Array.isArray(parsed) && parsed.length > 0 && parsed.length <= 300) return parsed;
       }
     } catch (e) {
       console.warn('Error cargando chats persistentes:', e);
     }
-    return isAdminDemo ? ADMIN_DEMO_CHATS : [];
+    return [];
   });
+  const [isInboxLoading, setIsInboxLoading] = useState(true);
   const chatsRef = React.useRef(chats);
   React.useEffect(() => {
     chatsRef.current = chats;
@@ -2638,6 +2643,14 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
     ]
   };
 
+  const buildAdminDemoMessages = () => Object.fromEntries(Object.entries(DEFAULT_MESSAGES).map(([id, history]) => [id, history.map(message => ({
+    ...message,
+    text: message.text
+      .replace(/Smartwatch Ultra X8|Smartwatch Ultra|Smartwatch X8|smartwatch/gi, 'Combo de Camisas Polo')
+      .replace(/Licuadora PortÃ¡til ShakeGo|Auriculares Pro 4/gi, 'Combo de Camisas Polo')
+      .replace(/la pantalla llegÃ³ rota/gi, 'la talla no fue la esperada')
+  }))])) as Record<string, InboxMessage[]>;
+
   const [messages, setMessages] = useState<Record<string, InboxMessage[]>>(() => {
     try {
       const saved = localStorage.getItem(messagesStorageKey);
@@ -2650,13 +2663,7 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
     } catch (e) {
       console.warn('Error cargando historial de mensajes persistente:', e);
     }
-    return isAdminDemo ? Object.fromEntries(Object.entries(DEFAULT_MESSAGES).map(([id, history]) => [id, history.map(message => ({
-      ...message,
-      text: message.text
-        .replace(/Smartwatch Ultra X8|Smartwatch Ultra|Smartwatch X8|smartwatch/gi, 'Combo de Camisas Polo')
-        .replace(/Licuadora PortÃ¡til ShakeGo|Auriculares Pro 4/gi, 'Combo de Camisas Polo')
-        .replace(/la pantalla llegÃ³ rota/gi, 'la talla no fue la esperada')
-    }))])) : {};
+    return {};
   });
 
   React.useEffect(() => {
@@ -4069,6 +4076,34 @@ ${parametersString}
 
   return (
     <div className={`animate-fade-in ${currentViewTab === 'conversaciones' ? 'space-y-0 h-full' : 'space-y-6'}`}>
+      {currentViewTab === 'conversaciones' && isInboxLoading && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#0b141a]/95 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md space-y-5 rounded-3xl border border-white/10 bg-[#111b21] p-5 shadow-2xl">
+            <div className="flex items-center gap-3">
+              <div className="crm-loading-logo flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-lg font-black text-emerald-300">X</div>
+              <div className="min-w-0">
+                <p className="text-base font-bold text-white">Cargando CRM</p>
+                <p className="text-xs text-zinc-400">Sincronizando conversaciones desde las tablas…</p>
+              </div>
+            </div>
+            <div className="h-1.5 overflow-hidden rounded-full bg-zinc-800">
+              <div className="crm-loading-bar h-full w-1/2 rounded-full bg-emerald-400" />
+            </div>
+            <div className="space-y-3" aria-hidden="true">
+              {[0, 1, 2, 3].map(row => (
+                <div key={row} className="flex items-center gap-3">
+                  <div className="crm-skeleton h-11 w-11 shrink-0 rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <div className="crm-skeleton h-3 rounded-full" style={{ width: `${82 - row * 9}%` }} />
+                    <div className="crm-skeleton h-2.5 rounded-full" style={{ width: `${58 - row * 5}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p className="text-center text-[11px] text-zinc-500">Esto tarda solo la primera sincronización.</p>
+          </div>
+        </div>
+      )}
       {currentViewTab !== 'conversaciones' && (
         <div className="flex items-center justify-between border-b border-zinc-800/80 pb-4 flex-wrap gap-4">
           <div className="flex items-center gap-3">

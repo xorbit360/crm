@@ -30,6 +30,7 @@ import {
   isNormalizedReadReady,
   loadInboxFromTables,
   loadWhatsappFromTables,
+  loadStateFromNormalizedTables,
 } from './server/normalizedDb.ts';
 import { setupZernioRoutes } from './server/zernio/routes.ts';
 import { handleZernioWebhook } from './server/zernio/webhook.ts';
@@ -1555,12 +1556,22 @@ function broadcastRealtimeChange() {
   }
 }
 
+let normalizedDbActive = false;
+
 function saveDBData(data: any) {
   try {
+    // Local ephemeral cache only. Supabase source of truth is the normalized
+    // tables once the cutover has booted successfully.
     fs.writeFileSync(dbPath, JSON.stringify(data, null, 2), 'utf-8');
     if (isSupabaseConfigured()) {
-      saveToSupabase(data).catch(err => console.warn('[Supabase Save Warning]:', err?.message || err));
-      queueNormalizedMirror(data);
+      if (normalizedDbActive) {
+        queueNormalizedMirror(data, 250);
+      } else {
+        // Compatibility fallback while tables are unavailable: keep the old
+        // app_state copy moving and continue trying to populate the tables.
+        saveToSupabase(data).catch(err => console.warn('[Supabase Save Warning]:', err?.message || err));
+        queueNormalizedMirror(data);
+      }
     }
     broadcastRealtimeChange();
   } catch (err) {
@@ -1639,15 +1650,30 @@ function getFormattedTime(date: Date | number = new Date()): string {
 async function initDB() {
   try {
     if (isSupabaseConfigured()) {
-      console.log('[Database] Connecting to Supabase for state synchronization...');
-      const supabaseData = await loadFromSupabase();
-      if (supabaseData) {
-        fs.writeFileSync(dbPath, JSON.stringify(supabaseData, null, 2), 'utf-8');
+      console.log('[Database] Connecting to Supabase normalized tables...');
+      let tableState: any = null;
+      try {
+        tableState = await loadStateFromNormalizedTables();
+      } catch (err: any) {
+        console.warn('[NormalizedDB Load Warning]:', err?.message || err);
+      }
+
+      if (tableState) {
+        fs.writeFileSync(dbPath, JSON.stringify(tableState, null, 2), 'utf-8');
         currentDB = getDBData();
-        console.log('✅ DB synced from Supabase successfully.');
+        normalizedDbActive = true;
+        console.log('✅ DB loaded from Supabase normalized tables.');
       } else {
-        console.log('[Supabase] Initializing state: uploading current local DB state to Supabase...');
-        await saveToSupabase(currentDB);
+        console.log('[NormalizedDB] Tables empty/unavailable; falling back to app_state compatibility copy...');
+        const supabaseData = await loadFromSupabase();
+        if (supabaseData) {
+          fs.writeFileSync(dbPath, JSON.stringify(supabaseData, null, 2), 'utf-8');
+          currentDB = getDBData();
+          console.log('✅ DB synced from app_state compatibility copy.');
+        } else {
+          console.log('[Supabase] Initializing state: uploading current local DB state to Supabase...');
+          await saveToSupabase(currentDB);
+        }
       }
     } else {
       console.log('[Database] Supabase credentials not configured in env (SUPABASE_URL / SUPABASE_KEY), using local DB.');
@@ -1656,11 +1682,10 @@ async function initDB() {
     console.log('[Database] Supabase sync error (using local DB state):', err?.message || err);
   }
 
-  try {
-    await mirrorStateToNormalizedTables(currentDB);
-  } catch (err: any) {
-    console.warn('[NormalizedDB Startup Mirror Warning]:', err?.message || err);
-  }
+  // Do not block the HTTP server on a full mirror. Tables are already the
+  // boot source; this background pass only syncs defaults/cleanup mutations
+  // made while loading.
+  if (isSupabaseConfigured()) queueNormalizedMirror(currentDB, 5000);
 
   const persistedEvolutionWebhook = String(currentDB?.evolutionWebhookBaseUrl || '');
   const normalizedEvolutionWebhook = normalizeEvolutionWebhookBase(persistedEvolutionWebhook);
@@ -5539,17 +5564,18 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
           error: 'SUPABASE_URL y SUPABASE_KEY no están configuradas en las variables de entorno.'
         });
       }
-      const saved = await saveToSupabase(currentDB);
+      const saved = await mirrorStateToNormalizedTables(currentDB);
       if (saved) {
+        normalizedDbActive = true;
         res.json({
           success: true,
-          message: 'Base de datos sincronizada con Supabase exitosamente.',
+          message: 'Base de datos sincronizada con las tablas normalizadas de Supabase exitosamente.',
           timestamp: new Date().toISOString()
         });
       } else {
         res.status(500).json({
           success: false,
-          error: 'No se pudo guardar en la tabla app_state de Supabase. Verifica que la tabla exista ejecutando el script SQL en Supabase.'
+          error: 'No se pudo guardar en las tablas normalizadas de Supabase. Revisa la migración 20261010013000_normalized_core_tables.sql.'
         });
       }
     } catch (err: any) {
@@ -5565,19 +5591,23 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
           error: 'SUPABASE_URL y SUPABASE_KEY no están configuradas en las variables de entorno.'
         });
       }
-      const cloudData = await loadFromSupabase();
+      const tableData = await loadStateFromNormalizedTables().catch(() => null);
+      const cloudData = tableData || await loadFromSupabase();
       if (cloudData) {
         fs.writeFileSync(dbPath, JSON.stringify(cloudData, null, 2), 'utf-8');
         currentDB = getDBData();
+        if (tableData) normalizedDbActive = true;
         res.json({
           success: true,
-          message: 'Estado descargado desde Supabase y cargado en el servidor exitosamente.',
+          message: tableData
+            ? 'Estado cargado desde las tablas normalizadas de Supabase exitosamente.'
+            : 'Estado descargado desde app_state de compatibilidad y cargado en el servidor exitosamente.',
           timestamp: new Date().toISOString()
         });
       } else {
         res.status(404).json({
           success: false,
-          error: 'No se encontraron datos en la tabla app_state de Supabase.'
+          error: 'No se encontraron datos en las tablas normalizadas ni en app_state de Supabase.'
         });
       }
     } catch (err: any) {

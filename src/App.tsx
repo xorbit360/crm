@@ -31,8 +31,24 @@ const HerramientasTarjetasView = lazy(() => import('./components/HerramientasTar
 
 function ModuleLoading() {
   return (
-    <div className="flex min-h-[240px] items-center justify-center rounded-2xl border border-gray-800 bg-gray-950/40 text-sm text-gray-400">
-      Cargando módulo…
+    <div className="flex min-h-[240px] items-center justify-center rounded-2xl border border-gray-800 bg-gray-950/40 p-6 text-gray-300">
+      <div className="w-full max-w-sm space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="crm-loading-logo flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-lg font-black text-emerald-300">X</div>
+          <div>
+            <p className="text-sm font-bold text-white">Cargando CRM</p>
+            <p className="text-xs text-zinc-500">Preparando tu espacio de trabajo…</p>
+          </div>
+        </div>
+        <div className="h-1.5 overflow-hidden rounded-full bg-zinc-800">
+          <div className="crm-loading-bar h-full w-1/2 rounded-full bg-emerald-400" />
+        </div>
+        <div className="space-y-2">
+          <div className="crm-skeleton h-3 rounded-full" />
+          <div className="crm-skeleton h-3 w-4/5 rounded-full" />
+          <div className="crm-skeleton h-3 w-3/5 rounded-full" />
+        </div>
+      </div>
     </div>
   );
 }

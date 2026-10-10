@@ -46,6 +46,36 @@
   animation: pulseBorder 3s infinite ease-in-out;
 }
 
+@keyframes crmShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes crmLoadBar {
+  0% { transform: translateX(-110%); }
+  55% { transform: translateX(140%); }
+  100% { transform: translateX(240%); }
+}
+
+@keyframes crmLogoPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.35); }
+  50% { transform: scale(1.04); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+}
+
+.crm-skeleton {
+  background: linear-gradient(100deg, rgba(255,255,255,0.05) 35%, rgba(255,255,255,0.13) 50%, rgba(255,255,255,0.05) 65%);
+  background-size: 200% 100%;
+  animation: crmShimmer 1.35s linear infinite;
+}
+
+.crm-loading-bar {
+  animation: crmLoadBar 1.25s ease-in-out infinite;
+}
+
+.crm-loading-logo {
+  animation: crmLogoPulse 1.6s ease-in-out infinite;
+}
+
 /* Custom scrollbar for beautiful lists */
 ::-webkit-scrollbar {
   width: 6px;

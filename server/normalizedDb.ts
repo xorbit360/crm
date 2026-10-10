@@ -457,3 +457,106 @@ export async function loadWhatsappFromTables(configKeys: string[], limit: number
     messagesHistory: inbox.messagesHistory,
   };
 }
+
+async function fetchAllRows(
+  client: any,
+  table: string,
+  select: string,
+  order?: { column: string; ascending: boolean; nullsFirst?: boolean },
+): Promise<any[]> {
+  const pageSize = 1000;
+  const rows: any[] = [];
+  for (let from = 0; from < 100000; from += pageSize) {
+    let query = client
+      .from(table)
+      .select(select)
+      .eq('workspace_id', NORMALIZED_WORKSPACE_ID);
+    if (order) {
+      query = query.order(order.column, {
+        ascending: order.ascending,
+        nullsFirst: Boolean(order.nullsFirst),
+      });
+    }
+    const { data, error } = await query.range(from, from + pageSize - 1);
+    if (error) throw new Error(`${table}: ${error.message}`);
+    const batch = data || [];
+    rows.push(...batch);
+    if (batch.length < pageSize) break;
+  }
+  return rows;
+}
+
+function rawRows(rows: any[]): any[] {
+  return rows.map((row: any) => row.raw).filter((raw: any) => raw !== undefined && raw !== null);
+}
+
+/**
+ * Rebuild the legacy in-memory state object from normalized Supabase tables.
+ * Core collections come from their raw JSONB payloads and every remaining
+ * top-level key comes from app_settings, so enabling tables as the boot
+ * source does not drop fields that have not been columnized yet.
+ */
+export async function loadStateFromNormalizedTables(): Promise<any | null> {
+  if (!isSupabaseConfigured()) return null;
+  const client = getSupabase();
+  if (!client) return null;
+
+  const [settings, channels, conversations, messages, customers, products, orders, campaigns, recharges, faqs, rules, staff, aiLogs] = await Promise.all([
+    fetchAllRows(client, 'app_settings', 'key,value'),
+    fetchAllRows(client, 'channels', 'raw'),
+    fetchAllRows(client, 'conversations', 'raw,last_message_at,updated_at', { column: 'last_message_at', ascending: false }),
+    fetchAllRows(client, 'messages', 'history_key,raw,ts_ms', { column: 'ts_ms', ascending: true }),
+    fetchAllRows(client, 'customers', 'raw'),
+    fetchAllRows(client, 'products', 'raw'),
+    fetchAllRows(client, 'orders', 'raw'),
+    fetchAllRows(client, 'campaigns', 'raw'),
+    fetchAllRows(client, 'recharge_transactions', 'raw'),
+    fetchAllRows(client, 'faqs', 'raw'),
+    fetchAllRows(client, 'automation_rules', 'kind,raw'),
+    fetchAllRows(client, 'staff_members', 'raw'),
+    fetchAllRows(client, 'ai_debug_logs', 'raw'),
+  ]);
+
+  if (!settings.length && !conversations.length && !messages.length) return null;
+
+  const state: any = {};
+  for (const row of settings) {
+    if (row?.key && !CORE_KEYS.has(String(row.key))) state[row.key] = row.value;
+  }
+
+  const messagesHistory: Record<string, any[]> = {};
+  for (const row of messages) {
+    const key = String(row?.history_key || '');
+    if (!key || !row?.raw) continue;
+    if (!messagesHistory[key]) messagesHistory[key] = [];
+    messagesHistory[key].push(row.raw);
+  }
+
+  const textRules: any[] = [];
+  const aiRules: any[] = [];
+  for (const row of rules) {
+    if (!row?.raw) continue;
+    if (row.kind === 'ai') aiRules.push(row.raw);
+    else if (row.raw && typeof row.raw === 'object' && typeof row.raw.text === 'string' && Object.keys(row.raw).length === 1) textRules.push(row.raw.text);
+    else textRules.push(row.raw);
+  }
+
+  state.channels = rawRows(channels);
+  state.chats = rawRows(conversations);
+  state.messagesHistory = messagesHistory;
+  state.customers = rawRows(customers);
+  state.products = rawRows(products);
+  state.orders = rawRows(orders);
+  state.campaigns = rawRows(campaigns);
+  state.rechargeTransactions = rawRows(recharges);
+  state.faqsList = rawRows(faqs);
+  state.rules = textRules;
+  state.aiAutomationRules = aiRules;
+  state.staff = rawRows(staff);
+  state.aiDebugLogs = rawRows(aiLogs);
+
+  hasMirroredOnce = true;
+  mirrorDirty = false;
+  lastMirrorError = '';
+  return state;
+}
