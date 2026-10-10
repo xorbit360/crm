@@ -53,6 +53,14 @@ const labelCls = 'block text-[11px] font-bold uppercase tracking-wider text-gray
 const btnGold = 'inline-flex items-center gap-2 rounded-xl bg-gold px-4 py-2.5 text-xs font-bold text-black transition hover:bg-amber-400 disabled:opacity-50 cursor-pointer';
 const btnGhost = 'inline-flex items-center gap-2 rounded-xl border border-gray-800 bg-gray-900 px-3 py-2 text-xs font-semibold text-gray-300 transition hover:bg-gray-800 disabled:opacity-50 cursor-pointer';
 
+// Plantillas de ejemplo persistentes (workspace default): viven como
+// landings activas y sirven de base duplicable para cualquier usuario.
+const TEMPLATE_SLUGS = ['ejemplo-live-producto', 'ejemplo-live-emprendedores'];
+
+function isTemplateLanding(l: Landing): boolean {
+  return TEMPLATE_SLUGS.includes(l.slug);
+}
+
 async function api(path: string, options?: RequestInit): Promise<any> {
   const res = await fetch(path, {
     headers: { 'Content-Type': 'application/json' },
@@ -327,6 +335,17 @@ export default function LiveSellingView() {
     } catch (e: any) { fail(e); } finally { setSaving(false); }
   }
 
+  async function handleUseTemplate(template: Landing) {
+    setSaving(true);
+    try {
+      const json = await api(`/api/live-selling/landings/${template.id}/duplicate`, { method: 'POST', body: '{}' });
+      await loadList(json.landing.id);
+      setSelectedId(json.landing.id);
+      setTab('config');
+      flash('Plantilla copiada a tus landings. Cambiale el video, el producto y el WhatsApp, y activala.');
+    } catch (e: any) { fail(e); } finally { setSaving(false); }
+  }
+
   async function handleDuplicate() {
     if (!form) return;
     setSaving(true);
@@ -488,25 +507,39 @@ export default function LiveSellingView() {
         {/* Lista de landings */}
         <div className="panel h-fit rounded-2xl border border-gray-800 bg-gray-900/80 p-4">
           <h2 className="mb-3 flex items-center gap-2 text-sm font-bold text-white"><Layers size={15} className="text-gold" /> Mis landings</h2>
+          {landings.some(isTemplateLanding) && (
+            <p className="mb-3 rounded-lg border border-violet-500/30 bg-violet-500/10 px-3 py-2 text-[11px] leading-relaxed text-violet-200">
+              Las marcadas <strong>PLANTILLA</strong> son ejemplos reales en vivo: abre su pagina con <strong>Ver en directo</strong>, copia su link o clonala con <strong>Usar esta plantilla</strong> para vender con tu propio video y producto.
+            </p>
+          )}
           {!landings.length && <p className="text-sm text-gray-500">Aún no tienes landings. Crea la primera con el botón de arriba.</p>}
           <div className="space-y-2">
             {landings.map((landing) => (
-              <button
+              <div
                 key={landing.id}
-                onClick={() => setSelectedId(landing.id)}
-                className={`w-full rounded-xl border px-3 py-2.5 text-left transition cursor-pointer ${landing.id === selectedId ? 'border-gold/50 bg-gold/10' : 'border-gray-800 bg-gray-950/60 hover:bg-gray-900'}`}
+                className={`w-full rounded-xl border px-3 py-2.5 transition ${landing.id === selectedId ? 'border-gold/50 bg-gold/10' : 'border-gray-800 bg-gray-950/60'}`}
               >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="truncate text-sm font-bold text-white">{landing.title}</span>
-                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${landing.status === 'active' ? 'bg-emerald-500/15 text-emerald-300' : landing.status === 'paused' ? 'bg-amber-500/15 text-amber-300' : 'bg-gray-700/40 text-gray-300'}`}>
-                    {landing.status === 'active' ? 'ACTIVA' : landing.status === 'paused' ? 'PAUSADA' : 'BORRADOR'}
-                  </span>
+                <button onClick={() => setSelectedId(landing.id)} className="w-full cursor-pointer text-left">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate text-sm font-bold text-white">{landing.title}</span>
+                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${landing.status === 'active' ? 'bg-emerald-500/15 text-emerald-300' : landing.status === 'paused' ? 'bg-amber-500/15 text-amber-300' : 'bg-gray-700/40 text-gray-300'}`}>
+                      {landing.status === 'active' ? 'ACTIVA' : landing.status === 'paused' ? 'PAUSADA' : 'BORRADOR'}
+                    </span>
+                  </div>
+                  <div className="mt-1 truncate font-mono text-[11px] text-gray-500">/live/{landing.slug}</div>
+                  <div className="mt-1 text-[11px] text-gray-500">
+                    {landing.counts?.orders || 0} pedidos · {landing.counts?.leads || 0} leads · {landing.counts?.visitorComments || 0} comentarios
+                  </div>
+                </button>
+                <div className="mt-2 flex flex-wrap items-center gap-1.5 border-t border-gray-800/80 pt-2">
+                  {isTemplateLanding(landing) && <span className="rounded-full bg-violet-500/20 px-2 py-0.5 text-[10px] font-bold text-violet-300">PLANTILLA</span>}
+                  <button className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-gray-800 bg-gray-900 px-2 py-1 text-[11px] font-semibold text-gray-300 hover:bg-gray-800" onClick={() => { navigator.clipboard?.writeText(`${window.location.origin}/live/${landing.slug}`).catch(() => {}); flash('Link de la plataforma copiado.'); }}><Copy size={11} /> Copiar link</button>
+                  <a className="inline-flex items-center gap-1 rounded-lg border border-gray-800 bg-gray-900 px-2 py-1 text-[11px] font-semibold text-gray-300 hover:bg-gray-800" href={`${window.location.origin}/live/${landing.slug}`} target="_blank" rel="noreferrer"><ExternalLink size={11} /> Ver en directo</a>
+                  {isTemplateLanding(landing) && (
+                    <button className="inline-flex cursor-pointer items-center gap-1 rounded-lg bg-gold px-2 py-1 text-[11px] font-bold text-black hover:bg-amber-400 disabled:opacity-50" onClick={() => handleUseTemplate(landing)} disabled={saving}><Rocket size={11} /> Usar esta plantilla</button>
+                  )}
                 </div>
-                <div className="mt-1 truncate font-mono text-[11px] text-gray-500">/live/{landing.slug}</div>
-                <div className="mt-1 text-[11px] text-gray-500">
-                  {landing.counts?.orders || 0} pedidos · {landing.counts?.leads || 0} leads · {landing.counts?.visitorComments || 0} comentarios
-                </div>
-              </button>
+              </div>
             ))}
           </div>
         </div>
@@ -547,11 +580,11 @@ export default function LiveSellingView() {
               {tab === 'config' && (
                 <div className="space-y-6 pt-5">
                   <div className="rounded-xl border border-gray-800 bg-gray-950/60 p-4">
-                    <label className={labelCls}>Enlace público de esta landing</label>
+                    <label className={labelCls}>Link de la plataforma (gratis e inmediato: vende con este link, sin dominio)</label>
                     <div className="flex flex-wrap items-center gap-2">
                       <code className="flex-1 truncate rounded-lg bg-black/40 px-3 py-2 font-mono text-xs text-emerald-300">{publicUrl}</code>
                       <button className={btnGhost} onClick={copyPublicLink}><Copy size={13} /> Copiar</button>
-                      <a className={btnGhost} href={publicUrl} target="_blank" rel="noreferrer"><ExternalLink size={13} /> Abrir</a>
+                      <a className={btnGhost} href={publicUrl} target="_blank" rel="noreferrer"><ExternalLink size={13} /> Ver en directo</a>
                     </div>
                     {form.status !== 'active' && <p className="mt-2 text-xs text-amber-300">Esta landing no es pública hasta que la actives.</p>}
                   </div>
@@ -879,11 +912,13 @@ export default function LiveSellingView() {
                     </div>
                   </div>
                   <div className="rounded-xl border border-gray-800 bg-gray-950/60 p-4 text-sm text-gray-400 space-y-2">
-                    <p className="font-bold text-white">Cómo conectarlo</p>
-                    <p>1. En tu proveedor de dominio crea un registro <strong className="text-gray-200">CNAME</strong> desde tu subdominio (ej. <code className="font-mono">live</code>) hacia <code className="font-mono text-emerald-300">crm.xorbit360.com</code>.</p>
+                    <p className="font-bold text-white">Cómo conectarlo (cualquier proveedor: Namecheap, GoDaddy, Hostinger, Cloudflare...)</p>
+                    <p>1. Entra al panel de DNS de tu proveedor y crea un registro <strong className="text-gray-200">CNAME</strong> desde tu subdominio (ej. <code className="font-mono">live</code>) hacia <code className="font-mono text-emerald-300">crm.xorbit360.com</code> (recomendado), o un registro <strong className="text-gray-200">A</strong> a <code className="font-mono text-emerald-300">2.25.221.151</code>. En Namecheap, por ejemplo: Domain List, Manage, Advanced DNS, Add New Record.</p>
                     <p>2. Escribe ese dominio aquí y pulsa “Guardar y verificar”. El sistema comprueba el DNS en vivo y, si apunta correctamente, la landing empieza a resolverse por ese dominio en la raíz.</p>
-                    <p>3. Nota: el dominio raíz (sin subdominio) no admite CNAME en todos los proveedores; usa un subdominio o un registro ALIAS/ANAME si tu proveedor lo ofrece.</p>
-                    <p>4. El certificado TLS (candado HTTPS) lo emite el proxy del VPS; si tu dominio es nuevo puede tardar unos minutos tras propagar el DNS.</p>
+                    <p>3. Nota: el dominio raíz (sin subdominio) no admite CNAME en la mayoría de proveedores; usa un subdominio o el registro A a la IP.</p>
+                    <p>4. El certificado seguro (HTTPS) se emite automáticamente en cuanto el dominio apunta al servidor; puede tardar unos minutos en el primer acceso.</p>
+                    <p>5. ¿No tienes dominio ni proveedor? No lo necesitas: tu landing ya vende con el link de la plataforma <code className="font-mono text-emerald-300">{typeof window !== 'undefined' ? window.location.origin : ''}/live/{form.slug}</code> (pestaña Configuración y lista de landings).</p>
+                    <p>6. Subdominio de la plataforma (tunombre.xorbit360.com): <strong className="text-amber-300">muy pronto</strong>. Para activarlo falta crear el registro comodín * del dominio de la plataforma; mientras tanto usa el link de la plataforma o tu dominio propio.</p>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <button className={btnGold} onClick={handleVerifyDomain} disabled={saving || !form.customDomain}><Globe size={14} /> Guardar y verificar DNS</button>
@@ -921,16 +956,38 @@ export default function LiveSellingView() {
             {wStep === 0 && (
               <div className="space-y-4">
                 <div><label className={labelCls}>Titulo del live</label><input className={inputCls} value={wiz.title} onChange={(e) => setw('title', e.target.value)} placeholder="Ej: Lanzamiento crema facial" /></div>
-                <div>
-                  <label className={labelCls}>Subdominio / ruta (slug)</label>
-                  <input className={inputCls} value={wiz.slug} onChange={(e) => setw('slug', e.target.value)} placeholder="mi-producto" />
-                  <p className="mt-1.5 text-xs text-gray-500">Tu live quedara en <code className="font-mono text-emerald-300">{window.location.origin}/live/{slugifyLocal(wiz.slug || wiz.title) || 'mi-live'}</code>. Si dejas todo vacio se genera uno automatico.</p>
+
+                <div className="space-y-2 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-bold text-white">A · Link de la plataforma (gratis e inmediato)</span>
+                    <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-bold text-emerald-300">RECOMENDADO</span>
+                  </div>
+                  <p className="text-xs text-gray-400">No necesitas dominio ni proveedor: tu live queda en el dominio de la plataforma y vende con este link desde que lo publiques.</p>
+                  <div>
+                    <label className={labelCls}>Nombre de tu link (ruta)</label>
+                    <input className={inputCls} value={wiz.slug} onChange={(e) => setw('slug', e.target.value)} placeholder="mi-producto" />
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <code className="flex-1 truncate rounded-lg bg-black/40 px-3 py-2 font-mono text-xs text-emerald-300">{window.location.origin}/live/{slugifyLocal(wiz.slug || wiz.title) || 'mi-live'}</code>
+                    <button type="button" className={btnGhost} onClick={() => { navigator.clipboard?.writeText(`${window.location.origin}/live/${slugifyLocal(wiz.slug || wiz.title) || 'mi-live'}`).catch(() => {}); flash('Link de la plataforma copiado. Funciona apenas publiques el embudo.'); }}><Copy size={13} /> Copiar</button>
+                  </div>
+                  <p className="text-[11px] text-gray-500">Si dejas el nombre vacio se genera uno automatico. Puedes conectar tu dominio despues sin perder este link.</p>
                 </div>
-                <div>
-                  <label className={labelCls}>Dominio propio (opcional)</label>
+
+                <div className="space-y-2 rounded-xl border border-gray-800 bg-gray-950/60 p-4">
+                  <span className="text-sm font-bold text-white">B · Conectar mi dominio (cualquier proveedor)</span>
                   <input className={inputCls} value={wiz.customDomain} onChange={(e) => setw('customDomain', e.target.value)} placeholder="live.tutienda.com" />
-                  <p className="mt-1.5 text-xs text-gray-500">Apunta un CNAME de ese subdominio hacia <code className="font-mono text-emerald-300">crm.xorbit360.com</code> y verificalo luego en la pestana Dominio propio.</p>
+                  <p className="text-xs text-gray-500">Opcional. Sirve con Namecheap, GoDaddy, Hostinger, Cloudflare o cualquier proveedor: crea en su panel de DNS un <strong className="text-gray-300">CNAME</strong> de tu subdominio hacia <code className="font-mono text-emerald-300">crm.xorbit360.com</code> (o un registro <strong className="text-gray-300">A</strong> a <code className="font-mono text-emerald-300">2.25.221.151</code>) y verificalo luego en la pestana Dominio propio de la landing.</p>
                 </div>
+
+                <div className="space-y-1 rounded-xl border border-gray-800 bg-gray-950/40 p-4 opacity-90">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-bold text-gray-300">C · Subdominio de la plataforma (tunombre.xorbit360.com)</span>
+                    <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-300">MUY PRONTO</span>
+                  </div>
+                  <p className="text-xs text-gray-500">Todavia no esta activo: falta habilitar los subdominios de la plataforma. Mientras tanto vende con el link de la plataforma (opcion A) o conecta tu dominio (opcion B).</p>
+                </div>
+
                 <div><label className={labelCls}>Texto de la pastilla del live (opcional)</label><input className={inputCls} value={wiz.liveLabel} onChange={(e) => setw('liveLabel', e.target.value)} placeholder="PRECIO DE LANZAMIENTO" /></div>
               </div>
             )}
