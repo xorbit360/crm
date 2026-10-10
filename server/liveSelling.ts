@@ -178,6 +178,33 @@ function cleanUtm(value: unknown): AnyRow {
   return out;
 }
 
+type LiveProduct = { name: string; price: number; comparePrice: number | null; imageUrl: string };
+
+function cleanProducts(value: unknown): LiveProduct[] {
+  if (!Array.isArray(value)) return [];
+  return value.slice(0, 24).flatMap((item: any) => {
+    if (!item || typeof item !== 'object') return [];
+    const name = cleanText(item.name, 180);
+    if (!name) return [];
+    return [{
+      name,
+      price: Math.max(0, cleanNumber(item.price, 0)),
+      comparePrice: item.comparePrice === null || item.comparePrice === undefined || item.comparePrice === ''
+        ? null
+        : Math.max(0, cleanNumber(item.comparePrice, 0)),
+      imageUrl: cleanHttpUrl(item.imageUrl) || '',
+    }];
+  });
+}
+
+const PAYMENT_METHODS = ['cod', 'prepaid'] as const;
+
+function cleanPaymentMethods(value: unknown): string[] {
+  if (!Array.isArray(value)) return ['cod', 'prepaid'];
+  const picked = PAYMENT_METHODS.filter((m) => value.includes(m));
+  return picked.length ? picked : ['cod', 'prepaid'];
+}
+
 function requestIp(req: Request): string {
   const forwarded = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
   return forwarded || req.ip || req.socket?.remoteAddress || 'unknown';
@@ -239,6 +266,9 @@ function landingToAdmin(row: AnyRow): AnyRow {
     domainVerified: !!row.domain_verified,
     domainStatus: row.domain_status || 'not_configured',
     domainVerifiedAt: row.domain_verified_at || null,
+    config: row.config && typeof row.config === 'object' ? row.config : {},
+    products: cleanProducts(row.config?.products),
+    paymentMethods: cleanPaymentMethods(row.config?.payment_methods),
     domainCheck: row.domain_check || {},
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -274,6 +304,8 @@ function landingToPublic(row: AnyRow, fakeComments: AnyRow[]): AnyRow {
     commentMode: admin.commentMode,
     viewersMin: admin.viewersMin,
     viewersMax: admin.viewersMax,
+    products: admin.products,
+    paymentMethods: admin.paymentMethods,
     fakeComments: fakeComments.map((c) => ({
       id: c.id,
       author: c.author,
@@ -333,7 +365,8 @@ async function publicConfig(client: any, landing: AnyRow): Promise<AnyRow> {
   return landingToPublic(landing, fakeComments);
 }
 
-function productSnapshot(landing: AnyRow): AnyRow {
+function productSnapshot(landing: AnyRow, chosen?: LiveProduct | null): AnyRow {
+  if (chosen) return { name: chosen.name, price: chosen.price, comparePrice: chosen.comparePrice, imageUrl: chosen.imageUrl };
   return {
     name: landing.product_name || 'Producto en vivo',
     price: Number(landing.product_price || 0),
@@ -342,8 +375,18 @@ function productSnapshot(landing: AnyRow): AnyRow {
   };
 }
 
-function computeTotals(landing: AnyRow, quantity: number, couponCode?: string) {
-  const price = Number(landing.product_price || 0);
+// Producto elegido por el visitante dentro del catalogo de la landing.
+// Solo se aceptan nombres que existan en el catalogo guardado; cualquier
+// otro nombre (o ninguno) cae al producto principal de la landing.
+function resolveChosenProduct(landing: AnyRow, productName: unknown): LiveProduct | null {
+  const wanted = cleanText(productName, 180);
+  if (!wanted) return null;
+  const products = cleanProducts(landing.config?.products);
+  return products.find((item) => item.name === wanted) || null;
+}
+
+function computeTotals(landing: AnyRow, quantity: number, couponCode?: string, chosen?: LiveProduct | null) {
+  const price = chosen ? chosen.price : Number(landing.product_price || 0);
   const subtotal = price * quantity;
   const expected = cleanText(landing.coupon_code, 60).toUpperCase();
   const given = cleanText(couponCode, 60).toUpperCase();
@@ -357,7 +400,7 @@ function newOrderRef(): string {
   return `LIVE-${Date.now().toString(36).toUpperCase()}${Math.floor(100 + Math.random() * 900)}`;
 }
 
-function parseLandingBody(body: AnyRow, partial: boolean): AnyRow {
+function parseLandingBody(body: AnyRow, partial: boolean, existingConfig: AnyRow = {}): AnyRow {
   const patch: AnyRow = {};
   const set = (column: string, value: unknown) => {
     if (!partial || value !== undefined) patch[column] = value;
@@ -415,6 +458,12 @@ function parseLandingBody(body: AnyRow, partial: boolean): AnyRow {
   if (!partial || body.viewersMax !== undefined) set('viewers_max', cleanInt(body.viewersMax, 60, 1, 100000));
   if (!partial || body.status !== undefined) {
     set('status', ['draft', 'active', 'paused', 'archived'].includes(body.status) ? body.status : 'draft');
+  }
+  if (!partial || body.products !== undefined || body.paymentMethods !== undefined) {
+    const cfg: AnyRow = { ...(existingConfig && typeof existingConfig === 'object' ? existingConfig : {}) };
+    if (!partial || body.products !== undefined) cfg.products = cleanProducts(body.products);
+    if (!partial || body.paymentMethods !== undefined) cfg.payment_methods = cleanPaymentMethods(body.paymentMethods);
+    patch.config = cfg;
   }
   const videoRaw = body.videoUrl ?? body.videoId;
   if (!partial || videoRaw !== undefined) {
@@ -508,15 +557,16 @@ export function setupLiveSellingPublicRoutes(app: Express): void {
     const phone = normalizePhoneCO(req.body?.phone);
     if (!phone) { res.status(400).json({ success: false, error: 'WhatsApp colombiano válido requerido' }); return; }
     const quantity = cleanInt(req.body?.quantity, 1, 1, 99);
-    const totals = computeTotals(landing, quantity);
+    const chosen = resolveChosenProduct(landing, req.body?.productName);
+    const totals = computeTotals(landing, quantity, undefined, chosen);
     const visitorId = cleanText(req.body?.visitorId, 80) || null;
     const base: AnyRow = {
       landing_id: landing.id,
       tenant_id: landing.tenant_id,
       status: 'lead',
-      product_snapshot: productSnapshot(landing),
-      product_name: landing.product_name || 'Producto en vivo',
-      product_price: Number(landing.product_price || 0),
+      product_snapshot: productSnapshot(landing, chosen),
+      product_name: chosen ? chosen.name : (landing.product_name || 'Producto en vivo'),
+      product_price: chosen ? chosen.price : Number(landing.product_price || 0),
       quantity,
       subtotal: totals.subtotal,
       discount: 0,
@@ -597,15 +647,20 @@ export function setupLiveSellingPublicRoutes(app: Express): void {
     }
 
     const quantity = cleanInt(req.body?.quantity, 1, 1, 99);
+    const chosen = resolveChosenProduct(landing, req.body?.productName);
+    const allowedMethods = cleanPaymentMethods(landing.config?.payment_methods);
+    const paymentMethodRaw = cleanText(req.body?.paymentMethod, 20).toLowerCase();
+    const paymentMethod = allowedMethods.includes(paymentMethodRaw) ? paymentMethodRaw : allowedMethods[0];
     const couponCode = cleanText(req.body?.couponCode, 60).toUpperCase() || null;
-    const totals = computeTotals(landing, quantity, couponCode || undefined);
+    const totals = computeTotals(landing, quantity, couponCode || undefined, chosen);
     const orderData: AnyRow = {
       landing_id: landing.id,
       tenant_id: landing.tenant_id,
       status: 'order',
-      product_snapshot: productSnapshot(landing),
-      product_name: landing.product_name || 'Producto en vivo',
-      product_price: Number(landing.product_price || 0),
+      product_snapshot: productSnapshot(landing, chosen),
+      product_name: chosen ? chosen.name : (landing.product_name || 'Producto en vivo'),
+      product_price: chosen ? chosen.price : Number(landing.product_price || 0),
+      payment_method: paymentMethod,
       quantity,
       subtotal: totals.subtotal,
       discount: totals.discount,
@@ -634,7 +689,7 @@ export function setupLiveSellingPublicRoutes(app: Express): void {
         .select('id, order_ref, subtotal, discount, shipping, total')
         .single();
       if (!error && data) {
-        res.json({ success: true, orderId: data.id, orderRef: data.order_ref, ...totals, status: 'order' });
+        res.json({ success: true, orderId: data.id, orderRef: data.order_ref, ...totals, status: 'order', paymentMethod, productName: orderData.product_name });
         return;
       }
     }
@@ -644,7 +699,7 @@ export function setupLiveSellingPublicRoutes(app: Express): void {
       .select('id, order_ref')
       .single();
     if (error) throw new Error(error.message);
-    res.status(201).json({ success: true, orderId: data.id, orderRef: data.order_ref, ...totals, status: 'order' });
+    res.status(201).json({ success: true, orderId: data.id, orderRef: data.order_ref, ...totals, status: 'order', paymentMethod, productName: orderData.product_name });
   }));
 
   app.post('/api/public/live/:id/pageview', route(async (req, res) => {
@@ -950,6 +1005,7 @@ export function setupLiveSellingAdminRoutes(app: Express): void {
         id: o.id, orderRef: o.order_ref, status: o.status, productName: o.product_name || '',
         quantity: Number(o.quantity || 1), subtotal: Number(o.subtotal || 0), discount: Number(o.discount || 0),
         shipping: Number(o.shipping || 0), total: Number(o.total || 0), couponCode: o.coupon_code || '',
+        paymentMethod: o.payment_method || 'cod',
         customerName: o.customer_name || '', phone: o.phone || '', address: o.address || '',
         department: o.department || '', city: o.city || '', email: o.email || '',
         utm: o.utm || {}, createdAt: o.created_at,
@@ -969,7 +1025,7 @@ export function setupLiveSellingAdminRoutes(app: Express): void {
       .single();
     if (readError || !current) { res.status(404).json({ success: false, error: 'Landing no encontrada' }); return; }
 
-    const patch = parseLandingBody(req.body || {}, true);
+    const patch = parseLandingBody(req.body || {}, true, current.config || {});
     if (req.body?.slug !== undefined) {
       const slug = slugify(req.body.slug);
       if (!slug) { res.status(400).json({ success: false, error: 'Slug inválido' }); return; }
