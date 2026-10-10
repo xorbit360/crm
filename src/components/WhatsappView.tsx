@@ -2573,6 +2573,26 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
   const [chatFilterStatus, setChatFilterStatus] = useState<'all' | 'unread' | 'bot' | 'human' | 'complaints'>('all');
   const [filterTag, setFilterTag] = useState<string>('all');
   const [filterColumn, setFilterColumn] = useState<string>('all');
+  const [visibleChatCount, setVisibleChatCount] = useState(60);
+  const [visibleMessageCount, setVisibleMessageCount] = useState(60);
+  React.useEffect(() => { setVisibleChatCount(60); }, [chatSearch, chatFilterStatus, filterTag, filterColumn]);
+  const filteredChats = React.useMemo(() => {
+    const query = chatSearch.toLowerCase();
+    return chats.filter(chat => {
+      const tags = Array.isArray(chat.tags) ? chat.tags : [];
+      const matchesSearch = String(chat.name || '').toLowerCase().includes(query) ||
+                            String(chat.msg || '').toLowerCase().includes(query);
+      if (!matchesSearch) return false;
+      if (chatFilterStatus === 'unread' && chat.unread === 0) return false;
+      if (chatFilterStatus === 'bot' && !tags.includes('Bot Activo')) return false;
+      if (chatFilterStatus === 'human' && !tags.includes('Handoff (Humano)')) return false;
+      if (chatFilterStatus === 'complaints' && !tags.some(t => t === 'Queja' || t === 'Mala Atención')) return false;
+      if (filterTag !== 'all' && !tags.includes(filterTag)) return false;
+      if (filterColumn !== 'all' && chat.columnId !== filterColumn) return false;
+      return true;
+    });
+  }, [chats, chatSearch, chatFilterStatus, filterTag, filterColumn]);
+  const visibleChats = filteredChats.slice(0, visibleChatCount);
 
   // Custom Pipelines / Embudos State
   const [pipelines, setPipelines] = useState<{ id: string, name: string, isNestComplaints?: boolean, isNestLogistics?: boolean, instructions?: string, automation?: string }[]>([
@@ -2651,6 +2671,7 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
     }
   }, [isAdminDemo, currentUser?.email]);
 
+  React.useEffect(() => { setVisibleMessageCount(60); }, [activeChatId]);
   const activeChatObj = chats.find(c => c.id === activeChatId);
   const activeCleanPhone = activeChatObj?.phone ? activeChatObj.phone.replace(/\D/g, '') : (activeChatId ? activeChatId.replace(/\D/g, '') : '');
   const activeChatMessages = (
@@ -2660,6 +2681,8 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
     (activeChatObj?.phone && messages[activeChatObj.phone]) ||
     []
   );
+  const visibleChatMessages = activeChatMessages.slice(-visibleMessageCount);
+  const messageIndexOffset = Math.max(0, activeChatMessages.length - visibleChatMessages.length);
 
   // Guardado automático persistente de mensajes y chats en LocalStorage
   React.useEffect(() => {
@@ -4963,30 +4986,16 @@ ${parametersString}
                   </div>
                </div>
                {/* List */}
-               <div className="flex-1 overflow-y-auto custom-scrollbar">
-                  {chats
-                    .filter(chat => {
-                      // 1. Text search filter
-                      const tags = Array.isArray(chat.tags) ? chat.tags : [];
-                      const matchesSearch = String(chat.name || '').toLowerCase().includes(chatSearch.toLowerCase()) ||
-                                            String(chat.msg || '').toLowerCase().includes(chatSearch.toLowerCase());
-                      if (!matchesSearch) return false;
-
-                      // 2. Status filter
-                      if (chatFilterStatus === 'unread' && chat.unread === 0) return false;
-                      if (chatFilterStatus === 'bot' && !tags.includes('Bot Activo')) return false;
-                      if (chatFilterStatus === 'human' && !tags.includes('Handoff (Humano)')) return false;
-                      if (chatFilterStatus === 'complaints' && !tags.some(t => t === 'Queja' || t === 'Mala Atención')) return false;
-
-                      // 3. Tag filter
-                      if (filterTag !== 'all' && !tags.includes(filterTag)) return false;
-
-                      // 4. Column / CRM stage filter
-                      if (filterColumn !== 'all' && chat.columnId !== filterColumn) return false;
-
-                      return true;
-                    })
-                    .map((chat) => (
+               <div
+                 className="flex-1 overflow-y-auto custom-scrollbar"
+                 onScroll={(event) => {
+                   const element = event.currentTarget;
+                   if (element.scrollHeight - element.scrollTop - element.clientHeight < 240) {
+                     setVisibleChatCount(count => Math.min(count + 60, filteredChats.length));
+                   }
+                 }}
+               >
+                  {visibleChats.map((chat) => (
                     <div
                       key={chat.id}
                       onClick={() => {
@@ -5012,6 +5021,7 @@ ${parametersString}
                         setMobileView('chat');
                       }}
                       className={`flex items-center px-3 py-3 cursor-pointer hover:bg-[#202c33] transition-colors ${chat.id === activeChatId ? 'bg-[#2a3942]' : ''}`}
+                      style={{ contentVisibility: 'auto', containIntrinsicSize: '76px' } as React.CSSProperties}
                     >
                        <div className="mr-3 shrink-0">
                           <ContactAvatar
@@ -5041,6 +5051,15 @@ ${parametersString}
                        </div>
                     </div>
                   ))}
+                  {visibleChats.length < filteredChats.length && (
+                    <button
+                      type="button"
+                      onClick={() => setVisibleChatCount(count => Math.min(count + 60, filteredChats.length))}
+                      className="w-full px-3 py-3 text-xs text-emerald-300 bg-[#182229] hover:bg-[#202c33] border-t border-gray-800"
+                    >
+                      Mostrar más conversaciones ({visibleChats.length} de {filteredChats.length})
+                    </button>
+                  )}
                </div>
             </div>
 
@@ -5173,7 +5192,20 @@ ${parametersString}
                     </div>
                   )}
 
-                  {activeChatMessages.map((msg, i) => {
+                  {activeChatMessages.length > visibleChatMessages.length && (
+                    <div className="flex justify-center">
+                      <button
+                        type="button"
+                        onClick={() => setVisibleMessageCount(count => count + 60)}
+                        className="bg-[#182229] hover:bg-[#202c33] text-emerald-300 text-[11px] font-semibold px-3 py-1.5 rounded-lg border border-gray-800 shadow"
+                      >
+                        Cargar mensajes anteriores ({activeChatMessages.length - visibleChatMessages.length} más)
+                      </button>
+                    </div>
+                  )}
+
+                  {visibleChatMessages.map((msg, visibleIndex) => {
+                    const i = messageIndexOffset + visibleIndex;
                     const rawText = msg.text || '';
 
                     // Regex to catch embedded audio filename strings or tags like "🤖🔊 [nota_de_voz_1786134202654.ogg]" or "[nota_de_voz_...]"

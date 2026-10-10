@@ -24,6 +24,13 @@ import {
   SUPABASE_SCHEMA_SQL,
   getSupabaseCredentials
 } from './server/supabase.ts';
+import {
+  queueNormalizedMirror,
+  mirrorStateToNormalizedTables,
+  isNormalizedReadReady,
+  loadInboxFromTables,
+  loadWhatsappFromTables,
+} from './server/normalizedDb.ts';
 import { setupZernioRoutes } from './server/zernio/routes.ts';
 import { handleZernioWebhook } from './server/zernio/webhook.ts';
 import { setupBoldRoutes } from './server/bold.ts';
@@ -1553,6 +1560,7 @@ function saveDBData(data: any) {
     fs.writeFileSync(dbPath, JSON.stringify(data, null, 2), 'utf-8');
     if (isSupabaseConfigured()) {
       saveToSupabase(data).catch(err => console.warn('[Supabase Save Warning]:', err?.message || err));
+      queueNormalizedMirror(data);
     }
     broadcastRealtimeChange();
   } catch (err) {
@@ -1646,6 +1654,12 @@ async function initDB() {
     }
   } catch (err: any) {
     console.log('[Database] Supabase sync error (using local DB state):', err?.message || err);
+  }
+
+  try {
+    await mirrorStateToNormalizedTables(currentDB);
+  } catch (err: any) {
+    console.warn('[NormalizedDB Startup Mirror Warning]:', err?.message || err);
   }
 
   const persistedEvolutionWebhook = String(currentDB?.evolutionWebhookBaseUrl || '');
@@ -3316,7 +3330,7 @@ async function createServer() {
   // Lightweight realtime snapshot for the inbox. The full backoffice state
   // also contains AI logs and billing history; sending those on every webhook
   // event made the CRM transfer ~776 KB and caused visible chat jumps.
-  app.get("/api/backoffice/inbox", (req, res) => {
+  app.get("/api/backoffice/inbox", async (req, res) => {
     collapseInstagramChats();
     res.setHeader('Cache-Control', 'no-store');
     const chatFields = [
@@ -3326,6 +3340,22 @@ async function createServer() {
       'participantUsername', 'instanceName', 'remoteJid', 'timestamp', 'sender'
     ];
     const limit = Math.min(500, Math.max(50, Number(req.query.limit) || 300));
+    const historyLimitForTables = Math.min(200, Math.max(0, Number(req.query.historyLimit) || 80));
+    if (isNormalizedReadReady()) {
+      try {
+        const tableInbox = await loadInboxFromTables(limit, historyLimitForTables);
+        if (tableInbox) {
+          const tableChats = tableInbox.chats.map((chat: any) => {
+            const compact: any = {};
+            for (const field of chatFields) if (chat?.[field] !== undefined) compact[field] = chat[field];
+            return compact;
+          });
+          return res.json({ chats: tableChats, messagesHistory: tableInbox.messagesHistory });
+        }
+      } catch (err: any) {
+        console.warn('[NormalizedDB Inbox Fallback]:', err?.message || err);
+      }
+    }
     const chats = (Array.isArray(currentDB.chats) ? currentDB.chats : [])
       .slice()
       .sort((a: any, b: any) => (Number(b?.timestamp) || 0) - (Number(a?.timestamp) || 0))
@@ -3369,7 +3399,7 @@ async function createServer() {
   // WhatsApp view bootstrap: only the configuration fields that the bot UI
   // needs plus the recent inbox. This replaces the 776 KB global state fetch
   // performed when opening the WhatsApp module.
-  app.get("/api/backoffice/whatsapp", (_req, res) => {
+  app.get("/api/backoffice/whatsapp", async (_req, res) => {
     const configKeys = [
       'whatsappConnected', 'connectedPhone', 'customGreeting',
       'greetingAttachments', 'faqsList', 'reactivationTrigger', 'botPrompt',
@@ -3377,13 +3407,27 @@ async function createServer() {
       'remarketingCount', 'remarketingInterval', 'remarketingAvoidSpam',
       'remarketingMessages', 'remarketingUseAI', 'remarketingAttachments'
     ];
+    let tableWhatsapp: any = null;
+    if (isNormalizedReadReady()) {
+      try {
+        tableWhatsapp = await loadWhatsappFromTables(configKeys, 300, 80);
+      } catch (err: any) {
+        console.warn('[NormalizedDB WhatsApp Fallback]:', err?.message || err);
+      }
+    }
     const config: any = {};
-    for (const key of configKeys) if (currentDB[key] !== undefined) config[key] = currentDB[key];
-    const chats = (Array.isArray(currentDB.chats) ? currentDB.chats : [])
+    if (tableWhatsapp?.config) {
+      Object.assign(config, tableWhatsapp.config);
+    } else {
+      for (const key of configKeys) if (currentDB[key] !== undefined) config[key] = currentDB[key];
+    }
+    const chats = tableWhatsapp?.chats || (Array.isArray(currentDB.chats) ? currentDB.chats : [])
       .slice().sort((a: any, b: any) => (Number(b?.timestamp) || 0) - (Number(a?.timestamp) || 0)).slice(0, 300);
-    const recentMessagesHistory: Record<string, any[]> = {};
-    for (const [historyKey, history] of Object.entries(currentDB.messagesHistory || {})) {
-      if (Array.isArray(history)) recentMessagesHistory[historyKey] = history.slice(-80);
+    const recentMessagesHistory: Record<string, any[]> = tableWhatsapp?.messagesHistory || {};
+    if (!tableWhatsapp) {
+      for (const [historyKey, history] of Object.entries(currentDB.messagesHistory || {})) {
+        if (Array.isArray(history)) recentMessagesHistory[historyKey] = history.slice(-80);
+      }
     }
     res.setHeader('Cache-Control', 'no-store');
     res.json({
