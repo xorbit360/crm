@@ -1377,6 +1377,7 @@ type ChatMessage = {
             {activeModule === 'proveedores' && <ProveedoresView />}
             {activeModule === 'automatizaciones' && (
               <ConfiguracionGeneralView
+                currentUser={user}
                 currentLanguage={language}
                 onLanguageChange={setLanguage}
                 currentTheme={theme}
@@ -1388,6 +1389,7 @@ type ChatMessage = {
             )}
             {activeModule === 'integraciones' && (
               <ConfiguracionGeneralView
+                currentUser={user}
                 currentLanguage={language}
                 onLanguageChange={setLanguage}
                 currentTheme={theme}
@@ -1399,6 +1401,7 @@ type ChatMessage = {
             )}
             {activeModule === 'usuarios' && (
               <ConfiguracionGeneralView
+                currentUser={user}
                 currentLanguage={language}
                 onLanguageChange={setLanguage}
                 currentTheme={theme}
@@ -1410,6 +1413,7 @@ type ChatMessage = {
             )}
             {activeModule === 'recargas' && (
               <ConfiguracionGeneralView
+                currentUser={user}
                 currentLanguage={language}
                 onLanguageChange={setLanguage}
                 currentTheme={theme}
@@ -1433,6 +1437,7 @@ type ChatMessage = {
             )}
             {activeModule === 'dominio' && (
               <ConfiguracionGeneralView
+                currentUser={user}
                 currentLanguage={language}
                 onLanguageChange={setLanguage}
                 currentTheme={theme}
@@ -1465,6 +1470,7 @@ type ChatMessage = {
             )}
             {activeModule === 'proyectos' && (
               <ConfiguracionGeneralView
+                currentUser={user}
                 currentLanguage={language}
                 onLanguageChange={setLanguage}
                 currentTheme={theme}
@@ -1476,6 +1482,7 @@ type ChatMessage = {
             )}
             {activeModule === 'configuracion_general' && (
               <ConfiguracionGeneralView
+                currentUser={user}
                 currentLanguage={language}
                 onLanguageChange={setLanguage}
                 currentTheme={theme}
