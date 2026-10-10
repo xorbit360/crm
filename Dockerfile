@@ -15,7 +15,7 @@ FROM node:22-alpine AS runtime
 
 WORKDIR /app
 
-RUN apk add --no-cache git openssh-client tini
+RUN apk add --no-cache git openssh-client tini ffmpeg
 
 COPY package*.json ./
 RUN npm ci --omit=dev --legacy-peer-deps && npm cache clean --force

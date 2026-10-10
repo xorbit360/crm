@@ -15,6 +15,11 @@ export interface NormalizedMessage {
   senderAvatar?: string;
   direction: 'incoming' | 'outgoing';
   text: string;
+  attachment?: {
+    type: 'audio' | 'imagen' | 'video' | 'archivo';
+    url: string;
+    name?: string;
+  };
   timestamp: number;
   status?: 'received' | 'sent' | 'delivered' | 'read' | 'failed';
   isSelfEcho?: boolean;
@@ -25,6 +30,38 @@ export interface NormalizedMessage {
     sourceUrl?: string;
   };
   raw: any;
+}
+
+function extractZernioAttachment(rawMsg: any): NormalizedMessage['attachment'] {
+  const candidates: any[] = [];
+  if (Array.isArray(rawMsg?.attachments)) candidates.push(...rawMsg.attachments);
+  if (rawMsg?.attachment) candidates.push(rawMsg.attachment);
+  if (Array.isArray(rawMsg?.message?.attachments)) candidates.push(...rawMsg.message.attachments);
+  if (rawMsg?.mediaUrl) candidates.push({ url: rawMsg.mediaUrl, type: rawMsg.type || rawMsg.mediaType });
+  if (Array.isArray(rawMsg?.media)) candidates.push(...rawMsg.media);
+  else if (rawMsg?.media) candidates.push(rawMsg.media);
+
+  for (const candidate of candidates) {
+    const url = candidate?.url || candidate?.payload?.url || candidate?.mediaUrl || candidate?.href || '';
+    if (!url) continue;
+    const rawType = String(candidate?.type || candidate?.mediaType || candidate?.kind || '').toLowerCase();
+    const type = /audio|voice|ptt/.test(rawType)
+      ? 'audio'
+      : /image|photo|sticker|gif/.test(rawType)
+        ? 'imagen'
+        : /video|reel|mp4/.test(rawType)
+          ? 'video'
+          : 'archivo';
+    return { type, url: String(url), name: candidate?.name || candidate?.fileName || undefined };
+  }
+
+  if (rawMsg?.attachmentUrl) {
+    const rawType = String(rawMsg.attachmentType || '').toLowerCase();
+    const type = rawType === 'audio' ? 'audio' : rawType === 'image' ? 'imagen' : rawType === 'video' ? 'video' : 'archivo';
+    return { type, url: String(rawMsg.attachmentUrl) };
+  }
+
+  return undefined;
 }
 
 export function normalizeWebhookEvent(envelope: any): {
@@ -52,6 +89,8 @@ export function normalizeWebhookEvent(envelope: any): {
     rawMsg?.body || 
     rawMsg?.content || ''
   );
+
+  const attachment = extractZernioAttachment(rawMsg);
 
   const id = String(rawMsg?.id || rawMsg?.platformMessageId || rawMsg?.wamid || eventId);
   const platformMessageId = rawMsg?.platformMessageId || rawMsg?.wamid;
@@ -96,6 +135,7 @@ export function normalizeWebhookEvent(envelope: any): {
       rawConv?.participantAvatar,
     direction,
     text,
+    attachment,
     timestamp: envelope?.timestamp ? new Date(envelope.timestamp).getTime() : Date.now(),
     status: 
       event === 'message.delivered' ? 'delivered' :

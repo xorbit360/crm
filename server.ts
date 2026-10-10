@@ -776,7 +776,8 @@ async function sendEvolutionMediaMessage(
         method: 'POST',
         body: {
           number: recipient,
-          audio: cleanMedia
+          audio: cleanMedia,
+          encoding: true
         },
         timeoutMs: 20000
       });
@@ -2234,12 +2235,23 @@ async function createServer() {
       if (!currentDB.messagesHistory) currentDB.messagesHistory = {};
       if (!currentDB.messagesHistory[cleanPhone]) currentDB.messagesHistory[cleanPhone] = [];
 
+      const zAtt: any = (msg as any).attachment || undefined;
+      const zAttType: string | undefined = zAtt?.type;
+      const socialDisplayText = msg.text || (zAttType === 'audio' ? '🎤 [Audio de voz]' : (zAttType === 'imagen' ? '📷 [Imagen]' : (zAttType === 'video' ? '🎥 [Video]' : (zAtt ? '📎 [Archivo]' : msg.text))));
+      const socialAttachment = zAtt && zAtt.url ? {
+        name: zAtt.name || (zAttType === 'audio' ? 'Nota_de_voz.ogg' : (zAttType === 'imagen' ? 'Imagen.jpg' : (zAttType === 'video' ? 'Video.mp4' : 'Archivo'))),
+        type: zAttType,
+        url: zAtt.url,
+        size: zAttType === 'audio' ? 'Audio' : (zAttType === 'imagen' ? 'Imagen' : (zAttType === 'video' ? 'Video' : 'Archivo'))
+      } : undefined;
+
       currentDB.messagesHistory[cleanPhone].push({
         id: msg.id || undefined,
         role: msg.direction === 'outgoing' ? 'agent' : 'client',
         source: `social_${socialPlatform || 'omnichannel'}`,
         fromMobile: msg.direction === 'outgoing',
-        text: msg.text,
+        text: socialDisplayText,
+        attachment: socialAttachment,
         time: nowStr,
         timestamp: msg.timestamp || Date.now()
       });
@@ -2283,7 +2295,7 @@ async function createServer() {
         return Boolean(c.phone && c.phone.replace(/\D/g, '') === cleanPhone);
       });
       if (chatIdx !== -1) {
-        const updatedChat = { ...currentDB.chats[chatIdx], message: msg.text, time: nowStr, timestamp: Date.now(),
+        const updatedChat = { ...currentDB.chats[chatIdx], message: socialDisplayText, time: nowStr, timestamp: Date.now(),
           channelId: socialPlatform === 'instagram' ? 'instagram' : currentDB.chats[chatIdx].channelId,
           platform: socialPlatform, conversationId: zernioConversationId || currentDB.chats[chatIdx].conversationId,
           externalId: participantId || currentDB.chats[chatIdx].externalId,
@@ -2299,7 +2311,7 @@ async function createServer() {
           id: `CH-${Date.now().toString().slice(-4)}`,
           sender: msg.senderName || `Cliente +${cleanPhone}`,
           phone: `+${cleanPhone}`,
-          message: msg.text,
+          message: socialDisplayText,
           time: nowStr,
           timestamp: Date.now(),
           status: 'en_conversacion',
@@ -4559,6 +4571,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
         if (!currentDB.messagesHistory[cleanPhone]) currentDB.messagesHistory[cleanPhone] = [];
         currentDB.messagesHistory[cleanPhone].push({
           role: 'agent',
+          remoteId: data.key?.id || undefined,
           source: 'mobile',
           fromMobile: true,
           text: displayText,
@@ -4604,6 +4617,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
     if (!currentDB.messagesHistory[cleanPhone]) currentDB.messagesHistory[cleanPhone] = [];
     currentDB.messagesHistory[cleanPhone].push({
       role: 'client',
+      remoteId: data.key?.id || undefined,
       text: incomingDisplayText,
       attachment,
       time: nowStr,
@@ -4770,7 +4784,9 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
         const rawPushName = record.pushName;
         const senderName = (rawPushName && rawPushName !== 'Você' && rawPushName !== 'You') ? rawPushName : `+${cleanPhone}`;
         const { text, isImage, isAudio, isVideo, isDocument } = extractEvolutionMsgTextAndMedia(record.message);
-        const displayText = text || (isImage ? '📷 [Imagen]' : (isAudio ? '🎤 [Audio de voz]' : (isVideo ? '🎥 [Video]' : (isDocument ? '📎 [Archivo]' : ''))));
+        const displayText = text || (fromMe
+          ? (isImage ? '📷 [Imagen enviada]' : (isAudio ? '🎤 [Nota de voz enviada]' : (isVideo ? '🎥 [Video enviado]' : (isDocument ? '📎 [Archivo enviado]' : ''))))
+          : (isImage ? '📷 [Imagen recibida]' : (isAudio ? '🎤 [Nota de voz recibida]' : (isVideo ? '🎥 [Video recibido]' : (isDocument ? '📎 [Archivo recibido]' : '')))));
         if (!displayText) continue;
 
         const timestampMs = record.messageTimestamp
@@ -4811,13 +4827,32 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
         }
 
         if (!currentDB.messagesHistory[cleanPhone]) currentDB.messagesHistory[cleanPhone] = [];
-        const exists = currentDB.messagesHistory[cleanPhone].some((m: any) =>
-          m.text === displayText && (Math.abs((m.timestamp || 0) - timestampMs) < 60000 || m.time === timeStr)
-        );
+        const exists = currentDB.messagesHistory[cleanPhone].some((m: any) => {
+          if (record.key?.id && m.remoteId && m.remoteId === record.key.id) return true;
+          const sameMediaKind = Boolean(
+            (isAudio && m.attachment?.type === 'audio') ||
+            (isImage && m.attachment?.type === 'imagen') ||
+            (isVideo && m.attachment?.type === 'video') ||
+            (isDocument && m.attachment?.type === 'archivo') ||
+            (!isAudio && !isImage && !isVideo && !isDocument && m.text === displayText)
+          );
+          return sameMediaKind && Math.abs((m.timestamp || 0) - timestampMs) < 120000;
+        });
 
         if (!exists) {
+          // Evolution entrega URLs cifradas (.enc) que el navegador no puede
+          // reproducir: se descarga el medio real en base64 antes de guardar.
+          if ((isImage || isAudio || isVideo || isDocument) && recordAttachment) {
+            const mediaRes = await fetchEvolutionMediaBase64(instName, record).catch(() => null);
+            if (mediaRes?.base64) {
+              const mime = mediaRes.mimetype || (isImage ? 'image/jpeg' : (isAudio ? 'audio/ogg' : (isVideo ? 'video/mp4' : 'application/pdf')));
+              recordAttachment.url = `data:${mime};base64,${mediaRes.base64}`;
+              if (mediaRes.fileName) recordAttachment.name = mediaRes.fileName;
+            }
+          }
           currentDB.messagesHistory[cleanPhone].push({
             role: fromMe ? 'assistant' : 'client',
+            remoteId: record.key?.id || undefined,
             text: displayText,
             attachment: recordAttachment,
             time: timeStr,

@@ -1296,7 +1296,12 @@ export default function WhatsappView({
                   time: message.timestamp || message.createdAt || 'Ahora',
                   timestamp: message.timestamp || message.createdAt,
                   source: `social_${conversation.platform}`,
-                  attachment: message.attachments?.[0]
+                  attachment: message.attachments?.[0]?.url || message.attachments?.[0]?.payload?.url || message.attachments?.[0]?.mediaUrl ? {
+                    name: message.attachments[0].name || message.attachments[0].fileName || 'Adjunto',
+                    type: (/audio|voice/i.test(String(message.attachments[0].type || '')) ? 'audio' : (/image|photo|sticker/i.test(String(message.attachments[0].type || '')) ? 'imagen' : (/video|reel/i.test(String(message.attachments[0].type || '')) ? 'video' : 'archivo'))) as any,
+                    url: message.attachments[0].url || message.attachments[0].payload?.url || message.attachments[0].mediaUrl || '',
+                    size: message.attachments[0].size || ''
+                  } : undefined
                 }));
               setMessages(previousMessages => {
                 const currentHistory = previousMessages[historyKey] || [];
@@ -3269,18 +3274,60 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
 
     setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, msg: '🎤 Nota de voz PTT', time: 'Ahora' } : c));
 
-    // Send real message to backend
-    fetch('/api/whatsapp/reply', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        phone: activeChat.phone,
-        type: 'audio',
-        mediaBase64: voiceData.base64,
-        isPtt: true,
-        channelId: activeChat.channelId
-      })
-    }).catch(e => console.error('Error sending audio reply:', e));
+    const isSocialChat = activeChat.platform === 'instagram' || activeChat.platform === 'messenger' || activeChat.channelId === 'instagram' || activeChat.channelId === 'messenger';
+
+    const reportVoiceError = (e: any) => {
+      console.error('Error sending audio reply:', e);
+      const detail = (e instanceof Error ? e.message : 'el canal no confirmó el envío').replace(/zernio/gi, 'canal conectado');
+      setSendError(`No se pudo enviar la nota de voz. ${detail}`);
+    };
+
+    if (isSocialChat) {
+      // Instagram/Messenger: la nota de voz sale por el canal social, no por WhatsApp
+      (async () => {
+        let socialAccountId = activeChat.accountId;
+        if (!socialAccountId) {
+          const accountsResponse = await fetch('/api/zernio/accounts');
+          const accountsPayload: any = accountsResponse.ok ? await accountsResponse.json() : null;
+          socialAccountId = accountsPayload?.data?.find((account: any) => account.platform === (activeChat.platform || 'instagram'))?.id;
+        }
+        const sendResponse = await fetch('/api/zernio/send-message', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            platform: activeChat.platform || 'instagram',
+            conversationId: activeChat.conversationId,
+            recipientPhone: activeChat.externalId || activeChat.phone,
+            participantId: activeChat.participantId || activeChat.externalId || activeChat.phone,
+            participantUsername: activeChat.participantUsername,
+            accountId: socialAccountId,
+            mediaBase64: voiceData.dataUrl,
+            mediaFileName: 'Nota_de_voz.m4a',
+            text: ''
+          })
+        });
+        const sendResult = await sendResponse.json().catch(() => ({}));
+        if (!sendResponse.ok || sendResult.success === false) {
+          throw new Error(sendResult.error || 'El canal no confirmó el envío de la nota de voz');
+        }
+      })().catch(reportVoiceError);
+    } else {
+      // Send real message to backend
+      fetch('/api/whatsapp/reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone: activeChat.phone,
+          type: 'audio',
+          mediaBase64: voiceData.dataUrl || voiceData.base64,
+          isPtt: true,
+          channelId: activeChat.channelId
+        })
+      }).then(async (r) => {
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok || j.success === false) throw new Error(j.error || 'El canal no confirmó el envío de la nota de voz');
+      }).catch(reportVoiceError);
+    }
 
     setShowLiveRecorderInChat(false);
   };
