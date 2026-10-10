@@ -3223,10 +3223,55 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
 
       setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, msg: displayMsg, time: 'Ahora' } : c));
 
-      // Dispatch to WhatsApp backend
+      // Salida por el canal correcto: en Instagram/Messenger el adjunto va por
+      // el canal social; en WhatsApp, por Evolution. El error se muestra en
+      // pantalla (antes quedaba solo en consola y la imagen nunca salia).
       if (activeChat && activeChat.phone) {
-        try {
-          await fetch('/api/whatsapp/reply', {
+        const reportAttachError = (e: any) => {
+          console.error('Error enviando archivo multimedia:', e);
+          const detail = (e instanceof Error ? e.message : 'el canal no confirmó el envío').replace(/zernio/gi, 'canal conectado');
+          setSendError(`No se pudo enviar el archivo. ${detail}`);
+        };
+        const attachPlatform = String(activeChat.platform || '').toLowerCase();
+        const attachChannel = String(activeChat.channelId || '').toLowerCase();
+        const isSocialAttach = ['instagram', 'messenger', 'facebook'].includes(attachPlatform)
+          || ['instagram', 'messenger', 'facebook'].includes(attachChannel)
+          || attachChannel === 'zernio_whatsapp'
+          || Boolean(activeChat.participantUsername)
+          || Boolean(activeChat.accountId?.startsWith('6'));
+        if (isSocialAttach) {
+          (async () => {
+            let socialAccountId = activeChat.accountId;
+            if (!socialAccountId) {
+              const accountsResponse = await fetch('/api/zernio/accounts');
+              const accountsPayload: any = accountsResponse.ok ? await accountsResponse.json() : null;
+              socialAccountId = accountsPayload?.data?.find((account: any) => account.platform === (activeChat.platform || 'instagram'))?.id;
+            }
+            const mediaKind = attachmentType === 'imagen' ? 'image' : attachmentType === 'video' ? 'video' : attachmentType === 'audio' ? 'audio' : 'file';
+            const sendResponse = await fetch('/api/zernio/send-message', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                platform: activeChat.platform || 'instagram',
+                conversationId: activeChat.conversationId,
+                recipientPhone: activeChat.externalId || activeChat.phone,
+                participantId: activeChat.participantId || activeChat.externalId || activeChat.phone,
+                participantUsername: activeChat.participantUsername,
+                accountId: socialAccountId,
+                mediaBase64: base64Data,
+                mediaMimeType: file.type || undefined,
+                mediaFileName: file.name,
+                mediaKind,
+                text: ''
+              })
+            });
+            const sendResult = await sendResponse.json().catch(() => ({}));
+            if (!sendResponse.ok || sendResult.success === false) {
+              throw new Error(sendResult.error || 'El canal no confirmó el envío del archivo');
+            }
+          })().catch(reportAttachError);
+        } else {
+          fetch('/api/whatsapp/reply', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -3237,9 +3282,10 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
               message: displayMsg,
               channelId: activeChat.channelId || userChannelId
             })
-          });
-        } catch (err) {
-          console.error("Error enviando archivo multimedia:", err);
+          }).then(async (r) => {
+            const j = await r.json().catch(() => ({}));
+            if (!r.ok || j.success === false) throw new Error(j.error || 'El canal no confirmó el envío del archivo');
+          }).catch(reportAttachError);
         }
       }
     };

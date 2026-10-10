@@ -28,8 +28,9 @@ export interface OutboundMessageParams {
   text?: string;
   attachmentUrl?: string;
   attachmentType?: 'audio' | 'image' | 'video' | 'file';
-  // Nota de voz grabada en el CRM (base64 o data URL): se sube al canal antes de enviar
+  // Medio grabado/elegido en el CRM (base64 o data URL): se sube al canal antes de enviar
   mediaBase64?: string;
+  mediaKind?: 'audio' | 'image' | 'video' | 'file';
   mediaMimeType?: string;
   mediaFileName?: string;
   // Si se usa plantilla
@@ -219,17 +220,19 @@ export async function enviarMensajeZernio(params: OutboundMessageParams): Promis
   let attachmentUrl = params.attachmentUrl;
   let attachmentType = params.attachmentType;
   if (conversationId && !attachmentUrl && params.mediaBase64) {
+    const kind = params.mediaKind || 'audio';
     const uploaded = await uploadMediaToZernio({
       mediaBase64: params.mediaBase64,
       mediaMimeType: params.mediaMimeType,
       mediaFileName: params.mediaFileName,
-      needsM4a: isMetaSocial
+      kind,
+      needsM4a: isMetaSocial && kind === 'audio'
     });
     if (uploaded.error || !uploaded.publicUrl) {
-      return { success: false, error: uploaded.error || 'No se pudo preparar la nota de voz' };
+      return { success: false, error: uploaded.error || 'No se pudo preparar el archivo' };
     }
     attachmentUrl = uploaded.publicUrl;
-    attachmentType = 'audio';
+    attachmentType = kind;
   }
 
   // CASO A: Conversación existente (POST /v1/inbox/conversations/{id}/messages)
@@ -403,6 +406,7 @@ async function uploadMediaToZernio(params: {
   mediaBase64: string;
   mediaMimeType?: string;
   mediaFileName?: string;
+  kind?: 'audio' | 'image' | 'video' | 'file';
   needsM4a: boolean;
 }): Promise<{ publicUrl?: string; error?: string }> {
   try {
@@ -439,17 +443,24 @@ async function uploadMediaToZernio(params: {
     } else {
       buffer = Buffer.from(base64, 'base64');
     }
-    let ext = mime.includes('mp4') || mime.includes('m4a')
-      ? 'm4a'
-      : mime.includes('mpeg') || mime.includes('mp3')
-        ? 'mp3'
-        : mime.includes('ogg')
-          ? 'ogg'
-          : mime.includes('wav')
-            ? 'wav'
-            : mime.includes('aac')
-              ? 'aac'
-              : 'webm';
+    const kind = params.kind || 'audio';
+    let ext = kind === 'image'
+      ? (mime.includes('png') ? 'png' : mime.includes('webp') ? 'webp' : mime.includes('gif') ? 'gif' : 'jpg')
+      : kind === 'video'
+        ? (mime.includes('quicktime') ? 'mov' : mime.includes('webm') ? 'webm' : 'mp4')
+        : mime.includes('mp4') || mime.includes('m4a')
+          ? 'm4a'
+          : mime.includes('mpeg') || mime.includes('mp3')
+            ? 'mp3'
+            : mime.includes('ogg')
+              ? 'ogg'
+              : mime.includes('wav')
+                ? 'wav'
+                : mime.includes('aac')
+                  ? 'aac'
+                  : kind === 'file'
+                    ? 'bin'
+                    : 'webm';
 
     if (params.needsM4a && !/audio\/(mp4|m4a|aac|x-m4a)/.test(mime)) {
       try {
@@ -462,7 +473,8 @@ async function uploadMediaToZernio(params: {
       }
     }
 
-    const fileName = (params.mediaFileName || `nota_de_voz_${Date.now()}`).replace(/\.[a-z0-9]+$/i, '') + `.${ext}`;
+    const defaultName = kind === 'image' ? `imagen_${Date.now()}` : kind === 'video' ? `video_${Date.now()}` : kind === 'file' ? `archivo_${Date.now()}` : `nota_de_voz_${Date.now()}`;
+    const fileName = (params.mediaFileName || defaultName).replace(/\.[a-z0-9]+$/i, '') + `.${ext}`;
     const presign = await zernioRequest<any>({
       method: 'POST',
       path: '/v1/media/presign',
