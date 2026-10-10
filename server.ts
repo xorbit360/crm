@@ -394,6 +394,42 @@ async function getMediaBuffer(url: string): Promise<Buffer | null> {
   return null;
 }
 
+// Valida la integridad estructural de una imagen antes de enviarla al canal.
+// Un JPEG/PNG/GIF truncado hace que el procesador del canal (libvips) falle
+// con errores crípticos; mejor detectarlo aquí con un mensaje claro.
+function validateImageBuffer(buffer: Buffer, mimeHint = ''): { ok: boolean; reason: string } {
+  if (!buffer || buffer.length < 16) return { ok: false, reason: 'archivo vacío o demasiado pequeño' };
+  const mime = String(mimeHint || '').toLowerCase();
+  const head2 = buffer.readUInt16BE(0);
+  // JPEG: empieza con SOI (FFD8) y termina con EOI (FFD9)
+  if (mime.includes('jpeg') || mime.includes('jpg') || head2 === 0xffd8) {
+    if (head2 !== 0xffd8) return { ok: false, reason: 'no es un JPEG válido' };
+    if (buffer.readUInt16BE(buffer.length - 2) !== 0xffd9) return { ok: false, reason: 'imagen JPEG incompleta (el archivo se cortó)' };
+    return { ok: true, reason: '' };
+  }
+  // PNG: firma de 8 bytes y chunk IEND al final
+  const pngSig = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  if (mime.includes('png') || buffer.subarray(0, 8).equals(pngSig)) {
+    if (buffer.lastIndexOf(Buffer.from('IEND')) < 0) return { ok: false, reason: 'imagen PNG incompleta (el archivo se cortó)' };
+    return { ok: true, reason: '' };
+  }
+  // GIF: "GIF8" ... termina en 0x3B
+  if (mime.includes('gif') || buffer.subarray(0, 3).toString('ascii') === 'GIF') {
+    if (buffer[buffer.length - 1] !== 0x3b) return { ok: false, reason: 'imagen GIF incompleta (el archivo se cortó)' };
+    return { ok: true, reason: '' };
+  }
+  return { ok: true, reason: '' };
+}
+
+// Traduce errores técnicos del canal de WhatsApp a mensajes claros en español.
+function friendlyWhatsappMediaError(raw: string): string {
+  const msg = String(raw || '');
+  if (/vips|premature end|corrupt|truncated|invalid image|unsupported image/i.test(msg)) {
+    return 'La imagen está dañada o incompleta y WhatsApp la rechazó. Prueba con otra foto o vuelve a tomarla.';
+  }
+  return msg;
+}
+
 // ==========================================
 // EVOLUTION API INTEGRATION (VPS MULTI-TENANT)
 // ==========================================
@@ -2778,8 +2814,24 @@ async function createServer() {
         if (evoConfig.isConfigured) {
           if (normalizedType === 'audio' || mediaBase64) {
             const evoMediaType = normalizedType === 'audio' ? 'audio' : (normalizedType === 'imagen' ? 'image' : (normalizedType === 'video' ? 'video' : 'document'));
+            if (evoMediaType === 'image' && mediaBase64) {
+              // La imagen llega tal cual del navegador: si el archivo está
+              // truncado o dañado, el canal lo rechaza con un error técnico.
+              // Se valida aquí para responder algo que el usuario entienda.
+              let checkBuf: Buffer | null = await getMediaBuffer(mediaBase64).catch(() => null);
+              if (!checkBuf && typeof mediaBase64 === 'string') {
+                try {
+                  const rawB64 = mediaBase64.split(',').pop() || '';
+                  if (rawB64.length > 100) checkBuf = Buffer.from(rawB64, 'base64');
+                } catch { checkBuf = null; }
+              }
+              const imgCheck = checkBuf ? validateImageBuffer(checkBuf, detectedMime) : { ok: false, reason: 'no se pudo leer la imagen' };
+              if (!imgCheck.ok) {
+                return res.status(400).json({ success: false, error: `La imagen está dañada o incompleta (${imgCheck.reason}). Elige otra foto o vuelve a tomarla.` });
+              }
+            }
             const evoResult = await sendEvolutionMediaMessage(activeId, targetPhone, evoMediaType, mediaBase64, message || "", effectiveFileName, detectedMime, effectiveRemoteJid);
-            if (!evoResult?.ok) throw new Error(evoResult?.data?.response?.message || evoResult?.data?.message || `Evolution API rechazó el archivo (${evoResult?.status || 'sin estado'})`);
+            if (!evoResult?.ok) throw new Error(friendlyWhatsappMediaError(evoResult?.data?.response?.message || evoResult?.data?.message || `Evolution API rechazó el archivo (${evoResult?.status || 'sin estado'})`));
           } else {
             const evoResult = await sendEvolutionTextMessage(activeId, targetPhone, message || "", effectiveRemoteJid);
             if (!evoResult?.ok) throw new Error(evoResult?.data?.response?.message || evoResult?.data?.message || `Evolution API rechazó el mensaje (${evoResult?.status || 'sin estado'})`);
@@ -3915,6 +3967,88 @@ async function createServer() {
     return Math.round(total * 10000000) / 10000000;
   }
 
+  // Transcribe un audio usando OpenRouter con un modelo económico que sí
+  // acepta entrada de audio (gpt-4o-mini no soporta input_audio). Devuelve el
+  // texto transcrito o null si no fue posible.
+  async function transcribeAudioWithOpenRouter(openRouterKey: string, audioBase64: string, audioMimeType: string): Promise<string | null> {
+    const started = Date.now();
+    const model = 'google/gemini-2.5-flash';
+    const transcribeOnce = async (data: string, format: string): Promise<string | null> => {
+      const oai = new OpenAI({
+        apiKey: openRouterKey,
+        baseURL: 'https://openrouter.ai/api/v1',
+        defaultHeaders: {
+          'HTTP-Referer': 'https://crm.xorbit360.com',
+          'X-Title': 'Xorbit 360'
+        }
+      });
+      const response = await oai.chat.completions.create({
+        model,
+        messages: [
+          { role: 'user', content: [
+            { type: 'text', text: 'Transcribe este audio en español, palabra por palabra. Devuelve SOLO la transcripción, sin comentarios ni formato adicional.' },
+            { type: 'input_audio', input_audio: { data, format } }
+          ] }
+        ],
+        max_tokens: 600,
+        temperature: 0
+      });
+      const text = String(response.choices[0]?.message?.content || '').trim();
+      const usage: any = response.usage || {};
+      logAiCall({ purpose: 'general',
+        provider: 'openrouter',
+        model,
+        prompt: '[transcripción de audio]',
+        status: text ? 'success' : 'error',
+        durationMs: Date.now() - started,
+        tokens: { prompt_tokens: usage.prompt_tokens || 0, completion_tokens: usage.completion_tokens || 0, total_tokens: usage.total_tokens || 0 },
+        response: text
+      });
+      return text || null;
+    };
+    const mime = String(audioMimeType || '').toLowerCase();
+    const format = mime.includes('wav') ? 'wav' : (mime.includes('mp3') || mime.includes('mpeg') ? 'mp3' : 'ogg');
+    try {
+      const direct = await transcribeOnce(audioBase64, format);
+      if (direct) return direct;
+    } catch (e: any) {
+      console.warn('[IA] Transcripción directa falló, reintentando con MP3:', e?.message || String(e));
+    }
+    // Reintento: convertir a MP3 con ffmpeg (los audios de WhatsApp llegan en ogg/opus)
+    if (format !== 'mp3' && format !== 'wav') {
+      try {
+        const mp3Buffer = await convertAudioToMp3(Buffer.from(audioBase64, 'base64'));
+        if (mp3Buffer && mp3Buffer.length > 0) {
+          return await transcribeOnce(mp3Buffer.toString('base64'), 'mp3').catch(() => null);
+        }
+      } catch (e: any) {
+        console.warn('[IA] Conversión a MP3 para transcripción falló:', e?.message || String(e));
+      }
+    }
+    return null;
+  }
+
+  // Convierte cualquier audio a MP3 usando ffmpeg (apoyo para la transcripción).
+  async function convertAudioToMp3(inputBuffer: Buffer): Promise<Buffer> {
+    const tmpDir = os.tmpdir();
+    const randId = Math.random().toString(36).slice(2);
+    const inputPath = path.join(tmpDir, `tr_in_${Date.now()}_${randId}.bin`);
+    const outputPath = path.join(tmpDir, `tr_out_${Date.now()}_${randId}.mp3`);
+    fs.writeFileSync(inputPath, inputBuffer);
+    try {
+      await new Promise<void>((resolve, reject) => {
+        exec(`ffmpeg -i "${inputPath}" -c:a libmp3lame -b:a 64k -ac 1 -ar 16000 "${outputPath}" -y`, (err: any, _stdout: string, stderr: string) => {
+          if (err) return reject(new Error(stderr || String(err)));
+          resolve();
+        });
+      });
+      return fs.readFileSync(outputPath);
+    } finally {
+      try { fs.unlinkSync(inputPath); } catch {}
+      try { fs.unlinkSync(outputPath); } catch {}
+    }
+  }
+
   async function callAIWithProvider(provider: string, customKey: string, promptText: string, mediaBase64: string | null, mediaMimeType: string | null, opts: { purpose?: AiPurpose; modelOverride?: string; maxTokens?: number; temperature?: number } = {}) {
     const expectsJSON = promptText.toLowerCase().includes('json');
     const startTime = Date.now();
@@ -4025,11 +4159,17 @@ async function createServer() {
              image_url: { url: `data:${mediaMimeType};base64,${mediaBase64}` }
            });
         } else if (mediaBase64 && mediaMimeType && mediaMimeType.startsWith('audio/')) {
-           const format = mediaMimeType.includes('wav') ? 'wav' : mediaMimeType.includes('mp3') || mediaMimeType.includes('mpeg') ? 'mp3' : 'ogg';
-           contentPart.push({
-             type: 'input_audio',
-             input_audio: { data: mediaBase64, format }
-           });
+           // gpt-4o-mini no acepta audio directo: se transcribe primero con un
+           // modelo barato que sí entiende audio y se entrega el texto a la IA.
+           try {
+             const transcription = await transcribeAudioWithOpenRouter(customKey, mediaBase64, mediaMimeType);
+             contentPart[0].text += transcription
+               ? `\n[Transcripción del audio del cliente: "${transcription}"]`
+               : `\n[El cliente envió un audio pero no se pudo transcribir; pídele amablemente que te lo escriba.]`;
+           } catch (e: any) {
+             console.error('[IA] Transcripción de audio falló:', e?.message || String(e));
+             contentPart[0].text += `\n[El cliente envió un audio pero no se pudo transcribir; pídele amablemente que te lo escriba.]`;
+           }
         }
 
         messages.push({ role: 'user', content: contentPart });
@@ -4406,6 +4546,7 @@ ${history.length > 0 ? history.slice(-10).map((h: any) => `${h.role === 'client'
 =========================================
 NUEVO MENSAJE ENTRANTE DEL CLIENTE: "${text}"
 ${mediaInfo ? `DATOS ADICIONALES DEL MENSAJE (IMAGEN/AUDIO): ${mediaInfo}` : ''}
+${mediaBase64 ? `NOTA: el mensaje trae el archivo adjunto para que lo analices directamente (si es imagen, obsérvala y responde sobre su contenido; si es audio, ya viene transcrito en el texto).` : ''}
 
 INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
 1. Responde ÚNICAMENTE utilizando la información del "CONTEXTO RECUPERADO" y tu conocimiento sobre este negocio. NO te inventes productos o datos.
