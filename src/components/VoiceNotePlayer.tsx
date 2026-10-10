@@ -270,7 +270,7 @@ export const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({
                   className={`flex-1 rounded-full transition-all duration-150 ${
                     isPlayed
                       ? (isGreenTheme ? 'bg-emerald-300 scale-y-105' : 'bg-blue-400 scale-y-105')
-                      : (isGreenTheme ? 'bg-emerald-800/60 hover:bg-emerald-700' : 'bg-gray-600/60 hover:bg-gray-500')
+                      : (isGreenTheme ? 'bg-white/45 hover:bg-white/70' : 'bg-gray-400/60 hover:bg-gray-300')
                   }`}
                   style={{ height: `${Math.max(15, h)}%` }}
                 />
