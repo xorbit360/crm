@@ -1153,8 +1153,8 @@ type ChatMessage = {
           </button>
         )}
 
-        <div className={`flex-1 overflow-auto relative ${activeModule === 'whatsapp' ? 'p-1 sm:p-2 h-full flex flex-col' : activeModule === 'entrenamiento' ? 'p-2 sm:p-4 lg:p-6' : 'p-3 sm:p-6 lg:p-8'}`}>
-          <div className={`w-full ${activeModule === 'whatsapp' ? 'h-full flex-1 flex flex-col' : 'pb-24 sm:pb-0'}`}>
+        <div className={`flex-1 overflow-auto relative min-w-0 w-full ${activeModule === 'whatsapp' ? 'p-1 sm:p-2 h-full flex flex-col' : activeModule === 'entrenamiento' ? 'p-2 sm:p-4 lg:p-6' : 'p-3 sm:p-6 lg:p-8'}`}>
+          <div className={`w-full min-w-0 ${activeModule === 'whatsapp' ? 'h-full flex-1 flex flex-col' : 'pb-24 sm:pb-0'}`}>
             <Suspense fallback={<ModuleLoading />}>
             {activeModule === 'dashboard' && (
               <div className="animate-fade-in space-y-6">

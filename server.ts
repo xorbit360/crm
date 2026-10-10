@@ -2716,6 +2716,13 @@ async function createServer() {
         !/instagram|messenger|facebook|tiktok/i.test(`${chat?.platform || ''} ${chat?.channelId || ''}`) &&
         String(chat?.phone || '').replace(/\D/g, '') === targetPhone
       );
+      const socialChat = (currentDB.chats || []).find((chat: any) =>
+        /instagram|messenger|facebook/i.test(`${chat?.platform || ''} ${chat?.channelId || ''}`) &&
+        [chat?.phone, chat?.participantId, chat?.externalId].some((value: any) => String(value || '').replace(/\D/g, '') === targetPhone)
+      );
+      if (socialChat) {
+        return res.status(400).json({ success: false, error: 'Este chat es de Instagram/Messenger: la nota de voz debe enviarse por el canal social, no por WhatsApp' });
+      }
       const requestedChannel = String(channelId || '').trim();
       const effectiveRemoteJid = remoteJid || storedChat?.remoteJid || '';
       const activeId = storedChat?.instanceName ||

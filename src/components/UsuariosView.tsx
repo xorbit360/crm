@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Shield, UserCog, MoreVertical, Search, Check, X, Wallet, Save, Plus, Edit3, Trash2, CheckCircle2, Clock, AlertCircle, Sliders, Layers, Crown, Award, Network } from 'lucide-react';
+import { Users, Shield, UserCog, MoreVertical, Search, Check, X, Wallet, Save, Plus, Edit3, Trash2, CheckCircle2, Clock, AlertCircle, Sliders, Layers, Crown, Award, Network, FlaskConical } from 'lucide-react';
 
-type RoleType = 'superadmin' | 'admin' | 'droshipper' | 'lider_networker';
+type RoleType = 'superadmin' | 'admin' | 'droshipper' | 'lider_networker' | 'tester';
 type SubscriptionStatus = 'activo' | 'inactivo' | 'pendiente';
 
 interface UserData {
@@ -190,6 +190,8 @@ export default function UsuariosView({
         return <span className="px-2.5 py-1 bg-red-950/60 text-red-400 border border-red-800 rounded-full text-[11px] font-bold flex items-center gap-1 w-fit"><Shield size={12}/> Super Admin</span>;
       case 'admin':
         return <span className="px-2.5 py-1 bg-blue-950/60 text-blue-400 border border-blue-800 rounded-full text-[11px] font-bold flex items-center gap-1 w-fit"><UserCog size={12}/> Admin</span>;
+      case 'tester':
+        return <span className="px-2.5 py-1 bg-violet-500/20 text-violet-300 border border-violet-500/40 rounded-full text-[11px] font-bold flex items-center gap-1 w-fit"><FlaskConical size={12}/> Tester (Beta)</span>;
       case 'lider_networker':
         return <span className="px-2.5 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-full text-[11px] font-bold flex items-center gap-1 w-fit"><Crown size={12}/> Líder Networker (+10%)</span>;
       case 'droshipper':
@@ -335,6 +337,7 @@ export default function UsuariosView({
                 <option value="todos">Todos los Roles</option>
                 <option value="superadmin">Super Admin</option>
                 <option value="admin">Admin</option>
+                <option value="tester">Tester (Beta)</option>
                 <option value="droshipper">Droshipper</option>
               </select>
             </div>
@@ -543,6 +546,7 @@ export default function UsuariosView({
                     className="w-full bg-black border border-gray-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-gold"
                   >
                     <option value="droshipper">Droshipper</option>
+                    <option value="tester">Tester (Beta)</option>
                     <option value="admin">Administrador</option>
                     <option value="superadmin">Super Admin</option>
                   </select>

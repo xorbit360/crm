@@ -98,6 +98,7 @@
 
 /* Base custom styling for dark and light mode */
 body {
+  overflow-x: hidden;
   background: radial-gradient(circle at top right, rgba(212, 175, 55, 0.055), transparent 32%), var(--surface-0);
   color: var(--text-primary);
   transition: background-color 0.25s ease, color 0.25s ease;

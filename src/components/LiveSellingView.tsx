@@ -158,6 +158,16 @@ export default function LiveSellingView() {
   const [visitorComments, setVisitorComments] = useState<VisitorComment[]>([]);
   const [orders, setOrders] = useState<LiveOrder[]>([]);
   const [tab, setTab] = useState<PanelTab>('config');
+  const [sessionRole, setSessionRole] = useState('');
+  useEffect(() => {
+    let alive = true;
+    fetch('/api/auth/session', { credentials: 'same-origin' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (alive) setSessionRole(String(d?.user?.role || '')); })
+      .catch(() => undefined);
+    return () => { alive = false; };
+  }, []);
+  const canSeeBeta = ['superadmin', 'admin', 'tester'].includes(sessionRole);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -588,13 +598,13 @@ export default function LiveSellingView() {
                     { id: 'metrics', label: 'Metricas', icon: <BarChart3 size={14} /> },
                     { id: 'domain', label: 'Dominio propio', icon: <Globe size={14} /> },
                     { id: 'diagnostico', label: 'Diagnóstico de Conversión', icon: <Gauge size={14} /> },
-                  ] as const).map((t) => (
+                  ] as const).filter((t) => t.id !== 'diagnostico' || canSeeBeta).map((t) => (
                     <button
                       key={t.id}
                       onClick={() => setTab(t.id)}
                       className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition cursor-pointer ${tab === t.id ? 'bg-gold text-black' : 'border border-gray-800 bg-gray-950 text-gray-300 hover:bg-gray-800'}`}
                     >
-                      {t.icon} {t.label}
+                      {t.icon} {t.label}{t.id === 'diagnostico' ? ' · Beta' : ''}
                     </button>
                   ))}
                 </div>
@@ -959,7 +969,7 @@ export default function LiveSellingView() {
                 </div>
               )}
 
-              {tab === 'diagnostico' && (
+              {tab === 'diagnostico' && canSeeBeta && (
                 <div className="pt-5">
                   <DiagnosticoView />
                 </div>

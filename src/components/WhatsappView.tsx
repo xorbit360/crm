@@ -3274,7 +3274,13 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
 
     setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, msg: '🎤 Nota de voz PTT', time: 'Ahora' } : c));
 
-    const isSocialChat = activeChat.platform === 'instagram' || activeChat.platform === 'messenger' || activeChat.channelId === 'instagram' || activeChat.channelId === 'messenger';
+    const socialPlatformValue = String(activeChat.platform || '').toLowerCase();
+    const socialChannelValue = String(activeChat.channelId || '').toLowerCase();
+    const isSocialChat = ['instagram', 'messenger', 'facebook'].includes(socialPlatformValue)
+      || ['instagram', 'messenger', 'facebook'].includes(socialChannelValue)
+      || socialChannelValue === 'zernio_whatsapp'
+      || Boolean(activeChat.participantUsername)
+      || Boolean(activeChat.accountId?.startsWith('6'));
 
     const reportVoiceError = (e: any) => {
       console.error('Error sending audio reply:', e);
@@ -5146,7 +5152,7 @@ ${parametersString}
             </div>
 
             {/* Chat Area */}
-            <div className={`flex-1 flex-col bg-[#0b141a] relative ${mobileView === 'chat' ? 'flex' : 'hidden md:flex'}`}>
+            <div className={`flex-1 flex-col bg-[#0b141a] relative min-w-0 w-full ${mobileView === 'chat' ? 'flex' : 'hidden md:flex'}`}>
                <div className="absolute inset-0 opacity-5 bg-[url('https://static.whatsapp.net/rsrc.php/v3/yO/r/FsWUvqSpTE8.png')] bg-cover bg-center pointer-events-none"></div>
 
                {/* Header */}
@@ -5319,7 +5325,7 @@ ${parametersString}
                         className={`flex ${msg.sender === 'client' ? 'justify-start' : 'justify-end'} mb-1`}
                       >
                          <div
-                           className={`text-[#e9edef] text-sm p-3 rounded-xl max-w-[75%] shadow-sm relative pb-6 ${
+                           className={`text-[#e9edef] text-sm p-3 rounded-xl max-w-[88%] sm:max-w-[75%] min-w-0 shadow-sm relative pb-6 ${
                              msg.sender === 'client'
                                ? 'bg-zinc-900 border border-zinc-800 rounded-tl-none'
                                : 'bg-zinc-800 border border-zinc-700/60 rounded-tr-none'
@@ -5343,7 +5349,7 @@ ${parametersString}
                             {effectiveAttachment && (
                               <div className="mb-2">
                                 {(effectiveAttachment.type === 'imagen' || effectiveAttachment.type === 'image') && (
-                                  <div className="rounded-xl overflow-hidden border border-white/10 bg-black/60 max-w-sm shadow-lg group">
+                                  <div className="rounded-xl overflow-hidden border border-white/10 bg-black/60 w-full max-w-full sm:max-w-sm shadow-lg group">
                                     <div className="relative cursor-pointer overflow-hidden" onClick={() => setSelectedImageLightbox({ url: effectiveAttachment.url, name: effectiveAttachment.name })}>
                                       <img
                                         src={effectiveAttachment.url}
@@ -5374,7 +5380,7 @@ ${parametersString}
                                   </div>
                                 )}
                                 {effectiveAttachment.type === 'video' && (
-                                  <div className="rounded-lg overflow-hidden border border-black/20 bg-black max-w-sm">
+                                  <div className="rounded-lg overflow-hidden border border-black/20 bg-black w-full max-w-full sm:max-w-sm">
                                     <video
                                       src={effectiveAttachment.url}
                                       controls
@@ -5391,11 +5397,11 @@ ${parametersString}
                                     isPtt={true}
                                     title={effectiveAttachment.name || 'Nota de voz PTT'}
                                     sender={msg.sender === 'agent' ? 'agent' : (msg.sender === 'bot' ? 'bot' : 'user')}
-                                    className="w-full max-w-sm my-1"
+                                    className="w-full max-w-full sm:max-w-sm my-1"
                                   />
                                 )}
                                 {(effectiveAttachment.type === 'archivo' || effectiveAttachment.type === 'document' || effectiveAttachment.type === 'pdf') && (
-                                  <div className="p-3 rounded-lg bg-black/40 border border-gray-800 flex items-center justify-between gap-3 w-64 hover:bg-black/50 transition">
+                                  <div className="p-3 rounded-lg bg-black/40 border border-gray-800 flex items-center justify-between gap-3 w-full max-w-64 sm:w-64 hover:bg-black/50 transition">
                                     <div className="flex items-center gap-2.5 min-w-0">
                                       <div className="w-10 h-10 rounded bg-red-500/15 border border-red-500/35 flex items-center justify-center text-red-400 shrink-0">
                                         <FileText size={20} />
@@ -5421,7 +5427,7 @@ ${parametersString}
                             )}
 
                             {cleanText ? (
-                              <div className="whitespace-pre-line leading-relaxed text-left">{cleanText}</div>
+                              <div className="whitespace-pre-line leading-relaxed text-left [overflow-wrap:anywhere]">{cleanText}</div>
                             ) : null}
                             <span className="text-[10px] text-[#8696a0] absolute right-3 bottom-1.5 flex items-center gap-1">
                               {formatLocalTime(msg.timestamp || msg.time)}
