@@ -14,6 +14,7 @@ interface LiveAudioRecorderProps {
   title?: string;
   className?: string;
   isCompact?: boolean;
+  autoStart?: boolean;
 }
 
 export const LiveAudioRecorder: React.FC<LiveAudioRecorderProps> = ({
@@ -21,7 +22,8 @@ export const LiveAudioRecorder: React.FC<LiveAudioRecorderProps> = ({
   onCancel,
   title = 'Grabar Nota de Voz (PTT con Ondas)',
   className = '',
-  isCompact = false
+  isCompact = false,
+  autoStart = false
 }) => {
   const [recordingState, setRecordingState] = useState<'idle' | 'recording' | 'preview' | 'converting'>('idle');
   const [recordingSeconds, setRecordingSeconds] = useState(0);
@@ -43,6 +45,7 @@ export const LiveAudioRecorder: React.FC<LiveAudioRecorderProps> = ({
   const animFrameRef = useRef<number | null>(null);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const startGuardRef = useRef(false);
 
   // Clean up recording & audio context on unmount
   useEffect(() => {
@@ -66,6 +69,8 @@ export const LiveAudioRecorder: React.FC<LiveAudioRecorderProps> = ({
   };
 
   const startRecording = async () => {
+    if (startGuardRef.current) return;
+    startGuardRef.current = true;
     setErrorMessage(null);
     audioChunksRef.current = [];
     setRecordingSeconds(0);
@@ -170,6 +175,18 @@ export const LiveAudioRecorder: React.FC<LiveAudioRecorderProps> = ({
       setRecordingState('idle');
     }
   };
+
+  // Un solo toque: al abrir la grabadora en el chat, empieza a grabar de inmediato.
+  useEffect(() => {
+    if (!autoStart) return;
+    const t = setTimeout(() => { void startRecording(); }, 60);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (recordingState === 'idle') startGuardRef.current = false;
+  }, [recordingState]);
 
   const stopRecording = () => {
     if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);

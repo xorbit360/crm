@@ -5463,7 +5463,8 @@ ${parametersString}
                {showLiveRecorderInChat && (
                  <div className="p-3 bg-[#111b21] border-t border-emerald-500/30 animate-fade-in">
                    <LiveAudioRecorder
-                     onSendVoiceNote={handleSendLiveChatVoiceNote}
+                     autoStart
+                    onSendVoiceNote={handleSendLiveChatVoiceNote}
                      onCancel={() => setShowLiveRecorderInChat(false)}
                      title="Grabar Nota de Voz PTT para WhatsApp"
                    />
