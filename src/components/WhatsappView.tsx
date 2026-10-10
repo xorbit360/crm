@@ -5159,12 +5159,12 @@ ${parametersString}
 
                {/* Header */}
                <div className="h-16 bg-[#202c33] flex items-center justify-between px-4 z-10 shrink-0">
-                  <div className="flex items-center gap-2 cursor-pointer min-w-0">
+                  <div className="flex items-center gap-2 cursor-pointer min-w-0 flex-1">
                     {/* Mobile Back Button */}
                     <button
                       type="button"
                       onClick={() => setMobileView('list')}
-                      className="md:hidden text-[#e9edef] hover:text-white active:bg-white/10 rounded-full p-1.5 -ml-1.5 mr-0.5 transition shrink-0"
+                      className="text-[#e9edef] hover:text-white active:bg-white/10 rounded-full p-1.5 -ml-1.5 mr-0.5 transition shrink-0"
                       title="Volver a la lista de chats"
                       aria-label="Volver a la lista de chats"
                     >
@@ -5207,7 +5207,7 @@ ${parametersString}
                         type="button"
                         onClick={handleTriggerAiReply}
                         disabled={isAiGenerating}
-                        className="flex items-center gap-1.5 text-xs text-zinc-200 bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 rounded-lg border border-zinc-700 transition cursor-pointer select-none font-semibold shadow-sm disabled:opacity-50"
+                        className="flex items-center gap-1.5 text-xs text-zinc-200 bg-zinc-800 hover:bg-zinc-700 px-2.5 sm:px-3 py-1.5 rounded-lg border border-zinc-700 transition cursor-pointer select-none font-semibold shadow-sm disabled:opacity-50 shrink-0"
                         title="Generar y enviar respuesta automática de IA inmediatamente para este cliente"
                       >
                         {isAiGenerating ? (
@@ -5218,7 +5218,7 @@ ${parametersString}
                         ) : (
                           <>
                             <Sparkles size={13} className="text-emerald-400" />
-                            <span className="text-[11px]">⚡ Responder IA</span>
+                            <span className="text-[11px] max-[560px]:hidden">Responder IA</span>
                           </>
                         )}
                       </button>
