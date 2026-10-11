@@ -33,6 +33,7 @@ import {
   loadStateFromNormalizedTables,
 } from './server/normalizedDb.ts';
 import { setupLiveSellingAdminRoutes, setupLiveSellingPublicRoutes } from './server/liveSelling.ts';
+import { setupSocialRoutes } from './server/social.ts';
 import { setupPushRoutes } from './server/push.ts';
 import { setupDiagnosticAdminRoutes, setupDiagnosticPublicRoutes } from './server/diagnostic.ts';
 import { setupZernioRoutes } from './server/zernio/routes.ts';
@@ -2290,6 +2291,7 @@ async function createServer() {
   setupDiagnosticPublicRoutes(app);
   app.use('/api', requireApiSession);
   setupLiveSellingAdminRoutes(app);
+  setupSocialRoutes(app);
   setupPushRoutes(app);
   setupDiagnosticAdminRoutes(app);
 

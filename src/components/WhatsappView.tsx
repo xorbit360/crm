@@ -14,6 +14,7 @@ const FidelizacionView = React.lazy(() => import('./FidelizacionView'));
 const CampanasView = React.lazy(() => import('./CampanasView'));
 const CitasView = React.lazy(() => import('./CitasView'));
 const ComentariosSocialesView = React.lazy(() => import('./ComentariosSocialesView'));
+const SocialView = React.lazy(() => import('./SocialView'));
 const ClientesView = React.lazy(() => import('./ClientesView'));
 const PedidosView = React.lazy(() => import('./PedidosView'));
 const AlertasView = React.lazy(() => import('./AlertasView'));
@@ -10405,7 +10406,7 @@ ${parametersString}
         <div className="pt-4"><CatalogoView /></div>
       )}
       {currentViewTab === 'comentarios_sociales' && (
-        <div className="pt-4"><ComentariosSocialesView /></div>
+        <div className="pt-4"><SocialView /></div>
       )}
       {currentViewTab === 'reportes' && (
         <div className="pt-4"><ReportesView businessType={businessType} currentUser={currentUser} /></div>

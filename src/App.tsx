@@ -28,6 +28,8 @@ const ConfiguracionGeneralView = lazy(() => import('./components/ConfiguracionGe
 const ProyectosView = lazy(() => import('./components/ProyectosView'));
 const LiveSellingView = lazy(() => import('./components/LiveSellingView'));
 const HerramientasTarjetasView = lazy(() => import('./components/HerramientasTarjetasView'));
+const DifusionesView = lazy(() => import('./components/DifusionesView'));
+import PushPrompt from './components/PushPrompt';
 
 function ModuleLoading() {
   return (
@@ -422,6 +424,7 @@ type ChatMessage = {
     { id: 'mcp_api' as ModuleId, label: t.mcp_api || 'MCP y API', icon: <Terminal size={18} /> },
     { id: 'dominio' as ModuleId, label: t.dominio || 'Dominio Personalizado', icon: <Globe size={18} /> },
     { id: 'usuarios' as ModuleId, label: t.usuarios, icon: <Users size={18} />, reqRole: ['superadmin', 'admin'] },
+    { id: 'difusiones' as ModuleId, label: 'Difusiones', icon: <Megaphone size={18} />, reqRole: ['superadmin'] },
     { id: 'automatizaciones' as ModuleId, label: t.automatizaciones, icon: <Network size={18} /> },
     { id: 'integraciones' as ModuleId, label: t.integraciones, icon: <Link size={18} /> },
   ];
@@ -658,6 +661,7 @@ type ChatMessage = {
 
   return (
     <div className="flex h-screen bg-black text-gray-100 overflow-hidden font-sans">
+      <PushPrompt />
 
       {/* Sidebar Mobile Backdrop */}
       {isSidebarOpen && (
@@ -762,7 +766,7 @@ type ChatMessage = {
                   <div className="space-y-1">
                     {[
                       { id: 'conversaciones', label: 'Conversaciones', icon: <MessageCircle size={16} /> },
-                      { id: 'comentarios_sociales', label: 'Comentarios Redes', icon: <MessageSquare size={16} /> },
+                      { id: 'comentarios_sociales', label: 'Social', icon: <MessageSquare size={16} /> },
                       { id: 'clientes', label: 'Clientes', icon: <Users size={16} /> },
                       { id: 'pedidos', label: 'Pedidos', icon: <Package size={16} /> },
                       { id: 'fidelizacion', label: 'Fidelización', icon: <HeartHandshake size={16} /> },
@@ -1458,6 +1462,9 @@ type ChatMessage = {
                 initialTab="mcp_api"
                 currentUser={user}
               />
+            )}
+            {activeModule === 'difusiones' && (
+              <DifusionesView />
             )}
             {activeModule === 'herramientas' && (
               <HerramientasTarjetasView

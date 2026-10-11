@@ -1,0 +1,466 @@
+import React, { useEffect, useState } from 'react';
+import {
+  MessageCircle, MessageSquare, Camera, AtSign, Link2, Filter,
+  Send, Zap, Plus, Trash2, Calendar, BarChart3, RefreshCw,
+  Check, X, Sparkles, ChevronLeft, Power,
+} from 'lucide-react';
+
+type TabId = 'bandeja' | 'automatizaciones' | 'contenido';
+
+const ORIGIN_META: Record<string, { label: string; icon: React.ReactNode; cls: string }> = {
+  dm: { label: 'DM', icon: <MessageCircle size={12} />, cls: 'bg-blue-500/15 text-blue-300 border-blue-500/30' },
+  comment: { label: 'Comentario', icon: <MessageSquare size={12} />, cls: 'bg-amber-500/15 text-amber-300 border-amber-500/30' },
+  story_reply: { label: 'Historia', icon: <Camera size={12} />, cls: 'bg-purple-500/15 text-purple-300 border-purple-500/30' },
+  mention: { label: 'Mención', icon: <AtSign size={12} />, cls: 'bg-pink-500/15 text-pink-300 border-pink-500/30' },
+  referral: { label: 'Referido', icon: <Link2 size={12} />, cls: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' },
+};
+
+function OriginBadge({ origin }: { origin: string }) {
+  const m = ORIGIN_META[origin] || ORIGIN_META.dm;
+  return (
+    <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full border ${m.cls}`}>
+      {m.icon}{m.label}
+    </span>
+  );
+}
+
+const inputCls = 'w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-gold/60';
+const btnGold = 'inline-flex items-center gap-2 bg-gold text-black text-sm font-semibold px-4 py-2 rounded-lg hover:brightness-110 disabled:opacity-50';
+
+/* ================= BANDEJA ================= */
+function Bandeja() {
+  const [threads, setThreads] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('all');
+  const [selected, setSelected] = useState<any>(null);
+  const [reply, setReply] = useState('');
+  const [sending, setSending] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const r = await fetch('/api/social/threads');
+      const j = await r.json();
+      if (j.success) setThreads(j.threads || []);
+    } catch { /* noop */ }
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, []);
+
+  const filtered = threads.filter((t) =>
+    filter === 'all' ? true : t.origins.includes(filter));
+
+  const sendReply = async (toDM = false) => {
+    if (!selected || !reply.trim() || sending) return;
+    setSending(true);
+    try {
+      const r = await fetch(`/api/social/threads/${encodeURIComponent(selected.id)}/reply${toDM ? '?toDM=1' : ''}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: reply }),
+      });
+      const j = await r.json();
+      if (j.success) { setReply(''); await load(); }
+      else alert(j.error || 'No se pudo enviar');
+    } catch { alert('Error de red'); }
+    setSending(false);
+  };
+
+  const moveToDM = async () => {
+    if (!selected || !reply.trim() || sending) return;
+    setSending(true);
+    try {
+      const r = await fetch(`/api/social/threads/${encodeURIComponent(selected.id)}/to-dm`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: reply }),
+      });
+      const j = await r.json();
+      if (j.success) { setReply(''); alert('DM privado enviado 📩'); await load(); }
+      else alert(j.error || 'No se pudo enviar el DM');
+    } catch { alert('Error de red'); }
+    setSending(false);
+  };
+
+  if (selected) {
+    const isCommentOnly = !selected.origins.includes('dm');
+    return (
+      <div className="flex flex-col h-[62vh] bg-gray-950 rounded-xl border border-gray-800">
+        <div className="flex items-center gap-3 p-3 border-b border-gray-800">
+          <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-white"><ChevronLeft size={20} /></button>
+          <div className="w-9 h-9 rounded-full bg-gold/20 flex items-center justify-center text-gold font-bold">
+            {(selected.personName || '?')[0]?.toUpperCase()}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-semibold text-gray-100 truncate">{selected.personName}</div>
+            <div className="flex gap-1 mt-0.5">{selected.origins.map((o: string) => <OriginBadge key={o} origin={o} />)}</div>
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto p-3 space-y-2">
+          {selected.messages.map((m: any) => (
+            <div key={m.id} className={`flex ${m.fromMe ? 'justify-end' : 'justify-start'}`}>
+              <div className={`max-w-[80%] rounded-xl px-3 py-2 text-sm ${m.fromMe ? 'bg-gold/90 text-black' : 'bg-gray-800 text-gray-100'}`}>
+                {!m.fromMe && <div className="mb-1"><OriginBadge origin={m.origin} /></div>}
+                {m.postRef?.postTitle && <div className="text-[11px] opacity-70 mb-1">📌 {m.postRef.postTitle}</div>}
+                <div>{m.text}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="p-3 border-t border-gray-800">
+          <div className="flex gap-2">
+            <input value={reply} onChange={(e) => setReply(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && sendReply()}
+              placeholder={isCommentOnly ? 'Responder como comentario público…' : 'Escribir mensaje…'} className={inputCls} />
+            <button onClick={() => sendReply()} disabled={sending} className={btnGold}><Send size={15} /></button>
+          </div>
+          {isCommentOnly && (
+            <button onClick={moveToDM} disabled={sending || !reply.trim()}
+              className="mt-2 text-xs text-blue-300 hover:text-blue-200 inline-flex items-center gap-1">
+              <MessageCircle size={12} /> Pasar a DM privado con este mensaje
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
+        <Filter size={14} className="text-gray-500" />
+        {['all', 'dm', 'comment', 'story_reply', 'mention', 'referral'].map((f) => (
+          <button key={f} onClick={() => setFilter(f)}
+            className={`text-xs px-2.5 py-1 rounded-full border ${filter === f ? 'bg-gold/15 text-gold border-gold/40' : 'text-gray-400 border-gray-700 hover:border-gray-500'}`}>
+            {f === 'all' ? 'Todos' : ORIGIN_META[f]?.label || f}
+          </button>
+        ))}
+        <button onClick={load} className="ml-auto text-gray-400 hover:text-white"><RefreshCw size={15} className={loading ? 'animate-spin' : ''} /></button>
+      </div>
+      {loading ? <div className="text-sm text-gray-500 py-8 text-center">Cargando bandeja…</div>
+        : filtered.length === 0 ? (
+          <div className="text-sm text-gray-500 py-8 text-center">Sin conversaciones todavía.<br />Los DMs, comentarios, historias y menciones aparecerán aquí.</div>
+        ) : (
+          <div className="space-y-2">
+            {filtered.map((t) => (
+              <button key={t.id} onClick={() => setSelected(t)}
+                className="w-full text-left bg-gray-950 border border-gray-800 rounded-xl p-3 hover:border-gold/40 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gold/20 flex items-center justify-center text-gold font-bold shrink-0">
+                    {(t.personName || '?')[0]?.toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-gray-100 truncate">{t.personName}</span>
+                      <span className="text-[10px] text-gray-500 uppercase">{t.platform}</span>
+                    </div>
+                    <div className="text-xs text-gray-400 truncate mt-0.5">
+                      {t.messages[t.messages.length - 1]?.text || '—'}
+                    </div>
+                    <div className="flex gap-1 mt-1">{t.origins.map((o: string) => <OriginBadge key={o} origin={o} />)}</div>
+                  </div>
+                  {t.unread > 0 && <span className="bg-gold text-black text-[11px] font-bold rounded-full w-5 h-5 flex items-center justify-center">{t.unread}</span>}
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+    </div>
+  );
+}
+
+/* ================= AUTOMATIZACIONES ================= */
+function Automatizaciones() {
+  const [accounts, setAccounts] = useState<any[]>([]);
+  const [automations, setAutomations] = useState<any[]>([]);
+  const [accountId, setAccountId] = useState('');
+  const [showNew, setShowNew] = useState(false);
+  const [form, setForm] = useState({ type: 'comment_to_dm', name: '', keywords: '', dmMessage: '', commentReply: '' });
+  const [icePrompts, setIcePrompts] = useState<string[]>(['', '', '', '']);
+  const [saving, setSaving] = useState(false);
+
+  const load = async () => {
+    try {
+      const ra = await fetch('/api/social/accounts');
+      const ja = await ra.json();
+      if (ja.success && ja.accounts?.length) {
+        setAccounts(ja.accounts);
+        setAccountId((p) => p || String(ja.accounts[0].id || ja.accounts[0].accountId || ''));
+      }
+      const rb = await fetch('/api/social/automations');
+      const jb = await rb.json();
+      if (jb.success) setAutomations(jb.automations || []);
+    } catch { /* noop */ }
+  };
+  useEffect(() => { load(); }, []);
+
+  const create = async () => {
+    if (!accountId || !form.dmMessage.trim()) { alert('Elige cuenta y escribe el mensaje'); return; }
+    setSaving(true);
+    try {
+      const r = await fetch('/api/social/automations', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, accountId, keywords: form.keywords.split(',').map((s) => s.trim()).filter(Boolean) }),
+      });
+      const j = await r.json();
+      if (j.success) { setShowNew(false); setForm({ type: 'comment_to_dm', name: '', keywords: '', dmMessage: '', commentReply: '' }); await load(); }
+      else alert(j.error || 'No se pudo crear');
+    } catch { alert('Error de red'); }
+    setSaving(false);
+  };
+
+  const toggle = async (a: any) => {
+    try {
+      const r = await fetch(`/api/social/automations/${encodeURIComponent(a.id)}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: !a.isActive }),
+      });
+      const j = await r.json();
+      if (j.success) await load(); else alert(j.error || 'No se pudo cambiar');
+    } catch { alert('Error de red'); }
+  };
+
+  const remove = async (a: any) => {
+    if (!confirm('¿Eliminar esta automatización?')) return;
+    await fetch(`/api/social/automations/${encodeURIComponent(a.id)}`, { method: 'DELETE' });
+    await load();
+  };
+
+  const saveIce = async () => {
+    if (!accountId) return;
+    setSaving(true);
+    try {
+      const r = await fetch('/api/social/automations', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'ice_breakers', accountId, prompts: icePrompts.filter((p) => p.trim()) }),
+      });
+      const j = await r.json();
+      if (j.success) { alert('Ice breakers guardados ✅'); await load(); }
+      else alert(j.error || 'No se pudo guardar');
+    } catch { alert('Error de red'); }
+    setSaving(false);
+  };
+
+  const TYPE_LABEL: Record<string, string> = {
+    comment_to_dm: 'Comment-to-DM', story_mention: 'Mención en historia', story_reply: 'Respuesta a historia', ice_breakers: 'Ice breakers',
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 flex-wrap">
+        <select value={accountId} onChange={(e) => setAccountId(e.target.value)} className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100">
+          {accounts.map((a) => <option key={a.id || a.accountId} value={a.id || a.accountId}>@{a.username || a.name} ({a.platform})</option>)}
+        </select>
+        <button onClick={() => setShowNew(!showNew)} className={btnGold}><Plus size={15} /> Nueva automatización</button>
+      </div>
+
+      {showNew && (
+        <div className="bg-gray-950 border border-gray-800 rounded-xl p-4 space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className={inputCls}>
+              <option value="comment_to_dm">💬 Comment-to-DM (palabra clave → DM)</option>
+              <option value="story_mention">📸 Mención en historia → DM</option>
+              <option value="story_reply">↩️ Respuesta a historia → DM</option>
+            </select>
+            <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Nombre (ej. Promo zapatos)" className={inputCls} />
+          </div>
+          {form.type === 'comment_to_dm' && (
+            <input value={form.keywords} onChange={(e) => setForm({ ...form, keywords: e.target.value })}
+              placeholder="Palabras clave separadas por coma (ej. precio, info, quiero)" className={inputCls} />
+          )}
+          <textarea value={form.dmMessage} onChange={(e) => setForm({ ...form, dmMessage: e.target.value })} rows={2}
+            placeholder="Mensaje del DM — puedes usar {{first_name}} (ej. ¡Hola {{first_name}}! Aquí va tu info 👇)" className={inputCls} />
+          {form.type === 'comment_to_dm' && (
+            <input value={form.commentReply} onChange={(e) => setForm({ ...form, commentReply: e.target.value })}
+              placeholder="Respuesta pública opcional (ej. ¡Revisa tus DMs! 📩)" className={inputCls} />
+          )}
+          <div className="flex gap-2">
+            <button onClick={create} disabled={saving} className={btnGold}><Zap size={15} /> Activar</button>
+            <button onClick={() => setShowNew(false)} className="text-sm text-gray-400 px-3">Cancelar</button>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-gray-950 border border-gray-800 rounded-xl p-4">
+        <div className="text-sm font-semibold text-gray-100 mb-1 flex items-center gap-2"><Sparkles size={15} className="text-gold" /> Ice breakers (saludo inicial de Instagram)</div>
+        <p className="text-xs text-gray-500 mb-3">Hasta 4 preguntas que aparecen al abrir el chat. Máx 80 caracteres c/u.</p>
+        <div className="space-y-2">
+          {icePrompts.map((p, i) => (
+            <input key={i} value={p} maxLength={80} onChange={(e) => { const c = [...icePrompts]; c[i] = e.target.value; setIcePrompts(c); }}
+              placeholder={`Pregunta ${i + 1} (ej. ¿Qué producto buscas?)`} className={inputCls} />
+          ))}
+        </div>
+        <button onClick={saveIce} disabled={saving} className={`${btnGold} mt-3`}><Check size={15} /> Guardar ice breakers</button>
+      </div>
+
+      <div className="space-y-2">
+        {automations.map((a) => (
+          <div key={a.id} className="bg-gray-950 border border-gray-800 rounded-xl p-3 flex items-center gap-3">
+            <button onClick={() => toggle(a)} title={a.isActive ? 'Pausar' : 'Activar'}
+              className={`w-10 h-6 rounded-full relative transition-colors ${a.isActive ? 'bg-emerald-500' : 'bg-gray-700'}`}>
+              <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${a.isActive ? 'left-[18px]' : 'left-0.5'}`} />
+            </button>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-semibold text-gray-100">{a.name}</div>
+              <div className="text-xs text-gray-500">{TYPE_LABEL[a.type] || a.type}{a.keywords?.length ? ` · "${a.keywords.join(', ')}"` : ''}</div>
+            </div>
+            <button onClick={() => remove(a)} className="text-gray-500 hover:text-red-400"><Trash2 size={15} /></button>
+          </div>
+        ))}
+        {automations.length === 0 && <div className="text-sm text-gray-500 text-center py-6">Sin automatizaciones. Crea la primera arriba 👆</div>}
+      </div>
+    </div>
+  );
+}
+
+/* ================= CONTENIDO ================= */
+function Contenido() {
+  const [accounts, setAccounts] = useState<any[]>([]);
+  const [sel, setSel] = useState<string[]>([]);
+  const [content, setContent] = useState('');
+  const [scheduledFor, setScheduledFor] = useState('');
+  const [scheduled, setScheduled] = useState<any[]>([]);
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [publishing, setPublishing] = useState(false);
+  const [refCode, setRefCode] = useState('');
+  const [refMsg, setRefMsg] = useState('');
+  const [refUrl, setRefUrl] = useState('');
+
+  const load = async () => {
+    try {
+      const ra = await fetch('/api/social/accounts');
+      const ja = await ra.json();
+      if (ja.success) setAccounts(ja.accounts || []);
+      const rs = await fetch('/api/social/scheduled');
+      const js = await rs.json();
+      if (js.success) setScheduled(js.data?.posts || js.data || []);
+    } catch { /* noop */ }
+  };
+  useEffect(() => { load(); }, []);
+
+  const toggleSel = (id: string) => setSel((p) => p.includes(id) ? p.filter((x) => x !== id) : [...p, id]);
+
+  const publish = async () => {
+    if (!content.trim() || !sel.length) { alert('Escribe el contenido y elige al menos una cuenta'); return; }
+    setPublishing(true);
+    try {
+      const platforms = sel.map((id) => accounts.find((a) => String(a.id || a.accountId) === id)?.platform || 'instagram');
+      const r = await fetch('/api/social/publish', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content, accountIds: sel, platforms,
+          publishNow: !scheduledFor, scheduledFor: scheduledFor || undefined,
+          timezone: 'America/Bogota',
+        }),
+      });
+      const j = await r.json();
+      if (j.success) { setContent(''); setScheduledFor(''); alert(scheduledFor ? 'Programado ✅' : 'Publicado ✅'); await load(); }
+      else alert(j.error || 'No se pudo publicar');
+    } catch { alert('Error de red'); }
+    setPublishing(false);
+  };
+
+  const loadAnalytics = async () => {
+    try {
+      const r = await fetch(`/api/social/analytics?period=30d${sel[0] ? `&accountId=${sel[0]}` : ''}`);
+      const j = await r.json();
+      if (j.success) setAnalytics(j.data);
+      else alert(j.error || 'No se pudo cargar analítica');
+    } catch { alert('Error de red'); }
+  };
+
+  const createRef = async () => {
+    if (!sel[0] || !refCode.trim()) { alert('Elige una cuenta y escribe el código'); return; }
+    try {
+      const r = await fetch('/api/social/reflinks', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accountId: sel[0], ref: refCode, message: refMsg || undefined }),
+      });
+      const j = await r.json();
+      if (j.success) setRefUrl(j.url);
+      else alert(j.error || 'No se pudo crear');
+    } catch { alert('Error de red'); }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-gray-950 border border-gray-800 rounded-xl p-4 space-y-3">
+        <div className="text-sm font-semibold text-gray-100 flex items-center gap-2"><Calendar size={15} className="text-gold" /> Publicar / programar</div>
+        <div className="flex gap-2 flex-wrap">
+          {accounts.map((a) => {
+            const id = String(a.id || a.accountId);
+            const on = sel.includes(id);
+            return (
+              <button key={id} onClick={() => toggleSel(id)}
+                className={`text-xs px-2.5 py-1.5 rounded-full border flex items-center gap-1 ${on ? 'bg-gold/15 text-gold border-gold/40' : 'text-gray-400 border-gray-700'}`}>
+                {on && <Check size={12} />}@{a.username || a.name} <span className="opacity-60">({a.platform})</span>
+              </button>
+            );
+          })}
+        </div>
+        <textarea value={content} onChange={(e) => setContent(e.target.value)} rows={3} placeholder="¿Qué quieres publicar hoy? ✍️" className={inputCls} />
+        <div className="flex gap-2 flex-wrap items-center">
+          <input type="datetime-local" value={scheduledFor} onChange={(e) => setScheduledFor(e.target.value)} className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100" />
+          <button onClick={publish} disabled={publishing} className={btnGold}><Send size={15} /> {scheduledFor ? 'Programar' : 'Publicar ahora'}</button>
+        </div>
+      </div>
+
+      {scheduled.length > 0 && (
+        <div className="bg-gray-950 border border-gray-800 rounded-xl p-4">
+          <div className="text-sm font-semibold text-gray-100 mb-2">Programados ({scheduled.length})</div>
+          <div className="space-y-1.5">
+            {scheduled.slice(0, 10).map((p: any, i: number) => (
+              <div key={i} className="text-xs text-gray-400 flex justify-between gap-2">
+                <span className="truncate">{p.content || p.text || '(sin texto)'}</span>
+                <span className="shrink-0 text-gold">{p.scheduledFor || p.scheduled_for || ''}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="bg-gray-950 border border-gray-800 rounded-xl p-4">
+        <div className="text-sm font-semibold text-gray-100 mb-2 flex items-center gap-2"><BarChart3 size={15} className="text-gold" /> Analítica social</div>
+        <button onClick={loadAnalytics} className="text-xs bg-gray-800 hover:bg-gray-700 text-gray-200 px-3 py-1.5 rounded-lg">Cargar últimos 30 días</button>
+        {analytics && <pre className="mt-2 text-[11px] text-gray-400 bg-black/40 rounded-lg p-3 overflow-x-auto max-h-48">{JSON.stringify(analytics, null, 1).slice(0, 1500)}</pre>}
+      </div>
+
+      <div className="bg-gray-950 border border-gray-800 rounded-xl p-4 space-y-3">
+        <div className="text-sm font-semibold text-gray-100 flex items-center gap-2"><Link2 size={15} className="text-gold" /> Enlace ig.me de referido</div>
+        <div className="grid grid-cols-2 gap-2">
+          <input value={refCode} onChange={(e) => setRefCode(e.target.value)} placeholder="Código (ej. promo-navidad)" className={inputCls} />
+          <input value={refMsg} onChange={(e) => setRefMsg(e.target.value)} placeholder="Mensaje de bienvenida (opcional)" className={inputCls} />
+        </div>
+        <button onClick={createRef} className={btnGold}><Plus size={15} /> Crear enlace</button>
+        {refUrl && (
+          <div className="flex items-center gap-2 bg-black/40 rounded-lg p-2.5">
+            <code className="text-xs text-emerald-300 flex-1 break-all">{refUrl}</code>
+            <button onClick={() => navigator.clipboard?.writeText(refUrl)} className="text-xs text-gold hover:underline shrink-0">Copiar</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ================= VISTA PRINCIPAL ================= */
+export default function SocialView() {
+  const [tab, setTab] = useState<TabId>('bandeja');
+  const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
+    { id: 'bandeja', label: 'Bandeja', icon: <MessageCircle size={15} /> },
+    { id: 'automatizaciones', label: 'Automatizaciones', icon: <Zap size={15} /> },
+    { id: 'contenido', label: 'Contenido', icon: <Calendar size={15} /> },
+  ];
+  return (
+    <div>
+      <div className="flex gap-1 mb-4 bg-gray-950 border border-gray-800 rounded-xl p-1">
+        {tabs.map((t) => (
+          <button key={t.id} onClick={() => setTab(t.id)}
+            className={`flex-1 flex items-center justify-center gap-2 text-sm font-medium px-3 py-2 rounded-lg transition-colors ${tab === t.id ? 'bg-gold/15 text-gold' : 'text-gray-400 hover:text-gray-200'}`}>
+            {t.icon}{t.label}
+          </button>
+        ))}
+      </div>
+      {tab === 'bandeja' && <Bandeja />}
+      {tab === 'automatizaciones' && <Automatizaciones />}
+      {tab === 'contenido' && <Contenido />}
+    </div>
+  );
+}
