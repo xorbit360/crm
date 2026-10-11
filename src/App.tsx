@@ -212,12 +212,34 @@ export default function App() {
     }
   }, [user?.email, user?.plan]);
 
-  const [activeModule, setActiveModule] = useState<ModuleId | 'dashboard'>(() => {
+  const [activeModule, setActiveModuleState] = useState<ModuleId | 'dashboard'>(() => {
     try { return (localStorage.getItem('xorbit_active_module') as ModuleId | 'dashboard') || 'herramientas'; } catch { return 'herramientas'; }
   });
   useEffect(() => {
     try { localStorage.setItem('xorbit_active_module', activeModule); } catch {}
   }, [activeModule]);
+  // Navegacion con historial: el boton "atras" vuelve al modulo anterior en vez de salir de la app.
+  // La URL no cambia visiblemente; solo se guarda el modulo en el state del historial.
+  const activeModuleRef = useRef(activeModule);
+  activeModuleRef.current = activeModule;
+  const navigateToModule = (m: ModuleId | 'dashboard') => {
+    if (m === activeModuleRef.current) return;
+    setActiveModuleState(m);
+    try {
+      window.history.pushState({ xorbitModule: m }, '', window.location.pathname + window.location.search);
+    } catch {}
+  };
+  useEffect(() => {
+    try {
+      window.history.replaceState({ xorbitModule: activeModuleRef.current }, '', window.location.pathname + window.location.search);
+    } catch {}
+    const onPopState = (e: PopStateEvent) => {
+      const m = (e.state as any)?.xorbitModule as (ModuleId | 'dashboard' | undefined);
+      if (m && m !== activeModuleRef.current) setActiveModuleState(m);
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
   const isInsideTool = ['whatsapp', 'llamadas', 'email', 'contenido', 'branding', 'mercado', 'landing', 'ads', 'live_selling'].includes(activeModule);
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['herramientas', 'configuracion']);
 
@@ -406,7 +428,7 @@ type ChatMessage = {
        text: aiResponseText,
        isSetupForm: formType
     }]);
-    setActiveModule(nextModule);
+    navigateToModule(nextModule);
   };
 
   const toggleListening = () => {
@@ -610,7 +632,7 @@ type ChatMessage = {
          text: aiResponseText,
          isSetupForm: formType
       }]);
-      setActiveModule(nextModule);
+      navigateToModule(nextModule);
     }, 1000);
   };
 
@@ -651,7 +673,7 @@ type ChatMessage = {
           onRegisterSuccess={(registeredUser) => {
             setUser(registeredUser);
             setCurrentView('app');
-            setActiveModule('dashboard'); if (window.innerWidth < 768) setIsSidebarOpen(false);
+            navigateToModule('dashboard'); if (window.innerWidth < 768) setIsSidebarOpen(false);
           }}
           onGoToLogin={() => setCurrentView('login')}
         />
@@ -716,7 +738,7 @@ type ChatMessage = {
               {!isInsideTool && (
                 <button
                   onClick={() => {
-                    setActiveModule('dashboard'); if (window.innerWidth < 768) setIsSidebarOpen(false);
+                    navigateToModule('dashboard'); if (window.innerWidth < 768) setIsSidebarOpen(false);
                   }}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-sm font-medium ${activeModule === 'dashboard' ? 'bg-gold/10 text-gold border border-gold/30 shadow-[inset_0_0_12px_rgba(212,175,55,0.15)]' : 'text-gray-400 hover:bg-gray-900/60 hover:text-gray-200 border border-transparent'}`}
                 >
@@ -727,7 +749,7 @@ type ChatMessage = {
               {isInsideTool ? (
                 <button
                   onClick={() => {
-                    setActiveModule('herramientas');
+                    navigateToModule('herramientas');
                     if (window.innerWidth < 768) setIsSidebarOpen(false);
                   }}
                   className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-zinc-900/90 hover:bg-gold/15 text-gold border border-gold/30 text-xs font-bold transition-all mb-3 cursor-pointer shadow-sm"
@@ -743,7 +765,7 @@ type ChatMessage = {
                   {/* Group 1: Herramientas */}
                   <button
                     onClick={() => {
-                      setActiveModule('herramientas');
+                      navigateToModule('herramientas');
                       if (window.innerWidth < 768) setIsSidebarOpen(false);
                     }}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-sm font-medium cursor-pointer ${
@@ -1056,7 +1078,7 @@ type ChatMessage = {
             <div className="space-y-1">
               <button
                 onClick={() => {
-                  setActiveModule('configuracion_general');
+                  navigateToModule('configuracion_general');
                   if (window.innerWidth < 768) setIsSidebarOpen(false);
                 }}
                 className={`w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-xl transition-all cursor-pointer ${
@@ -1172,7 +1194,7 @@ type ChatMessage = {
                       if (query) {
                         const found = modules.find(m => m.label.toLowerCase().includes(query));
                         if (found) {
-                          setActiveModule(found.id as any);
+                          navigateToModule(found.id as any);
                         }
                       }
                     }}
@@ -1225,7 +1247,7 @@ type ChatMessage = {
                       <button
                         onClick={() => {
                           setActiveWhatsappTab('configuracion');
-                          setActiveModule('whatsapp');
+                          navigateToModule('whatsapp');
                         }}
                         className="p-3 rounded-xl bg-gray-900/80 hover:bg-emerald-950/40 border border-emerald-500/30 hover:border-emerald-500/60 text-emerald-400 transition-all text-left flex flex-col justify-between space-y-2 group cursor-pointer shadow-sm"
                       >
@@ -1239,7 +1261,7 @@ type ChatMessage = {
 
                       {!hiddenItems.includes('landing') && (
                       <button
-                        onClick={() => setActiveModule('landing')}
+                        onClick={() => navigateToModule('landing')}
                         className="p-3 rounded-xl bg-gray-900/80 hover:bg-blue-950/40 border border-blue-500/30 hover:border-blue-500/60 text-blue-400 transition-all text-left flex flex-col justify-between space-y-2 group cursor-pointer shadow-sm"
                       >
                         <div className="flex items-center justify-between">
@@ -1252,7 +1274,7 @@ type ChatMessage = {
 
                       {!hiddenItems.includes('ads') && (
                       <button
-                        onClick={() => setActiveModule('ads')}
+                        onClick={() => navigateToModule('ads')}
                         className="p-3 rounded-xl bg-gray-900/80 hover:bg-amber-950/40 border border-amber-500/30 hover:border-amber-500/60 text-amber-400 transition-all text-left flex flex-col justify-between space-y-2 group cursor-pointer shadow-sm"
                       >
                         <div className="flex items-center justify-between">
@@ -1265,7 +1287,7 @@ type ChatMessage = {
 
                       {!hiddenItems.includes('branding') && (
                       <button
-                        onClick={() => setActiveModule('branding')}
+                        onClick={() => navigateToModule('branding')}
                         className="p-3 rounded-xl bg-gray-900/80 hover:bg-blue-950/40 border border-blue-500/30 hover:border-blue-500/60 text-blue-400 transition-all text-left flex flex-col justify-between space-y-2 group cursor-pointer shadow-sm"
                       >
                         <div className="flex items-center justify-between">
@@ -1277,7 +1299,7 @@ type ChatMessage = {
                       )}
 
                       <button
-                        onClick={() => setActiveModule('proyectos')}
+                        onClick={() => navigateToModule('proyectos')}
                         className="p-3 rounded-xl bg-gray-900/80 hover:bg-amber-950/40 border border-amber-500/30 hover:border-amber-500/60 text-amber-400 transition-all text-left flex flex-col justify-between space-y-2 group cursor-pointer shadow-sm"
                       >
                         <div className="flex items-center justify-between">
@@ -1288,7 +1310,7 @@ type ChatMessage = {
                       </button>
 
                       <button
-                        onClick={() => setActiveModule('recargas')}
+                        onClick={() => navigateToModule('recargas')}
                         className="p-3 rounded-xl bg-gray-900/80 hover:bg-cyan-950/40 border border-cyan-500/30 hover:border-cyan-500/60 text-cyan-400 transition-all text-left flex flex-col justify-between space-y-2 group cursor-pointer shadow-sm"
                       >
                         <div className="flex items-center justify-between">
@@ -1334,17 +1356,17 @@ type ChatMessage = {
                   <div className="pt-4">
                     <DashboardMetrics
                       currentUser={user}
-                      onNavigateToRecargas={() => setActiveModule('recargas')}
+                      onNavigateToRecargas={() => navigateToModule('recargas')}
                       hiddenItems={hiddenItems}
                     />
                   </div>
                 ) : (
                   <div className="pt-4">
                     <OrganigramaView
-                      onNavigateModule={(mId) => setActiveModule(mId as any)}
+                      onNavigateModule={(mId) => navigateToModule(mId as any)}
                       onNavigateWhatsappTab={(tabId) => {
                         setActiveWhatsappTab(tabId);
-                        setActiveModule('whatsapp');
+                        navigateToModule('whatsapp');
                       }}
                     />
                   </div>
@@ -1363,7 +1385,7 @@ type ChatMessage = {
               />
             )}
             {activeModule === 'landing' && <LandingView activeTab={activeLandingTab} />}
-            {activeModule === 'ads' && <AdsView activeTab={activeAdsTab} onNavigate={(mId) => setActiveModule(mId as any)} />}
+            {activeModule === 'ads' && <AdsView activeTab={activeAdsTab} onNavigate={(mId) => navigateToModule(mId as any)} />}
             {activeModule === 'live_selling' && <LiveSellingView />}
             {activeModule === 'whatsapp' && (
               <WhatsappView
@@ -1469,7 +1491,7 @@ type ChatMessage = {
             {activeModule === 'herramientas' && (
               <HerramientasTarjetasView
                 onSelectTool={(toolId) => {
-                  setActiveModule(toolId as any);
+                  navigateToModule(toolId as any);
                   if (window.innerWidth < 768) setIsSidebarOpen(false);
                 }}
                 hiddenItems={hiddenItems}
