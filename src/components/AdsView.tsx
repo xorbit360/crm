@@ -157,7 +157,7 @@ export default function AdsView({
     {
       id: 'init',
       sender: 'bot',
-      text: "¡Hola! Soy tu Copiloto Traffiker IA. 🤖\n\nPuedo estructurar nuevas campañas directo en el Lanzador de Meta Ads, analizar tus ganchos publicitarios o vigilar tus métricas en tiempo real.\n\nEscribe tus indicaciones o haz clic en un comando rápido de abajo para configurar tus campañas de inmediato:",
+      text: "¡Hola! Soy tu Copiloto Traffiker IA. 🤖\n\nPuedo analizar tus ganchos publicitarios, vigilar tus métricas en tiempo real o ayudarte a impulsar tus mejores publicaciones con Boost.\n\nEscribe tus indicaciones o haz clic en un comando rápido de abajo para configurar tus campañas de inmediato:",
       timestamp: new Date()
     }
   ]);
@@ -195,7 +195,7 @@ export default function AdsView({
         condition: 'greater',
         thresholdValue: 0.40,
         actionType: 'pause',
-        phone: '+57 311 555 4321',
+        phone: '+57 3192392853',
         status: 'ACTIVE',
         createdDate: '2026-07-15'
       },
@@ -207,7 +207,7 @@ export default function AdsView({
         condition: 'less',
         thresholdValue: 3.00,
         actionType: 'notify',
-        phone: '+57 311 555 4321',
+        phone: '+57 3192392853',
         status: 'ACTIVE',
         createdDate: '2026-07-16'
       }
@@ -220,7 +220,7 @@ export default function AdsView({
   const [alertCondition, setAlertCondition] = useState('greater');
   const [alertThreshold, setAlertThreshold] = useState('0.40');
   const [alertAction, setAlertAction] = useState('notify');
-  const [alertPhone, setAlertPhone] = useState('+57 312 987 6543');
+  const [alertPhone, setAlertPhone] = useState('+57 3192392853');
 
   // Trigger Notification Simulation State
   const [activeNotification, setActiveNotification] = useState<{
@@ -242,6 +242,33 @@ export default function AdsView({
   const [showNewRule, setShowNewRule] = useState(false);
   const [newRule, setNewRule] = useState({ name: '', type: 'pause_no_sales', spendUsd: 20, days: 3, cpcSpikePct: 50, roasMin: 3, scalePct: 20, notifyWhatsapp: false, whatsappNumber: '' });
 
+
+  // Numero de WhatsApp para alertas del piloto (configurable)
+  const [apAlertPhone, setApAlertPhone] = useState('');
+  const [apAlertPhoneSaved, setApAlertPhoneSaved] = useState(false);
+
+  const loadApConfig = async () => {
+    try {
+      const r = await fetch('/api/ads/autopilot/config', { credentials: 'include' }).then(r => r.json());
+      if (r?.success && r.alertPhone) setApAlertPhone(r.alertPhone);
+    } catch { /* noop */ }
+  };
+
+  const saveApConfig = async () => {
+    try {
+      const r = await fetch('/api/ads/autopilot/config', {
+        method: 'PUT', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ alertPhone: apAlertPhone }),
+      }).then(r => r.json());
+      if (r?.success) {
+        setApAlertPhone(r.alertPhone);
+        setApAlertPhoneSaved(true);
+        setTimeout(() => setApAlertPhoneSaved(false), 2500);
+      } else alert(r?.error || 'No se pudo guardar.');
+    } catch { alert('Error de conexión.'); }
+  };
+
   const loadAutopilot = async () => {
     setApLoading(true);
     try {
@@ -255,7 +282,7 @@ export default function AdsView({
     setApLoading(false);
   };
 
-  useEffect(() => { if (activeTab === 'metricas') loadAutopilot(); }, [activeTab]);
+  useEffect(() => { if (activeTab === 'metricas') { loadAutopilot(); loadApConfig(); } }, [activeTab]);
 
   const toggleApRule = async (rule: any) => {
     try {
@@ -432,7 +459,7 @@ export default function AdsView({
   };
 
   // Utility to fire a beautiful live popup representing the scheduled WhatsApp notification trigger
-  const showToastNotification = (title: string, message: string, type: 'alert' | 'success' = 'alert', phone = '+57 312 987 6543') => {
+  const showToastNotification = (title: string, message: string, type: 'alert' | 'success' = 'alert', phone = '+57 3192392853') => {
     setActiveNotification({ title, message, phone, type });
     // Sound simulator or standard alert log
     console.log(`[WhatsApp Webhook Triggered] ${title} - ${message} to ${phone}`);
@@ -666,7 +693,7 @@ export default function AdsView({
           replyText = `¡He recibido tu imagen **'${fileName}'**! 🖼️ Analizando composición de diseño...\n\n- **Thumb-Stop Rate Proyectado:** 28% (Muy alto). Excelente contraste y contraste cromático ideal para e-commerce en Colombia.\n- **Sugerencia de Copy Persuasivo:** "Ahorra tiempo y dinero con el mejor humidificador led del mercado. ¡Últimas unidades con Envío Gratis y Pago Contra Entrega en toda Colombia! 🇨🇴"\n\n¿Quieres que configuremos esta imagen como la pieza creativa principal para tu próximo anuncio con IA?`;
           action = { type: 'fill_winning_campaign', label: 'Cargar en Lanzador' };
         } else if (fileType === 'video') {
-          replyText = `¡He recibido tu vídeo **'${fileName}'**! 🎥 Procesando hooks de retención...\n\n- **Gancho Comercial de Entrada:** Excelente encuadre de los primeros 3 segundos. Recomendamos añadir texto centrado con la frase: *"El gadget más vendido de internet llegó a Colombia..."*\n- **Estrategia:** Ubicación recomendada en Reels de Facebook/Instagram y pauta directa en TikTok Spark Ads.\n\n¿Deseas precargar este recurso UGC de inmediato en el Lanzador de Campañas?`;
+          replyText = `¡He recibido tu vídeo **'${fileName}'**! 🎥 Procesando hooks de retención...\n\n- **Gancho Comercial de Entrada:** Excelente encuadre de los primeros 3 segundos. Recomendamos añadir texto centrado con la frase: *"El gadget más vendido de internet llegó a Colombia..."*\n- **Estrategia:** Ubicación recomendada en Reels de Facebook/Instagram y pauta directa en TikTok Spark Ads.\n\n¿Quieres que lo impulsemos con Boost en un clic?`;
           action = { type: 'fill_winning_campaign', label: 'Cargar Vídeo al Lanzador' };
         } else {
           replyText = `¡He recibido tu archivo **'${fileName}'**! 📄 Leyendo pautas de marca...\n\n- **Ajustes Aplicados:** He calibrado los valores sugeridos de presupuesto a **$30.00 USD/diarios** según el presupuesto de adquisición de clientes del archivo.`;
@@ -675,7 +702,7 @@ export default function AdsView({
         replyText = "Analizando métricas de tus campañas activas... 📊 He detectado que tu campaña **'Conversiones - Humidificador Led'** tiene un ROAS excepcional de 4.2x, mientras que **'Tráfico - Inversión Inicial'** tiene un CTR bajo de 0.8% con un CPC de $0.85 USD.\n\n**Propuesta de Optimización Automatizada:**\n1. Incrementar el presupuesto de 'Conversiones' a **$35.00 USD/diarios**.\n2. Pausar la campaña ineficiente **'Tráfico - Inversión Inicial'**.\n\n¿Deseas aplicar esta optimización en tu cuenta publicitaria de Meta ahora mismo?";
         action = { type: 'cbo_optimization', label: 'Aplicar Optimización IA' };
       } else if (lower.includes('crear') || lower.includes('lanzar') || lower.includes('diseñar') || lower.includes('ganadora') || lower.includes('nueva')) {
-        replyText = "He estructurado una campaña optimizada para e-commerce contra entrega utilizando las mejores prácticas de dropshipping: 🚀\n\n- **Nombre:** Campaña Ganadora Dropi - Belleza Premium\n- **Objetivo:** Ventas Directas (`OUTCOME_SALES`)\n- **Presupuesto Diario:** $25.00 USD\n- **Plataformas:** Facebook, Instagram (UGC Reels)\n- **Estrategia:** Mayor Volumen con CBO activado\n- **Público:** Colombia - Intereses: Compras online, Belleza (22-45 años)\n\n¿Quieres que pre-configure estos datos en el Lanzador de Campañas para ver el Payload de Meta API?";
+        replyText = "He estructurado una campaña optimizada para e-commerce contra entrega utilizando las mejores prácticas de dropshipping: 🚀\n\n- **Nombre:** Campaña Ganadora Dropi - Belleza Premium\n- **Objetivo:** Ventas Directas (`OUTCOME_SALES`)\n- **Presupuesto Diario:** $25.00 USD\n- **Plataformas:** Facebook, Instagram (UGC Reels)\n- **Estrategia:** Mayor Volumen con CBO activado\n- **Público:** Colombia - Intereses: Compras online, Belleza (22-45 años)\n\n¿Quieres que lo lancemos con Boost o que el piloto automático lo gestione por ti?";
         action = { type: 'fill_winning_campaign', label: 'Cargar en Lanzador' };
       } else if (lower.includes('reporte') || lower.includes('métricas') || lower.includes('kpi') || lower.includes('analizar')) {
         replyText = "Generando reporte consolidado... 📈\n\n- **Inversión Total:** $350.00 USD\n- **Clics Únicos:** 5,420\n- **CTR Promedio:** 1.82%\n- **CPC Promedio:** $0.06 USD\n- **Conversiones:** 650 compras\n- **ROAS Proyectado:** 3.42x\n\nVe a la pestaña **Métricas KPI & Alertas** para ver el desglose en gráficos completos y configurar alertas inteligentes de WhatsApp.";
@@ -751,7 +778,7 @@ export default function AdsView({
         setChatMessages(prev => [...prev, {
           id: `bot-${Date.now()}`,
           sender: 'bot',
-          text: "🚀 ¡Listo! He configurado todos los parámetros de la campaña ganadora en el **Lanzador de Campañas** de la derecha.\n\nPuedes verificar el **Live Preview del Payload para Meta API** y hacer clic en 'Lanzar en Meta & TikTok' para montarla de inmediato.",
+          text: "🚀 ¡Listo! Esta es la estructura ganadora. Puedes lanzarla con **Boost** en un clic o dejar que el **piloto automático** la gestione por ti desde la pestaña de Métricas.",
           timestamp: new Date()
         }]);
       }
@@ -881,8 +908,8 @@ export default function AdsView({
       {activeTab === 'traffiker' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-          {/* Left Column: Chatbot + Connections Panel (lg:col-span-7) */}
-          <div className="lg:col-span-7 space-y-6 flex flex-col h-full">
+          {/* Chatbot + Connections Panel (ancho completo) */}
+          <div className="lg:col-span-12 space-y-6 flex flex-col h-full">
 
             {/* Connections & Admin Hub (Facebook, Google, Instagram) */}
             <div className="bg-[#090909] border border-gray-800 rounded-2xl p-4 shadow-xl space-y-4">
@@ -1145,130 +1172,6 @@ export default function AdsView({
             </div>
           </div>
 
-          {/* Right Column: Dynamic Ad Launcher & JSON Preview (lg:col-span-5) */}
-          <div className="lg:col-span-5 space-y-6">
-            <div className="bg-[#090909] border border-gray-800 rounded-2xl p-5 shadow-2xl relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-red-500/5 to-transparent pointer-events-none"></div>
-
-              <div className="flex items-center justify-between border-b border-gray-800 pb-3 mb-4">
-                <h3 className="font-bold text-white text-sm flex items-center gap-1.5">
-                  <Sparkles className="text-red-500" size={16} /> Creador & Lanzador de Campañas
-                </h3>
-                <span className="text-[10px] text-gray-500">Meta & TikTok APIs</span>
-              </div>
-
-              <form onSubmit={handleCreateCampaign} className="space-y-4 text-left">
-                <div>
-                  <label className="block text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">Nombre de la Campaña:</label>
-                  <input
-                    type="text"
-                    required
-                    value={newCampName}
-                    onChange={(e) => setNewCampName(e.target.value)}
-                    placeholder="ej. Conversiones - Colección Verano"
-                    className="w-full bg-[#121212] border border-gray-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-red-500"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">Objetivo:</label>
-                    <select
-                      value={newCampObjective}
-                      onChange={(e) => setNewCampObjective(e.target.value)}
-                      className="w-full bg-[#121212] border border-gray-800 rounded-xl px-2.5 py-2.5 text-xs text-white focus:outline-none focus:border-red-500"
-                    >
-                      <option value="OUTCOME_SALES">Ventas (Conversión)</option>
-                      <option value="OUTCOME_LEADS">Clientes (WhatsApp)</option>
-                      <option value="OUTCOME_TRAFFIC">Tráfico Web</option>
-                      <option value="OUTCOME_ENGAGEMENT">Mensajes directos</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">Estrategia Puja:</label>
-                    <select
-                      value={bidStrategy}
-                      onChange={(e) => setBidStrategy(e.target.value as any)}
-                      className="w-full bg-[#121212] border border-gray-800 rounded-xl px-2.5 py-2.5 text-xs text-white focus:outline-none focus:border-red-500"
-                    >
-                      <option value="highest_volume">Mayor Volumen</option>
-                      <option value="cost_cap">Límite Costo (Cap)</option>
-                      <option value="bid_cap">Límite Puja</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">Presupuesto (USD):</label>
-                    <input
-                      type="number"
-                      required
-                      value={newCampBudget}
-                      onChange={(e) => setNewCampBudget(e.target.value)}
-                      className="w-full bg-[#121212] border border-gray-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">Segmentación Geográfica:</label>
-                    <input
-                      type="text"
-                      required
-                      value={newCampTarget}
-                      onChange={(e) => setNewCampTarget(e.target.value)}
-                      className="w-full bg-[#121212] border border-gray-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500"
-                    />
-                  </div>
-                </div>
-
-                {/* Advantage+ budget toggle */}
-                <div className="bg-black/40 border border-gray-850 rounded-xl p-3 flex items-center justify-between">
-                  <div className="text-left max-w-[80%]">
-                    <span className="text-[10px] font-bold text-white block">Optimizar Presupuesto con IA (CBO)</span>
-                    <span className="text-[8.5px] text-gray-500 leading-normal block">Advantage+ optimiza el presupuesto en los conjuntos con mejor rendimiento.</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setUseCBO(!useCBO)}
-                    className={`w-9 h-5 rounded-full p-0.5 transition-colors duration-200 focus:outline-none ${useCBO ? 'bg-red-500' : 'bg-gray-850'}`}
-                  >
-                    <div className={`w-4 h-4 rounded-full bg-black transition-transform duration-200 transform ${useCBO ? 'translate-x-4' : 'translate-x-0'}`} />
-                  </button>
-                </div>
-
-                {campError && (
-                  <div className="bg-red-950/40 border border-red-500/30 text-red-400 p-2.5 rounded-xl text-[10px] flex items-start gap-1.5">
-                    <AlertTriangle size={13} className="shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-bold">Error en lanzamiento</p>
-                      <p className="opacity-90">{campError}</p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Launch Button */}
-                <button
-                  type="submit"
-                  disabled={creatingCamp}
-                  className="w-full py-2.5 bg-red-600 hover:bg-red-500 text-white font-extrabold text-xs rounded-xl transition flex items-center justify-center gap-1.5 shadow-[0_4px_20px_rgba(239,68,68,0.2)]"
-                >
-                  {creatingCamp ? (
-                    <>
-                      <RefreshCw size={13} className="animate-spin" />
-                      Lanzando en Meta & TikTok APIs...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles size={13} />
-                      Lanzar en Meta & TikTok
-                    </>
-                  )}
-                </button>
-              </form>
-
-            </div>
-          </div>
 
         </div>
       )}
@@ -1431,6 +1334,20 @@ export default function AdsView({
                   <Plus size={12} /> Nueva regla
                 </button>
               </div>
+            </div>
+
+
+            {/* Numero de WhatsApp para alertas */}
+            <div className="flex flex-wrap items-center gap-2 mb-4 bg-black/40 border border-gray-800 rounded-xl px-3 py-2.5">
+              <Bell size={13} className="text-gold shrink-0" />
+              <span className="text-[10px] text-gray-400 font-bold">WhatsApp de alertas:</span>
+              <input value={apAlertPhone} onChange={e => setApAlertPhone(e.target.value)} placeholder="+573001234567"
+                className="bg-black/40 border border-gray-800 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none focus:border-gold w-40 font-mono" />
+              <button onClick={saveApConfig}
+                className="px-3 py-1.5 bg-gold/10 hover:bg-gold/20 border border-gold/30 text-gold rounded-lg text-[10px] font-bold transition">
+                {apAlertPhoneSaved ? '¡Guardado!' : 'Guardar'}
+              </button>
+              <span className="text-[9px] text-gray-600">Las reglas con aviso por WhatsApp escriben a este número.</span>
             </div>
 
             <p className="text-[11px] text-gray-400 mb-4">

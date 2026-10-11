@@ -637,11 +637,12 @@ interface AutopilotEvent {
   at: string;
 }
 
-function autopilotStore(db: any): { rules: AutopilotRule[]; history: AutopilotEvent[] } {
+function autopilotStore(db: any): { rules: AutopilotRule[]; history: AutopilotEvent[]; alertPhone: string } {
   if (!db.adsAutopilot || typeof db.adsAutopilot !== 'object') db.adsAutopilot = {};
   const ap = db.adsAutopilot;
   if (!Array.isArray(ap.rules)) ap.rules = [];
   if (!Array.isArray(ap.history)) ap.history = [];
+  if (!ap.alertPhone) ap.alertPhone = '+573192392853'; // linea admin del CEO (Super Admin)
   if (!ap._seeded) {
     const now = new Date().toISOString();
     ap.rules = [
@@ -697,13 +698,14 @@ async function autopilotNotify(title: string, body: string, rule: AutopilotRule)
     }
   }
   // 2) WhatsApp al número configurado en la regla
-  if (rule.notifyWhatsapp && rule.whatsappNumber) {
+  const notifyNum = String(rule.whatsappNumber || '').trim() || String(autopilotStore(getDB()).alertPhone || '').trim();
+  if (rule.notifyWhatsapp && notifyNum) {
     try {
       const db = getDB();
       const apiUrl = String(db.evolutionApiUrl || process.env.EVOLUTION_API_URL || 'https://whatsapp.xorbit360.com').replace(/\/+$/, '');
       const apiKey = String(db.evolutionApiKey || process.env.EVOLUTION_API_KEY || '');
       const instance = String(db.evolutionDefaultInstance || 'channel-default');
-      const to = String(rule.whatsappNumber).replace(/\D/g, '');
+      const to = notifyNum.replace(/\D/g, '');
       if (apiUrl && apiKey && to) {
         const res = await fetch(apiUrl + '/message/sendText/' + encodeURIComponent(instance), {
           method: 'POST',
@@ -896,6 +898,29 @@ function startAutopilotLoop() {
       res.json({ success: true });
     } catch (e: any) {
       res.status(400).json({ success: false, error: e?.message || 'No se pudo eliminar la regla.' });
+    }
+  });
+
+  router.get('/autopilot/config', (req, res) => {
+    try {
+      const ap = autopilotStore(getDB());
+      res.json({ success: true, alertPhone: ap.alertPhone || '' });
+    } catch (e: any) {
+      res.status(400).json({ success: false, error: 'No se pudo leer la configuracion.' });
+    }
+  });
+
+  router.put('/autopilot/config', (req, res) => {
+    try {
+      const db = getDB();
+      const ap = autopilotStore(db);
+      const phone = String(req.body?.alertPhone || '').replace(/\D/g, '').slice(0, 15);
+      if (!phone) return res.status(400).json({ success: false, error: 'Numero invalido.' });
+      ap.alertPhone = '+' + phone;
+      saveDB();
+      res.json({ success: true, alertPhone: ap.alertPhone });
+    } catch (e: any) {
+      res.status(400).json({ success: false, error: 'No se pudo guardar.' });
     }
   });
 
