@@ -143,7 +143,6 @@ export default function AdsView({
   const [bidStrategy, setBidStrategy] = useState<'highest_volume' | 'cost_cap' | 'bid_cap'>('highest_volume');
   const [useCBO, setUseCBO] = useState<boolean>(true);
   const [pixelId, setPixelId] = useState('849302847293847');
-  const [apiPayloadCopied, setApiPayloadCopied] = useState(false);
 
   // Connection Toggles for the Integrations Section in Traffiker IA
   const [googleConnected, setGoogleConnected] = useState<boolean>(() => {
@@ -234,6 +233,90 @@ export default function AdsView({
   useEffect(() => {
     localStorage.setItem('whatsappAlertRules', JSON.stringify(alertRules));
   }, [alertRules]);
+
+  // ================= Piloto automático =================
+  const [apRules, setApRules] = useState<any[]>([]);
+  const [apHistory, setApHistory] = useState<any[]>([]);
+  const [apLoading, setApLoading] = useState(false);
+  const [apEvaluating, setApEvaluating] = useState(false);
+  const [showNewRule, setShowNewRule] = useState(false);
+  const [newRule, setNewRule] = useState({ name: '', type: 'pause_no_sales', spendUsd: 20, days: 3, cpcSpikePct: 50, roasMin: 3, scalePct: 20, notifyWhatsapp: false, whatsappNumber: '' });
+
+  const loadAutopilot = async () => {
+    setApLoading(true);
+    try {
+      const [r1, r2] = await Promise.all([
+        fetch('/api/ads/autopilot/rules', { credentials: 'include' }).then(r => r.json()),
+        fetch('/api/ads/autopilot/history', { credentials: 'include' }).then(r => r.json()),
+      ]);
+      if (r1?.success) setApRules(r1.rules || []);
+      if (r2?.success) setApHistory(r2.history || []);
+    } catch { /* noop */ }
+    setApLoading(false);
+  };
+
+  useEffect(() => { if (activeTab === 'metricas') loadAutopilot(); }, [activeTab]);
+
+  const toggleApRule = async (rule: any) => {
+    try {
+      const r = await fetch('/api/ads/autopilot/rules/' + rule.id, {
+        method: 'PUT', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ active: !rule.active }),
+      }).then(r => r.json());
+      if (r?.success) setApRules(prev => prev.map(x => x.id === rule.id ? { ...x, active: !rule.active } : x));
+    } catch { /* noop */ }
+  };
+
+  const deleteApRule = async (id: string) => {
+    if (!confirm('¿Eliminar esta regla del piloto automático?')) return;
+    try {
+      const r = await fetch('/api/ads/autopilot/rules/' + id, { method: 'DELETE', credentials: 'include' }).then(r => r.json());
+      if (r?.success) setApRules(prev => prev.filter(x => x.id !== id));
+    } catch { /* noop */ }
+  };
+
+  const createApRule = async () => {
+    if (!newRule.name.trim()) { alert('Ponle un nombre a la regla.'); return; }
+    try {
+      const r = await fetch('/api/ads/autopilot/rules', {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newRule),
+      }).then(r => r.json());
+      if (r?.success) {
+        setApRules(prev => [...prev, r.rule]);
+        setShowNewRule(false);
+        setNewRule({ name: '', type: 'pause_no_sales', spendUsd: 20, days: 3, cpcSpikePct: 50, roasMin: 3, scalePct: 20, notifyWhatsapp: false, whatsappNumber: '' });
+      } else alert(r?.error || 'No se pudo crear la regla.');
+    } catch { alert('Error de conexión.'); }
+  };
+
+  const evaluateApNow = async () => {
+    setApEvaluating(true);
+    try {
+      const r = await fetch('/api/ads/autopilot/evaluate', { method: 'POST', credentials: 'include' }).then(r => r.json());
+      if (r?.success) {
+        alert(`Evaluación completa: ${r.evaluated} reglas revisadas, ${r.actions} acciones ejecutadas.`);
+        loadAutopilot();
+      } else alert(r?.error || 'Falló la evaluación.');
+    } catch { alert('Error de conexión.'); }
+    setApEvaluating(false);
+  };
+
+  const AP_TYPE_LABEL: Record<string, string> = {
+    pause_no_sales: 'Pausar sin ventas',
+    cpc_spike: 'Alerta CPC',
+    scale_winner: 'Escalar ganadora',
+  };
+
+  const apRuleDesc = (r: any) => {
+    if (r.type === 'pause_no_sales') return `Si gasta $${r.spendUsd} USD en ${r.days} días sin ventas → pausar.`;
+    if (r.type === 'cpc_spike') return `Si el CPC sube ${r.cpcSpikePct}% o más vs su promedio → avisar.`;
+    if (r.type === 'scale_winner') return `Si el ROAS es ${r.roasMin}x o más en ${r.days} días → subir presupuesto ${r.scalePct}%.`;
+    return r.description || '';
+  };
+
 
   // Load configuration and campaigns
   const loadData = async (isSync = false) => {
@@ -697,49 +780,6 @@ export default function AdsView({
     });
   };
 
-  const handleCopyPayloadText = () => {
-    try {
-      const livePayloadObj = {
-        campaign: {
-          name: newCampName || "Nueva Campaña AI",
-          objective: newCampObjective,
-          status: "PAUSED",
-          special_ad_categories: [],
-          bid_strategy: bidStrategy.toUpperCase(),
-          daily_budget: useCBO && budgetType === "DAILY" ? Math.round(parseFloat(newCampBudget || "20") * 100) : undefined,
-          lifetime_budget: useCBO && budgetType === "LIFETIME" ? Math.round(parseFloat(newCampBudget || "20") * 100) : undefined
-        },
-        ad_set: {
-          name: `Conjunto - ${newCampTarget || "Colombia - Intereses en Moda 22-45 años"}`,
-          billing_event: "IMPRESSIONS",
-          optimization_goal: newCampObjective === 'OUTCOME_SALES' ? 'OFFLINE_CONVERSIONS' : 'LINK_CLICKS',
-          daily_budget: !useCBO && budgetType === "DAILY" ? Math.round(parseFloat(newCampBudget || "20") * 100) : undefined,
-          lifetime_budget: !useCBO && budgetType === "LIFETIME" ? Math.round(parseFloat(newCampBudget || "20") * 100) : undefined,
-          targeting: {
-            geo_locations: { countries: ["CO"] },
-            publisher_platforms: platforms,
-            device_platforms: ["mobile", "desktop"],
-            age_min: 18,
-            age_max: 65
-          }
-        },
-        ad: {
-          name: `Anuncio UGC - Variante Principal`,
-          creative: {
-            title: "¡Pide hoy y paga al recibir en casa! 🇨🇴",
-            body: "Ahorra tiempo y dinero con nuestro producto exclusivo. Envíos gratis y pago contra entrega.",
-            image_url: "https://images.unsplash.com/photo-1460925895917-afdab827c52f"
-          },
-          tracking_pixel_id: pixelId
-        }
-      };
-      navigator.clipboard.writeText(JSON.stringify(livePayloadObj, null, 2));
-      setApiPayloadCopied(true);
-      setTimeout(() => setApiPayloadCopied(false), 2000);
-    } catch (e) {
-      console.warn("Could not copy payload:", e);
-    }
-  };
 
   // Aggregated calculations for Métricas KPI
   const filteredCampaigns = campaigns.filter(c => {
@@ -1227,44 +1267,6 @@ export default function AdsView({
                 </button>
               </form>
 
-              {/* Live Payload Graph API JSON Visualizer */}
-              <div className="mt-5 border-t border-gray-800 pt-4 text-left">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[9px] font-mono text-gray-500 flex items-center gap-1">
-                    <Code size={11} className="text-red-500" /> payload-meta-marketing-api.json
-                  </span>
-                  <button
-                    onClick={handleCopyPayloadText}
-                    className="text-[9.5px] text-gray-400 hover:text-white bg-black border border-gray-800 px-2 py-0.5 rounded transition"
-                  >
-                    {apiPayloadCopied ? '¡Copiado!' : 'Copiar Payload'}
-                  </button>
-                </div>
-
-                <div className="bg-black/85 rounded-xl p-2.5 border border-gray-900/80 font-mono text-[9px] text-gray-400 overflow-y-auto max-h-[140px] scrollbar-thin scrollbar-thumb-gray-800">
-                  <pre className="whitespace-pre-wrap leading-relaxed">
-                    {JSON.stringify({
-                      campaign: {
-                        name: newCampName || "Nueva Campaña AI",
-                        objective: newCampObjective,
-                        status: "ACTIVE_PENDING",
-                        bid_strategy: bidStrategy.toUpperCase(),
-                        daily_budget_usd: useCBO ? parseFloat(newCampBudget) : 'N/A'
-                      },
-                      ad_set: {
-                        targeting: { countries: ["CO"], audience: newCampTarget },
-                        publisher_platforms: platforms,
-                        placement: "Advantage+_Reels"
-                      },
-                      ad_creative: {
-                        template: "UGC_VIDEO_REELS_DIRECT_CONVERSION",
-                        tracking_pixel: pixelId
-                      }
-                    }, null, 2)}
-                  </pre>
-                </div>
-              </div>
-
             </div>
           </div>
 
@@ -1387,11 +1389,11 @@ export default function AdsView({
 
             {/* KPI: Conversions */}
             <div className="bg-[#090909] border border-gray-800/80 rounded-2xl p-4 text-left">
-              <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider block">Ventas (Contra Entrega)</span>
+              <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider block">Ventas atribuidas</span>
               <div className="flex items-baseline gap-1.5 mt-1.5">
                 <span className="text-lg font-display font-black text-white">{totalConversions}</span>
               </div>
-              <span className="text-[8.5px] text-gray-500 block mt-1.5">Integrado con Pixel CAPI</span>
+              <span className="text-[8.5px] text-gray-500 block mt-1.5">Contra entrega + pago anticipado · Pixel CAPI</span>
             </div>
 
             {/* KPI: ROAS */}
@@ -1403,6 +1405,171 @@ export default function AdsView({
               <span className="text-[8.5px] text-emerald-400 block mt-1.5">Metas superadas hoy</span>
             </div>
 
+          </div>
+
+
+          {/* ============ PILOTO AUTOMÁTICO ============ */}
+          <div className="bg-[#090909] border border-gold/25 rounded-2xl p-5 shadow-xl text-left">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4 border-b border-gray-800 pb-3">
+              <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                <Bot size={15} className="text-gold" /> Piloto automático
+                <span className="text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-gold/10 text-gold border border-gold/25">Experto pre-configurado</span>
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={evaluateApNow}
+                  disabled={apEvaluating}
+                  className="px-3 py-1.5 bg-gold/10 hover:bg-gold/20 border border-gold/30 text-gold rounded-lg text-[10px] font-bold transition flex items-center gap-1.5"
+                >
+                  <RefreshCw size={12} className={apEvaluating ? 'animate-spin' : ''} />
+                  {apEvaluating ? 'Evaluando...' : 'Evaluar ahora'}
+                </button>
+                <button
+                  onClick={() => setShowNewRule(!showNewRule)}
+                  className="px-3 py-1.5 bg-gray-900 hover:bg-gray-800 border border-gray-800 text-white rounded-lg text-[10px] font-bold transition flex items-center gap-1.5"
+                >
+                  <Plus size={12} /> Nueva regla
+                </button>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-gray-400 mb-4">
+              El piloto revisa tus campañas cada hora con criterio de experto: pausa las que gastan sin vender,
+              te avisa si los costos se disparan y escala las ganadoras. Usa las ventas reales de tu CRM, no solo datos del píxel.
+            </p>
+
+            {apLoading ? (
+              <p className="text-xs text-gray-500 text-center py-4">Cargando reglas...</p>
+            ) : apRules.length === 0 ? (
+              <p className="text-xs text-gray-500 text-center py-4">No hay reglas. Crea la primera con "Nueva regla".</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-2">
+                {apRules.map(rule => (
+                  <div key={rule.id} className={`border ${rule.active ? 'border-gold/30' : 'border-gray-800 opacity-60'} bg-black/35 rounded-xl p-3.5 flex flex-col justify-between gap-3 transition`}>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${rule.active ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-gray-500/10 text-gray-400 border-gray-500/20'}`}>
+                          {rule.active ? 'Activa' : 'Pausada'}
+                        </span>
+                        {rule.isPreset && (
+                          <span className="text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-gold/10 text-gold border border-gold/25">De experto</span>
+                        )}
+                      </div>
+                      <h4 className="font-bold text-xs text-white leading-tight">{rule.name}</h4>
+                      <p className="text-[10.5px] text-gray-400 leading-relaxed">{apRuleDesc(rule)}</p>
+                      <p className="text-[9.5px] text-gray-500">
+                        Tipo: <strong className="text-gray-300">{AP_TYPE_LABEL[rule.type] || rule.type}</strong>
+                        {rule.notifyWhatsapp && rule.whatsappNumber ? <> · WhatsApp al <span className="font-mono">{rule.whatsappNumber}</span></> : null}
+                      </p>
+                    </div>
+                    <div className="pt-2 border-t border-gray-850 flex items-center justify-between">
+                      <button
+                        type="button"
+                        onClick={() => toggleApRule(rule)}
+                        className={`w-9 h-5 rounded-full p-0.5 transition-colors duration-200 ${rule.active ? 'bg-emerald-500' : 'bg-gray-700'}`}
+                        title={rule.active ? 'Pausar regla' : 'Activar regla'}
+                      >
+                        <div className={`w-4 h-4 rounded-full bg-white transition-transform duration-200 transform ${rule.active ? 'translate-x-4' : 'translate-x-0'}`} />
+                      </button>
+                      {!rule.isPreset && (
+                        <button onClick={() => deleteApRule(rule.id)} className="text-gray-500 hover:text-red-400 transition" title="Eliminar regla">
+                          <Trash2 size={13} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {showNewRule && (
+              <div className="mt-4 border border-gray-800 rounded-xl p-4 bg-black/40 space-y-3">
+                <h4 className="font-bold text-xs text-white">Nueva regla del piloto</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[9px] text-gray-500 font-bold uppercase tracking-wider block mb-1">Nombre</label>
+                    <input value={newRule.name} onChange={e => setNewRule({ ...newRule, name: e.target.value })} placeholder="Ej: Pausar si gasta $30 sin ventas"
+                      className="w-full bg-black/40 border border-gray-800 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-gold" />
+                  </div>
+                  <div>
+                    <label className="text-[9px] text-gray-500 font-bold uppercase tracking-wider block mb-1">Tipo de regla</label>
+                    <select value={newRule.type} onChange={e => setNewRule({ ...newRule, type: e.target.value })}
+                      className="w-full bg-black/40 border border-gray-800 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-gold">
+                      <option value="pause_no_sales">Pausar campaña sin ventas</option>
+                      <option value="cpc_spike">Avisar si el CPC se dispara</option>
+                      <option value="scale_winner">Escalar campaña ganadora</option>
+                    </select>
+                  </div>
+                  {newRule.type === 'pause_no_sales' && (<>
+                    <div>
+                      <label className="text-[9px] text-gray-500 font-bold uppercase tracking-wider block mb-1">Gasto sin ventas (USD)</label>
+                      <input type="number" value={newRule.spendUsd} onChange={e => setNewRule({ ...newRule, spendUsd: Number(e.target.value) })}
+                        className="w-full bg-black/40 border border-gray-800 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-gold" />
+                    </div>
+                    <div>
+                      <label className="text-[9px] text-gray-500 font-bold uppercase tracking-wider block mb-1">Ventana (días)</label>
+                      <input type="number" value={newRule.days} onChange={e => setNewRule({ ...newRule, days: Number(e.target.value) })}
+                        className="w-full bg-black/40 border border-gray-800 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-gold" />
+                    </div>
+                  </>)}
+                  {newRule.type === 'cpc_spike' && (
+                    <div>
+                      <label className="text-[9px] text-gray-500 font-bold uppercase tracking-wider block mb-1">Subida de CPC (%)</label>
+                      <input type="number" value={newRule.cpcSpikePct} onChange={e => setNewRule({ ...newRule, cpcSpikePct: Number(e.target.value) })}
+                        className="w-full bg-black/40 border border-gray-800 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-gold" />
+                    </div>
+                  )}
+                  {newRule.type === 'scale_winner' && (<>
+                    <div>
+                      <label className="text-[9px] text-gray-500 font-bold uppercase tracking-wider block mb-1">ROAS mínimo</label>
+                      <input type="number" step="0.1" value={newRule.roasMin} onChange={e => setNewRule({ ...newRule, roasMin: Number(e.target.value) })}
+                        className="w-full bg-black/40 border border-gray-800 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-gold" />
+                    </div>
+                    <div>
+                      <label className="text-[9px] text-gray-500 font-bold uppercase tracking-wider block mb-1">Aumento de presupuesto (%)</label>
+                      <input type="number" value={newRule.scalePct} onChange={e => setNewRule({ ...newRule, scalePct: Number(e.target.value) })}
+                        className="w-full bg-black/40 border border-gray-800 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-gold" />
+                    </div>
+                  </>)}
+                  <div className="md:col-span-2 flex items-center gap-2">
+                    <input type="checkbox" checked={newRule.notifyWhatsapp} onChange={e => setNewRule({ ...newRule, notifyWhatsapp: e.target.checked })} className="accent-gold" />
+                    <span className="text-[10px] text-gray-400">Avisar también por WhatsApp al</span>
+                    <input value={newRule.whatsappNumber} onChange={e => setNewRule({ ...newRule, whatsappNumber: e.target.value })} placeholder="573001234567"
+                      className="bg-black/40 border border-gray-800 rounded-xl px-3 py-1.5 text-xs text-white outline-none focus:border-gold w-40" />
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={createApRule} className="px-4 py-2 bg-gold text-black font-bold rounded-xl text-xs hover:bg-gold/90 transition">Crear regla</button>
+                  <button onClick={() => setShowNewRule(false)} className="px-4 py-2 bg-gray-900 border border-gray-800 text-white font-bold rounded-xl text-xs transition">Cancelar</button>
+                </div>
+              </div>
+            )}
+
+            {/* Historial del piloto */}
+            <div className="mt-4">
+              <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Historial de acciones</h4>
+              {apHistory.length === 0 ? (
+                <p className="text-[11px] text-gray-600">Sin acciones todavía. El piloto evalúa cada hora.</p>
+              ) : (
+                <div className="space-y-1.5 max-h-[180px] overflow-y-auto">
+                  {apHistory.slice(0, 20).map(ev => (
+                    <div key={ev.id} className="flex items-start gap-2 text-[10.5px] bg-black/30 border border-gray-800/60 rounded-lg px-2.5 py-1.5">
+                      <span className={`shrink-0 mt-0.5 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase ${
+                        ev.action === 'paused' ? 'bg-red-500/10 text-red-400' :
+                        ev.action === 'scaled' ? 'bg-emerald-500/10 text-emerald-400' :
+                        'bg-blue-500/10 text-blue-400'}`}>
+                        {ev.action === 'paused' ? 'Pausada' : ev.action === 'scaled' ? 'Escalada' : 'Aviso'}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-gray-200 font-bold truncate">{ev.campaignName}</p>
+                        <p className="text-gray-500 truncate">{ev.detail}</p>
+                      </div>
+                      <span className="ml-auto shrink-0 text-[8.5px] text-gray-600 font-mono">{new Date(ev.at).toLocaleDateString('es-CO', { day: '2-digit', month: 'short' })}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Graphical Trends Section */}

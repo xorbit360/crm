@@ -179,7 +179,7 @@ export default function PedidosView({ currentUser }: { currentUser?: { role?: st
         products: "1x Licuadora Portátil ShakeGo",
         total: 85000,
         source: "TikTok Lead",
-        paymentStatus: "Contra entrega",
+        paymentStatus: "Pago anticipado",
         shippingStatus: "Creado en Dropi",
         trackingCode: "CO-DRP-7182934",
         date: "2026-07-05",
@@ -205,7 +205,7 @@ export default function PedidosView({ currentUser }: { currentUser?: { role?: st
         products: "1x Smartwatch Ultra X8",
         total: 120000,
         source: "WhatsApp Bot",
-        paymentStatus: "Contra entrega",
+        paymentStatus: "Pago anticipado",
         shippingStatus: "Creado en Dropi",
         trackingCode: "CO-DRP-3392810",
         date: "2026-07-05",
@@ -572,6 +572,7 @@ export default function PedidosView({ currentUser }: { currentUser?: { role?: st
           >
             <option value="ALL">Todas las formas de pago</option>
             <option value="Contra entrega">Contra Entrega / Pago al Recibir</option>
+            <option value="Pago anticipado">Pago anticipado</option>
             <option value="Pagado">Pagado (Transferencia, Tarjeta)</option>
             <option value="Pendiente">Pendiente de Pago</option>
           </select>
@@ -650,6 +651,8 @@ export default function PedidosView({ currentUser }: { currentUser?: { role?: st
                           ? 'bg-green-500/10 text-green-400 border border-green-500/20'
                           : order.paymentStatus === 'Contra entrega'
                           ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                          : order.paymentStatus === 'Pago anticipado'
+                          ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
                           : 'bg-red-500/10 text-red-400 border border-red-500/20'
                       }`}>
                         {order.paymentStatus}
@@ -809,6 +812,7 @@ export default function PedidosView({ currentUser }: { currentUser?: { role?: st
                     className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-gold"
                   >
                     <option value="Contra entrega">Contra entrega / Pago al recibir</option>
+                    <option value="Pago anticipado">Pago anticipado</option>
                     <option value="Pagado">Pagado</option>
                     <option value="Pendiente">Pendiente de pago</option>
                   </select>

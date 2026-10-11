@@ -599,6 +599,326 @@ export function setupAdsRoutes(app: express.Express) {
     }
   });
 
+// ---------- Piloto automático de Ads (motor de reglas) ----------
+// Evalúa periódicamente las reglas del usuario contra las métricas reales
+// (Zernio Ads) y ejecuta acciones: pausar, escalar presupuesto, notificar.
+// Las reglas usan conversiones atribuidas; el conteo de ventas reales del CRM
+// se incluye como señal secundaria en cada evaluación.
+
+interface AutopilotRule {
+  id: string;
+  name: string;
+  description: string;
+  active: boolean;
+  isPreset: boolean;
+  type: 'pause_no_sales' | 'cpc_spike' | 'scale_winner';
+  spendUsd: number;      // umbral de gasto (pause_no_sales)
+  days: number;          // ventana de evaluación en días
+  cpcSpikePct: number;   // % de subida de CPC vs referencia (cpc_spike)
+  roasMin: number;       // ROAS mínimo (scale_winner)
+  scalePct: number;      // % de aumento de presupuesto (scale_winner)
+  scope: string;         // 'all' o campaignId
+  notifyPush: boolean;
+  notifyWhatsapp: boolean;
+  whatsappNumber: string;
+  baseline: Record<string, number>; // cpc de referencia por campaña (cpc_spike)
+  lastRunAt: string | null;
+  createdAt: string;
+}
+
+interface AutopilotEvent {
+  id: string;
+  ruleId: string;
+  ruleName: string;
+  campaignId: string;
+  campaignName: string;
+  action: 'paused' | 'scaled' | 'notified' | 'skipped';
+  detail: string;
+  at: string;
+}
+
+function autopilotStore(db: any): { rules: AutopilotRule[]; history: AutopilotEvent[] } {
+  if (!db.adsAutopilot || typeof db.adsAutopilot !== 'object') db.adsAutopilot = {};
+  const ap = db.adsAutopilot;
+  if (!Array.isArray(ap.rules)) ap.rules = [];
+  if (!Array.isArray(ap.history)) ap.history = [];
+  if (!ap._seeded) {
+    const now = new Date().toISOString();
+    ap.rules = [
+      {
+        id: 'preset-pause-no-sales',
+        name: 'Pausar campañas sin ventas',
+        description: 'Si una campaña gasta $20 USD o más en 3 días sin generar ventas, se pausa automáticamente.',
+        active: true, isPreset: true, type: 'pause_no_sales',
+        spendUsd: 20, days: 3, cpcSpikePct: 50, roasMin: 3, scalePct: 20,
+        scope: 'all', notifyPush: true, notifyWhatsapp: false, whatsappNumber: '',
+        baseline: {}, lastRunAt: null, createdAt: now,
+      },
+      {
+        id: 'preset-cpc-spike',
+        name: 'Avisar si el CPC se dispara',
+        description: 'Si el costo por clic sube 50% o más frente a su promedio, te avisamos para revisarla.',
+        active: true, isPreset: true, type: 'cpc_spike',
+        spendUsd: 20, days: 7, cpcSpikePct: 50, roasMin: 3, scalePct: 20,
+        scope: 'all', notifyPush: true, notifyWhatsapp: false, whatsappNumber: '',
+        baseline: {}, lastRunAt: null, createdAt: now,
+      },
+      {
+        id: 'preset-scale-winner',
+        name: 'Escalar campañas ganadoras',
+        description: 'Si una campaña mantiene ROAS de 3x o más en 7 días, su presupuesto sube 20% automáticamente.',
+        active: true, isPreset: true, type: 'scale_winner',
+        spendUsd: 20, days: 7, cpcSpikePct: 50, roasMin: 3, scalePct: 20,
+        scope: 'all', notifyPush: true, notifyWhatsapp: false, whatsappNumber: '',
+        baseline: {}, lastRunAt: null, createdAt: now,
+      },
+    ];
+    ap._seeded = true;
+    saveDB();
+  }
+  return ap;
+}
+
+function pushHistory(db: any, ev: AutopilotEvent) {
+  const ap = autopilotStore(db);
+  ap.history.unshift(ev);
+  if (ap.history.length > 100) ap.history.length = 100;
+  saveDB();
+}
+
+async function autopilotNotify(title: string, body: string, rule: AutopilotRule) {
+  // 1) Push del CRM (siempre que esté activado en la regla)
+  if (rule.notifyPush) {
+    try {
+      const { pushNotifyAll } = await import('./push.ts');
+      await pushNotifyAll(title, body, '/ads');
+    } catch (e: any) {
+      console.log('[Autopilot] push falló:', e?.message || e);
+    }
+  }
+  // 2) WhatsApp al número configurado en la regla
+  if (rule.notifyWhatsapp && rule.whatsappNumber) {
+    try {
+      const db = getDB();
+      const apiUrl = String(db.evolutionApiUrl || process.env.EVOLUTION_API_URL || 'https://whatsapp.xorbit360.com').replace(/\/+$/, '');
+      const apiKey = String(db.evolutionApiKey || process.env.EVOLUTION_API_KEY || '');
+      const instance = String(db.evolutionDefaultInstance || 'channel-default');
+      const to = String(rule.whatsappNumber).replace(/\D/g, '');
+      if (apiUrl && apiKey && to) {
+        const res = await fetch(apiUrl + '/message/sendText/' + encodeURIComponent(instance), {
+          method: 'POST',
+          headers: { apikey: apiKey, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ number: to, text: '🤖 *Piloto automático Xorbit*\n\n' + title + '\n\n' + body }),
+        });
+        if (!res.ok) console.log('[Autopilot] WhatsApp no enviado, status', res.status);
+      }
+    } catch (e: any) {
+      console.log('[Autopilot] WhatsApp falló:', e?.message || e);
+    }
+  }
+}
+
+/** Ventas reales del CRM en los últimos N días (señal secundaria del piloto). */
+function crmSalesCount(db: any, days: number): number {
+  try {
+    const since = Date.now() - days * 86400000;
+    const orders: any[] = Array.isArray(db.orders) ? db.orders : [];
+    const live: any[] = Array.isArray(db.liveSelling?.orders) ? db.liveSelling.orders : [];
+    const all = orders.concat(live);
+    return all.filter((o: any) => {
+      const t = new Date(o.createdAt || o.date || o.created_at || 0).getTime();
+      const cancelled = /cancel/i.test(String(o.status || ''));
+      return t >= since && !cancelled;
+    }).length;
+  } catch { return 0; }
+}
+
+async function evaluateAutopilot(manual = false) {
+  const db = getDB();
+  const ap = autopilotStore(db);
+  const active = ap.rules.filter((r: AutopilotRule) => r.active);
+  if (!active.length) return { evaluated: 0, actions: 0 };
+  let campaigns: any[] = [];
+  try {
+    const data = await zads('/v1/ads/tree', { query: { limit: 100 } });
+    const tree = (data as any).tree || (data as any).campaigns || (data as any).data || [];
+    campaigns = Array.isArray(tree) ? tree : [];
+  } catch (e: any) {
+    console.log('[Autopilot] no se pudo leer campañas:', e?.message || e);
+    return { evaluated: 0, actions: 0, error: e?.message };
+  }
+  let actions = 0;
+  const crmSales7d = crmSalesCount(db, 7);
+  for (const rule of active) {
+    const targets = rule.scope === 'all' ? campaigns : campaigns.filter((c: any) => String(c.id || c._id) === rule.scope);
+    for (const camp of targets) {
+      const cid = String(camp.id || camp._id || '');
+      const cname = String(camp.name || cid);
+      const m: any = camp.metrics || {};
+      const spend = Number(m.spend || 0);
+      const conversions = Number(m.conversions || 0);
+      const cpc = Number(m.cpc || 0);
+      const roas = Number(m.roas || 0);
+      try {
+        if (rule.type === 'pause_no_sales') {
+          if (spend >= rule.spendUsd && conversions === 0) {
+            await zads('/v1/ads/campaigns/' + encodeURIComponent(cid) + '/status', { method: 'PUT', body: { status: 'paused' } });
+            actions++;
+            const detail = `Gastó $${spend.toFixed(2)} USD sin ventas → pausada. Ventas CRM (7d): ${crmSales7d}.`;
+            pushHistory(db, { id: 'ev-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8), ruleId: rule.id, ruleName: rule.name, campaignId: cid, campaignName: cname, action: 'paused', detail, at: new Date().toISOString() });
+            await autopilotNotify('Campaña pausada: ' + cname, detail, rule);
+          }
+        } else if (rule.type === 'cpc_spike') {
+          const base = Number(rule.baseline[cid] || 0);
+          if (base > 0 && cpc > 0 && cpc >= base * (1 + rule.cpcSpikePct / 100)) {
+            actions++;
+            const detail = `CPC actual $${cpc.toFixed(2)} vs referencia $${base.toFixed(2)} (+${rule.cpcSpikePct}% o más).`;
+            pushHistory(db, { id: 'ev-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8), ruleId: rule.id, ruleName: rule.name, campaignId: cid, campaignName: cname, action: 'notified', detail, at: new Date().toISOString() });
+            await autopilotNotify('CPC disparado: ' + cname, detail, rule);
+            rule.baseline[cid] = cpc; // re-anclar para no repetir
+          } else if (cpc > 0 && !base) {
+            rule.baseline[cid] = cpc; // primera medición: fijar referencia
+          }
+        } else if (rule.type === 'scale_winner') {
+          if (roas >= rule.roasMin && spend > 0) {
+            // Escalar: subir presupuesto del primer ad con budget conocido
+            const ads: any[] = Array.isArray(camp.ads) ? camp.ads : [];
+            const withBudget = ads.find((a: any) => a.budget?.amount || a.dailyBudget);
+            if (withBudget) {
+              const cur = Number(withBudget.budget?.amount || withBudget.dailyBudget || 0);
+              const next = Math.round(cur * (1 + rule.scalePct / 100));
+              if (next > cur) {
+                await zads('/v1/ads/' + encodeURIComponent(String(withBudget.id || withBudget._id)), { method: 'PUT', body: { budget: { amount: next, type: 'daily' } } });
+                actions++;
+                const detail = `ROAS ${roas.toFixed(2)}x ≥ ${rule.roasMin}x → presupuesto $${cur} → $${next} USD/día.`;
+                pushHistory(db, { id: 'ev-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8), ruleId: rule.id, ruleName: rule.name, campaignId: cid, campaignName: cname, action: 'scaled', detail, at: new Date().toISOString() });
+                await autopilotNotify('Campaña escalada: ' + cname, detail, rule);
+              }
+            }
+          }
+        }
+      } catch (e: any) {
+        console.log('[Autopilot] error en regla', rule.id, 'campaña', cid, ':', e?.message || e);
+      }
+    }
+    rule.lastRunAt = new Date().toISOString();
+  }
+  saveDB();
+  console.log(`[Autopilot] evaluación ${manual ? 'manual' : 'programada'}: ${active.length} reglas, ${actions} acciones.`);
+  return { evaluated: active.length, actions };
+}
+
+let autopilotTimer: any = null;
+function startAutopilotLoop() {
+  if (autopilotTimer) return;
+  // Primera pasada a los 5 min del arranque, luego cada 60 min.
+  setTimeout(() => { evaluateAutopilot(false).catch(() => {}); }, 5 * 60 * 1000);
+  autopilotTimer = setInterval(() => { evaluateAutopilot(false).catch(() => {}); }, 60 * 60 * 1000);
+  console.log('[Autopilot] motor de reglas iniciado (cada 60 min).');
+}
+
+
+  // ---------- Piloto automático: CRUD de reglas e historial ----------
+  router.get('/autopilot/rules', (req, res) => {
+    try {
+      const ap = autopilotStore(getDB());
+      res.json({ success: true, rules: ap.rules });
+    } catch (e: any) {
+      res.status(400).json({ success: false, error: e?.message || 'No se pudieron leer las reglas.' });
+    }
+  });
+
+  router.post('/autopilot/rules', (req, res) => {
+    try {
+      const db = getDB();
+      const ap = autopilotStore(db);
+      const b = req.body || {};
+      const type = String(b.type || 'pause_no_sales');
+      if (!['pause_no_sales', 'cpc_spike', 'scale_winner'].includes(type)) {
+        return res.status(400).json({ success: false, error: 'Tipo de regla inválido.' });
+      }
+      const rule: AutopilotRule = {
+        id: 'rule-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        name: String(b.name || 'Regla personalizada').slice(0, 80),
+        description: String(b.description || '').slice(0, 200),
+        active: b.active !== false,
+        isPreset: false,
+        type: type as AutopilotRule['type'],
+        spendUsd: Number(b.spendUsd) || 20,
+        days: Number(b.days) || 3,
+        cpcSpikePct: Number(b.cpcSpikePct) || 50,
+        roasMin: Number(b.roasMin) || 3,
+        scalePct: Number(b.scalePct) || 20,
+        scope: String(b.scope || 'all'),
+        notifyPush: b.notifyPush !== false,
+        notifyWhatsapp: !!b.notifyWhatsapp,
+        whatsappNumber: String(b.whatsappNumber || ''),
+        baseline: {},
+        lastRunAt: null,
+        createdAt: new Date().toISOString(),
+      };
+      ap.rules.push(rule);
+      saveDB();
+      res.json({ success: true, rule });
+    } catch (e: any) {
+      res.status(400).json({ success: false, error: e?.message || 'No se pudo crear la regla.' });
+    }
+  });
+
+  router.put('/autopilot/rules/:id', (req, res) => {
+    try {
+      const db = getDB();
+      const ap = autopilotStore(db);
+      const rule = ap.rules.find((r: AutopilotRule) => r.id === req.params.id);
+      if (!rule) return res.status(404).json({ success: false, error: 'Regla no encontrada.' });
+      const b = req.body || {};
+      for (const k of ['name', 'description', 'spendUsd', 'days', 'cpcSpikePct', 'roasMin', 'scalePct', 'scope', 'whatsappNumber'] as const) {
+        if (b[k] !== undefined) (rule as any)[k] = k === 'name' || k === 'description' || k === 'scope' || k === 'whatsappNumber' ? String(b[k]).slice(0, 200) : Number(b[k]);
+      }
+      for (const k of ['active', 'notifyPush', 'notifyWhatsapp'] as const) {
+        if (b[k] !== undefined) (rule as any)[k] = !!b[k];
+      }
+      saveDB();
+      res.json({ success: true, rule });
+    } catch (e: any) {
+      res.status(400).json({ success: false, error: e?.message || 'No se pudo actualizar la regla.' });
+    }
+  });
+
+  router.delete('/autopilot/rules/:id', (req, res) => {
+    try {
+      const db = getDB();
+      const ap = autopilotStore(db);
+      const i = ap.rules.findIndex((r: AutopilotRule) => r.id === req.params.id);
+      if (i < 0) return res.status(404).json({ success: false, error: 'Regla no encontrada.' });
+      ap.rules.splice(i, 1);
+      saveDB();
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(400).json({ success: false, error: e?.message || 'No se pudo eliminar la regla.' });
+    }
+  });
+
+  router.get('/autopilot/history', (req, res) => {
+    try {
+      const ap = autopilotStore(getDB());
+      res.json({ success: true, history: ap.history.slice(0, 50) });
+    } catch (e: any) {
+      res.status(400).json({ success: false, error: e?.message || 'No se pudo leer el historial.' });
+    }
+  });
+
+  router.post('/autopilot/evaluate', async (_req, res) => {
+    try {
+      const r = await evaluateAutopilot(true);
+      res.json({ success: true, ...r });
+    } catch (e: any) {
+      res.status(400).json({ success: false, error: e?.message || 'Falló la evaluación.' });
+    }
+  });
+
+  startAutopilotLoop();
+
   app.use('/api/ads', router);
 }
 
