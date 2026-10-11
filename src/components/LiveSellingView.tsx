@@ -60,7 +60,7 @@ const btnGhost = 'inline-flex items-center gap-2 rounded-xl border border-gray-8
 
 // Plantillas de ejemplo persistentes (workspace default): viven como
 // landings activas y sirven de base duplicable para cualquier usuario.
-const TEMPLATE_SLUGS = ['ejemplo-live-producto', 'ejemplo-live-emprendedores'];
+const TEMPLATE_SLUGS = ['tienda-live', 'emprendedores-live'];
 
 function isTemplateLanding(l: Landing): boolean {
   return TEMPLATE_SLUGS.includes(l.slug);
@@ -269,7 +269,7 @@ export default function LiveSellingView() {
         videoUrl: wiz.videoUrl,
         allowLoop: wiz.allowLoop,
         liveLabel: wiz.liveLabel || undefined,
-        disclosureText: 'Transmisión pregrabada',
+        
         showDisclosure: false,
         buttonText: wiz.buttonText || '¡COMPRAR!',
         whatsappLink: wiz.whatsappLink,
@@ -316,7 +316,7 @@ export default function LiveSellingView() {
       const slug = `live-${Date.now().toString(36)}`;
       const json = await api('/api/live-selling/landings', {
         method: 'POST',
-        body: JSON.stringify({ title: 'Nuevo live', slug, status: 'draft', videoUrl: '', disclosureText: 'Transmisión pregrabada' }),
+        body: JSON.stringify({ title: 'Nuevo live', slug, status: 'draft', videoUrl: '',  }),
       });
       await loadList(json.landing.id);
       setSelectedId(json.landing.id);
@@ -501,12 +501,12 @@ export default function LiveSellingView() {
             </div>
             <div>
               <span className="rounded-md border border-red-500/30 bg-red-500/15 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-red-300">
-                Live Selling · Pregrabado tipo live
+                Live Selling
               </span>
               <h1 className="mt-2 font-display text-2xl font-bold text-white">Tus landings de vivo</h1>
               <p className="mt-1 max-w-2xl text-sm text-gray-400">
                 Crea todas las landings que quieras: pega la URL del video, configura producto, comentarios y checkout contraentrega.
-                Cada landing puede tener su propio dominio. La página pública siempre muestra el rótulo “Transmisión pregrabada”.
+                Cada landing puede tener su propio dominio.
               </p>
             </div>
           </div>
@@ -1164,7 +1164,7 @@ export default function LiveSellingView() {
                 <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-gray-300">
                   <input type="checkbox" checked={wiz.publish} onChange={(e) => setw('publish', e.target.checked)} /> Publicar de una vez (queda activo y visible para tus clientes)
                 </label>
-                <p className="text-xs text-gray-500">La landing mostrara el rotulo "Transmision pregrabada". En el CRM podras ver visitas, clics, comentarios de visitantes, leads y pedidos en Metricas y en Visitantes y pedidos.</p>
+                <p className="text-xs text-gray-500">En el CRM podras ver visitas, clics, comentarios de visitantes, leads y pedidos en Metricas y en Visitantes y pedidos.</p>
               </div>
             )}
 
