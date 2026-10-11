@@ -602,7 +602,7 @@ export default function CostosSaasView() {
           <li><strong>Uso IA por tenant:</strong> en cada llamada guardar tenant, proveedor/modelo, tokens de entrada/salida, costo calculado, latencia y conversación/mensaje asociado (hoy aiDebugLogs es global, máximo 100, sin tenant ni costo).</li>
           <li><strong>WhatsApp por tenant:</strong> mensajes por categoría Meta (marketing/utility/service/auth), país, número/canal y costo; hoy solo hay saldo global de conversaciones.</li>
           <li><strong>Voz:</strong> minutos de audio/transcripción por cliente y su costo.</li>
-          <li><strong>Soporte y fijos:</strong> tiempo de soporte/onboarding por cliente y prorrateo real de VPS, Supabase, dominios, Zernio/Evolution y herramientas.</li>
+          <li><strong>Soporte y fijos:</strong> tiempo de soporte/onboarding por cliente y prorrateo real de VPS, Supabase, dominios, WhatsApp oficial/Evolution y herramientas.</li>
           <li><strong>Regla de oro:</strong> ningún plan debería incluir mensajes IA ilimitados en la práctica: tope total por plan + precio de excedente por mensaje/conversación/minuto, y alertas al 70/90% del cupo.</li>
         </ul>
         <p className="text-[11px] text-gray-500 flex items-center gap-1"><Activity size={12} /> Este panel ya lee en vivo saldo, logs IA, chats y recargas del servidor. El siguiente paso técnico es crear la tabla/eventos por tenant y alimentar aquí el costo exacto por usuario.</p>

@@ -859,7 +859,7 @@ export default function AdsView({
                 <div className="bg-[#090909] border border-gray-800 rounded-2xl p-4 shadow-xl space-y-3">
                   <div className="flex items-center justify-between border-b border-gray-800 pb-3">
                     <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest flex items-center gap-1.5">
-                      <Network size={14} className="text-gold" /> Zernio Ads · Conexión Real
+                      <Network size={14} className="text-gold" /> Conexión oficial de anuncios
                     </span>
                     {adsStatus ? (
                       adsStatus.connected ? (
@@ -905,19 +905,19 @@ export default function AdsView({
                       ))}
                     </div>
                   ) : (
-                    <p className="text-[10px] text-gray-500">No hay cuentas conectadas en Zernio.</p>
+                    <p className="text-[10px] text-gray-500">No hay cuentas conectadas.</p>
                   )}
 
                   {/* Avisos de conexión requerida */}
                   {adsStatus?.connected && !adsStatus.zernioAccounts?.some((a: any) => a.platform === 'facebook') && (
                     <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-2.5">
-                      <p className="text-[10px] text-amber-300 font-bold">⚠️ Conecta Facebook en Zernio</p>
-                      <p className="text-[9px] text-gray-400 mt-0.5">Para Meta/Instagram Ads necesitas una cuenta de Facebook conectada en tu panel de Zernio.</p>
+                      <p className="text-[10px] text-amber-300 font-bold">⚠️ Conecta tu cuenta de Facebook</p>
+                      <p className="text-[9px] text-gray-400 mt-0.5">Para Meta/Instagram Ads necesitas una cuenta de Facebook conectada.</p>
                     </div>
                   )}
 
                   <p className="text-[8px] text-gray-600 leading-relaxed">
-                    💰 Zernio Ads: primeros 500 ads activos gratis · luego $0.01 por ad activo/mes.
+                    💰 Primeros 500 anuncios activos gratis · luego $0.01 por anuncio activo/mes.
                   </p>
                 </div>
               </div>

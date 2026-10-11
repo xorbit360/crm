@@ -39,18 +39,18 @@ function translateAdsError(err: any): string {
   const code = String(err?.code || '');
   const msg = String(err?.message || err?.error || '');
   if (code === 'addon_required' || /ads add-?on required/i.test(msg)) {
-    return 'Tu cuenta Zernio no tiene el add-on de Ads. Actívalo en tu panel de Zernio: los primeros 500 ads activos son gratis.';
+    return 'Tu cuenta no tiene el add-on de anuncios. Actívalo: los primeros 500 anuncios activos son gratis.';
   }
   if (code === 'linked_account_required' || /connected facebook account is required/i.test(msg)) {
     return 'Conecta una cuenta de Facebook en Zernio para gestionar anuncios de Meta/Instagram.';
   }
   if (code === 'platform_connection_required' || /platform ads connection required/i.test(msg)) {
-    return 'Esa plataforma necesita su conexión de Ads en Zernio antes de usarse (TikTok: conecta TikTok Ads; X: conecta X Ads).';
+    return 'Esa plataforma necesita su conexión de anuncios antes de usarse (TikTok: conecta TikTok Ads; X: conecta X Ads).';
   }
   if (/missing_required_field/i.test(code) || /missing required/i.test(msg)) {
     return 'Falta un dato obligatorio: ' + (err?.param ? '(' + err.param + ') ' : '') + msg;
   }
-  return msg || 'Zernio rechazó la solicitud.';
+  return msg || 'El proveedor rechazó la solicitud.';
 }
 
 async function zads(path: string, opts: { method?: string; body?: any; query?: AnyRow } = {}): Promise<any> {
@@ -124,7 +124,7 @@ export function setupAdsRoutes(app: express.Express) {
         selectedAdAccountId: cfg.adAccountId || null,
         selectedPlatform: cfg.platform || 'facebook',
         platforms: PLATFORMS,
-        costNote: 'Zernio Ads: primeros 500 ads activos gratis; luego $0.01 por ad activo/mes.',
+        costNote: 'Primeros 500 anuncios activos gratis; luego $0.01 por anuncio activo/mes.',
       });
     } catch (e: any) {
       return errJson(res, e, 'No se pudo verificar el estado de Ads.');
@@ -150,7 +150,7 @@ export function setupAdsRoutes(app: express.Express) {
     try {
       const db = getDB();
       const accountId = pickAccountId(db, req);
-      if (!accountId) return res.status(400).json({ success: false, error: 'Selecciona una cuenta Zernio primero.' });
+      if (!accountId) return res.status(400).json({ success: false, error: 'Conecta una cuenta primero.' });
       const data = await zads('/v1/ads/accounts', { query: { accountId, platform: req.query?.platform || undefined } });
       res.json({ success: true, adAccounts: data.accounts || data.data || data.adAccounts || [] });
     } catch (e: any) {
@@ -290,7 +290,7 @@ export function setupAdsRoutes(app: express.Express) {
       const db = getDB();
       const cfg = adsCfg(db);
       const accountId = pickAccountId(db, req);
-      if (!accountId) return res.status(400).json({ success: false, error: 'Selecciona una cuenta Zernio primero.' });
+      if (!accountId) return res.status(400).json({ success: false, error: 'Conecta una cuenta primero.' });
       const data = await zads('/v1/ads/create', {
         method: 'POST',
         body: {
@@ -353,7 +353,7 @@ export function setupAdsRoutes(app: express.Express) {
       const db = getDB();
       const b = req.body || {};
       const accountId = pickAccountId(db, req);
-      if (!accountId) return res.status(400).json({ success: false, error: 'Selecciona una cuenta Zernio primero.' });
+      if (!accountId) return res.status(400).json({ success: false, error: 'Conecta una cuenta primero.' });
       if (!b.postId && !b.platformPostId) {
         return res.status(400).json({ success: false, error: 'Indica el post a promocionar (postId o platformPostId).' });
       }
@@ -384,7 +384,7 @@ export function setupAdsRoutes(app: express.Express) {
       const db = getDB();
       const b = req.body || {};
       const accountId = pickAccountId(db, req);
-      if (!accountId) return res.status(400).json({ success: false, error: 'Selecciona una cuenta Zernio primero.' });
+      if (!accountId) return res.status(400).json({ success: false, error: 'Conecta una cuenta primero.' });
       if (!b.headline || !b.body) {
         return res.status(400).json({ success: false, error: 'Título y texto del anuncio son obligatorios.' });
       }
@@ -420,7 +420,7 @@ export function setupAdsRoutes(app: express.Express) {
       const db = getDB();
       const b = req.body || {};
       const accountId = pickAccountId(db, req);
-      if (!accountId) return res.status(400).json({ success: false, error: 'Selecciona una cuenta Zernio primero.' });
+      if (!accountId) return res.status(400).json({ success: false, error: 'Conecta una cuenta primero.' });
       const data = await zads('/v1/ads/messaging', {
         method: 'POST',
         body: {
@@ -471,7 +471,7 @@ export function setupAdsRoutes(app: express.Express) {
       const db = getDB();
       const b = req.body || {};
       const accountId = pickAccountId(db, req);
-      if (!accountId) return res.status(400).json({ success: false, error: 'Selecciona una cuenta Zernio primero.' });
+      if (!accountId) return res.status(400).json({ success: false, error: 'Conecta una cuenta primero.' });
       if (!b.name) return res.status(400).json({ success: false, error: 'El nombre de la audiencia es obligatorio.' });
       const data = await zads('/v1/ads/audiences', {
         method: 'POST',
@@ -554,7 +554,7 @@ export function setupAdsRoutes(app: express.Express) {
     try {
       const db = getDB();
       const accountId = pickAccountId(db, req);
-      if (!accountId) return res.status(400).json({ success: false, error: 'Selecciona una cuenta Zernio primero.' });
+      if (!accountId) return res.status(400).json({ success: false, error: 'Conecta una cuenta primero.' });
       const data = await zads('/v1/accounts/' + encodeURIComponent(accountId) + '/conversion-destinations');
       res.json({ success: true, destinations: (data as any).destinations || (data as any).data || [] });
     } catch (e: any) {

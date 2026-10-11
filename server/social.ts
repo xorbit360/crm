@@ -214,7 +214,7 @@ export function setupSocialRoutes(app: express.Express) {
           body: { accountId: thread.accountId, message: { type: 'text', text } },
         });
         if ((r as any).success === false) {
-          return res.status(502).json({ success: false, error: (r as any).error?.message || 'Zernio rechazó el envío' });
+          return res.status(502).json({ success: false, error: (r as any).error?.message || 'El proveedor rechazó el envío' });
         }
       } else {
         // Responder como comentario público en el post
@@ -226,7 +226,7 @@ export function setupSocialRoutes(app: express.Express) {
           body: { accountId: thread.accountId || firstComment.accountId, message: text, commentId: firstComment.commentId },
         });
         if ((r as any).success === false) {
-          return res.status(502).json({ success: false, error: (r as any).error?.message || 'Zernio rechazó el envío' });
+          return res.status(502).json({ success: false, error: (r as any).error?.message || 'El proveedor rechazó el envío' });
         }
       }
       // Reflejar localmente
@@ -258,7 +258,7 @@ export function setupSocialRoutes(app: express.Express) {
         body: { accountId: thread.accountId || firstComment.accountId, message: text },
       });
       if ((r as any).success === false) {
-        return res.status(502).json({ success: false, error: (r as any).error?.message || 'Zernio rechazó el envío' });
+        return res.status(502).json({ success: false, error: (r as any).error?.message || 'El proveedor rechazó el envío' });
       }
       pauseSocialBotForThread(db, thread, text);
       res.json({ success: true });
@@ -305,7 +305,7 @@ export function setupSocialRoutes(app: express.Express) {
           body: { prompts: prompts.map((p) => ({ question: String(p).slice(0, 80) })) },
         });
         if ((r as any).success === false) {
-          return res.status(502).json({ success: false, error: (r as any).error?.message || 'Zernio rechazó los ice breakers' });
+          return res.status(502).json({ success: false, error: (r as any).error?.message || 'El proveedor rechazó los ice breakers' });
         }
         const item = { id: `ib-${accountId}`, type, accountId, name: name || 'Ice breakers', prompts, isActive: isActive !== false, updatedAt: new Date().toISOString() };
         const list = getAutomations(db);
@@ -332,7 +332,7 @@ export function setupSocialRoutes(app: express.Express) {
       }
       const r = await zernioRequest({ method: 'POST', path: '/v1/comment-automations', body });
       if ((r as any).success === false) {
-        return res.status(502).json({ success: false, error: (r as any).error?.message || 'Zernio rechazó la automatización' });
+        return res.status(502).json({ success: false, error: (r as any).error?.message || 'El proveedor rechazó la automatización' });
       }
       const data: any = (r as any).data;
       const item = {
@@ -359,7 +359,7 @@ export function setupSocialRoutes(app: express.Express) {
       if (item.zernioId) {
         const r = await zernioRequest({ method: 'PATCH', path: `/v1/comment-automations/${encodeURIComponent(item.zernioId)}`, body: { isActive: req.body.isActive } });
         if ((r as any).success === false) {
-          return res.status(502).json({ success: false, error: (r as any).error?.message || 'Zernio rechazó el cambio' });
+          return res.status(502).json({ success: false, error: (r as any).error?.message || 'El proveedor rechazó el cambio' });
         }
       }
       if (typeof req.body.isActive === 'boolean') item.isActive = req.body.isActive;
@@ -415,7 +415,7 @@ export function setupSocialRoutes(app: express.Express) {
       if (mediaUrls?.length) body.mediaUrls = mediaUrls;
       const r = await zernioRequest({ method: 'POST', path: '/v1/posts', body });
       if ((r as any).success === false) {
-        return res.status(502).json({ success: false, error: (r as any).error?.message || 'Zernio rechazó la publicación' });
+        return res.status(502).json({ success: false, error: (r as any).error?.message || 'El proveedor rechazó la publicación' });
       }
       res.json({ success: true, data: (r as any).data });
     } catch (e: any) {
@@ -461,7 +461,7 @@ export function setupSocialRoutes(app: express.Express) {
         },
       });
       if ((wf as any).success === false) {
-        return res.status(502).json({ success: false, error: (wf as any).error?.message || 'Zernio rechazó el workflow' });
+        return res.status(502).json({ success: false, error: (wf as any).error?.message || 'El proveedor rechazó el workflow' });
       }
       const wfId = (wf as any).data?.workflow?.id || (wf as any).data?.id;
       if (wfId) await zernioRequest({ method: 'POST', path: `/v1/workflows/${encodeURIComponent(wfId)}/activate` });
