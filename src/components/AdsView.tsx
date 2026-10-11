@@ -125,6 +125,8 @@ export default function AdsView({
   const [syncing, setSyncing] = useState(false);
   const [realApiFailed, setRealApiFailed] = useState(false);
   const [apiErrorMsg, setApiErrorMsg] = useState('');
+  const [adsStatus, setAdsStatus] = useState<any>(null);
+  const [adsPlatform, setAdsPlatform] = useState('facebook');
 
   // Form states for creating a new campaign
   const [showCreateForm, setShowCreateForm] = useState(true);
@@ -247,18 +249,30 @@ export default function AdsView({
           // Map simulation platforms
           const list: Campaign[] = (data.campaigns || []).map((c: any, index: number) => ({
             ...c,
-            platform: c.platform || (index === 0 ? 'meta' : index === 1 ? 'instagram' : index === 2 ? 'google' : 'tiktok')
+            platform: c.platform || 'facebook'
           }));
           setCampaigns(list);
           setRealApiFailed(!!data.realApiFailed);
-          setApiErrorMsg(data.errorMsg || '');
+          setApiErrorMsg(data.error || data.errorMsg || '');
           if (list.length > 0 && !alertCampaignId) {
             setAlertCampaignId(list[0].id);
           }
         }
       }
 
-      // 2. Fetch config to check Facebook connection
+      // 2. Estado real de Zernio Ads (una integración, 7 plataformas)
+      try {
+        const statusRes = await fetch('/api/ads/status');
+        if (statusRes.ok) {
+          const statusData = await statusRes.json();
+          if (statusData.success) {
+            setAdsStatus(statusData);
+            if (statusData.selectedPlatform) setAdsPlatform(statusData.selectedPlatform);
+          }
+        }
+      } catch (e) { console.warn('ads status:', e); }
+
+      // 3. Config legacy (compatibilidad)
       const configRes = await fetch('/api/integrations/meta-tiktok/config');
       if (configRes.ok) {
         const configData = await configRes.json();
@@ -277,6 +291,30 @@ export default function AdsView({
   useEffect(() => {
     loadData();
   }, []);
+
+  const handleAdsPlatformChange = async (platform: string) => {
+    setAdsPlatform(platform);
+    try {
+      await fetch('/api/ads/select-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ platform })
+      });
+      const res = await fetch('/api/ads/campaigns?platform=' + encodeURIComponent(platform));
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          setCampaigns((data.campaigns || []).map((c: any) => ({ ...c, platform: c.platform || platform })));
+          setApiErrorMsg('');
+        } else {
+          setApiErrorMsg(data.error || '');
+          setCampaigns([]);
+        }
+      }
+    } catch (e) {
+      console.warn('platform change:', e);
+    }
+  };
 
   const handleSyncNow = () => {
     loadData(true);
@@ -367,41 +405,33 @@ export default function AdsView({
           loadData();
         }
       } else {
-        showToastNotification(
-          '🚀 Campaña Creada (Simulación)',
-          `La campaña "${campName}" ha sido procesada de manera correcta.`,
-          'success'
-        );
-        loadData();
+        const errData = await res.json().catch(() => ({}));
+        setCampError(errData.error || 'No se pudo crear la campaña.');
+        showToastNotification('❌ Error', errData.error || 'No se pudo crear la campaña.', 'alert');
       }
     } catch (err: any) {
       clearTimeout(timeoutId);
-      console.warn('Handling campaign create fallback:', err);
-      showToastNotification(
-        '🚀 Campaña Registrada con Éxito',
-        `La campaña "${campName}" ha sido guardada y está activa en tu panel.`,
-        'success'
-      );
-      // Fallback local campaign insert
-      const fallbackCamp: Campaign = {
-        id: `camp_meta_${Math.floor(100000 + Math.random() * 900000)}`,
-        name: campName,
-        status: 'ACTIVE',
-        objective: newCampObjective || 'OUTCOME_SALES',
-        platform: 'meta',
-        metrics: {
-          impressions: 1200,
-          clicks: 145,
-          spend: parseFloat(newCampBudget) || 25,
-          ctr: 2.8,
-          cpc: 0.17,
-          conversions: 18
-        }
-      };
-      setCampaigns(prev => [fallbackCamp, ...prev]);
-      setNewCampName('');
+      const msg = err?.name === 'AbortError' ? 'La solicitud tardó demasiado. Inténtalo de nuevo.' : ('Error de conexión: ' + (err?.message || err));
+      setCampError(msg);
+      showToastNotification('❌ Error', msg, 'alert');
     } finally {
       setCreatingCamp(false);
+    }
+  };
+
+  const handleDeleteCampaign = async (id: string, name: string) => {
+    if (!window.confirm('¿Eliminar "' + name + '"? Esta acción no se puede deshacer.')) return;
+    try {
+      const res = await fetch('/api/ads/campaigns/' + encodeURIComponent(id), { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        setCampaigns(prev => prev.filter(c => c.id !== id));
+        showToastNotification('🗑️ Eliminada', 'La campaña "' + name + '" fue eliminada.', 'success');
+      } else {
+        showToastNotification('❌ Error', data.error || 'No se pudo eliminar.', 'alert');
+      }
+    } catch (e: any) {
+      showToastNotification('❌ Error', 'Error de conexión.', 'alert');
     }
   };
 
@@ -823,111 +853,73 @@ export default function AdsView({
                 <span className="text-[9px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full font-bold">LIVE API READY</span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
 
-                {/* Facebook Connector */}
-                <div className="bg-black/30 border border-gray-850 p-3 rounded-xl flex flex-col justify-between gap-3 text-left">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-blue-600/15 flex items-center justify-center text-blue-500 shrink-0">
-                      <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                        <path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c4.56-.93 8-4.96 8-9.75z"/>
-                      </svg>
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-xs text-white">Facebook Ads</h4>
-                      <p className="text-[9px] text-gray-500">Ad Manager SDK</p>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    {config?.metaConnected ? (
-                      <div className="bg-emerald-500/5 border border-emerald-500/25 rounded-lg p-1.5 text-center">
-                        <span className="text-[9px] text-emerald-400 font-bold block">🟢 Conectado</span>
-                        <span className="text-[8px] text-gray-500 truncate block max-w-full">{config.metaConnectedUser?.name}</span>
-                      </div>
+                {/* Zernio Ads — Conexión real (7 plataformas, una integración) */}
+                <div className="bg-[#090909] border border-gray-800 rounded-2xl p-4 shadow-xl space-y-3">
+                  <div className="flex items-center justify-between border-b border-gray-800 pb-3">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest flex items-center gap-1.5">
+                      <Network size={14} className="text-gold" /> Zernio Ads · Conexión Real
+                    </span>
+                    {adsStatus ? (
+                      adsStatus.connected ? (
+                        <span className="text-[9px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full font-bold">🟢 CONECTADO</span>
+                      ) : (
+                        <span className="text-[9px] text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-full font-bold">🔴 SIN CUENTAS</span>
+                      )
                     ) : (
-                      <button
-                        onClick={() => onNavigate && onNavigate('integraciones')}
-                        className="w-full py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-[10px] font-bold transition"
-                      >
-                        Vincular Cuenta
-                      </button>
+                      <span className="text-[9px] text-gray-500 px-2 py-0.5">Cargando…</span>
                     )}
                   </div>
-                </div>
 
-                {/* Google Ads Connector */}
-                <div className="bg-black/30 border border-gray-850 p-3 rounded-xl flex flex-col justify-between gap-3 text-left">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-yellow-500/15 flex items-center justify-center text-yellow-500 shrink-0">
-                      <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                        <path d="M21.35 11.1H12v2.7h5.7c-.25 1.4-1 2.5-2.2 3.3v2.7h3.6c2.1-2 3.3-4.8 3.3-8 0-.6-.05-1.1-.05-1.7z"/>
-                        <path fill="#34A853" d="M12 21c2.4 0 4.5-.8 6-2.2l-3.6-2.7c-1 .7-2.3 1.1-3.6 1.1-2.8 0-5.1-1.9-6-4.4H1.1v2.8C2.8 18.5 7.1 21 12 21z"/>
-                        <path fill="#FBBC05" d="M6 12.8c-.2-.6-.3-1.2-.3-1.8s.1-1.2.3-1.8V6.4H1.1C.4 7.7 0 9.3 0 11s.4 3.3 1.1 4.6l4.9-3.8z"/>
-                        <path fill="#EA4335" d="M12 5.3c1.5 0 2.8.5 3.9 1.5l2.9-2.9C17 2.1 14.7 1.2 12 1.2 7.1 1.2 2.8 3.7 1.1 6.4l4.9 3.8c.9-2.5 3.2-4.9 6-4.9z"/>
-                      </svg>
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-xs text-white">Google Ads</h4>
-                      <p className="text-[9px] text-gray-500">Google Marketing API</p>
-                    </div>
+                  {/* Selector de plataforma */}
+                  <div>
+                    <label className="text-[9px] text-gray-500 font-bold uppercase tracking-wider block mb-1.5">Plataforma publicitaria</label>
+                    <select
+                      value={adsPlatform}
+                      onChange={(e) => handleAdsPlatformChange(e.target.value)}
+                      className="w-full bg-black/40 border border-gray-800 rounded-xl px-3 py-2 text-xs text-white font-bold focus:border-gold outline-none"
+                    >
+                      {(adsStatus?.platforms || [
+                        { id: 'facebook', name: 'Meta (Facebook)' },
+                        { id: 'instagram', name: 'Instagram Ads' },
+                        { id: 'tiktok', name: 'TikTok Ads' },
+                        { id: 'google', name: 'Google Ads' },
+                        { id: 'linkedin', name: 'LinkedIn Ads' },
+                        { id: 'pinterest', name: 'Pinterest Ads' },
+                        { id: 'twitter', name: 'X (Twitter) Ads' },
+                      ]).map((p: any) => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
                   </div>
-                  <div className="space-y-2">
-                    {googleConnected ? (
-                      <div className="bg-emerald-500/5 border border-emerald-500/25 rounded-lg p-1.5 text-center flex flex-col gap-0.5">
-                        <span className="text-[9px] text-emerald-400 font-bold block">🟢 Conectado</span>
-                        <button
-                          onClick={toggleGoogleConnection}
-                          className="text-[8px] text-red-400 hover:underline block"
-                        >
-                          Desconectar
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={toggleGoogleConnection}
-                        className="w-full py-1.5 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-lg text-[10px] transition"
-                      >
-                        Vincular Cuenta
-                      </button>
-                    )}
-                  </div>
-                </div>
 
-                {/* Instagram Ads Connector */}
-                <div className="bg-black/30 border border-gray-850 p-3 rounded-xl flex flex-col justify-between gap-3 text-left">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-blue-600/15 flex items-center justify-center text-blue-500 shrink-0">
-                      <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
-                      </svg>
+                  {/* Cuentas Zernio conectadas */}
+                  {adsStatus?.zernioAccounts?.length > 0 ? (
+                    <div className="space-y-1.5">
+                      {adsStatus.zernioAccounts.map((a: any) => (
+                        <div key={a.id} className="flex items-center justify-between bg-black/30 border border-gray-800 rounded-lg px-2.5 py-1.5">
+                          <span className="text-[10px] text-white font-bold truncate">@{a.username || a.id}</span>
+                          <span className="text-[8px] text-gray-500 uppercase">{a.platform}</span>
+                        </div>
+                      ))}
                     </div>
-                    <div>
-                      <h4 className="font-bold text-xs text-white">Instagram</h4>
-                      <p className="text-[9px] text-gray-500">Meta Graph Insights</p>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    {instagramConnected ? (
-                      <div className="bg-emerald-500/5 border border-emerald-500/25 rounded-lg p-1.5 text-center flex flex-col gap-0.5">
-                        <span className="text-[9px] text-emerald-400 font-bold block">🟢 Conectado</span>
-                        <button
-                          onClick={toggleInstagramConnection}
-                          className="text-[8px] text-red-400 hover:underline block"
-                        >
-                          Desconectar
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={toggleInstagramConnection}
-                        className="w-full py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-[10px] font-bold transition"
-                      >
-                        Vincular Cuenta
-                      </button>
-                    )}
-                  </div>
-                </div>
+                  ) : (
+                    <p className="text-[10px] text-gray-500">No hay cuentas conectadas en Zernio.</p>
+                  )}
 
+                  {/* Avisos de conexión requerida */}
+                  {adsStatus?.connected && !adsStatus.zernioAccounts?.some((a: any) => a.platform === 'facebook') && (
+                    <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-2.5">
+                      <p className="text-[10px] text-amber-300 font-bold">⚠️ Conecta Facebook en Zernio</p>
+                      <p className="text-[9px] text-gray-400 mt-0.5">Para Meta/Instagram Ads necesitas una cuenta de Facebook conectada en tu panel de Zernio.</p>
+                    </div>
+                  )}
+
+                  <p className="text-[8px] text-gray-600 leading-relaxed">
+                    💰 Zernio Ads: primeros 500 ads activos gratis · luego $0.01 por ad activo/mes.
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -1335,6 +1327,12 @@ export default function AdsView({
             </div>
           </div>
 
+          {apiErrorMsg && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 mb-4">
+              <p className="text-[11px] text-red-300 font-bold">⚠️ {apiErrorMsg}</p>
+            </div>
+          )}
+
           {/* Media Buyer KPI Summary Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
 
@@ -1680,6 +1678,13 @@ export default function AdsView({
                             }`}
                           >
                             {c.status === 'ACTIVE' ? 'Pausar' : 'Activar'}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteCampaign(c.id, c.name)}
+                            title="Eliminar campaña"
+                            className="ml-1 px-2 py-1 rounded text-[9px] font-bold transition bg-gray-900 hover:bg-red-950/40 border border-gray-800 hover:border-red-500/30 text-gray-500 hover:text-red-400"
+                          >
+                            ✕
                           </button>
                         </td>
                       </tr>

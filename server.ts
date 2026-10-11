@@ -34,6 +34,7 @@ import {
 } from './server/normalizedDb.ts';
 import { setupLiveSellingAdminRoutes, setupLiveSellingPublicRoutes } from './server/liveSelling.ts';
 import { setupSocialRoutes } from './server/social.ts';
+import { setupAdsRoutes } from './server/ads.ts';
 import { setupPushRoutes } from './server/push.ts';
 import { setupDiagnosticAdminRoutes, setupDiagnosticPublicRoutes } from './server/diagnostic.ts';
 import { setupZernioRoutes } from './server/zernio/routes.ts';
@@ -2292,6 +2293,7 @@ async function createServer() {
   app.use('/api', requireApiSession);
   setupLiveSellingAdminRoutes(app);
   setupSocialRoutes(app);
+  setupAdsRoutes(app);
   setupPushRoutes(app);
   setupDiagnosticAdminRoutes(app);
 
