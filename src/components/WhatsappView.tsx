@@ -980,6 +980,22 @@ export default function WhatsappView({
           if (waAccount.phoneNumber) setWhatsappConnectedNumber(waAccount.phoneNumber);
           if (waAccount.phoneNumberId) setPhoneNumberId(waAccount.phoneNumberId);
           if (waAccount.wabaId) setWabaId(waAccount.wabaId);
+          // Registrar proveedor 3-canales (2026-10-11): coexistencia vs solo-API
+          try {
+            const mode = String(waAccount.onboardingMode || '').toLowerCase();
+            const provider = mode === 'api' ? 'zernio_api' : 'zernio_coexistence';
+            fetch('/api/whatsapp/providers', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                accountId: waAccount.id,
+                phone: waAccount.phoneNumber || undefined,
+                provider,
+                onboardingMode: waAccount.onboardingMode || undefined,
+                displayName: waAccount.name || waAccount.phoneNumber || undefined
+              })
+            }).catch(() => {});
+          } catch (_) {}
           return true;
         }
       }
@@ -3824,7 +3840,9 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
     if (activeChat && activeChat.phone) {
       try {
         const isSocial = activeChat.platform === 'instagram' || activeChat.platform === 'messenger' || activeChat.channelId === 'instagram';
-        const isZernio = isSocial || activeChat.accountId?.startsWith('6') || activeChat.channelId === 'zernio_whatsapp' || activeChat.channelId === 'messenger';
+        const chatProvider = String((activeChat as any).provider || '').toLowerCase();
+        const isZernioProvider = chatProvider === 'zernio_coexistence' || chatProvider === 'zernio_api';
+        const isZernio = isZernioProvider || isSocial || activeChat.accountId?.startsWith('6') || activeChat.channelId === 'zernio_whatsapp' || activeChat.channelId === 'messenger';
         let socialAccountId = activeChat.accountId;
         if (isSocial && !socialAccountId) {
           const accountsResponse = await fetch('/api/zernio/accounts');
@@ -5304,7 +5322,7 @@ ${parametersString}
                     <button
                       type="button"
                       onClick={handleToggleBotForChat}
-                      className="hidden sm:flex items-center gap-2 text-xs text-gray-400 bg-black/40 px-3 py-1 rounded-full border border-gray-800 transition cursor-pointer select-none hover:border-gray-700"
+                      className="flex items-center gap-2 text-xs text-gray-400 bg-black/40 px-3 py-1 rounded-full border border-gray-800 transition cursor-pointer select-none hover:border-gray-700"
                       title={isBotActive ? "Auto-respuesta IA activada para este chat" : "Auto-respuesta IA pausada para este chat"}
                     >
                       <span className="text-[10px]">Auto-Bot IA</span>
