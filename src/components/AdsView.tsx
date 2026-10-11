@@ -39,7 +39,11 @@ import {
   Volume2,
   Activity,
   Smartphone,
-  CheckSquare
+  CheckSquare,
+  ChevronDown,
+  Mic,
+  Square,
+  FlaskConical
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -157,7 +161,7 @@ export default function AdsView({
     {
       id: 'init',
       sender: 'bot',
-      text: "¡Hola! Soy tu Copiloto Traffiker IA. 🤖\n\nPuedo analizar tus ganchos publicitarios, vigilar tus métricas en tiempo real o ayudarte a impulsar tus mejores publicaciones con Boost.\n\nEscribe tus indicaciones o haz clic en un comando rápido de abajo para configurar tus campañas de inmediato:",
+      text: "¡Hola! Soy tu Traffiker IA. 🤖\n\nPuedo analizar tus ganchos publicitarios, vigilar tus métricas en tiempo real o ayudarte a impulsar tus mejores publicaciones con Boost.\n\nEscribe tus indicaciones o haz clic en un comando rápido de abajo para configurar tus campañas de inmediato:",
       timestamp: new Date()
     }
   ]);
@@ -184,7 +188,14 @@ export default function AdsView({
   const [alertRules, setAlertRules] = useState<WhatsappAlertRule[]>(() => {
     const saved = localStorage.getItem('whatsappAlertRules');
     if (saved) {
-      try { return JSON.parse(saved); } catch (e) { console.warn(e); }
+      try {
+        const parsed = JSON.parse(saved);
+        // Migración: reemplazar números placeholder viejos por el configurado
+        const placeholders = ['+57 311 555 4321', '+573115554321', '+57 312 987 6543', '+573129876543', 'e.g. +57 312 987 6543'];
+        return (Array.isArray(parsed) ? parsed : []).map((r: any) => (
+          placeholders.includes(String(r.phone || '').trim()) ? { ...r, phone: '+57 3192392853' } : r
+        ));
+      } catch (e) { console.warn(e); }
     }
     return [
       {
@@ -223,6 +234,7 @@ export default function AdsView({
   const [alertPhone, setAlertPhone] = useState('+57 3192392853');
 
   // Trigger Notification Simulation State
+  const [simModal, setSimModal] = useState<null | { title: string; lines: string[]; phone: string }>(null);
   const [activeNotification, setActiveNotification] = useState<{
     title: string;
     message: string;
@@ -240,6 +252,11 @@ export default function AdsView({
   const [apLoading, setApLoading] = useState(false);
   const [apEvaluating, setApEvaluating] = useState(false);
   const [showNewRule, setShowNewRule] = useState(false);
+  const [showIntegration, setShowIntegration] = useState(false);
+  const [isRecordingCopilot, setIsRecordingCopilot] = useState(false);
+  const [copilotRecSeconds, setCopilotRecSeconds] = useState(0);
+  const copilotRecorderRef = useRef<MediaRecorder | null>(null);
+  const copilotAudioChunksRef = useRef<Blob[]>([]);
   const [newRule, setNewRule] = useState({ name: '', type: 'pause_no_sales', spendUsd: 20, days: 3, cpcSpikePct: 50, roasMin: 3, scalePct: 20, notifyWhatsapp: false, whatsappNumber: '' });
 
 
@@ -603,30 +620,29 @@ export default function AdsView({
     setAlertRules(prev => prev.filter(r => r.id !== id));
   };
 
-  // Simulate Trigger of programmed WhatsApp rule
+  // Simulate Trigger of programmed WhatsApp rule — modo simulación explícito
   const handleTriggerSimulateRule = (rule: WhatsappAlertRule) => {
     const metricSymbol = rule.metric === 'ROAS' ? 'x' : rule.metric === 'CTR' ? '%' : ' USD';
     const conditionText = rule.condition === 'greater' ? 'superó' : 'cayó por debajo de';
     const simulatedCurrentValue = rule.condition === 'greater'
-      ? (rule.thresholdValue * 1.35).toFixed(2)
-      : (rule.thresholdValue * 0.75).toFixed(2);
+      ? (Number(rule.thresholdValue) * 1.35).toFixed(2)
+      : (Number(rule.thresholdValue) * 0.75).toFixed(2);
 
-    let actionLabelText = "Notificación de Alerta enviada.";
-    if (rule.actionType === 'pause') {
-      actionLabelText = "Alerta enviada y Campaña PAUSADA automáticamente para mitigar riesgos.";
-      // Mutate local state of that campaign
-      setCampaigns(prev => prev.map(c => c.id === rule.campaignId ? { ...c, status: 'PAUSED' } : c));
-    } else if (rule.actionType === 'scale') {
-      actionLabelText = "Alerta enviada y Presupuesto diario ESCALADO +20% en tiempo real.";
-      setCampaigns(prev => prev.map(c => c.id === rule.campaignId ? { ...c, metrics: { ...c.metrics, spend: parseFloat((c.metrics.spend * 1.2).toFixed(2)) } } : c));
-    }
-
-    showToastNotification(
-      `⚠️ Alerta WhatsApp: Anomalía en ${rule.metric}`,
-      `Mona IA detectó que en "${rule.campaignName}", el ${rule.metric} ${conditionText} el límite de ${rule.thresholdValue}${metricSymbol} (Valor actual: ${simulatedCurrentValue}${metricSymbol}).\n\nAcción Automatizada: ${actionLabelText}`,
-      'alert',
-      rule.phone
-    );
+    const actionDesc = rule.actionType === 'pause'
+      ? 'Pausar la campaña'
+      : rule.actionType === 'scale'
+        ? 'Escalar presupuesto +20%'
+        : 'Solo notificar por WhatsApp';
+    setSimModal({
+      title: `Simulación: ${rule.campaignName}`,
+      phone: rule.phone || '+57 3192392853',
+      lines: [
+        `Condición disparada: ${rule.metric} ${conditionText} ${rule.thresholdValue}${metricSymbol} (valor simulado: ${simulatedCurrentValue}${metricSymbol})`,
+        `Acción que se ejecutaría: ${actionDesc}`,
+        `WhatsApp que recibiría el aviso: ${rule.phone || '+57 3192392853'}`,
+        `Mensaje previo: "⚠️ Traffiker IA: ${rule.metric} de \"${rule.campaignName}\" ${conditionText} el límite (${simulatedCurrentValue}${metricSymbol}). Acción: ${actionDesc}."`,
+      ],
+    });
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -662,6 +678,46 @@ export default function AdsView({
   };
 
   // Chatbot message flow simulator
+  // Grabadora de voz del Traffiker IA
+  useEffect(() => {
+    let t: any;
+    if (isRecordingCopilot) t = setInterval(() => setCopilotRecSeconds(s => s + 1), 1000);
+    else setCopilotRecSeconds(0);
+    return () => clearInterval(t);
+  }, [isRecordingCopilot]);
+
+  const toggleCopilotRecording = async () => {
+    if (isRecordingCopilot) {
+      copilotRecorderRef.current?.stop();
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const rec = new MediaRecorder(stream);
+      copilotAudioChunksRef.current = [];
+      rec.ondataavailable = (ev) => { if (ev.data.size > 0) copilotAudioChunksRef.current.push(ev.data); };
+      rec.onstop = () => {
+        stream.getTracks().forEach(t => t.stop());
+        const blob = new Blob(copilotAudioChunksRef.current, { type: rec.mimeType || 'audio/webm' });
+        const url = URL.createObjectURL(blob);
+        const secs = copilotRecSeconds;
+        setPendingAttachment({
+          type: 'audio',
+          url,
+          name: `nota-de-voz-${secs}s.webm`,
+          size: (blob.size / 1024).toFixed(1) + ' KB',
+          blob,
+        });
+        setIsRecordingCopilot(false);
+      };
+      copilotRecorderRef.current = rec;
+      rec.start();
+      setIsRecordingCopilot(true);
+    } catch {
+      showToastNotification('Sin micrófono', 'No se pudo acceder al micrófono de este dispositivo.', 'alert');
+    }
+  };
+
   const handleSendMessage = (e?: React.FormEvent, customText?: string) => {
     if (e) e.preventDefault();
     const textToSend = customText || chatInput;
@@ -695,6 +751,8 @@ export default function AdsView({
         } else if (fileType === 'video') {
           replyText = `¡He recibido tu vídeo **'${fileName}'**! 🎥 Procesando hooks de retención...\n\n- **Gancho Comercial de Entrada:** Excelente encuadre de los primeros 3 segundos. Recomendamos añadir texto centrado con la frase: *"El gadget más vendido de internet llegó a Colombia..."*\n- **Estrategia:** Ubicación recomendada en Reels de Facebook/Instagram y pauta directa en TikTok Spark Ads.\n\n¿Quieres que lo impulsemos con Boost en un clic?`;
           action = { type: 'fill_winning_campaign', label: 'Cargar Vídeo al Lanzador' };
+        } else if (fileType === 'audio') {
+          replyText = `¡Nota de voz recibida! 🎤 La escuché completa.\n\nDime con texto qué quieres que haga con tu idea: puedo pausar campañas, ajustar presupuestos o programar una alerta de WhatsApp.`;
         } else {
           replyText = `¡He recibido tu archivo **'${fileName}'**! 📄 Leyendo pautas de marca...\n\n- **Ajustes Aplicados:** He calibrado los valores sugeridos de presupuesto a **$30.00 USD/diarios** según el presupuesto de adquisición de clientes del archivo.`;
         }
@@ -842,7 +900,7 @@ export default function AdsView({
 
       {/* Interactive Floating WhatsApp Alert Simulator notification popup */}
       {activeNotification && (
-        <div className="fixed top-4 right-4 z-50 max-w-sm w-full bg-[#1e293b] border-2 border-emerald-500 rounded-2xl shadow-2xl overflow-hidden animate-slide-in">
+        <div className="fixed top-4 left-4 right-4 sm:left-auto sm:right-4 z-50 sm:max-w-sm w-auto bg-[#1e293b] border-2 border-emerald-500 rounded-2xl shadow-2xl overflow-hidden animate-slide-in">
           <div className="bg-emerald-600/20 px-4 py-2 border-b border-emerald-500/20 flex items-center justify-between">
             <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-400 flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
@@ -871,6 +929,28 @@ export default function AdsView({
         </div>
       )}
 
+      {/* Modal de simulación de disparo */}
+      {simModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70" onClick={() => setSimModal(null)}>
+          <div className="w-full max-w-md bg-[#101010] border border-gold/40 rounded-2xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="px-4 py-3 border-b border-gray-800 flex items-center justify-between">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-gold flex items-center gap-1.5">
+                <FlaskConical size={14} /> Modo simulación
+              </span>
+              <button onClick={() => setSimModal(null)} className="text-gray-400 hover:text-white"><X size={14} /></button>
+            </div>
+            <div className="p-4 space-y-2.5">
+              <h4 className="font-bold text-white text-sm">{simModal.title}</h4>
+              {simModal.lines.map((l, i) => (
+                <p key={i} className="text-[11px] text-gray-300 leading-relaxed bg-black/40 border border-gray-800 rounded-lg px-3 py-2">{l}</p>
+              ))}
+              <p className="text-[10px] text-gray-500 italic">Nada se ejecutó de verdad: ni se pausó campaña ni se envió WhatsApp.</p>
+              <button onClick={() => setSimModal(null)} className="w-full py-2 bg-gold/15 border border-gold/40 text-gold font-bold text-xs rounded-xl hover:bg-gold/25 transition">Entendido</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header Panel */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-800 pb-5">
         <div className="flex items-center gap-4">
@@ -879,7 +959,7 @@ export default function AdsView({
           </div>
           <div>
             <h2 className="text-2xl font-display font-bold text-white tracking-tight">
-              {activeTab === 'traffiker' ? 'Traffiker IA & Copiloto' : 'Métricas KPI & Alertas Automatizadas'}
+              {activeTab === 'traffiker' ? 'Traffiker IA' : 'Métricas KPI & Alertas Automatizadas'}
             </h2>
             <p className="text-xs text-gray-400 mt-0.5">
               {activeTab === 'traffiker'
@@ -911,14 +991,22 @@ export default function AdsView({
           {/* Chatbot + Connections Panel (ancho completo) */}
           <div className="lg:col-span-12 space-y-6 flex flex-col h-full">
 
-            {/* Connections & Admin Hub (Facebook, Google, Instagram) */}
-            <div className="bg-[#090909] border border-gray-800 rounded-2xl p-4 shadow-xl space-y-4">
-              <div className="flex items-center justify-between border-b border-gray-800 pb-3">
+            {/* Connections & Admin Hub — colapsable, oculto por defecto */}
+            <div className="bg-[#090909] border border-gray-800 rounded-2xl shadow-xl overflow-hidden">
+              <button
+                onClick={() => setShowIntegration(v => !v)}
+                className="w-full flex items-center justify-between p-4 text-left hover:bg-white/[0.02] transition"
+              >
                 <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest flex items-center gap-1.5">
                   <Network size={14} className="text-gold" /> Integración de Administradores de Anuncios
                 </span>
-                <span className="text-[9px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full font-bold">LIVE API READY</span>
-              </div>
+                <span className="flex items-center gap-2 shrink-0">
+                  <span className="text-[9px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full font-bold hidden sm:inline">LIVE API READY</span>
+                  <ChevronDown size={16} className={`text-gray-400 transition-transform ${showIntegration ? 'rotate-180' : ''}`} />
+                </span>
+              </button>
+              {showIntegration && (
+              <div className="p-4 pt-3 space-y-4 border-t border-gray-800">
 
               <div>
 
@@ -988,6 +1076,8 @@ export default function AdsView({
                   </p>
                 </div>
               </div>
+              </div>
+              )}
             </div>
 
             {/* Chatbox Interface */}
@@ -1004,7 +1094,7 @@ export default function AdsView({
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                   <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1">
-                    <Bot size={14} className="text-red-500" /> Copiloto Traffiker IA
+                    <Bot size={14} className="text-red-500" /> Traffiker IA
                   </span>
                 </div>
                 <span className="text-[9px] text-gray-500 font-mono">v2.1-live-control</span>
@@ -1112,6 +1202,12 @@ export default function AdsView({
 
               {/* Chat Input Bar */}
               <form onSubmit={handleSendMessage} className="space-y-2.5 shrink-0">
+                {isRecordingCopilot && (
+                  <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-3 py-2 flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
+                    <span className="text-[11px] text-red-300 font-bold">Grabando nota de voz… {copilotRecSeconds}s — toca el botón para enviar</span>
+                  </div>
+                )}
 
                 {/* File attachment preview */}
                 {pendingAttachment && (
@@ -1150,6 +1246,14 @@ export default function AdsView({
                     title="Adjuntar imágenes o vídeos de pauta"
                   >
                     <Paperclip size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={toggleCopilotRecording}
+                    className={`p-1.5 transition shrink-0 ${isRecordingCopilot ? 'text-red-500 animate-pulse' : 'text-gray-500 hover:text-white'}`}
+                    title={isRecordingCopilot ? `Grabando ${copilotRecSeconds}s — toca para enviar` : 'Grabar nota de voz'}
+                  >
+                    {isRecordingCopilot ? <Square size={16} /> : <Mic size={16} />}
                   </button>
 
                   <input

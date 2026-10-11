@@ -1,5 +1,6 @@
 import type { Express, Request, Response } from 'express';
 import { execFile } from 'child_process';
+import { xorbitToolDefs, handleXorbitTool } from './mcp_xorbit.ts';
 import { promisify } from 'util';
 import fs from 'fs/promises';
 import path from 'path';
@@ -47,6 +48,7 @@ function textResult(value: unknown) {
 }
 
 const userTools = [
+  ...xorbitToolDefs,
   { name: 'health_check', description: 'Consulta el estado operativo del CRM.', inputSchema: { type: 'object', properties: {}, additionalProperties: false } },
   { name: 'analytics_summary', description: 'Obtiene un resumen de KPIs visibles para el usuario.', inputSchema: { type: 'object', properties: {}, additionalProperties: false } },
   { name: 'catalog_list', description: 'Consulta el catálogo del usuario.', inputSchema: { type: 'object', properties: { limit: { type: 'number', maximum: 100 } }, additionalProperties: false } },
@@ -207,6 +209,8 @@ async function callTool(role: McpRole, name: string, args: any, deps: McpDeps): 
     const result = await execFileAsync('ssh', ['-i', VPS_SSH_KEY(), '-o', 'IdentitiesOnly=yes', '-o', 'StrictHostKeyChecking=no', `${VPS_SSH_USER()}@${VPS_SSH_HOST()}`, '--', command], { timeout, maxBuffer: 2 * 1024 * 1024 });
     return redact({ stdout: result.stdout, stderr: result.stderr });
   }
+  const xorbit = await handleXorbitTool(name, args, deps);
+  if (xorbit !== null) return xorbit;
   throw new Error(`Herramienta desconocida: ${name}`);
 }
 

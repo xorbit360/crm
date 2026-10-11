@@ -816,6 +816,17 @@ function startAutopilotLoop() {
   // Primera pasada a los 5 min del arranque, luego cada 60 min.
   setTimeout(() => { evaluateAutopilot(false).catch(() => {}); }, 5 * 60 * 1000);
   autopilotTimer = setInterval(() => { evaluateAutopilot(false).catch(() => {}); }, 60 * 60 * 1000);
+  // Evaluación inmediata bajo demanda (MCP autopilot_evaluate u otros): revisa la bandera cada 10 s.
+  setInterval(() => {
+    try {
+      const db = getDB();
+      if (db && db.adsAutopilot && db.adsAutopilot._evaluateNow) {
+        db.adsAutopilot._evaluateNow = false;
+        try { saveDB(); } catch {}
+        evaluateAutopilot(true).catch(() => {});
+      }
+    } catch {}
+  }, 10 * 1000);
   console.log('[Autopilot] motor de reglas iniciado (cada 60 min).');
 }
 
@@ -948,3 +959,4 @@ function startAutopilotLoop() {
 }
 
 export default setupAdsRoutes;
+
