@@ -33,10 +33,12 @@ import {
   loadStateFromNormalizedTables,
 } from './server/normalizedDb.ts';
 import { setupLiveSellingAdminRoutes, setupLiveSellingPublicRoutes } from './server/liveSelling.ts';
+import { setupPushRoutes } from './server/push.ts';
 import { setupDiagnosticAdminRoutes, setupDiagnosticPublicRoutes } from './server/diagnostic.ts';
 import { setupZernioRoutes } from './server/zernio/routes.ts';
 import { handleZernioWebhook } from './server/zernio/webhook.ts';
 import { enviarMensajeZernio } from './server/zernio/messaging.ts';
+import { getZernioAccounts } from './server/zernio/accounts.ts';
 import { setupBoldRoutes } from './server/bold.ts';
 import { setupMcpRoutes } from './server/mcp.ts';
 import {
@@ -462,6 +464,94 @@ function getEvolutionConfig() {
   const apiKey = (dbKey || DEFAULT_EVOLUTION_API_KEY || "").trim();
   const webhookBaseUrl = normalizeEvolutionWebhookBase(dbWebhook);
   return { apiUrl, apiKey, webhookBaseUrl, isConfigured: !!(apiUrl && apiKey) };
+}
+
+// ============================================================
+// WHATSAPP MULTI-PROVEEDOR (2026-10-11)
+// provider: 'evolution' | 'zernio_coexistence' | 'zernio_api'
+// Registro: currentDB.whatsappProviders[key] donde key = dígitos del
+// teléfono (Evolution) o accountId de Zernio.
+// ============================================================
+function getWhatsappProvidersRegistry(): Record<string, any> {
+  if (typeof currentDB === 'undefined') return {};
+  if (!currentDB.whatsappProviders || typeof currentDB.whatsappProviders !== 'object') {
+    currentDB.whatsappProviders = {};
+  }
+  return currentDB.whatsappProviders;
+}
+
+function setWhatsappProvider(key: string, provider: string, meta: any = {}) {
+  const k = String(key || '').trim();
+  if (!k) return;
+  const registry = getWhatsappProvidersRegistry();
+  const prev = registry[k] || {};
+  registry[k] = {
+    provider,
+    accountId: meta.accountId || prev.accountId || undefined,
+    phone: meta.phone || prev.phone || undefined,
+    onboardingMode: meta.onboardingMode || prev.onboardingMode || undefined,
+    displayName: meta.displayName || prev.displayName || undefined,
+    connectedAt: prev.connectedAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  try { if (typeof saveDBData === 'function') saveDBData(currentDB); } catch (_) {}
+}
+
+function zernioProviderFromOnboarding(onboardingMode?: string): string {
+  return String(onboardingMode || '').toLowerCase() === 'api' ? 'zernio_api' : 'zernio_coexistence';
+}
+
+// Resuelve el proveedor para un número WhatsApp.
+// Orden: registro explícito por teléfono > campo provider del chat > heurística histórica.
+function getWhatsappProvider(phone: string, chat?: any): string {
+  const digits = String(phone || '').replace(/\D/g, '');
+  const registry = getWhatsappProvidersRegistry();
+  const entry = digits ? registry[digits] : undefined;
+  if (entry && (entry.provider === 'evolution' || entry.provider === 'zernio_coexistence' || entry.provider === 'zernio_api')) {
+    return entry.provider;
+  }
+  // Registro por accountId de Zernio (cuando el chat trae accountId)
+  const acctId = String(chat?.accountId || entry?.accountId || '').trim();
+  if (acctId && registry[acctId] && (registry[acctId].provider === 'zernio_coexistence' || registry[acctId].provider === 'zernio_api')) {
+    return registry[acctId].provider;
+  }
+  const chatProvider = String(chat?.provider || '').toLowerCase();
+  if (chatProvider === 'zernio_coexistence' || chatProvider === 'zernio_api' || chatProvider === 'evolution') {
+    return chatProvider;
+  }
+  // Heurística histórica: channelId zernio_whatsapp => Zernio
+  const channelId = String(chat?.channelId || '').toLowerCase();
+  const platform = String(chat?.platform || '').toLowerCase();
+  if (channelId === 'zernio_whatsapp' || (platform === 'whatsapp' && chat?.accountId)) {
+    const mode = String(chat?.onboardingMode || entry?.onboardingMode || '').toLowerCase();
+    return mode === 'api' ? 'zernio_api' : 'zernio_coexistence';
+  }
+  return 'evolution';
+}
+
+// Caché accountId -> provider para el webhook Zernio (evita llamar a la API por mensaje)
+const _zernioAcctProviderCache: Record<string, { provider: string; at: number }> = {};
+async function getZernioAccountProvider(accountId: string): Promise<string | null> {
+  const id = String(accountId || '').trim();
+  if (!id) return null;
+  const registry = getWhatsappProvidersRegistry();
+  if (registry[id] && (registry[id].provider === 'zernio_coexistence' || registry[id].provider === 'zernio_api')) {
+    return registry[id].provider;
+  }
+  const cached = _zernioAcctProviderCache[id];
+  if (cached && Date.now() - cached.at < 10 * 60 * 1000) return cached.provider;
+  try {
+    const { getZernioAccounts } = await import('./server/zernio/accounts.ts');
+    const res: any = await getZernioAccounts();
+    const list: any[] = Array.isArray(res?.data) ? res.data : [];
+    const acct = list.find((a: any) => String(a.id || a._id) === id && String(a.platform || '').toLowerCase() === 'whatsapp');
+    if (acct) {
+      const provider = zernioProviderFromOnboarding(acct.onboardingMode);
+      _zernioAcctProviderCache[id] = { provider, at: Date.now() };
+      return provider;
+    }
+  } catch (_) {}
+  return null;
 }
 
 async function evolutionRequest(endpoint: string, options: { method?: string; body?: any; timeoutMs?: number } = {}) {
@@ -2200,6 +2290,7 @@ async function createServer() {
   setupDiagnosticPublicRoutes(app);
   app.use('/api', requireApiSession);
   setupLiveSellingAdminRoutes(app);
+  setupPushRoutes(app);
   setupDiagnosticAdminRoutes(app);
 
   // Receives the real browser exception behind the generic error screen. The
@@ -2339,6 +2430,8 @@ async function createServer() {
         const updatedChat = { ...currentDB.chats[chatIdx], message: socialDisplayText, time: nowStr, timestamp: Date.now(),
           channelId: socialPlatform === 'instagram' ? 'instagram' : currentDB.chats[chatIdx].channelId,
           platform: socialPlatform, conversationId: zernioConversationId || currentDB.chats[chatIdx].conversationId,
+          ...(socialPlatform === 'whatsapp' && incomingMessage ? { lastInboundAt: Date.now() } : {}),
+          ...(socialPlatform === 'whatsapp' && !currentDB.chats[chatIdx].provider ? { provider: zernioProviderFromOnboarding(currentDB.chats[chatIdx].onboardingMode) } : {}),
           externalId: participantId || currentDB.chats[chatIdx].externalId,
           participantId: participantId || currentDB.chats[chatIdx].participantId,
           participantUsername: participantUsername || currentDB.chats[chatIdx].participantUsername,
@@ -2360,12 +2453,29 @@ async function createServer() {
           unread: incomingMessage ? 1 : 0
           ,channelId: socialPlatform === 'instagram' ? 'instagram' : 'whatsapp'
           ,platform: socialPlatform
+          ,provider: socialPlatform === 'whatsapp' ? zernioProviderFromOnboarding(undefined) : undefined
+          ,lastInboundAt: socialPlatform === 'whatsapp' && incomingMessage ? Date.now() : undefined
           ,conversationId: zernioConversationId || undefined
           ,externalId: participantId || msg.senderId || undefined
           ,participantId: participantId || msg.senderId || undefined
           ,participantUsername: participantUsername || undefined
           ,accountId: socialAccountId || undefined
         });
+      }
+      // Resolver provider real del número/cuenta Zernio (coexistencia vs solo-API).
+      if (socialPlatform === 'whatsapp' && socialAccountId) {
+        getZernioAccountProvider(socialAccountId).then((p) => {
+          if (!p) return;
+          let changed = false;
+          for (const ch of (currentDB.chats || [])) {
+            if (String(ch.platform || '').toLowerCase() === 'whatsapp' &&
+                (String(ch.accountId || '') === socialAccountId ||
+                 (zernioConversationId && String(ch.conversationId || '') === String(zernioConversationId)))) {
+              if (ch.provider !== p) { ch.provider = p; changed = true; }
+            }
+          }
+          if (changed) { try { saveDBData(currentDB); } catch (_) {} }
+        }).catch(() => {});
       }
       // Auto-Bot IA social (Instagram/Facebook/Messenger/WhatsApp via Zernio).
       // Corre en segundo plano para no bloquear el webhook (<5s).
@@ -2456,6 +2566,57 @@ async function createServer() {
       if (webhookBaseUrl !== undefined) currentDB.evolutionWebhookBaseUrl = normalizeEvolutionWebhookBase(webhookBaseUrl);
       saveDBData(currentDB);
       res.json({ success: true, message: "Configuración de Evolution API actualizada exitosamente." });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // ============================================================
+  // WHATSAPP MULTI-PROVEEDOR: registro de proveedor por número/cuenta
+  // ============================================================
+  app.get("/api/whatsapp/providers", async (req, res) => {
+    try {
+      res.json({ success: true, providers: getWhatsappProvidersRegistry() });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  app.post("/api/whatsapp/providers", async (req, res) => {
+    try {
+      const { phone, accountId, provider, onboardingMode, displayName } = req.body || {};
+      let resolved = String(provider || '').toLowerCase();
+      if (resolved !== 'evolution' && resolved !== 'zernio_coexistence' && resolved !== 'zernio_api') {
+        // Derivar del onboardingMode si no viene explícito
+        resolved = zernioProviderFromOnboarding(onboardingMode);
+        if (!accountId && !phone) {
+          return res.status(400).json({ success: false, error: "Se requiere provider, phone o accountId" });
+        }
+        if (!phone && !accountId) resolved = 'evolution';
+      }
+      const key = String(accountId || '').trim() || String(phone || '').replace(/\D/g, '');
+      if (!key) return res.status(400).json({ success: false, error: "Se requiere phone o accountId" });
+      setWhatsappProvider(key, resolved, { accountId, phone: String(phone || '').replace(/\D/g, '') || undefined, onboardingMode, displayName });
+      // También registrar por teléfono cuando hay accountId + phone (búsqueda inversa)
+      const phoneDigits = String(phone || '').replace(/\D/g, '');
+      if (accountId && phoneDigits && key !== phoneDigits) {
+        setWhatsappProvider(phoneDigits, resolved, { accountId, phone: phoneDigits, onboardingMode, displayName });
+      }
+      res.json({ success: true, key, provider: resolved });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  app.delete("/api/whatsapp/providers/:key", async (req, res) => {
+    try {
+      const registry = getWhatsappProvidersRegistry();
+      const key = String(req.params.key || '').trim();
+      if (registry[key]) {
+        delete registry[key];
+        saveDBData(currentDB);
+      }
+      res.json({ success: true });
     } catch (err: any) {
       res.status(500).json({ success: false, error: err.message });
     }
@@ -2821,6 +2982,59 @@ async function createServer() {
         storedChat?.instanceName ||
         requestedChannel.toLowerCase().includes('evolution')
       );
+      // Enrutamiento multi-proveedor (2026-10-11): si el chat es de Zernio
+      // (coexistencia o solo-API), el envío sale por Zernio, no por Evolution.
+      const replyProvider = getWhatsappProvider(targetPhone, storedChat);
+      const isZernioWhatsapp = replyProvider === 'zernio_coexistence' || replyProvider === 'zernio_api';
+      if (isZernioWhatsapp) {
+        try {
+          const registry = getWhatsappProvidersRegistry();
+          const regEntry = registry[targetPhone] || {};
+          const zAccountId = String(storedChat?.accountId || regEntry.accountId || '').trim();
+          if (!zAccountId) {
+            return res.status(400).json({ success: false, error: 'Este chat usa WhatsApp oficial (Zernio) pero no hay cuenta conectada registrada. Reconecta el número en la pestaña Conexión.' });
+          }
+          const zResult: any = await enviarMensajeZernio({
+            platform: 'whatsapp',
+            accountId: zAccountId,
+            conversationId: storedChat?.conversationId || undefined,
+            recipientPhone: targetPhone,
+            text: message || undefined,
+            mediaBase64: (typeof mediaBase64 === 'string' && mediaBase64) ? mediaBase64 : undefined,
+            mediaKind: normalizedType === 'imagen' ? 'image' : normalizedType === 'video' ? 'video' : normalizedType === 'audio' ? 'audio' : normalizedType === 'archivo' ? 'file' : undefined,
+            mediaMimeType: detectedMime || undefined,
+            mediaFileName: effectiveFileName,
+            lastInboundAt: storedChat?.lastInboundAt || undefined
+          });
+          if (!zResult?.success) {
+            const status = zResult?.outside24hWindow ? 422 : 400;
+            return res.status(status).json({ success: false, error: zResult?.error || 'El canal oficial no confirmó el envío', outside24hWindow: !!zResult?.outside24hWindow, provider: replyProvider });
+          }
+          if (!currentDB.messagesHistory) currentDB.messagesHistory = {};
+          if (!currentDB.messagesHistory[targetPhone]) currentDB.messagesHistory[targetPhone] = [];
+          currentDB.messagesHistory[targetPhone].push({
+            role: 'assistant',
+            text: message || (normalizedType === 'audio' ? '🎤 [Nota de voz enviada]' : (normalizedType === 'imagen' ? '📷 [Imagen enviada]' : (normalizedType === 'video' ? '🎥 [Video enviado]' : `📎 [${effectiveFileName}]`))),
+            attachment: attachmentObj,
+            time: new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
+            timestamp: Date.now(),
+            provider: replyProvider
+          });
+          if (currentDB.messagesHistory[targetPhone].length > 35) currentDB.messagesHistory[targetPhone].shift();
+          const zChatIdx = (currentDB.chats || []).findIndex((ch: any) => String(ch?.phone || '').replace(/\D/g, '') === targetPhone);
+          if (zChatIdx !== -1) {
+            currentDB.chats[zChatIdx].provider = replyProvider;
+            if (zResult.conversationId && !currentDB.chats[zChatIdx].conversationId) {
+              currentDB.chats[zChatIdx].conversationId = zResult.conversationId;
+            }
+          }
+          saveDBData(currentDB);
+          return res.json({ success: true, message: 'Mensaje enviado por WhatsApp oficial (Zernio)', provider: replyProvider, messageId: zResult.messageId });
+        } catch (err: any) {
+          console.error('[WhatsApp 3 canales] Error enviando por Zernio:', err?.message || err);
+          return res.status(500).json({ success: false, error: err?.message || 'Error enviando por el canal oficial', provider: replyProvider });
+        }
+      }
       // Never borrow a socket from another WhatsApp account for an Evolution
       // conversation.  Its exact instance and remote JID are authoritative.
       const clientSock = isEvolutionConversation
@@ -5025,6 +5239,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
             phone: `+${cleanPhone}`,
             platform: 'whatsapp',
             channelId: 'evolution_whatsapp',
+            provider: 'evolution',
             instanceName: instance,
             remoteJid: senderJid,
             avatar: cachedAvatar,
@@ -5072,6 +5287,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
         phone: `+${cleanPhone}`,
         platform: 'whatsapp',
         channelId: 'evolution_whatsapp',
+        provider: 'evolution',
         instanceName: instance,
         remoteJid: senderJid,
         avatar: cachedAvatar,
