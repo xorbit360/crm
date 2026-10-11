@@ -25,6 +25,45 @@ function personKeyFromComment(m: AnyRow): string {
 }
 
 /** Construye hilos unificados fusionando DMs sociales + comentarios por persona. */
+/** Mensajes DM de un chat social: c.messages, messagesHistory[id] o historial del auto-bot. */
+function collectSocialChatMessages(db: any, c: AnyRow): AnyRow[] {
+  const out: AnyRow[] = [];
+  const seen = new Set<string>();
+  const push = (m: any) => {
+    if (!m) return;
+    const fromMe = m.fromMe !== undefined ? !!m.fromMe
+      : (m.sender === 'agent' || m.role === 'agent' || m.role === 'assistant');
+    const text = String(m.text || m.body || m.content || '');
+    const at = m.timestamp || m.at || m.time || Date.now();
+    const key = String(m.id || m.remoteId || (at + '|' + text)).trim();
+    if (key && seen.has(key)) return;
+    if (key) seen.add(key);
+    out.push({
+      id: m.id || m.remoteId || ('m-' + key),
+      origin: 'dm',
+      fromMe,
+      text,
+      at,
+      authorName: m.authorName || undefined,
+      attachment: m.attachment || undefined,
+    });
+  };
+  if (Array.isArray((c as any).messages)) (c as any).messages.forEach(push);
+  const hist = (db && (db as any).messagesHistory) || {};
+  const platform = String((c as any).platform || '').toLowerCase();
+  const candKeys = [
+    (c as any).id,
+    (c as any).conversationId ? 'social:' + platform + ':' + (c as any).conversationId : '',
+    (c as any).participantId ? 'social:' + platform + ':' + (c as any).participantId : '',
+    (c as any).externalId ? 'social:' + platform + ':' + (c as any).externalId : '',
+  ].filter(Boolean);
+  for (const k of candKeys) {
+    const arr = (hist as any)[k];
+    if (Array.isArray(arr)) arr.forEach(push);
+  }
+  return out;
+}
+
 export function buildSocialThreads(db: any): AnyRow[] {
   const map = new Map<string, AnyRow>();
   const chats: AnyRow[] = Array.isArray(db.chats) ? db.chats : [];
@@ -34,7 +73,7 @@ export function buildSocialThreads(db: any): AnyRow[] {
     if (!isSocialChat(c)) continue;
     const key = personKeyFromChat(c);
     if (!key) continue;
-    const msgs: AnyRow[] = Array.isArray(c.messages) ? c.messages : [];
+    const msgs: AnyRow[] = collectSocialChatMessages(db, c);
     const thread = map.get(key) || {
       id: `person:${key}`,
       personId: key,
@@ -51,12 +90,8 @@ export function buildSocialThreads(db: any): AnyRow[] {
     thread.origins.add('dm');
     for (const m of msgs) {
       thread.messages.push({
-        id: m.id || `m-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        origin: 'dm',
-        fromMe: !!m.fromMe,
-        text: m.text || m.body || '',
-        at: m.timestamp || m.at || Date.now(),
-        authorName: m.fromMe ? undefined : thread.personName,
+        ...m,
+        authorName: m.fromMe ? undefined : (m.authorName || thread.personName),
       });
     }
     const lastMsgAt = msgs.length ? Math.max(...msgs.map((m: any) => new Date(m.timestamp || m.at || 0).getTime() || 0)) : 0;
@@ -125,6 +160,27 @@ function saveDB(_db: any) {
   } catch { /* noop */ }
 }
 
+/** Pausa el auto-bot social para el hilo (asesor respondio manualmente) y guarda historial. */
+function pauseSocialBotForThread(db: any, thread: AnyRow, text: string): void {
+  try {
+    const platform = String(thread.platform || 'instagram').toLowerCase();
+    const bases = [thread.conversationId, thread.personId].filter(Boolean).map(String);
+    if (!Array.isArray(db.disabledBots)) db.disabledBots = [];
+    const nowStr = new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+    for (const b of bases) {
+      const key = 'social:' + platform + ':' + b;
+      if (!db.disabledBots.includes(key)) db.disabledBots.push(key);
+      if (!db.messagesHistory) db.messagesHistory = {};
+      if (!Array.isArray(db.messagesHistory[key])) db.messagesHistory[key] = [];
+      db.messagesHistory[key].push({
+        role: 'agent', remoteId: 'crm-' + Date.now(), source: 'crm', fromSocial: true,
+        text: text, time: nowStr, timestamp: Date.now(),
+      });
+    }
+    saveDB(db);
+  } catch { /* noop */ }
+}
+
 export function setupSocialRoutes(app: express.Express) {
   const router = express.Router();
 
@@ -175,6 +231,8 @@ export function setupSocialRoutes(app: express.Express) {
       }
       // Reflejar localmente
       thread.messages.push({ id: `local-${Date.now()}`, origin: hasDM ? 'dm' : 'comment', fromMe: true, text, at: new Date().toISOString() });
+      // Auto-pausa del bot: el asesor respondio manualmente -> la IA no debe responder en este hilo
+      pauseSocialBotForThread(db, thread, text);
       res.json({ success: true, via: hasDM ? 'dm' : 'comment' });
     } catch (e: any) {
       res.status(500).json({ success: false, error: e?.message || 'Error' });
@@ -202,6 +260,7 @@ export function setupSocialRoutes(app: express.Express) {
       if ((r as any).success === false) {
         return res.status(502).json({ success: false, error: (r as any).error?.message || 'Zernio rechazó el envío' });
       }
+      pauseSocialBotForThread(db, thread, text);
       res.json({ success: true });
     } catch (e: any) {
       res.status(500).json({ success: false, error: e?.message || 'Error' });

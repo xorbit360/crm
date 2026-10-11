@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Terminal, Activity, Cpu, Smartphone, Search, MoreVertical, Smile, Paperclip, Image as ImageIcon, Mic, UploadCloud, MessageCircle, FileText, Database, Shield, Zap, Settings, Play, QrCode, Layout, Plus, CheckCircle, CheckCircle2, UserCircle, Camera, Wand2, X, Facebook, Instagram, Send, Globe, Video, Clock, ShoppingCart, BarChart3, HeartHandshake, Calendar, HelpCircle, Eye, EyeOff, Key, Lock, Users, Sparkles, MessageSquare, Package, Bell, AlertTriangle, Music, Headphones, ArrowLeft, ArrowRight, Edit3, Trash2, RefreshCw, Utensils, Copy, Bot, Save, Power, Layers, ExternalLink, Filter, Radio, Truck, PanelLeft, PanelLeftClose } from 'lucide-react';
+import { Terminal, Activity, Cpu, Smartphone, Search, MoreVertical, Smile, Paperclip, Image as ImageIcon, Mic, UploadCloud, MessageCircle, FileText, Database, Shield, Zap, Settings, Play, QrCode, Layout, Plus, CheckCircle, CheckCircle2, UserCircle, Camera, Wand2, X, Facebook, Instagram, Send, Globe, Video, Clock, ShoppingCart, BarChart3, HeartHandshake, Calendar, HelpCircle, Eye, EyeOff, Key, Lock, Users, Sparkles, MessageSquare, Package, Bell, AlertTriangle, Music, Headphones, ArrowLeft, ArrowRight, Edit3, Trash2, RefreshCw, Utensils, Copy, Bot, Save, Power, Layers, ExternalLink, Filter, Radio, Truck, PanelLeft, PanelLeftClose, AtSign, Link2 } from 'lucide-react';
 
 import { VoiceNotePlayer } from './VoiceNotePlayer';
 import { LiveAudioRecorder } from './LiveAudioRecorder';
@@ -57,6 +57,22 @@ export const getInitials = (name: string, phone?: string) => {
   }
   return (parts[0][0] + parts[1][0]).toUpperCase();
 };
+
+const SOCIAL_ORIGIN_META: Record<string, { label: string; icon: React.ReactNode; cls: string }> = {
+  dm: { label: 'DM', icon: <MessageCircle size={11} />, cls: 'bg-blue-500/15 text-blue-300 border-blue-500/30' },
+  comment: { label: 'Comentario', icon: <MessageSquare size={11} />, cls: 'bg-amber-500/15 text-amber-300 border-amber-500/30' },
+  story_reply: { label: 'Historia', icon: <Camera size={11} />, cls: 'bg-purple-500/15 text-purple-300 border-purple-500/30' },
+  mention: { label: 'Menci\u00f3n', icon: <AtSign size={11} />, cls: 'bg-pink-500/15 text-pink-300 border-pink-500/30' },
+  referral: { label: 'Referido', icon: <Link2 size={11} />, cls: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' },
+};
+function SocialOriginBadge({ origin }: { origin: string }) {
+  const m = SOCIAL_ORIGIN_META[origin] || SOCIAL_ORIGIN_META.dm;
+  return (
+    <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full border ${m.cls}`}>
+      {m.icon}{m.label}
+    </span>
+  );
+}
 
 export const ContactAvatar: React.FC<{
   name: string;
@@ -2604,10 +2620,71 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
   const [filterColumn, setFilterColumn] = useState<string>('all');
   const [visibleChatCount, setVisibleChatCount] = useState(60);
   const [visibleMessageCount, setVisibleMessageCount] = useState(60);
+
+  // --- Bandeja social unificada (omnicanal): hilos de /api/social/threads ---
+  const [socialThreads, setSocialThreads] = useState<any[]>([]);
+  const [channelFilter, setChannelFilter] = useState<'all' | 'whatsapp' | 'instagram' | 'facebook' | 'comment' | 'story_reply' | 'mention' | 'referral'>('all');
+  const [activeSocialThread, setActiveSocialThread] = useState<any | null>(null);
+  const [socialReply, setSocialReply] = useState('');
+  const [socialSending, setSocialSending] = useState(false);
+
+  const refreshSocialThreads = React.useCallback(async () => {
+    try {
+      const r = await fetch('/api/social/threads');
+      const j = await r.json();
+      if (j && j.success) setSocialThreads(j.threads || []);
+    } catch { /* noop */ }
+  }, []);
+
+  React.useEffect(() => {
+    if (currentViewTab === 'conversaciones') refreshSocialThreads();
+  }, [currentViewTab, refreshSocialThreads]);
+
+  const sendSocialReply = async (toDM: boolean) => {
+    if (!activeSocialThread || !socialReply.trim() || socialSending) return;
+    const threadId = String(activeSocialThread.thread.id);
+    const text = socialReply.trim();
+    setSocialSending(true);
+    try {
+      const endpoint = toDM
+        ? `/api/social/threads/${encodeURIComponent(threadId)}/to-dm`
+        : `/api/social/threads/${encodeURIComponent(threadId)}/reply`;
+      const r = await fetch(endpoint, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (j && j.success) {
+        setSocialReply('');
+        await refreshSocialThreads();
+        try {
+          const r2 = await fetch('/api/social/threads');
+          const j2 = await r2.json();
+          const updated = (j2.threads || []).find((t: any) => String(t.id) === threadId);
+          if (updated) {
+            setActiveSocialThread((prev: any) => prev ? {
+              ...prev,
+              thread: updated,
+              origins: updated.origins,
+              msg: updated.messages && updated.messages.length ? updated.messages[updated.messages.length - 1].text : prev.msg,
+              timestamp: updated.lastAt || prev.timestamp,
+            } : prev);
+          }
+        } catch { /* noop */ }
+        if (toDM) alert('DM privado enviado');
+      } else {
+        alert((j && j.error) || 'No se pudo enviar');
+      }
+    } catch { alert('Error de red'); }
+    setSocialSending(false);
+  };
   React.useEffect(() => { setVisibleChatCount(60); }, [chatSearch, chatFilterStatus, filterTag, filterColumn]);
   const filteredChats = React.useMemo(() => {
     const query = chatSearch.toLowerCase();
-    return chats.filter(chat => {
+    const isSocialPlatformChat = (p: any) => ['instagram', 'facebook', 'messenger'].includes(String(p || '').toLowerCase());
+    const base = chats.filter(chat => {
+      // Los DMs sociales viven ahora en los hilos unificados (evita duplicados)
+      if (isSocialPlatformChat(chat.platform)) return false;
       const tags = Array.isArray(chat.tags) ? chat.tags : [];
       const matchesSearch = String(chat.name || '').toLowerCase().includes(query) ||
                             String(chat.msg || '').toLowerCase().includes(query);
@@ -2618,9 +2695,44 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
       if (chatFilterStatus === 'complaints' && !tags.some(t => t === 'Queja' || t === 'Mala Atención')) return false;
       if (filterTag !== 'all' && !tags.includes(filterTag)) return false;
       if (filterColumn !== 'all' && chat.columnId !== filterColumn) return false;
+      if (channelFilter !== 'all' && channelFilter !== 'whatsapp') return false;
       return true;
     });
-  }, [chats, chatSearch, chatFilterStatus, filterTag, filterColumn]);
+    const threadMatchesChannel = (t: any) => {
+      if (channelFilter === 'all') return true;
+      if (channelFilter === 'whatsapp') return false;
+      if (channelFilter === 'instagram' || channelFilter === 'facebook')
+        return String(t.platform || '').toLowerCase() === channelFilter;
+      return (t.origins || []).includes(channelFilter);
+    };
+    const socialRows: any[] = socialThreads
+      .filter(threadMatchesChannel)
+      .filter(t => {
+        if (chatFilterStatus === 'unread' && !(t.unread > 0)) return false;
+        if (!query) return true;
+        const lastText = t.messages && t.messages.length ? String(t.messages[t.messages.length - 1].text || '') : '';
+        return String(t.personName || '').toLowerCase().includes(query) || lastText.toLowerCase().includes(query);
+      })
+      .map(t => {
+        const last = t.messages && t.messages.length ? t.messages[t.messages.length - 1] : null;
+        return {
+          id: `social-thread:${t.id}`,
+          isSocialThread: true,
+          thread: t,
+          name: t.personName || 'Usuario',
+          msg: last ? String(last.text || '') : '',
+          time: t.lastAt ? new Date(t.lastAt).toISOString() : new Date().toISOString(),
+          timestamp: t.lastAt || 0,
+          unread: t.unread || 0,
+          platform: t.platform,
+          origins: t.origins || [],
+          avatar: t.personAvatar,
+          phone: '',
+          tags: [],
+        };
+      });
+    return [...base, ...socialRows].sort((a: any, b: any) => (Number(b.timestamp) || 0) - (Number(a.timestamp) || 0));
+  }, [chats, chatSearch, chatFilterStatus, filterTag, filterColumn, socialThreads, channelFilter]);
   const visibleChats = filteredChats.slice(0, visibleChatCount);
 
   // Custom Pipelines / Embudos State
@@ -5143,6 +5255,32 @@ ${parametersString}
                          ))}
                       </div>
 
+                     {/* Channel filter: bandeja omnicanal */}
+                      <div className="flex gap-1 overflow-x-auto pb-1 no-scrollbar text-xs">
+                         {[
+                           { id: 'all', label: 'Todos' },
+                           { id: 'whatsapp', label: 'WhatsApp' },
+                           { id: 'instagram', label: 'Instagram' },
+                           { id: 'facebook', label: 'Facebook' },
+                           { id: 'comment', label: 'Comentarios' },
+                           { id: 'story_reply', label: 'Historias' },
+                           { id: 'mention', label: 'Menciones' },
+                         ].map(tab => (
+                           <button
+                             key={tab.id}
+                             type="button"
+                             onClick={() => setChannelFilter(tab.id as any)}
+                             className={`px-2.5 py-1 rounded-md shrink-0 transition font-medium text-[11px] border ${
+                               channelFilter === tab.id
+                                 ? 'bg-emerald-900/60 text-emerald-200 border-emerald-700 font-semibold'
+                                 : 'bg-zinc-900/60 text-zinc-400 border-zinc-800/60 hover:text-white hover:bg-zinc-800'
+                             }`}
+                           >
+                             {tab.label}
+                           </button>
+                         ))}
+                      </div>
+
                      {/* Dropdowns for Column & Tag filters */}
                      <div className="grid grid-cols-2 gap-1.5 pt-0.5 text-[9px]">
                         <select
@@ -5186,6 +5324,12 @@ ${parametersString}
                     <div
                       key={chat.id}
                       onClick={() => {
+                        if ((chat as any).isSocialThread) {
+                          setActiveSocialThread(chat);
+                          setSocialReply('');
+                          setMobileView('chat');
+                          return;
+                        }
                         setActiveChatId(chat.id);
                         if (chat.conversationId && chat.accountId) {
                           fetch(`/api/zernio/conversations/${encodeURIComponent(chat.conversationId)}/read`, {
@@ -5225,6 +5369,7 @@ ${parametersString}
                                {chat.platform === 'instagram' && <Instagram size={13} className="text-pink-400 shrink-0" />}
                                {chat.platform === 'messenger' && <Facebook size={13} className="text-blue-400 shrink-0" />}
                                {chat.name}
+                               {(chat as any).isSocialThread && ((chat as any).origins || []).map((o: string) => <SocialOriginBadge key={o} origin={o} />)}
                              </h4>
                              <span className={`text-xs ${chat.unread ? 'text-[#00a884]' : 'text-[#8696a0]'}`}>{formatColombiaTime(chat.time)}</span>
                           </div>
@@ -5693,6 +5838,95 @@ ${parametersString}
                     </button>
                   )}
                </form>
+               {activeSocialThread && (
+                 <div className="absolute inset-0 z-20 bg-[#0b141a] flex flex-col">
+                   <div className="h-16 bg-[#202c33] flex items-center gap-2 px-4 shrink-0">
+                     <button
+                       type="button"
+                       onClick={() => { setActiveSocialThread(null); setMobileView('list'); }}
+                       className="text-[#e9edef] hover:text-white rounded-full p-1.5 -ml-1.5 transition shrink-0"
+                       title="Volver a la lista"
+                     >
+                       <ArrowLeft size={24} />
+                     </button>
+                     <div className="shrink-0">
+                       <ContactAvatar
+                         name={activeSocialThread.name || 'Conversación'}
+                         phone={undefined}
+                         avatar={activeSocialThread.avatar}
+                         size="w-10 h-10"
+                         textSize="text-xs font-bold"
+                       />
+                     </div>
+                     <div className="min-w-0 flex-1">
+                       <h3 className="text-[#e9edef] font-medium text-sm truncate">{activeSocialThread.name}</h3>
+                       <div className="flex gap-1 mt-0.5 flex-wrap">
+                         {(activeSocialThread.origins || []).map((o: string) => <SocialOriginBadge key={o} origin={o} />)}
+                       </div>
+                     </div>
+                     <button
+                       type="button"
+                       onClick={refreshSocialThreads}
+                       className="text-zinc-400 hover:text-white p-1"
+                       title="Actualizar hilo"
+                     >
+                       <RefreshCw size={16} />
+                     </button>
+                   </div>
+                   <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
+                     {(activeSocialThread.thread.messages || []).map((m: any) => (
+                       <div key={String(m.id)} className={`flex ${m.fromMe ? 'justify-end' : 'justify-start'}`}>
+                         <div className={`max-w-[80%] rounded-xl px-3 py-2 text-sm ${m.fromMe ? 'bg-[#005c4b] text-[#e9edef]' : 'bg-[#202c33] text-[#e9edef]'}`}>
+                           {!m.fromMe && <div className="mb-1"><SocialOriginBadge origin={m.origin} /></div>}
+                           {m.postRef && (m.postRef.postTitle || m.postRef.postId) && (
+                             <div className="text-[11px] opacity-70 mb-1">📌 {m.postRef.postTitle || 'Publicación'}</div>
+                           )}
+                           {m.attachment && m.attachment.url && (
+                             /image|imagen|photo/i.test(String(m.attachment.type || '')) ? (
+                               <img src={m.attachment.url} alt={m.attachment.name || 'imagen'} className="rounded-lg max-w-full mb-1" />
+                             ) : /audio|voice/i.test(String(m.attachment.type || '')) ? (
+                               <audio controls src={m.attachment.url} className="max-w-full mb-1" />
+                             ) : (
+                               <a href={m.attachment.url} target="_blank" rel="noreferrer" className="text-blue-300 underline text-xs block mb-1">📎 {m.attachment.name || 'Adjunto'}</a>
+                             )
+                           )}
+                           {m.text ? <div className="whitespace-pre-wrap break-words">{m.text}</div> : null}
+                         </div>
+                       </div>
+                     ))}
+                     {(activeSocialThread.thread.messages || []).length === 0 && (
+                       <div className="text-center text-xs text-zinc-500 py-8">Sin mensajes en este hilo todavía.</div>
+                     )}
+                   </div>
+                   <div className="p-3 bg-[#202c33] shrink-0">
+                     <form
+                       onSubmit={(e) => { e.preventDefault(); sendSocialReply(false); }}
+                       className="flex gap-2 items-center"
+                     >
+                       <input
+                         type="text"
+                         placeholder={!(activeSocialThread.origins || []).includes('dm') ? 'Responder como comentario público…' : 'Escribir mensaje…'}
+                         value={socialReply}
+                         onChange={(e) => setSocialReply(e.target.value)}
+                         className="flex-1 bg-[#2a3942] text-[#d1d7db] text-sm rounded-lg px-4 py-2.5 focus:outline-none placeholder:text-[#8696a0]"
+                       />
+                       <button type="submit" disabled={socialSending || !socialReply.trim()} className="text-green-500 hover:text-green-400 transition-colors p-1 disabled:opacity-40">
+                         <Send size={22} />
+                       </button>
+                     </form>
+                     {!(activeSocialThread.origins || []).includes('dm') && (
+                       <button
+                         type="button"
+                         onClick={() => sendSocialReply(true)}
+                         disabled={socialSending || !socialReply.trim()}
+                         className="mt-2 text-xs text-blue-300 hover:text-blue-200 inline-flex items-center gap-1 disabled:opacity-40"
+                       >
+                         <MessageCircle size={12} /> Pasar a DM privado con este mensaje
+                       </button>
+                     )}
+                   </div>
+                 </div>
+               )}
             </div>
 
             {/* Right Sidebar: AI Lead Profile Extractor */}

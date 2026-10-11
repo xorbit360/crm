@@ -5,7 +5,7 @@ import {
   Check, X, Sparkles, ChevronLeft, Power,
 } from 'lucide-react';
 
-type TabId = 'bandeja' | 'automatizaciones' | 'contenido';
+type TabId = 'automatizaciones' | 'contenido';
 
 const ORIGIN_META: Record<string, { label: string; icon: React.ReactNode; cls: string }> = {
   dm: { label: 'DM', icon: <MessageCircle size={12} />, cls: 'bg-blue-500/15 text-blue-300 border-blue-500/30' },
@@ -26,145 +26,6 @@ function OriginBadge({ origin }: { origin: string }) {
 
 const inputCls = 'w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-gold/60';
 const btnGold = 'inline-flex items-center gap-2 bg-gold text-black text-sm font-semibold px-4 py-2 rounded-lg hover:brightness-110 disabled:opacity-50';
-
-/* ================= BANDEJA ================= */
-function Bandeja() {
-  const [threads, setThreads] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all');
-  const [selected, setSelected] = useState<any>(null);
-  const [reply, setReply] = useState('');
-  const [sending, setSending] = useState(false);
-
-  const load = async () => {
-    setLoading(true);
-    try {
-      const r = await fetch('/api/social/threads');
-      const j = await r.json();
-      if (j.success) setThreads(j.threads || []);
-    } catch { /* noop */ }
-    setLoading(false);
-  };
-  useEffect(() => { load(); }, []);
-
-  const filtered = threads.filter((t) =>
-    filter === 'all' ? true : t.origins.includes(filter));
-
-  const sendReply = async (toDM = false) => {
-    if (!selected || !reply.trim() || sending) return;
-    setSending(true);
-    try {
-      const r = await fetch(`/api/social/threads/${encodeURIComponent(selected.id)}/reply${toDM ? '?toDM=1' : ''}`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: reply }),
-      });
-      const j = await r.json();
-      if (j.success) { setReply(''); await load(); }
-      else alert(j.error || 'No se pudo enviar');
-    } catch { alert('Error de red'); }
-    setSending(false);
-  };
-
-  const moveToDM = async () => {
-    if (!selected || !reply.trim() || sending) return;
-    setSending(true);
-    try {
-      const r = await fetch(`/api/social/threads/${encodeURIComponent(selected.id)}/to-dm`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: reply }),
-      });
-      const j = await r.json();
-      if (j.success) { setReply(''); alert('DM privado enviado 📩'); await load(); }
-      else alert(j.error || 'No se pudo enviar el DM');
-    } catch { alert('Error de red'); }
-    setSending(false);
-  };
-
-  if (selected) {
-    const isCommentOnly = !selected.origins.includes('dm');
-    return (
-      <div className="flex flex-col h-[62vh] bg-gray-950 rounded-xl border border-gray-800">
-        <div className="flex items-center gap-3 p-3 border-b border-gray-800">
-          <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-white"><ChevronLeft size={20} /></button>
-          <div className="w-9 h-9 rounded-full bg-gold/20 flex items-center justify-center text-gold font-bold">
-            {(selected.personName || '?')[0]?.toUpperCase()}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-sm font-semibold text-gray-100 truncate">{selected.personName}</div>
-            <div className="flex gap-1 mt-0.5">{selected.origins.map((o: string) => <OriginBadge key={o} origin={o} />)}</div>
-          </div>
-        </div>
-        <div className="flex-1 overflow-y-auto p-3 space-y-2">
-          {selected.messages.map((m: any) => (
-            <div key={m.id} className={`flex ${m.fromMe ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[80%] rounded-xl px-3 py-2 text-sm ${m.fromMe ? 'bg-gold/90 text-black' : 'bg-gray-800 text-gray-100'}`}>
-                {!m.fromMe && <div className="mb-1"><OriginBadge origin={m.origin} /></div>}
-                {m.postRef?.postTitle && <div className="text-[11px] opacity-70 mb-1">📌 {m.postRef.postTitle}</div>}
-                <div>{m.text}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="p-3 border-t border-gray-800">
-          <div className="flex gap-2">
-            <input value={reply} onChange={(e) => setReply(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && sendReply()}
-              placeholder={isCommentOnly ? 'Responder como comentario público…' : 'Escribir mensaje…'} className={inputCls} />
-            <button onClick={() => sendReply()} disabled={sending} className={btnGold}><Send size={15} /></button>
-          </div>
-          {isCommentOnly && (
-            <button onClick={moveToDM} disabled={sending || !reply.trim()}
-              className="mt-2 text-xs text-blue-300 hover:text-blue-200 inline-flex items-center gap-1">
-              <MessageCircle size={12} /> Pasar a DM privado con este mensaje
-            </button>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      <div className="flex items-center gap-2 mb-3 flex-wrap">
-        <Filter size={14} className="text-gray-500" />
-        {['all', 'dm', 'comment', 'story_reply', 'mention', 'referral'].map((f) => (
-          <button key={f} onClick={() => setFilter(f)}
-            className={`text-xs px-2.5 py-1 rounded-full border ${filter === f ? 'bg-gold/15 text-gold border-gold/40' : 'text-gray-400 border-gray-700 hover:border-gray-500'}`}>
-            {f === 'all' ? 'Todos' : ORIGIN_META[f]?.label || f}
-          </button>
-        ))}
-        <button onClick={load} className="ml-auto text-gray-400 hover:text-white"><RefreshCw size={15} className={loading ? 'animate-spin' : ''} /></button>
-      </div>
-      {loading ? <div className="text-sm text-gray-500 py-8 text-center">Cargando bandeja…</div>
-        : filtered.length === 0 ? (
-          <div className="text-sm text-gray-500 py-8 text-center">Sin conversaciones todavía.<br />Los DMs, comentarios, historias y menciones aparecerán aquí.</div>
-        ) : (
-          <div className="space-y-2">
-            {filtered.map((t) => (
-              <button key={t.id} onClick={() => setSelected(t)}
-                className="w-full text-left bg-gray-950 border border-gray-800 rounded-xl p-3 hover:border-gold/40 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gold/20 flex items-center justify-center text-gold font-bold shrink-0">
-                    {(t.personName || '?')[0]?.toUpperCase()}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-gray-100 truncate">{t.personName}</span>
-                      <span className="text-[10px] text-gray-500 uppercase">{t.platform}</span>
-                    </div>
-                    <div className="text-xs text-gray-400 truncate mt-0.5">
-                      {t.messages[t.messages.length - 1]?.text || '—'}
-                    </div>
-                    <div className="flex gap-1 mt-1">{t.origins.map((o: string) => <OriginBadge key={o} origin={o} />)}</div>
-                  </div>
-                  {t.unread > 0 && <span className="bg-gold text-black text-[11px] font-bold rounded-full w-5 h-5 flex items-center justify-center">{t.unread}</span>}
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
-    </div>
-  );
-}
 
 /* ================= AUTOMATIZACIONES ================= */
 function Automatizaciones() {
@@ -442,9 +303,8 @@ function Contenido() {
 
 /* ================= VISTA PRINCIPAL ================= */
 export default function SocialView() {
-  const [tab, setTab] = useState<TabId>('bandeja');
+  const [tab, setTab] = useState<TabId>('automatizaciones');
   const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
-    { id: 'bandeja', label: 'Bandeja', icon: <MessageCircle size={15} /> },
     { id: 'automatizaciones', label: 'Automatizaciones', icon: <Zap size={15} /> },
     { id: 'contenido', label: 'Contenido', icon: <Calendar size={15} /> },
   ];
@@ -458,7 +318,6 @@ export default function SocialView() {
           </button>
         ))}
       </div>
-      {tab === 'bandeja' && <Bandeja />}
       {tab === 'automatizaciones' && <Automatizaciones />}
       {tab === 'contenido' && <Contenido />}
     </div>
