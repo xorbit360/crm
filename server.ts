@@ -39,6 +39,7 @@ import { setupRadarRoutes } from './server/radar.ts';
 import { setupPushRoutes } from './server/push.ts';
 import { setupDiagnosticAdminRoutes, setupDiagnosticPublicRoutes } from './server/diagnostic.ts';
 import { setupVoiceAdminRoutes } from './server/voice.ts';
+import { setupPlatformWebhooksRoutes, firePlatformEvent } from './server/platformWebhooks.ts';
 import { setupPageBuilderAdminRoutes, setupPageBuilderPublicRoutes } from './server/pageBuilder.ts';
 import { setupVideoGenAdminRoutes, startVideoWorker } from './server/videoGen.ts';
 import { setupZernioRoutes } from './server/zernio/routes.ts';
@@ -2142,6 +2143,8 @@ function createBotOrder(payload: any, channel: string): any | null {
     db.orders = [order, ...db.orders];
     const saveFn = (globalThis as any).saveDBData;
     if (typeof saveFn === 'function') saveFn(db);
+    // Webhook saliente de plataforma: pedido creado por el bot
+    try { firePlatformEvent('order.created', { id: order.id, total: order.total, paymentMethod: order.paymentMethod, customerName: order.customerName, phone: order.phone, source: 'bot' }); } catch { /* nunca bloquea */ }
     // Registrar/actualizar cliente
     try {
       if (!Array.isArray(db.customers)) db.customers = [];
@@ -2465,6 +2468,7 @@ async function createServer() {
   setupPushRoutes(app);
   setupDiagnosticAdminRoutes(app);
   setupVoiceAdminRoutes(app);
+  setupPlatformWebhooksRoutes(app);
   setupPageBuilderAdminRoutes(app);
   setupVideoGenAdminRoutes(app);
   startVideoWorker();

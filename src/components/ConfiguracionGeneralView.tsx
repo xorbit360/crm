@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, Globe, Sun, Moon, Bell, Shield, Check, Sparkles, Volume2, Save, Users, Network, Link as LinkIcon, Zap, HelpCircle, Calculator, CreditCard, Terminal, Palette, FolderKanban } from 'lucide-react';
+import { Settings, Globe, Sun, Moon, Bell, Shield, Check, Sparkles, Volume2, Save, Users, Network, Link as LinkIcon, Zap, HelpCircle, Calculator, CreditCard, Terminal, Palette, FolderKanban, Webhook } from 'lucide-react';
 import { Language, Theme, FlagES, FlagUK, translations } from '../lib/i18n';
 import UsuariosView from './UsuariosView';
 import AutomatizacionesView from './AutomatizacionesView';
@@ -15,6 +15,7 @@ import PersonalizacionPlataformaView from './PersonalizacionPlataformaView';
 import ProyectosView from './ProyectosView';
 import ProveedorIaOpenRouter from './ProveedorIaOpenRouter';
 import ProveedorCorreoResend from './ProveedorCorreoResend';
+import PlatformWebhooksTab from './PlatformWebhooksTab';
 
 interface ConfiguracionGeneralViewProps {
   currentLanguage: Language;
@@ -25,7 +26,7 @@ interface ConfiguracionGeneralViewProps {
   toggleVisibility?: (id: string) => void;
   currentUser?: { name: string; role: string; email: string; plan?: string } | null;
   onCustomizationApplied?: (config: any) => void;
-  initialTab?: 'personalizacion' | 'general' | 'usuarios' | 'automatizaciones' | 'integraciones' | 'recargas' | 'referidos' | 'dominio' | 'tickets' | 'costos' | 'pasarela' | 'mcp_api' | 'embudos';
+  initialTab?: 'personalizacion' | 'general' | 'usuarios' | 'automatizaciones' | 'integraciones' | 'recargas' | 'referidos' | 'dominio' | 'tickets' | 'costos' | 'pasarela' | 'mcp_api' | 'embudos' | 'webhooks';
 }
 
 export default function ConfiguracionGeneralView({
@@ -40,7 +41,7 @@ export default function ConfiguracionGeneralView({
   initialTab = 'general',
 }: ConfiguracionGeneralViewProps) {
   const t = translations[currentLanguage];
-  const [activeTab, setActiveTab] = useState<'personalizacion' | 'general' | 'usuarios' | 'automatizaciones' | 'integraciones' | 'recargas' | 'referidos' | 'dominio' | 'tickets' | 'costos' | 'pasarela' | 'mcp_api' | 'embudos'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'personalizacion' | 'general' | 'usuarios' | 'automatizaciones' | 'integraciones' | 'recargas' | 'referidos' | 'dominio' | 'tickets' | 'costos' | 'pasarela' | 'mcp_api' | 'embudos' | 'webhooks'>(initialTab);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [autoSave, setAutoSave] = useState(true);
   const [notifications, setNotifications] = useState(true);
@@ -227,6 +228,18 @@ export default function ConfiguracionGeneralView({
             <Terminal size={16} />
             MCP y API
           </button>
+
+          <button
+            onClick={() => setActiveTab('webhooks')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap cursor-pointer ${
+              activeTab === 'webhooks'
+                ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20 font-bold'
+                : 'text-amber-400 hover:text-white hover:bg-amber-950/40 border border-amber-500/20'
+            }`}
+          >
+            <Webhook size={16} />
+            Webhooks
+          </button>
         </div>
       </div>
 
@@ -245,6 +258,10 @@ export default function ConfiguracionGeneralView({
 
       {activeTab === 'mcp_api' && (
         <McpApiView currentUser={currentUser} />
+      )}
+
+      {activeTab === 'webhooks' && (
+        <PlatformWebhooksTab />
       )}
 
       {activeTab === 'dominio' && (

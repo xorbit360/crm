@@ -156,6 +156,14 @@ export function setupBoldRoutes(app: express.Express, getCurrentDB?: () => any, 
         }
       }
 
+      // Webhook saliente de plataforma: pago confirmado
+      if (isApproved) {
+        try {
+          const { firePlatformEvent } = await import('./platformWebhooks.ts');
+          firePlatformEvent('payment.confirmed', { orderId: String(orderId), amount, status, gateway: 'bold' });
+        } catch { /* nunca bloquea */ }
+      }
+
       // Sync with Supabase
       try {
         const supabase = getSupabase();
