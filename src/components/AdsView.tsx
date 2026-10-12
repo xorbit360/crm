@@ -118,10 +118,12 @@ interface WhatsappAlertRule {
 
 export default function AdsView({
   activeTab = 'traffiker',
-  onNavigate
+  onNavigate,
+  radarBrief
 }: {
   activeTab?: 'traffiker' | 'metricas';
-  onNavigate?: (module: string) => void
+  onNavigate?: (module: string) => void;
+  radarBrief?: { text: string; imageUrl?: string; keyword?: string; ts: number } | null
 }) {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [config, setConfig] = useState<MetaTiktokConfig | null>(null);
@@ -844,6 +846,16 @@ export default function AdsView({
       setIsTyping(false);
     }, 1000);
   };
+
+  // Brief llegado desde el Radar: lo inyecta como mensaje al Traffiker IA.
+  const radarBriefTs = useRef(0);
+  useEffect(() => {
+    if (radarBrief && radarBrief.ts !== radarBriefTs.current) {
+      radarBriefTs.current = radarBrief.ts;
+      handleSendMessage(undefined, radarBrief.text);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [radarBrief]);
 
   const handleLocalFileChangeWrapped = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
