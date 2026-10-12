@@ -37,6 +37,7 @@ import { setupSocialRoutes } from './server/social.ts';
 import { setupAdsRoutes } from './server/ads.ts';
 import { setupPushRoutes } from './server/push.ts';
 import { setupDiagnosticAdminRoutes, setupDiagnosticPublicRoutes } from './server/diagnostic.ts';
+import { setupPageBuilderAdminRoutes, setupPageBuilderPublicRoutes } from './server/pageBuilder.ts';
 import { setupZernioRoutes } from './server/zernio/routes.ts';
 import { handleZernioWebhook } from './server/zernio/webhook.ts';
 import { enviarMensajeZernio } from './server/zernio/messaging.ts';
@@ -2290,12 +2291,14 @@ async function createServer() {
   app.use('/api/telegram-pay', requireRole('superadmin', 'admin'));
   setupLiveSellingPublicRoutes(app);
   setupDiagnosticPublicRoutes(app);
+  setupPageBuilderPublicRoutes(app);
   app.use('/api', requireApiSession);
   setupLiveSellingAdminRoutes(app);
   setupSocialRoutes(app);
   setupAdsRoutes(app);
   setupPushRoutes(app);
   setupDiagnosticAdminRoutes(app);
+  setupPageBuilderAdminRoutes(app);
 
   // Receives the real browser exception behind the generic error screen. The
   // payload is truncated and never includes cookies, tokens or request bodies.

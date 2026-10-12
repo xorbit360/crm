@@ -507,3 +507,58 @@ export async function runDiagnostic(
     stats: { avgMs, problems: topFindings.length, critical: topFindings.filter((f) => f.severity === 'critico').length },
   };
 }
+
+// ============================================================================
+// Adición 2026-10-11 (Constructor de Páginas): analiza un HTML ya renderizado
+// (string) sin descargarlo de la red. Reutiliza analyzeHtml + CHECKS + gradeFor
+// del motor; no modifica el comportamiento existente de runDiagnostic.
+// ============================================================================
+
+export function analyzeHtmlSnapshot(
+  html: string,
+  url: string,
+  kind: PageKind = 'home',
+): DiagnosticResult {
+  const safe = String(html || '').slice(0, MAX_HTML_BYTES);
+  const snap = analyzeHtml(safe, url, url, 200, 180, safe.length, kind);
+  const pages: PageSnapshot[] = [snap];
+
+  const findings: Finding[] = [];
+  const blockResults: Record<BlockScore['key'], { pass: number; total: number; label: string; weight: number }> = {
+    presentacion: { pass: 0, total: 0, label: 'Presentación', weight: 25 },
+    oferta: { pass: 0, total: 0, label: 'Producto y oferta', weight: 30 },
+    confianza: { pass: 0, total: 0, label: 'Confianza', weight: 20 },
+    contacto: { pass: 0, total: 0, label: 'Contacto y ventas', weight: 25 },
+  };
+  for (const check of CHECKS) {
+    const applies = check.page === 'best' || check.page === 'home' || check.page === kind;
+    const bucket = blockResults[check.block];
+    bucket.total += 1;
+    let result: { pass: boolean; evidence: string };
+    try { result = check.test(pages); } catch { result = { pass: false, evidence: 'No pudimos verificar este punto.' }; }
+    if (result.pass || !applies) bucket.pass += 1;
+    if (!result.pass && applies) {
+      findings.push({
+        id: check.id, title: check.failTitle, severity: check.severity, category: check.category,
+        page: check.page === 'best' ? 'general' : check.page, evidence: result.evidence,
+        impact: check.impact, rank: check.rank,
+      });
+    }
+  }
+  const blocks: BlockScore[] = (Object.keys(blockResults) as BlockScore['key'][]).map((key) => {
+    const b = blockResults[key];
+    return { key, label: b.label, score: b.total ? Math.round((b.pass / b.total) * 100) : 100, weight: b.weight };
+  });
+  const score = Math.round(blocks.reduce((s, b) => s + (b.score * b.weight) / 100, 0));
+  const { grade, label } = gradeFor(score);
+  findings.sort((a, b) => b.rank - a.rank);
+  const domain = (() => { try { return new URL(url).hostname; } catch { return url; } })();
+  return {
+    inputUrl: url, domain, analyzedAt: new Date().toISOString(), pagesAnalyzed: pages,
+    pagesNote: 'Análisis del HTML generado por el Constructor de Páginas.',
+    score, grade, gradeLabel: label, blocks,
+    pageScores: [{ kind, label: kind === 'product' ? 'Producto' : 'Inicio', url, score, weight: 100, note: snap.title || domain }],
+    findings: findings.slice(0, 10),
+    stats: { avgMs: 180, problems: findings.length, critical: findings.filter((f) => f.severity === 'critico').length },
+  };
+}

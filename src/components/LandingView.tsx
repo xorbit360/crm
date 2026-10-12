@@ -31,8 +31,9 @@ interface LandingPage {
 }
 
 import RastreadorVisitas from './RastreadorVisitas';
+import ConstructorView from './ConstructorView';
 
-interface LandingViewProps { activeTab?: 'plantillas' | 'rastreador' }
+interface LandingViewProps { activeTab?: 'plantillas' | 'rastreador' | 'constructor' }
 
 export default function LandingView({ activeTab = 'plantillas' }: LandingViewProps) {
   const [internalTab, setInternalTab] = useState<'generar' | 'checkout' | 'dominio' | 'lista'>('generar');
@@ -382,6 +383,7 @@ export default function LandingView({ activeTab = 'plantillas' }: LandingViewPro
   };
 
   if (activeTab === "rastreador") return <RastreadorVisitas />;
+  if (activeTab === "constructor") return <ConstructorView />;
 
   return (
     <div className="animate-fade-in space-y-6">

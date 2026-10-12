@@ -138,7 +138,7 @@ export default function App() {
   const [activeContenidoTab, setActiveContenidoTab] = useState<'crear' | 'planificador' | 'clonador' | 'analizar' | 'editor_video'>('crear');
   const [activeBrandingTab, setActiveBrandingTab] = useState<'entrevista' | 'identidad' | 'manual' | 'creativos'>('entrevista');
   const [activeMercadoTab, setActiveMercadoTab] = useState<'publico' | 'tendencias' | 'competidores' | 'ia_ideas' | 'productos_ganadores' | 'calculadora' | 'multi_recomendador'>('publico');
-  const [activeLandingTab, setActiveLandingTab] = useState<'plantillas' | 'rastreador'>('plantillas');
+  const [activeLandingTab, setActiveLandingTab] = useState<'plantillas' | 'rastreador' | 'constructor'>('plantillas');
   const [activeAdsTab, setActiveAdsTab] = useState<'traffiker' | 'metricas'>('traffiker');
   const [dashboardTab, setDashboardTab] = useState<'metrics' | 'organigrama'>('organigrama');
   const [recommenderChatSession, setRecommenderChatSession] = useState<{
@@ -1008,6 +1008,7 @@ type ChatMessage = {
                     <div className="space-y-1">
                       {[
                         { id: 'plantillas', label: 'Plantillas y Editor', icon: <Layout size={16} /> },
+                        { id: 'constructor', label: 'Constructor de Páginas', icon: <Layout size={16} /> },
                         { id: 'rastreador', label: 'Rastreador Visitas', icon: <Eye size={16} /> }
                       ].map(tab => (
                         <button
