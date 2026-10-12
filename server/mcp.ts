@@ -2,6 +2,7 @@ import type { Express, Request, Response } from 'express';
 import { execFile } from 'child_process';
 import { xorbitToolDefs, handleXorbitTool } from './mcp_xorbit.ts';
 import { promisify } from 'util';
+import http from 'http';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -204,14 +205,106 @@ async function callTool(role: McpRole, name: string, args: any, deps: McpDeps): 
   }
   if (name === 'vps_ssh_exec') {
     const command = String(args?.command || '').trim();
-    if (!command) throw new Error('El comando SSH es obligatorio');
+    if (!command) throw new Error('El comando es obligatorio');
     const timeout = Math.min(120000, Math.max(1000, Number(args?.timeoutMs) || 30000));
-    const result = await execFileAsync('ssh', ['-i', VPS_SSH_KEY(), '-o', 'IdentitiesOnly=yes', '-o', 'StrictHostKeyChecking=no', `${VPS_SSH_USER()}@${VPS_SSH_HOST()}`, '--', command], { timeout, maxBuffer: 2 * 1024 * 1024 });
-    return redact({ stdout: result.stdout, stderr: result.stderr });
+    // Ruta 1: SSH con la clave protegida del servidor (comportamiento original).
+    if (await fileExists(VPS_SSH_KEY())) {
+      const result = await execFileAsync('ssh', ['-i', VPS_SSH_KEY(), '-o', 'IdentitiesOnly=yes', '-o', 'StrictHostKeyChecking=no', `${VPS_SSH_USER()}@${VPS_SSH_HOST()}`, '--', command], { timeout, maxBuffer: 2 * 1024 * 1024 });
+      return redact({ stdout: result.stdout, stderr: result.stderr });
+    }
+    // Ruta 2 (definitiva, sin claves): el contenedor vive en el mismo VPS, así que
+    // ejecuta directo en el host vía el socket Docker. Sobrevive recreaciones del
+    // contenedor porque el socket se monta desde el docker-compose.
+    if (await fileExists('/var/run/docker.sock')) {
+      const result = await execViaDockerSocket(command, timeout);
+      return redact({ stdout: result.stdout, stderr: result.stderr });
+    }
+    throw new Error('Sin acceso al VPS: no hay clave SSH montada (/run/secrets/mcp_vps_ed25519) ni socket Docker (/var/run/docker.sock). Agregue "- /var/run/docker.sock:/var/run/docker.sock:ro" a los volumes del servicio crm en el docker-compose y recree.');
   }
   const xorbit = await handleXorbitTool(name, args, deps);
   if (xorbit !== null) return xorbit;
   throw new Error(`Herramienta desconocida: ${name}`);
+}
+
+async function fileExists(p: string): Promise<boolean> {
+  try { await fs.access(p); return true; } catch { return false; }
+}
+
+function dockerReq(method: string, path: string, body?: any, reqTimeoutMs = 20000): Promise<{ status: number; body: any }> {
+  return new Promise((resolve, reject) => {
+    const data = body === undefined || body === null ? null : JSON.stringify(body);
+    const req = http.request({
+      socketPath: '/var/run/docker.sock',
+      method,
+      path,
+      headers: { 'Content-Type': 'application/json', ...(data ? { 'Content-Length': Buffer.byteLength(data) } : {}) },
+    }, (res) => {
+      const chunks: Buffer[] = [];
+      res.on('data', (c) => chunks.push(Buffer.from(c)));
+      res.on('end', () => {
+        const buf = Buffer.concat(chunks);
+        if (buf.length && (buf[0] === 0x7b || buf[0] === 0x5b)) {
+          try { resolve({ status: res.statusCode || 0, body: JSON.parse(buf.toString('utf8')) }); return; }
+          catch { /* cae a binario */ }
+        }
+        resolve({ status: res.statusCode || 0, body: buf });
+      });
+    });
+    req.on('error', reject);
+    req.setTimeout(reqTimeoutMs, () => req.destroy(new Error('Timeout socket Docker')));
+    if (data) req.write(data);
+    req.end();
+  });
+}
+
+// Demultiplexa el stream de logs de Docker (cabecera de 8 bytes por frame).
+function demuxDockerLogs(buf: Buffer): { stdout: string; stderr: string } {
+  let out = '', err = '';
+  let i = 0, frames = 0;
+  while (i + 8 <= buf.length) {
+    const stream = buf[i];
+    const len = buf.readUInt32BE(i + 4);
+    if (len === 0) break;
+    const payload = buf.slice(i + 8, i + 8 + len).toString('utf8');
+    if (stream === 2) err += payload; else out += payload;
+    i += 8 + len;
+    frames++;
+    if (frames > 100000) break;
+  }
+  if (frames === 0) out = buf.toString('utf8');
+  return { stdout: out, stderr: err };
+}
+
+// Ejecuta un comando en el HOST vía socket Docker (sin SSH): contenedor efímero
+// con la raíz del host montada, corriendo el /bin/sh del propio host.
+async function execViaDockerSocket(command: string, timeout: number): Promise<{ stdout: string; stderr: string }> {
+  const imgs = await dockerReq('GET', '/images/json');
+  if (imgs.status !== 200 || !Array.isArray(imgs.body)) throw new Error('Docker: no se pudo listar imágenes');
+  let image: string | null = null;
+  for (const img of imgs.body) {
+    const tags: string[] = (img as any).RepoTags || [];
+    const t = tags.find((x: string) => x && !x.includes('<none>'));
+    if (t) { image = t; break; }
+  }
+  if (!image) throw new Error('Docker: no hay imágenes disponibles para ejecutar el comando');
+  const create = await dockerReq('POST', '/containers/create', {
+    Image: image,
+    Env: [`VPS_CMD=${command}`, 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin', 'HOME=/root'],
+    Cmd: ['/hostroot/bin/sh', '-c', 'eval "$VPS_CMD"'],
+    HostConfig: { Binds: ['/:/hostroot'], NetworkMode: 'none', AutoRemove: false },
+  });
+  if (create.status >= 300 || !(create.body as any)?.Id) throw new Error('Docker create falló: ' + JSON.stringify(create.body).slice(0, 300));
+  const id = (create.body as any).Id as string;
+  try {
+    const start = await dockerReq('POST', `/containers/${id}/start`, null);
+    if (start.status >= 300) throw new Error('Docker start falló: ' + JSON.stringify(start.body).slice(0, 200));
+    await dockerReq('POST', `/containers/${id}/wait?timeout=${Math.max(1, Math.ceil(timeout / 1000))}`, null, timeout + 15000).catch(() => null);
+    const logs = await dockerReq('GET', `/containers/${id}/logs?stdout=1&stderr=1`, null);
+    const buf: Buffer = Buffer.isBuffer(logs.body) ? logs.body : Buffer.from(String(logs.body || ''));
+    return demuxDockerLogs(buf);
+  } finally {
+    await dockerReq('DELETE', `/containers/${id}?force=1`, null).catch(() => {});
+  }
 }
 
 export function setupMcpRoutes(app: Express, deps: McpDeps) {
