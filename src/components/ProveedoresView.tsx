@@ -262,7 +262,7 @@ export default function ProveedoresView() {
                 <div className="absolute top-2.5 left-2.5 flex flex-wrap gap-1">
                   {product.countries.map(c => (
                     <span key={c} className="text-[9px] bg-black/85 backdrop-blur text-white border border-slate-800 font-mono font-bold px-2 py-0.5 rounded flex items-center gap-1">
-                      <Globe size={9} className="text-blue-400" /> {c}
+                      <Globe size={9} className="text-gold-400" /> {c}
                     </span>
                   ))}
                 </div>

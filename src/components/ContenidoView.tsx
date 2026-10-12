@@ -60,13 +60,13 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
   // Pinned Agents List
   const agents: Agent[] = [
     { id: 'director', name: 'Director', title: 'Coordinador General', role: 'Director de Estrategia de Contenido', badge: 'D', color: 'bg-amber-600', description: 'Estrategia global, visión de marca y calendario editorial.' },
-    { id: 'short_form', name: 'Short Form', title: 'Reels • Shorts • Stories', role: 'Especialista en Guiones Virales', badge: 'S', color: 'bg-blue-600', description: 'Ganchos de 3 segundos, guiones de retención y tendencias TikTok.' },
+    { id: 'short_form', name: 'Short Form', title: 'Reels • Shorts • Stories', role: 'Especialista en Guiones Virales', badge: 'S', color: 'bg-gold-600', description: 'Ganchos de 3 segundos, guiones de retención y tendencias TikTok.' },
     { id: 'youtube', name: 'YouTube', title: 'Análisis • Guiones • Long-Form', role: 'Especialista en YouTube SEO', badge: 'Y', color: 'bg-red-600', description: 'Títulos con alto CTR, miniaturas persuasivas y estructura long-form.' },
-    { id: 'tendencias', name: 'Tendencias', title: 'Analista Tendencias', role: 'Investigador de Audio & Hooks', badge: 'T', color: 'bg-cyan-600', description: 'Identificación de audios virales, formatos en auge y noticias.' },
-    { id: 'anuncios', name: 'Anuncios', title: 'Gestor Campañas', role: 'Copywriter de Meta Ads & TikTok Ads', badge: 'A', color: 'bg-blue-600', description: 'Creativos UGC de alta conversión, ofertas irresistibles y retargeting.' },
+    { id: 'tendencias', name: 'Tendencias', title: 'Analista Tendencias', role: 'Investigador de Audio & Hooks', badge: 'T', color: 'bg-gold-600', description: 'Identificación de audios virales, formatos en auge y noticias.' },
+    { id: 'anuncios', name: 'Anuncios', title: 'Gestor Campañas', role: 'Copywriter de Meta Ads & TikTok Ads', badge: 'A', color: 'bg-gold-600', description: 'Creativos UGC de alta conversión, ofertas irresistibles y retargeting.' },
     { id: 'sops', name: 'SOPs', title: 'Procesos y Documentación', role: 'Especialista en Flujos de Trabajo', badge: 'P', color: 'bg-emerald-600', description: 'Guías paso a paso, plantillas de producción y checklists.' },
     { id: 'delegacion', name: 'Delegación', title: 'Detector Cuellos', role: 'Auditor de Producción', badge: 'G', color: 'bg-orange-600', description: 'Optimización de tiempos de grabación, edición y publicación.' },
-    { id: 'reporting', name: 'Reporting', title: 'Generador Reportes', role: 'Analista de Rendimiento', badge: 'R', color: 'bg-blue-600', description: 'Métricas de alcance, engagement, conversiones y ROI.' }
+    { id: 'reporting', name: 'Reporting', title: 'Generador Reportes', role: 'Analista de Rendimiento', badge: 'R', color: 'bg-gold-600', description: 'Métricas de alcance, engagement, conversiones y ROI.' }
   ];
 
   const [selectedAgentId, setSelectedAgentId] = useState<string>('director');
@@ -339,10 +339,10 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
       <header className="bg-[#12131a] border-b border-gray-800/80 px-4 py-2.5 flex items-center justify-between gap-4 shrink-0 shadow-md">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 via-blue-600 to-cyan-500 flex items-center justify-center font-black text-white text-base shadow-md">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-gold-600 via-gold-600 to-gold-500 flex items-center justify-center font-black text-white text-base shadow-md">
               E
             </div>
-            <span className="font-extrabold text-lg text-white tracking-tight">Expert<span className="text-blue-400"> 360</span></span>
+            <span className="font-extrabold text-lg text-white tracking-tight">Expert<span className="text-gold-400"> 360</span></span>
           </div>
 
           <nav className="hidden md:flex items-center gap-1 bg-[#181922] p-1 rounded-xl border border-gray-800">
@@ -361,7 +361,7 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
                   onClick={() => setTopHeaderTab(tab.id as any)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
                     isActive
-                      ? 'bg-blue-600 text-white shadow-sm'
+                      ? 'bg-gold-600 text-white shadow-sm'
                       : 'text-gray-400 hover:text-white hover:bg-[#20212d]'
                   }`}
                 >
@@ -374,7 +374,7 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
 
         <div className="flex items-center gap-3">
           <span className="text-[11px] font-semibold text-gray-400 bg-[#181922] px-3 py-1 rounded-full border border-gray-800">
-            Workspace: <strong className="text-blue-300">Xorbit 360 AI</strong>
+            Workspace: <strong className="text-amber-300">Xorbit 360 AI</strong>
           </span>
         </div>
       </header>
@@ -392,20 +392,20 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
                 onClick={() => setActiveMenu('crear')}
                 className={`w-full p-3 rounded-2xl border text-left transition-all flex items-center justify-between group ${
                   isChatView
-                    ? 'bg-gradient-to-r from-blue-950/80 to-blue-950/80 border-blue-600 text-white shadow-lg shadow-blue-950/40'
-                    : 'bg-[#181924] border-blue-900/40 hover:border-blue-600/70 text-gray-300'
+                    ? 'bg-gradient-to-r from-blue-950/80 to-blue-950/80 border-gold-600 text-white shadow-lg shadow-blue-950/40'
+                    : 'bg-[#181924] border-blue-900/40 hover:border-gold-600/70 text-gray-300'
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-blue-600/30 border border-blue-500/50 flex items-center justify-center text-blue-300 group-hover:scale-105 transition-transform">
+                  <div className="w-9 h-9 rounded-xl bg-gold-600/30 border border-gold-500/50 flex items-center justify-center text-amber-300 group-hover:scale-105 transition-transform">
                     <Bot size={20} />
                   </div>
                   <div>
                     <h3 className="font-bold text-xs text-white">VaultAI</h3>
-                    <p className="text-[10px] text-blue-300 font-medium">Conversaciones & Chat</p>
+                    <p className="text-[10px] text-amber-300 font-medium">Conversaciones & Chat</p>
                   </div>
                 </div>
-                <ChevronRight size={16} className="text-blue-400 group-hover:translate-x-0.5 transition-transform" />
+                <ChevronRight size={16} className="text-gold-400 group-hover:translate-x-0.5 transition-transform" />
               </button>
             </div>
 
@@ -435,11 +435,11 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
                     onClick={() => setActiveMenu(item.id)}
                     className={`w-full px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2.5 transition-all ${
                       isCur
-                        ? 'bg-blue-600/20 text-blue-300 border border-blue-500/40 font-bold'
+                        ? 'bg-gold-600/20 text-amber-300 border border-gold-500/40 font-bold'
                         : 'text-gray-400 hover:text-white hover:bg-[#181922]'
                     }`}
                   >
-                    <Icon size={16} className={isCur ? 'text-blue-400' : 'text-gray-400'} />
+                    <Icon size={16} className={isCur ? 'text-gold-400' : 'text-gray-400'} />
                     <span>{item.label}</span>
                   </button>
                 );
@@ -507,7 +507,7 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
                   <div>
                     <div className="flex items-center gap-2">
                       <h2 className="font-bold text-white text-sm">{activeAgent.name}</h2>
-                      <span className="text-[10px] bg-blue-950 text-blue-300 border border-blue-800/50 px-2 py-0.5 rounded-full font-semibold">
+                      <span className="text-[10px] bg-blue-950 text-amber-300 border border-blue-800/50 px-2 py-0.5 rounded-full font-semibold">
                         Agente Activo
                       </span>
                     </div>
@@ -529,7 +529,7 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
               <div className="flex-1 p-6 overflow-y-auto space-y-4">
                 {chatMessages.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-3 opacity-60">
-                    <Bot size={40} className="text-blue-400" />
+                    <Bot size={40} className="text-gold-400" />
                     <h3 className="font-bold text-white text-base">Inicia una nueva conversación con {activeAgent.name}</h3>
                     <p className="text-xs text-gray-400 max-w-sm">Escribe tu instrucción o adjunta notas de voz, imágenes y documentos para analizar.</p>
                   </div>
@@ -551,7 +551,7 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
                       <div
                         className={`p-4 rounded-2xl text-xs leading-relaxed space-y-3 shadow-md ${
                           msg.sender === 'user'
-                            ? 'bg-blue-600 text-white rounded-tr-none'
+                            ? 'bg-gold-600 text-white rounded-tr-none'
                             : 'bg-[#151620] border border-gray-800 text-gray-200 rounded-tl-none'
                         }`}
                       >
@@ -561,8 +561,8 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
                           <div className="space-y-2 pt-2 border-t border-white/20">
                             {msg.attachments.map((att, idx) => (
                               <div key={idx} className="flex items-center gap-2 bg-black/30 p-2 rounded-xl text-[11px] font-mono">
-                                {att.type === 'audio' && <Mic size={14} className="text-blue-300" />}
-                                {att.type === 'image' && <ImageIcon size={14} className="text-cyan-300" />}
+                                {att.type === 'audio' && <Mic size={14} className="text-amber-300" />}
+                                {att.type === 'image' && <ImageIcon size={14} className="text-amber-300" />}
                                 {att.type === 'document' && <FileText size={14} className="text-amber-300" />}
                                 <span className="truncate max-w-xs">{att.name}</span>
                                 {att.size && <span className="opacity-70">({att.size})</span>}
@@ -579,11 +579,11 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
               {/* Pending Attachments Preview Strip */}
               {pendingAttachments.length > 0 && (
                 <div className="px-6 py-2 bg-[#13141c] border-t border-gray-800/80 flex items-center gap-2 overflow-x-auto">
-                  <span className="text-[11px] font-bold text-blue-400 shrink-0">Adjuntos listos:</span>
+                  <span className="text-[11px] font-bold text-gold-400 shrink-0">Adjuntos listos:</span>
                   {pendingAttachments.map((att, index) => (
                     <div key={index} className="flex items-center gap-2 bg-[#1c1d28] border border-blue-800/50 px-3 py-1.5 rounded-xl text-xs text-white shrink-0">
-                      {att.type === 'audio' && <Mic size={14} className="text-blue-400" />}
-                      {att.type === 'image' && <ImageIcon size={14} className="text-cyan-400" />}
+                      {att.type === 'audio' && <Mic size={14} className="text-gold-400" />}
+                      {att.type === 'image' && <ImageIcon size={14} className="text-gold-400" />}
                       {att.type === 'document' && <FileText size={14} className="text-amber-400" />}
                       <span className="truncate max-w-[120px] font-mono text-[11px]">{att.name}</span>
                       <button onClick={() => removePendingAttachment(index)} className="text-gray-400 hover:text-white">
@@ -597,7 +597,7 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
               {/* Chat Input Toolbar Bar */}
               <div className="p-4 bg-[#12131b] border-t border-gray-800/80 shrink-0">
                 <form onSubmit={handleSendMessage} className="space-y-3">
-                  <div className="relative bg-[#181924] border border-gray-700/80 rounded-2xl p-2.5 shadow-inner focus-within:border-blue-500 transition-colors">
+                  <div className="relative bg-[#181924] border border-gray-700/80 rounded-2xl p-2.5 shadow-inner focus-within:border-gold-500 transition-colors">
                     <textarea
                       rows={2}
                       value={chatInputText}
@@ -624,7 +624,7 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
                               : 'bg-[#20212e] text-gray-300 hover:text-white hover:bg-blue-950/60 border border-gray-700/60'
                           }`}
                         >
-                          <Mic size={14} className={isRecordingAudio ? 'text-white' : 'text-blue-400'} />
+                          <Mic size={14} className={isRecordingAudio ? 'text-white' : 'text-gold-400'} />
                           {isRecordingAudio ? `Grabando ${audioRecordingTimer}s...` : 'Audio'}
                         </button>
 
@@ -633,7 +633,7 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
                           onClick={() => handleOpenAttachmentDialog('image')}
                           className="px-3 py-1.5 bg-[#20212e] hover:bg-blue-950/60 text-gray-300 hover:text-white border border-gray-700/60 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all"
                         >
-                          <ImageIcon size={14} className="text-cyan-400" />
+                          <ImageIcon size={14} className="text-gold-400" />
                           Imágenes
                         </button>
 
@@ -650,7 +650,7 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
 
                       <button
                         type="submit"
-                        className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-md shadow-blue-950 transition-all shrink-0"
+                        className="px-5 py-2 bg-gold-600 hover:bg-gold-500 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-md shadow-blue-950 transition-all shrink-0"
                       >
                         <Send size={14} /> Enviar
                       </button>
@@ -666,7 +666,7 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
           {isAnalizarView && (
             <div className="p-4 sm:p-6 space-y-6 w-full">
               <div>
-                <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-800/50 uppercase tracking-wider">
+                <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-cyan-950 text-amber-300 border border-cyan-800/50 uppercase tracking-wider">
                   Creativos Pro IA
                 </span>
                 <h1 className="text-2xl font-black text-white mt-2">Analizador de Anuncios y Contenido Viral</h1>
@@ -684,13 +684,13 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
                       value={analizeUrl}
                       onChange={(e) => setAnalizeUrl(e.target.value)}
                       placeholder="https://www.instagram.com/reel/C... o URL del video del anuncio"
-                      className="w-full pl-10 pr-4 py-3 bg-[#181922] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                      className="w-full pl-10 pr-4 py-3 bg-[#181922] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-gold-500"
                     />
                   </div>
                   <button
                     type="submit"
                     disabled={isAnalyzing}
-                    className="px-6 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-cyan-950 transition-all shrink-0"
+                    className="px-6 py-3 bg-gradient-to-r from-gold-600 to-gold-600 hover:from-gold-500 hover:to-gold-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-cyan-950 transition-all shrink-0"
                   >
                     {isAnalyzing ? <RefreshCw className="animate-spin" size={16} /> : <Wand2 size={16} />}
                     {isAnalyzing ? 'Analizando con IA...' : 'Analizar Creativo'}
@@ -708,11 +708,11 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
                     </div>
                     <div className="bg-[#12131a] border border-gray-800 p-4 rounded-2xl">
                       <p className="text-[11px] font-bold text-gray-400">Retención Estimada</p>
-                      <p className="text-2xl font-black text-cyan-400 mt-1">{analysisResult.retentionScore}%</p>
+                      <p className="text-2xl font-black text-gold-400 mt-1">{analysisResult.retentionScore}%</p>
                     </div>
                     <div className="bg-[#12131a] border border-gray-800 p-4 rounded-2xl">
                       <p className="text-[11px] font-bold text-gray-400">CTR Proyectado</p>
-                      <p className="text-2xl font-black text-blue-400 mt-1">{analysisResult.ctrEstimate}</p>
+                      <p className="text-2xl font-black text-gold-400 mt-1">{analysisResult.ctrEstimate}</p>
                     </div>
                     <div className="bg-[#12131a] border border-gray-800 p-4 rounded-2xl">
                       <p className="text-[11px] font-bold text-gray-400">Potencial Viral</p>
@@ -726,7 +726,7 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
                       {analysisResult.breakdown.map((item: any, idx: number) => (
                         <div key={idx} className="bg-[#181922] border border-gray-800 p-4 rounded-xl flex items-start justify-between gap-4">
                           <div className="space-y-1">
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-950 text-blue-300 border border-blue-800/50">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-950 text-amber-300 border border-blue-800/50">
                               {item.time}
                             </span>
                             <h4 className="font-bold text-xs text-white">{item.title}</h4>
@@ -741,7 +741,7 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
                   </div>
 
                   <div className="bg-[#12131a] border border-blue-900/40 rounded-2xl p-6 space-y-3">
-                    <h3 className="font-bold text-sm text-blue-300 flex items-center gap-2">
+                    <h3 className="font-bold text-sm text-amber-300 flex items-center gap-2">
                       <Sparkles size={16} /> Recomendaciones de Optimización de Conversión
                     </h3>
                     <ul className="space-y-2">
@@ -762,7 +762,7 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
           {isClonadorView && (
             <div className="p-4 sm:p-6 space-y-6 w-full">
               <div>
-                <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-blue-950 text-blue-300 border border-blue-800/50 uppercase tracking-wider">
+                <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-blue-950 text-amber-300 border border-blue-800/50 uppercase tracking-wider">
                   UGC Generator
                 </span>
                 <h1 className="text-2xl font-black text-white mt-2">Clonador de Video UGC e Identificación de Patrones</h1>
@@ -779,13 +779,13 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
                       value={cloneVideoUrl}
                       onChange={(e) => setCloneVideoUrl(e.target.value)}
                       placeholder="Pega la URL del Reel/TikTok a clonar (ej. https://tiktok.com/@...)"
-                      className="w-full pl-10 pr-4 py-3 bg-[#181922] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                      className="w-full pl-10 pr-4 py-3 bg-[#181922] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-gold-500"
                     />
                   </div>
                   <button
                     type="submit"
                     disabled={isCloning}
-                    className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-950 transition-all shrink-0"
+                    className="px-6 py-3 bg-gold-600 hover:bg-gold-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-950 transition-all shrink-0"
                   >
                     {isCloning ? <RefreshCw className="animate-spin" size={16} /> : <PlayCircle size={16} />}
                     {isCloning ? 'Extrayendo Estructura...' : 'Clonar Guion UGC'}
@@ -805,12 +805,12 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
 
                     <div className="space-y-3 text-xs">
                       <div className="bg-[#181922] p-3.5 rounded-xl border border-gray-800 space-y-1">
-                        <span className="text-[10px] font-bold text-blue-400 uppercase">Gancho Clonado (0s - 3s)</span>
+                        <span className="text-[10px] font-bold text-gold-400 uppercase">Gancho Clonado (0s - 3s)</span>
                         <p className="text-white font-semibold">{clonedScript.hookCloned}</p>
                       </div>
 
                       <div className="bg-[#181922] p-3.5 rounded-xl border border-gray-800 space-y-1">
-                        <span className="text-[10px] font-bold text-cyan-400 uppercase">Cuerpo / Demostración</span>
+                        <span className="text-[10px] font-bold text-gold-400 uppercase">Cuerpo / Demostración</span>
                         <p className="text-gray-300">{clonedScript.bodyCloned}</p>
                       </div>
 
@@ -822,7 +822,7 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
                   </div>
 
                   <div className="bg-[#12131a] border border-blue-900/40 rounded-2xl p-6 space-y-3">
-                    <h3 className="font-bold text-sm text-blue-300 flex items-center gap-2">
+                    <h3 className="font-bold text-sm text-amber-300 flex items-center gap-2">
                       <Sparkles size={16} /> Variaciones Personalizadas Creadas por IA
                     </h3>
                     <div className="space-y-2">
@@ -841,7 +841,7 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
                               }]);
                               alert('¡Guion añadido al Planificador de Contenidos!');
                             }}
-                            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg shrink-0 text-[11px]"
+                            className="px-3 py-1.5 bg-gold-600 hover:bg-gold-500 text-white font-bold rounded-lg shrink-0 text-[11px]"
                           >
                             + Guardar en Planificador
                           </button>
@@ -866,7 +866,7 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
                 <div className="flex flex-wrap items-center gap-2.5">
                   <button
                     onClick={() => setShowAddCardModal(true)}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-md shadow-blue-950 transition-all"
+                    className="px-4 py-2 bg-gold-600 hover:bg-gold-500 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-md shadow-blue-950 transition-all"
                   >
                     <Plus size={15} /> Subir contenido
                   </button>
@@ -880,7 +880,7 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
 
                   <button
                     onClick={() => setActiveMenu('crear')}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-md shadow-blue-950 transition-all"
+                    className="px-4 py-2 bg-gold-600 hover:bg-gold-500 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-md shadow-blue-950 transition-all"
                   >
                     <Sparkles size={15} /> Generar Reels con VaultAI
                   </button>
@@ -914,13 +914,13 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
                   <div>
                     <h3 className="font-bold text-xs text-gray-300 uppercase tracking-wider">Pipeline</h3>
                     <h4 className="text-sm font-extrabold text-white flex items-center gap-2">
-                      Pipeline <span className="bg-[#1e1f2b] text-blue-300 text-[11px] font-bold px-2.5 py-0.5 rounded-full border border-blue-800/50">Borradores ({kanbanCards.length})</span>
+                      Pipeline <span className="bg-[#1e1f2b] text-amber-300 text-[11px] font-bold px-2.5 py-0.5 rounded-full border border-blue-800/50">Borradores ({kanbanCards.length})</span>
                     </h4>
                   </div>
 
                   <button
                     onClick={() => setShowAddCardModal(true)}
-                    className="p-2 bg-[#181922] hover:bg-[#20212e] text-blue-400 rounded-xl text-xs font-bold border border-gray-800"
+                    className="p-2 bg-[#181922] hover:bg-[#20212e] text-gold-400 rounded-xl text-xs font-bold border border-gray-800"
                   >
                     + Nueva Idea
                   </button>
@@ -953,15 +953,15 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
                   {/* Column 3: Para Grabar */}
                   <div className="bg-[#161720] border border-blue-900/40 rounded-2xl p-3 space-y-3 min-h-[220px]">
                     <div className="flex items-center justify-between font-bold text-xs text-white">
-                      <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-blue-500"></span> Para Grabar</span>
-                      <span className="text-blue-400 font-bold">{kanbanCards.length}</span>
+                      <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-gold-500"></span> Para Grabar</span>
+                      <span className="text-gold-400 font-bold">{kanbanCards.length}</span>
                     </div>
 
                     <div className="space-y-2.5">
                       {kanbanCards.map(card => (
-                        <div key={card.id} className="bg-[#1c1d28] border border-blue-800/50 hover:border-blue-500 rounded-xl p-3 space-y-2 shadow-sm text-xs cursor-pointer group">
+                        <div key={card.id} className="bg-[#1c1d28] border border-blue-800/50 hover:border-gold-500 rounded-xl p-3 space-y-2 shadow-sm text-xs cursor-pointer group">
                           <div className="flex items-center gap-2">
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-950 text-blue-300 border border-blue-800/50">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-950 text-amber-300 border border-blue-800/50">
                               {card.type}
                             </span>
                             <span className="text-white font-bold leading-tight line-clamp-2">{card.title}</span>
@@ -981,7 +981,7 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
                   {/* Column 4: Grabado */}
                   <div className="bg-[#161720] border border-gray-800/80 rounded-2xl p-3 space-y-3 min-h-[220px]">
                     <div className="flex items-center justify-between font-bold text-xs text-white">
-                      <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-cyan-500"></span> Grabado</span>
+                      <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-gold-500"></span> Grabado</span>
                       <span className="text-gray-500">0</span>
                     </div>
                     <div className="border border-dashed border-gray-800 rounded-xl p-6 text-center text-[11px] text-gray-500">
@@ -1009,7 +1009,7 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
           {isEditorVideoView && (
             <div className="p-4 sm:p-6 space-y-6 w-full">
               <div>
-                <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-blue-950 text-blue-300 border border-blue-800/50 uppercase tracking-wider">
+                <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-blue-950 text-amber-300 border border-blue-800/50 uppercase tracking-wider">
                   Video Studio IA
                 </span>
                 <h1 className="text-2xl font-black text-white mt-2">Editor de Video e IA Enhancer</h1>
@@ -1020,12 +1020,12 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
                 {/* Video Preview Canvas */}
                 <div className="lg:col-span-2 bg-[#12131a] border border-gray-800 rounded-2xl p-6 flex flex-col items-center justify-center space-y-4">
                   <div className="w-64 h-[420px] bg-black border border-blue-900/50 rounded-2xl overflow-hidden relative shadow-2xl flex flex-col items-center justify-center text-center p-4">
-                    <Film size={48} className="text-blue-500 animate-pulse mb-3" />
+                    <Film size={48} className="text-gold-500 animate-pulse mb-3" />
                     <p className="text-xs font-bold text-white">Vista Previa 9:16 (Vertical)</p>
                     <p className="text-[10px] text-gray-400 mt-1">Subtítulos dinámicos activados</p>
 
                     {/* Animated Fake Subtitle overlay */}
-                    <div className="absolute bottom-12 left-4 right-4 bg-black/80 backdrop-blur-md p-2.5 rounded-xl border border-blue-500/50 text-center">
+                    <div className="absolute bottom-12 left-4 right-4 bg-black/80 backdrop-blur-md p-2.5 rounded-xl border border-gold-500/50 text-center">
                       <span className="text-xs font-black text-amber-300 uppercase tracking-wide animate-pulse">
                         "¡EL RESULTADO ES INCREÍBLE!"
                       </span>
@@ -1035,12 +1035,12 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
                   {/* Render Progress Bar */}
                   {isExportingVideo && (
                     <div className="w-full space-y-2">
-                      <div className="flex justify-between text-xs font-bold text-blue-300">
+                      <div className="flex justify-between text-xs font-bold text-amber-300">
                         <span>Exportando y Renderizando Video...</span>
                         <span>{editorProgress}%</span>
                       </div>
                       <div className="w-full bg-gray-900 h-2.5 rounded-full overflow-hidden border border-gray-800">
-                        <div className="bg-gradient-to-r from-blue-500 to-blue-500 h-full transition-all duration-300" style={{ width: `${editorProgress}%` }}></div>
+                        <div className="bg-gradient-to-r from-gold-500 to-gold-500 h-full transition-all duration-300" style={{ width: `${editorProgress}%` }}></div>
                       </div>
                     </div>
                   )}
@@ -1053,13 +1053,13 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
                   <div className="space-y-3 text-xs">
                     <label className="flex items-center justify-between p-3 bg-[#181922] border border-gray-800 rounded-xl cursor-pointer">
                       <span className="font-semibold text-gray-200 flex items-center gap-2">
-                        <Scissors size={15} className="text-blue-400" /> Recorte automático de silencios
+                        <Scissors size={15} className="text-gold-400" /> Recorte automático de silencios
                       </span>
                       <input
                         type="checkbox"
                         checked={videoSettings.autoCutSilences}
                         onChange={(e) => setVideoSettings(prev => ({ ...prev, autoCutSilences: e.target.checked }))}
-                        className="rounded accent-blue-600"
+                        className="rounded accent-gold-600"
                       />
                     </label>
 
@@ -1071,19 +1071,19 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
                         type="checkbox"
                         checked={videoSettings.autoCaptions}
                         onChange={(e) => setVideoSettings(prev => ({ ...prev, autoCaptions: e.target.checked }))}
-                        className="rounded accent-blue-600"
+                        className="rounded accent-gold-600"
                       />
                     </label>
 
                     <label className="flex items-center justify-between p-3 bg-[#181922] border border-gray-800 rounded-xl cursor-pointer">
                       <span className="font-semibold text-gray-200 flex items-center gap-2">
-                        <Volume2 size={15} className="text-cyan-400" /> Limpieza de ruido de fondo IA
+                        <Volume2 size={15} className="text-gold-400" /> Limpieza de ruido de fondo IA
                       </span>
                       <input
                         type="checkbox"
                         checked={videoSettings.audioEnhancer}
                         onChange={(e) => setVideoSettings(prev => ({ ...prev, audioEnhancer: e.target.checked }))}
-                        className="rounded accent-blue-600"
+                        className="rounded accent-gold-600"
                       />
                     </label>
                   </div>
@@ -1091,7 +1091,7 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
                   <button
                     onClick={handleExportVideo}
                     disabled={isExportingVideo}
-                    className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-blue-600 hover:from-blue-500 hover:to-blue-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-950 transition-all"
+                    className="w-full py-3.5 bg-gradient-to-r from-gold-600 to-gold-600 hover:from-gold-500 hover:to-gold-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-950 transition-all"
                   >
                     <Download size={16} />
                     {isExportingVideo ? 'Procesando Video...' : 'Exportar Video Procesado'}
@@ -1110,12 +1110,12 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
               </div>
 
               <div className="bg-[#12131a] border border-gray-800 rounded-2xl p-8 text-center space-y-4">
-                <Smartphone size={36} className="text-blue-400 mx-auto" />
+                <Smartphone size={36} className="text-gold-400 mx-auto" />
                 <h3 className="font-bold text-white text-base">Canal {activeMenu.toUpperCase()} Configurado</h3>
                 <p className="text-xs text-gray-400 max-w-md mx-auto">Conectado con Xorbit 360 AI. Puedes programar o analizar tus publicaciones directamente desde aquí.</p>
                 <button
                   onClick={() => setActiveMenu('crear')}
-                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-md"
+                  className="px-5 py-2.5 bg-gold-600 hover:bg-gold-500 text-white font-bold text-xs rounded-xl shadow-md"
                 >
                   Abrir VaultAI para Crear Contenido
                 </button>
@@ -1138,7 +1138,7 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
             </button>
 
             <h3 className="font-bold text-base text-white flex items-center gap-2">
-              <Plus size={18} className="text-blue-400" /> Crear Nuevo Contenido / Reel
+              <Plus size={18} className="text-gold-400" /> Crear Nuevo Contenido / Reel
             </h3>
 
             <form onSubmit={handleAddKanbanCard} className="space-y-3.5">
@@ -1150,7 +1150,7 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
                   value={newCardTitle}
                   onChange={(e) => setNewCardTitle(e.target.value)}
                   placeholder="Ej: 3 secretos para escalar tu tienda de Dropshipping"
-                  className="w-full px-3.5 py-2.5 bg-[#181922] border border-gray-700/80 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2.5 bg-[#181922] border border-gray-700/80 rounded-xl text-xs text-white focus:outline-none focus:border-gold-500"
                 />
               </div>
 
@@ -1160,7 +1160,7 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
                   <select
                     value={newCardType}
                     onChange={(e) => setNewCardType(e.target.value as any)}
-                    className="w-full px-3.5 py-2.5 bg-[#181922] border border-gray-700/80 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2.5 bg-[#181922] border border-gray-700/80 rounded-xl text-xs text-white focus:outline-none focus:border-gold-500"
                   >
                     <option value="Reel">Reel</option>
                     <option value="Short">Short</option>
@@ -1175,7 +1175,7 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
                   <select
                     value={newCardTag}
                     onChange={(e) => setNewCardTag(e.target.value as any)}
-                    className="w-full px-3.5 py-2.5 bg-[#181922] border border-gray-700/80 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2.5 bg-[#181922] border border-gray-700/80 rounded-xl text-xs text-white focus:outline-none focus:border-gold-500"
                   >
                     <option value="Native">Native</option>
                     <option value="TOFU">TOFU (Atracción)</option>
@@ -1190,7 +1190,7 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
                 <select
                   value={newCardColumn}
                   onChange={(e) => setNewCardColumn(e.target.value as any)}
-                  className="w-full px-3.5 py-2.5 bg-[#181922] border border-gray-700/80 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2.5 bg-[#181922] border border-gray-700/80 rounded-xl text-xs text-white focus:outline-none focus:border-gold-500"
                 >
                   <option value="ideas">Idea generada</option>
                   <option value="haciendo">Haciendo</option>
@@ -1210,7 +1210,7 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-950"
+                  className="px-5 py-2 bg-gold-600 hover:bg-gold-500 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-950"
                 >
                   Guardar Idea
                 </button>

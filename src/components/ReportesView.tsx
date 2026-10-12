@@ -236,8 +236,8 @@ export default function ReportesView({ businessType = 'E-Commerce (Venta de Prod
   const suggestionChips = [
     { text: '¿Cómo mejorar la conversión de chats a pedidos?', icon: <Sparkles size={14} className="text-emerald-400" /> },
     { text: '¿Cuáles son los productos más vendidos y su stock?', icon: <Package size={14} className="text-amber-400" /> },
-    { text: 'Diagnóstico de las conversaciones de WhatsApp', icon: <MessageSquare size={14} className="text-blue-400" /> },
-    { text: 'Ideas para reducir los carritos abandonados', icon: <RefreshCcw size={14} className="text-blue-400" /> },
+    { text: 'Diagnóstico de las conversaciones de WhatsApp', icon: <MessageSquare size={14} className="text-gold-400" /> },
+    { text: 'Ideas para reducir los carritos abandonados', icon: <RefreshCcw size={14} className="text-gold-400" /> },
   ];
 
   return (
@@ -291,15 +291,15 @@ export default function ReportesView({ businessType = 'E-Commerce (Venta de Prod
               { label: 'Gastos Operativos', value: isAdminDemo ? '$12.400.000' : '$0', icon: <AlertTriangle size={20} className="text-amber-400" /> },
               { label: 'ROI Real (Retorno)', value: isAdminDemo ? '1.513%' : '0%', icon: <Sparkles size={20} className="text-gold" /> },
               { label: 'Devoluciones Tot.', value: isAdminDemo ? '150 (12%)' : '0', icon: <RefreshCcw size={20} className="text-red-400" /> },
-              { label: 'Pedidos Entregados', value: isAdminDemo ? '787' : '0', icon: <Package size={20} className="text-blue-400" /> },
-              { label: 'Pedidos en Tránsito', value: isAdminDemo ? '250 (20%)' : '0', icon: <Truck size={20} className="text-cyan-400" /> },
+              { label: 'Pedidos Entregados', value: isAdminDemo ? '787' : '0', icon: <Package size={20} className="text-gold-400" /> },
+              { label: 'Pedidos en Tránsito', value: isAdminDemo ? '250 (20%)' : '0', icon: <Truck size={20} className="text-gold-400" /> },
               { label: 'Cancelaciones', value: isAdminDemo ? '63 (5%)' : '0', icon: <XCircle size={20} className="text-red-400" /> },
               { label: 'Efectividad COD (Recaudo)', value: isAdminDemo ? '78,7%' : '0%', icon: <Percent size={20} className="text-green-400" /> },
-              { label: 'Flete Promedio (Costo)', value: isAdminDemo ? '$18.000' : '$0', icon: <DollarSign size={20} className="text-blue-300" /> },
+              { label: 'Flete Promedio (Costo)', value: isAdminDemo ? '$18.000' : '$0', icon: <DollarSign size={20} className="text-amber-300" /> },
               { label: 'Tiempo de Entrega', value: '1.8 días', icon: <Clock size={20} className="text-amber-400" /> },
-              { label: 'Entregas por Región (Top)', value: 'Antioquia', icon: <MapPin size={20} className="text-blue-400" /> },
+              { label: 'Entregas por Región (Top)', value: 'Antioquia', icon: <MapPin size={20} className="text-gold-400" /> },
               { label: 'Transportadora Top', value: 'Coordinadora', icon: <Map size={20} className="text-emerald-500" /> },
-              { label: 'Asesores Activos', value: '3', icon: <Users size={20} className="text-blue-300" /> }
+              { label: 'Asesores Activos', value: '3', icon: <Users size={20} className="text-amber-300" /> }
             ].map((stat, i) => (
               <div key={i} className="bg-[#1a1a1a] p-4 rounded-xl border border-gray-800 flex items-center gap-4">
                 <div className="p-3 bg-gray-900 rounded-lg shrink-0">
@@ -381,7 +381,7 @@ export default function ReportesView({ businessType = 'E-Commerce (Venta de Prod
              <div className="bg-[#1a1a1a] p-6 rounded-xl border border-gray-800 lg:col-span-2">
                 <h3 className="font-bold text-gray-100 mb-4 flex items-center gap-2"><Tag size={18} className="text-gold" /> Etiquetas de Clientes</h3>
                 <div className="flex flex-wrap gap-2">
-                   <span className="px-3 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full text-xs">VIP (120)</span>
+                   <span className="px-3 py-1 bg-gold-500/10 text-gold-400 border border-gold-500/20 rounded-full text-xs">VIP (120)</span>
                    <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full text-xs">Mayoristas (45)</span>
                    <span className="px-3 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-full text-xs">Pago Pendiente (12)</span>
                 </div>
@@ -396,7 +396,7 @@ export default function ReportesView({ businessType = 'E-Commerce (Venta de Prod
                         <span className="text-gray-300">WhatsApp</span>
                         <span className="font-bold text-white">28%</span>
                       </div>
-                      <div className="w-full bg-gray-800 rounded-full h-1.5"><div className="bg-blue-500 h-1.5 rounded-full" style={{width: '55%'}}></div></div>
+                      <div className="w-full bg-gray-800 rounded-full h-1.5"><div className="bg-gold-500 h-1.5 rounded-full" style={{width: '55%'}}></div></div>
                    </div>
                    <div>
                       <div className="flex justify-between text-xs mb-1">
@@ -410,7 +410,7 @@ export default function ReportesView({ businessType = 'E-Commerce (Venta de Prod
                         <span className="text-gray-300">Redes sociales + recompra</span>
                         <span className="font-bold text-white">24%</span>
                       </div>
-                      <div className="w-full bg-gray-800 rounded-full h-1.5"><div className="bg-blue-500 h-1.5 rounded-full" style={{width: '15%'}}></div></div>
+                      <div className="w-full bg-gray-800 rounded-full h-1.5"><div className="bg-gold-500 h-1.5 rounded-full" style={{width: '15%'}}></div></div>
                    </div>
                 </div>
              </div>
@@ -446,14 +446,14 @@ export default function ReportesView({ businessType = 'E-Commerce (Venta de Prod
                      <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Por Género</h4>
                      <div className="flex items-center gap-4 h-full pb-4">
                         <div className="flex-1 flex flex-col items-center gap-2">
-                           <div className="relative w-16 h-16 rounded-full border-4 border-blue-500/20 flex items-center justify-center">
-                              <span className="text-blue-400 font-bold">60%</span>
+                           <div className="relative w-16 h-16 rounded-full border-4 border-gold-500/20 flex items-center justify-center">
+                              <span className="text-gold-400 font-bold">60%</span>
                            </div>
                            <span className="text-xs text-gray-400">Mujeres</span>
                         </div>
                         <div className="flex-1 flex flex-col items-center gap-2">
-                           <div className="relative w-16 h-16 rounded-full border-4 border-blue-500/20 flex items-center justify-center">
-                              <span className="text-blue-400 font-bold">40%</span>
+                           <div className="relative w-16 h-16 rounded-full border-4 border-gold-500/20 flex items-center justify-center">
+                              <span className="text-gold-400 font-bold">40%</span>
                            </div>
                            <span className="text-xs text-gray-400">Hombres</span>
                         </div>
@@ -546,7 +546,7 @@ export default function ReportesView({ businessType = 'E-Commerce (Venta de Prod
                         </div>
                         <div className="bg-black/40 p-3 rounded-xl border border-gray-800">
                           <span className="text-[10px] text-gray-500 font-bold block uppercase">Costo Flete</span>
-                          <span className="text-lg font-bold text-blue-300">${best.cost.toLocaleString()}</span>
+                          <span className="text-lg font-bold text-amber-300">${best.cost.toLocaleString()}</span>
                         </div>
                         <div className="bg-black/40 p-3 rounded-xl border border-gray-800">
                           <span className="text-[10px] text-gray-500 font-bold block uppercase">Intentos Prom.</span>
@@ -667,7 +667,7 @@ export default function ReportesView({ businessType = 'E-Commerce (Venta de Prod
               </div>
 
               <div className="bg-black/30 border border-gray-850 p-4 rounded-xl space-y-2">
-                <span className="p-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-lg inline-block text-xs font-bold">
+                <span className="p-1.5 bg-gold-500/10 text-gold-400 border border-gold-500/20 rounded-lg inline-block text-xs font-bold">
                   Plazo de Desembolso
                 </span>
                 <h4 className="text-sm font-bold text-white">Días de Flujo de Caja</h4>
@@ -849,7 +849,7 @@ export default function ReportesView({ businessType = 'E-Commerce (Venta de Prod
 
                 <div className="p-3 bg-gray-950/60 rounded-xl border border-gray-900">
                   <h4 className="text-xs font-bold text-white mb-1 flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-gold-500"></span>
                     Mejora en Procesos
                   </h4>
                   <p className="text-[11px] text-gray-500 leading-relaxed">

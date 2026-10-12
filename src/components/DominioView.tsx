@@ -156,16 +156,16 @@ export default function DominioView() {
 
       {/* Header Banner */}
       <div className="panel p-6 sm:p-8 rounded-2xl border border-gray-800 bg-gradient-to-r from-gray-900 via-gray-900/90 to-blue-950/30 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
+        <div className="absolute top-0 right-0 w-80 h-80 bg-gold-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <div className="p-3.5 rounded-2xl bg-blue-500/10 text-blue-400 border border-blue-500/20 shadow-lg shadow-blue-500/5 shrink-0">
+            <div className="p-3.5 rounded-2xl bg-gold-500/10 text-gold-400 border border-gold-500/20 shadow-lg shadow-gold-500/5 shrink-0">
               <Globe size={32} />
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-md bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                <span className="text-xs uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-md bg-gold-500/20 text-gold-400 border border-gold-500/30">
                   Marca Blanca & Dominio en Tiempo Real
                 </span>
                 <span className="text-xs text-gold font-semibold flex items-center gap-1">
@@ -185,7 +185,7 @@ export default function DominioView() {
           <div className="flex flex-col gap-2 shrink-0">
             <div className="px-3.5 py-2 rounded-xl bg-gray-950/80 border border-gray-800 text-[11px] text-gray-400">
               <span className="text-gray-500 block text-[10px] uppercase font-bold">Respaldo Oficial Activo</span>
-              <a href={officialAppUrl} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline flex items-center gap-1 font-mono">
+              <a href={officialAppUrl} target="_blank" rel="noreferrer" className="text-gold-400 hover:underline flex items-center gap-1 font-mono">
                 {officialAppUrl} <ExternalLink size={10} />
               </a>
             </div>
@@ -346,7 +346,7 @@ export default function DominioView() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-800 pb-4">
           <div>
             <h2 className="text-lg font-bold font-display text-white flex items-center gap-2">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 text-xs font-black border border-blue-500/30">
+              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-gold-500/20 text-gold-400 text-xs font-black border border-gold-500/30">
                 2
               </span>
               Conexión de Dominio en Tiempo Real (DNS Real)
@@ -361,7 +361,7 @@ export default function DominioView() {
             <button
               onClick={() => setIsSubdomain(!isSubdomain)}
               className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                isSubdomain ? 'bg-blue-500' : 'bg-gray-700'
+                isSubdomain ? 'bg-gold-500' : 'bg-gray-700'
               }`}
             >
               <span
@@ -383,14 +383,14 @@ export default function DominioView() {
               value={config.customDomain}
               onChange={(e) => setConfig({ ...config, customDomain: e.target.value })}
               placeholder="midominio.com o app.midominio.com"
-              className="w-full pl-10 pr-4 py-3 rounded-xl bg-gray-950 border border-gray-800 text-white font-mono text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+              className="w-full pl-10 pr-4 py-3 rounded-xl bg-gray-950 border border-gray-800 text-white font-mono text-sm focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-all"
             />
           </div>
 
           <button
             onClick={handleVerifyDnsReal}
             disabled={isVerifying || !cleanDomain}
-            className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            className="px-6 py-3 rounded-xl bg-gold-600 hover:bg-gold-500 text-white font-bold text-sm transition-all shadow-lg shadow-gold-600/20 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
           >
             {isVerifying ? (
               <>
@@ -458,7 +458,7 @@ export default function DominioView() {
       <div className="panel p-6 sm:p-8 rounded-2xl border border-gray-800 bg-gray-900/80 space-y-4">
         <div className="flex items-center justify-between border-b border-gray-800 pb-3">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 shrink-0">
+            <div className="p-2 rounded-xl bg-gold-500/10 text-gold-400 border border-gold-500/20 shrink-0">
               <Share2 size={20} />
             </div>
             <div>
@@ -469,7 +469,7 @@ export default function DominioView() {
             </div>
           </div>
 
-          <span className="text-xs px-2.5 py-1 rounded bg-blue-500/20 text-blue-300 font-mono font-bold">
+          <span className="text-xs px-2.5 py-1 rounded bg-gold-500/20 text-amber-300 font-mono font-bold">
             White-Label Afiliados
           </span>
         </div>
@@ -568,7 +568,7 @@ export default function DominioView() {
               </span>
               <div className="p-3.5 rounded-xl bg-gray-950 border border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono">
                 <div className="flex items-center gap-3">
-                  <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 font-bold">CNAME</span>
+                  <span className="px-2 py-0.5 rounded bg-gold-500/20 text-gold-400 font-bold">CNAME</span>
                   <span className="text-gray-400">Host: <strong className="text-white">www</strong></span>
                   <span className="text-gray-400">Destino: <strong className="text-emerald-400">ghs.googlehosted.com</strong></span>
                 </div>
@@ -585,7 +585,7 @@ export default function DominioView() {
         ) : (
           /* Subdomain CNAME record */
           <div className="space-y-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-blue-400 flex items-center gap-1.5">
+            <span className="text-xs font-bold uppercase tracking-wider text-gold-400 flex items-center gap-1.5">
               <Info size={14} />
               Registro de Tipo CNAME (Para subdominio)
             </span>
@@ -593,7 +593,7 @@ export default function DominioView() {
             <div className="p-4 rounded-xl bg-gray-950 border border-gray-800 space-y-3 font-mono text-xs">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="space-y-1">
-                  <p className="text-gray-400">Tipo de Registro: <strong className="text-blue-400 font-bold">CNAME</strong></p>
+                  <p className="text-gray-400">Tipo de Registro: <strong className="text-gold-400 font-bold">CNAME</strong></p>
                   <p className="text-gray-400">Nombre / Host: <strong className="text-white">{cleanDomain.split('.')[0] || 'app'}</strong></p>
                   <p className="text-gray-400">Valor / Apunta a: <strong className="text-emerald-400 font-bold">ghs.googlehosted.com</strong></p>
                 </div>
@@ -614,7 +614,7 @@ export default function DominioView() {
       {/* STEP 4: Provider instructions */}
       <div className="panel p-6 sm:p-8 rounded-2xl border border-gray-800 bg-gray-900/80 space-y-6">
         <h2 className="text-lg font-bold font-display text-white flex items-center gap-2">
-          <HelpCircle size={20} className="text-blue-400" />
+          <HelpCircle size={20} className="text-gold-400" />
           Instrucciones Rápidas por Proveedor
         </h2>
 
@@ -635,7 +635,7 @@ export default function DominioView() {
           <div className="p-4 rounded-xl bg-gray-950 border border-gray-800 space-y-2">
             <div className="flex items-center justify-between border-b border-gray-800 pb-2">
               <span className="font-bold text-white text-sm">GoDaddy</span>
-              <span className="text-[10px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded font-bold">DNS Management</span>
+              <span className="text-[10px] bg-gold-500/20 text-amber-300 px-2 py-0.5 rounded font-bold">DNS Management</span>
             </div>
             <ol className="list-decimal pl-4 space-y-1.5 text-gray-300 leading-relaxed">
               <li>Ve a "Mis Productos" y selecciona tu Dominio.</li>

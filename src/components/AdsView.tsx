@@ -1135,7 +1135,7 @@ export default function AdsView({
                     onClick={() => handleSendMessage(undefined, "Generar reporte completo de KPIs")}
                     className="bg-gray-950 hover:bg-gray-900 border border-gray-800 hover:border-gray-700 text-gray-300 text-[10px] py-1.5 px-2.5 rounded-xl transition flex items-center gap-1.5 cursor-pointer text-left"
                   >
-                    <BarChart2 size={11} className="text-blue-400 shrink-0" />
+                    <BarChart2 size={11} className="text-gold-400 shrink-0" />
                     <span>Reporte Ejecutivo de Anuncios</span>
                   </button>
                   <button
@@ -1592,7 +1592,7 @@ export default function AdsView({
                       <span className={`shrink-0 mt-0.5 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase ${
                         ev.action === 'paused' ? 'bg-red-500/10 text-red-400' :
                         ev.action === 'scaled' ? 'bg-emerald-500/10 text-emerald-400' :
-                        'bg-blue-500/10 text-blue-400'}`}>
+                        'bg-gold-500/10 text-gold-400'}`}>
                         {ev.action === 'paused' ? 'Pausada' : ev.action === 'scaled' ? 'Escalada' : 'Aviso'}
                       </span>
                       <div className="min-w-0">
@@ -1851,10 +1851,10 @@ export default function AdsView({
                         <td className="py-3 px-3 capitalize">
                           <span className={`px-2 py-0.5 rounded text-[9.5px] font-bold ${
                             isGoogle ? 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20' :
-                            isInstagram ? 'bg-blue-600/10 text-blue-400 border border-blue-500/20' :
+                            isInstagram ? 'bg-gold-600/10 text-gold-400 border border-gold-500/20' :
                             isTiktok ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
                             isOpenai ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                            'bg-blue-600/10 text-blue-400 border border-blue-500/20'
+                            'bg-gold-600/10 text-gold-400 border border-gold-500/20'
                           }`}>
                             {c.platform || 'meta'}
                           </span>

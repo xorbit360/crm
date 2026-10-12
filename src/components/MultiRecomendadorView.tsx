@@ -635,7 +635,7 @@ export default function MultiRecomendadorView() {
                     <span className="text-gray-500">Activación: <span className="text-orange-400 font-bold bg-black px-1.5 py-0.5 rounded border border-gray-800">"{rec.keyword}"</span></span>
                     <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
                       rec.queryType === 'external_api'
-                        ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                        ? 'bg-gold-500/10 text-gold-400 border border-gold-500/20'
                         : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                     }`}>
                       {rec.queryType === 'external_api' ? '🔌 API / Token' : '📦 Catálogo'}
@@ -953,9 +953,9 @@ export default function MultiRecomendadorView() {
               {/* Tab 3: External API / Token Config (Shopify/Mastershop/Kommo) */}
               {settingsTab === 'api' && (
                 <div className="space-y-5 animate-fade-in">
-                  <div className="p-4 bg-blue-500/5 border border-blue-500/20 rounded-xl text-xs space-y-2 text-gray-300">
+                  <div className="p-4 bg-gold-500/5 border border-gold-500/20 rounded-xl text-xs space-y-2 text-gray-300">
                     <p className="font-bold text-white flex items-center gap-1.5">
-                      <Link size={14} className="text-blue-400" /> Sincronización Avanzada con Plataformas Externas
+                      <Link size={14} className="text-gold-400" /> Sincronización Avanzada con Plataformas Externas
                     </p>
                     <p className="leading-relaxed">
                       Conecta tus CRM (Kommo y otros hubs omnicanal) o plataformas de Dropshipping (MasterShop, Shopify, Dropi, Effix) mediante tokens. Esto permite a la Inteligencia Artificial de la plataforma consultar el inventario, verificar disponibilidad local y actualizar existencias directamente mediante el túnel seguro de la plataforma.
@@ -1014,7 +1014,7 @@ export default function MultiRecomendadorView() {
                           <button
                             onClick={handleTestAPIConnection}
                             disabled={apiTesting}
-                            className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer"
+                            className="w-full py-2 bg-gold-600 hover:bg-gold-500 text-white font-bold text-xs rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer"
                           >
                             {apiTesting ? (
                               <>
@@ -1042,7 +1042,7 @@ export default function MultiRecomendadorView() {
                         {apiTestLogs.map((log, idx) => (
                           <div key={idx} className={
                             log.type === 'sent'
-                              ? 'text-blue-400'
+                              ? 'text-gold-400'
                               : log.type === 'received'
                               ? 'text-yellow-300 whitespace-pre-wrap'
                               : 'text-gray-400'

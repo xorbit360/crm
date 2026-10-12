@@ -162,11 +162,11 @@ const FlowEditor = () => {
                 <Webhook size={14} className="text-[#d4af37] shrink-0" /> <span className="truncate">Webhook / Bot</span>
               </div>
               <div
-                className="bg-[#111] border border-blue-500 p-3 rounded-lg text-xs text-white cursor-grab active:cursor-grabbing hover:bg-[#1a1a1a] transition-colors flex items-center gap-2"
+                className="bg-[#111] border border-gold-500 p-3 rounded-lg text-xs text-white cursor-grab active:cursor-grabbing hover:bg-[#1a1a1a] transition-colors flex items-center gap-2"
                 onDragStart={(event) => onDragStart(event, 'input', '⏱️ Cron (Reloj)', '#111', '#3b82f6')}
                 draggable
               >
-                <Activity size={14} className="text-blue-500 shrink-0" /> <span className="truncate">Cron (Programado)</span>
+                <Activity size={14} className="text-gold-500 shrink-0" /> <span className="truncate">Cron (Programado)</span>
               </div>
             </div>
           </div>
@@ -177,11 +177,11 @@ const FlowEditor = () => {
             </h4>
             <div className="space-y-2">
               <div
-                className="bg-[#1a1a2e] border border-blue-500 p-3 rounded-lg text-xs text-white cursor-grab active:cursor-grabbing hover:bg-[#222240] transition-colors flex items-center gap-2"
+                className="bg-[#1a1a2e] border border-gold-500 p-3 rounded-lg text-xs text-white cursor-grab active:cursor-grabbing hover:bg-[#222240] transition-colors flex items-center gap-2"
                 onDragStart={(event) => onDragStart(event, 'default', '🧠 LLM Base', '#1a1a2e', '#6366f1')}
                 draggable
               >
-                <BotIcon size={14} className="text-blue-500 shrink-0" /> <span className="truncate">LLM Agent (Gemini/OpenAI)</span>
+                <BotIcon size={14} className="text-gold-500 shrink-0" /> <span className="truncate">LLM Agent (Gemini/OpenAI)</span>
               </div>
             </div>
           </div>
@@ -259,10 +259,10 @@ const FlowEditor = () => {
                 <label className="text-[10px] text-gray-500 uppercase mb-1 block">URL del Endpoint</label>
                 <input type="text" className="w-full bg-[#161616] border border-gray-700 rounded p-2 text-xs text-white font-mono" defaultValue="https://api.example.com/v1/data" />
               </div>
-              <div className="p-3 bg-blue-900/10 border border-blue-500/20 rounded-lg mt-4">
-                 <h4 className="text-[10px] text-blue-400 font-semibold mb-1 flex items-center gap-1"><Network size={12}/> Configuración de Headers</h4>
+              <div className="p-3 bg-blue-900/10 border border-gold-500/20 rounded-lg mt-4">
+                 <h4 className="text-[10px] text-gold-400 font-semibold mb-1 flex items-center gap-1"><Network size={12}/> Configuración de Headers</h4>
                  <p className="text-[10px] text-gray-400 mb-2">Añade credenciales de autorización o content-type.</p>
-                 <button className="text-[10px] text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 px-2 py-1 rounded w-full flex items-center justify-center gap-1">
+                 <button className="text-[10px] text-amber-300 bg-gold-500/10 hover:bg-gold-500/20 px-2 py-1 rounded w-full flex items-center justify-center gap-1">
                    <Plus size={10} /> Añadir Header
                  </button>
               </div>
@@ -308,7 +308,7 @@ const CronTasksPanel = () => {
       <div className="lg:col-span-1 space-y-4">
         <div className="bg-[#111] border border-gray-800 rounded-xl p-6">
           <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-            <Plus size={18} className="text-blue-500" /> Nueva Tarea Programada
+            <Plus size={18} className="text-gold-500" /> Nueva Tarea Programada
           </h3>
           <form onSubmit={handleAddTask} className="space-y-4">
             <div>
@@ -318,7 +318,7 @@ const CronTasksPanel = () => {
                 value={newTask.title}
                 onChange={e => setNewTask({...newTask, title: e.target.value})}
                 placeholder="Ej. Enviar reporte de ventas"
-                className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-gold-500 focus:outline-none"
               />
             </div>
 
@@ -328,7 +328,7 @@ const CronTasksPanel = () => {
                 <select
                   value={newTask.frequency}
                   onChange={e => setNewTask({...newTask, frequency: e.target.value})}
-                  className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                  className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-gold-500 focus:outline-none"
                 >
                   <option>Diaria</option>
                   <option>Semanal</option>
@@ -342,7 +342,7 @@ const CronTasksPanel = () => {
                   type="time"
                   value={newTask.time}
                   onChange={e => setNewTask({...newTask, time: e.target.value})}
-                  className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                  className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-gold-500 focus:outline-none"
                 />
               </div>
             </div>
@@ -353,7 +353,7 @@ const CronTasksPanel = () => {
                 <select
                   value={newTask.method}
                   onChange={e => setNewTask({...newTask, method: e.target.value})}
-                  className="w-24 bg-black border border-gray-700 rounded-lg px-2 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                  className="w-24 bg-black border border-gray-700 rounded-lg px-2 py-2 text-sm text-white focus:border-gold-500 focus:outline-none"
                 >
                   <option>GET</option>
                   <option>POST</option>
@@ -365,12 +365,12 @@ const CronTasksPanel = () => {
                   value={newTask.api}
                   onChange={e => setNewTask({...newTask, api: e.target.value})}
                   placeholder="/api/v1/endpoint"
-                  className="flex-1 bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                  className="flex-1 bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-gold-500 focus:outline-none"
                 />
               </div>
             </div>
 
-            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm py-2.5 rounded-lg transition-colors mt-2">
+            <button type="submit" className="w-full bg-gold-600 hover:bg-gold-500 text-white font-bold text-sm py-2.5 rounded-lg transition-colors mt-2">
               Programar Tarea
             </button>
           </form>
@@ -396,7 +396,7 @@ const CronTasksPanel = () => {
                   <h4 className="font-bold text-white text-sm">{task.title}</h4>
                   <div className="flex items-center gap-4 mt-2">
                     <span className="flex items-center gap-1 text-xs text-gray-400 bg-black px-2 py-1 rounded border border-gray-800">
-                      <Clock size={12} className="text-blue-400" /> {task.frequency}
+                      <Clock size={12} className="text-gold-400" /> {task.frequency}
                     </span>
                     <span className="flex items-center gap-1 text-xs text-gray-400 bg-black px-2 py-1 rounded border border-gray-800 font-mono">
                       <Link size={12} className="text-green-400" /> {task.api}
@@ -448,13 +448,13 @@ const CronHistoryPanel = () => {
               placeholder="Buscar por nombre de tarea..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full sm:w-64 bg-black border border-gray-800 rounded-lg pl-9 pr-4 py-2 text-sm text-white focus:border-blue-500 focus:outline-none transition-colors"
+              className="w-full sm:w-64 bg-black border border-gray-800 rounded-lg pl-9 pr-4 py-2 text-sm text-white focus:border-gold-500 focus:outline-none transition-colors"
             />
           </div>
           <select
             value={dateRange}
             onChange={(e) => setDateRange(e.target.value)}
-            className="bg-black border border-gray-800 rounded-lg px-4 py-2 text-sm text-white focus:border-blue-500 focus:outline-none transition-colors"
+            className="bg-black border border-gray-800 rounded-lg px-4 py-2 text-sm text-white focus:border-gold-500 focus:outline-none transition-colors"
           >
             <option value="today">Hoy</option>
             <option value="24h">Últimas 24 horas</option>
@@ -547,7 +547,7 @@ const WebhooksPanel = () => {
       <div className="lg:col-span-1 space-y-4">
         <div className="bg-[#111] border border-gray-800 rounded-xl p-6">
           <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-            <Plus size={18} className="text-blue-500" /> Nuevo Webhook Entrante
+            <Plus size={18} className="text-gold-500" /> Nuevo Webhook Entrante
           </h3>
           <form onSubmit={handleAddWebhook} className="space-y-4">
             <div>
@@ -557,7 +557,7 @@ const WebhooksPanel = () => {
                 value={newWebhook.name}
                 onChange={e => setNewWebhook({...newWebhook, name: e.target.value})}
                 placeholder="Ej. WooCommerce Sales"
-                className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-gold-500 focus:outline-none"
               />
             </div>
 
@@ -568,26 +568,26 @@ const WebhooksPanel = () => {
                 value={newWebhook.events}
                 onChange={e => setNewWebhook({...newWebhook, events: e.target.value})}
                 placeholder="Ej. order.created"
-                className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-gold-500 focus:outline-none"
               />
             </div>
 
             <div>
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1 flex items-center justify-between">
                 <span>Mapeo de Datos (JSON)</span>
-                <span className="text-[10px] bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded border border-blue-500/20">Opcional</span>
+                <span className="text-[10px] bg-gold-500/10 text-gold-400 px-1.5 py-0.5 rounded border border-gold-500/20">Opcional</span>
               </label>
               <textarea
                 value={newWebhook.payloadMapping}
                 onChange={e => setNewWebhook({...newWebhook, payloadMapping: e.target.value})}
                 placeholder="Ej. payload.amount -> total_venta&#10;payload.customer -> cliente_id"
                 rows={3}
-                className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:border-blue-500 focus:outline-none resize-none"
+                className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:border-gold-500 focus:outline-none resize-none"
               />
               <p className="text-[10px] text-gray-500 mt-1">Mapea campos del JSON entrante a variables internas.</p>
             </div>
 
-            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm py-2.5 rounded-lg transition-colors mt-2">
+            <button type="submit" className="w-full bg-gold-600 hover:bg-gold-500 text-white font-bold text-sm py-2.5 rounded-lg transition-colors mt-2">
               Generar URL
             </button>
           </form>
@@ -613,7 +613,7 @@ const WebhooksPanel = () => {
                   <div className="flex items-center gap-4">
                     <button
                       onClick={() => toggleWebhook(webhook.id)}
-                      className={`w-10 h-6 rounded-full transition-colors relative ${webhook.active ? 'bg-blue-500' : 'bg-gray-700'}`}
+                      className={`w-10 h-6 rounded-full transition-colors relative ${webhook.active ? 'bg-gold-500' : 'bg-gray-700'}`}
                     >
                       <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${webhook.active ? 'left-5' : 'left-1'}`} />
                     </button>
@@ -639,7 +639,7 @@ const WebhooksPanel = () => {
                     <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 flex items-center gap-1">
                       <Database size={10} /> Mapeo de Variables Activo
                     </p>
-                    <pre className="text-xs text-blue-300/80 font-mono whitespace-pre-wrap">
+                    <pre className="text-xs text-amber-300/80 font-mono whitespace-pre-wrap">
                       {webhook.payloadMapping}
                     </pre>
                   </div>
@@ -701,7 +701,7 @@ const NotificationsPanel = () => {
       <div className="lg:col-span-1 space-y-4">
         <div className="bg-[#111] border border-gray-800 rounded-xl p-6">
           <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-            <Bell size={18} className="text-blue-500" /> Nueva Notificación
+            <Bell size={18} className="text-gold-500" /> Nueva Notificación
           </h3>
           <form onSubmit={handleAddNotification} className="space-y-4">
             <div>
@@ -711,7 +711,7 @@ const NotificationsPanel = () => {
                 value={newNotification.name}
                 onChange={e => setNewNotification({...newNotification, name: e.target.value})}
                 placeholder="Ej. Alerta CRON Ventas"
-                className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-gold-500 focus:outline-none"
               />
             </div>
 
@@ -720,7 +720,7 @@ const NotificationsPanel = () => {
               <select
                 value={newNotification.condition}
                 onChange={e => setNewNotification({...newNotification, condition: e.target.value})}
-                className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-gold-500 focus:outline-none"
               >
                 <option value="on_error">Cuando falle una tarea</option>
                 <option value="on_success">Éxito en integración/flujo</option>
@@ -733,7 +733,7 @@ const NotificationsPanel = () => {
               <select
                 value={newNotification.channel}
                 onChange={e => setNewNotification({...newNotification, channel: e.target.value})}
-                className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-gold-500 focus:outline-none"
               >
                 <option value="whatsapp">WhatsApp</option>
                 <option value="email">Email</option>
@@ -750,11 +750,11 @@ const NotificationsPanel = () => {
                 value={newNotification.target}
                 onChange={e => setNewNotification({...newNotification, target: e.target.value})}
                 placeholder={newNotification.channel === 'whatsapp' ? '+57...' : newNotification.channel === 'email' ? 'admin@empresa.com' : 'Usuario'}
-                className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-gold-500 focus:outline-none"
               />
             </div>
 
-            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm py-2.5 rounded-lg transition-colors mt-2">
+            <button type="submit" className="w-full bg-gold-600 hover:bg-gold-500 text-white font-bold text-sm py-2.5 rounded-lg transition-colors mt-2">
               Crear Regla
             </button>
           </form>
@@ -780,7 +780,7 @@ const NotificationsPanel = () => {
                   <div className="flex items-center gap-4">
                     <button
                       onClick={() => toggleNotification(notification.id)}
-                      className={`w-10 h-6 rounded-full transition-colors relative ${notification.active ? 'bg-blue-500' : 'bg-gray-700'}`}
+                      className={`w-10 h-6 rounded-full transition-colors relative ${notification.active ? 'bg-gold-500' : 'bg-gray-700'}`}
                     >
                       <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${notification.active ? 'left-5' : 'left-1'}`} />
                     </button>
@@ -790,7 +790,7 @@ const NotificationsPanel = () => {
                         <span className={`text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded border ${
                           notification.condition === 'on_error' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
                           notification.condition === 'on_success' ? 'bg-green-500/10 text-green-400 border-green-500/20' :
-                          'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                          'bg-gold-500/10 text-gold-400 border-gold-500/20'
                         }`}>
                           {notification.condition === 'on_error' ? 'Si Falla' : notification.condition === 'on_success' ? 'Si es Exitoso' : 'Siempre'}
                         </span>
@@ -831,7 +831,7 @@ export default function AutomatizacionesView() {
     <div className="animate-fade-in flex flex-col h-full space-y-4">
       <div className="flex items-center justify-between border-b border-gray-800 pb-4 shrink-0">
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+          <div className="w-10 h-10 rounded-xl bg-gold-500/10 border border-gold-500/20 flex items-center justify-center text-gold-400">
             <Network size={20} />
           </div>
           <div>
@@ -841,7 +841,7 @@ export default function AutomatizacionesView() {
         </div>
         <div className="flex gap-2">
           {activeTab === 'flow' && (
-            <button className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
+            <button className="bg-gold-600 hover:bg-gold-500 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
               <Save size={14} /> Guardar Flujo
             </button>
           )}
@@ -852,7 +852,7 @@ export default function AutomatizacionesView() {
         <button
           onClick={() => setActiveTab('flow')}
           className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-            activeTab === 'flow' ? 'border-blue-500 text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-300'
+            activeTab === 'flow' ? 'border-gold-500 text-gold-400' : 'border-transparent text-gray-500 hover:text-gray-300'
           }`}
         >
           Flujo Visual
@@ -860,7 +860,7 @@ export default function AutomatizacionesView() {
         <button
           onClick={() => setActiveTab('cron')}
           className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-            activeTab === 'cron' ? 'border-blue-500 text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-300'
+            activeTab === 'cron' ? 'border-gold-500 text-gold-400' : 'border-transparent text-gray-500 hover:text-gray-300'
           }`}
         >
           Tareas Programadas (CRON)
@@ -876,7 +876,7 @@ export default function AutomatizacionesView() {
         <button
           onClick={() => setActiveTab('webhooks')}
           className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-            activeTab === 'webhooks' ? 'border-blue-500 text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-300'
+            activeTab === 'webhooks' ? 'border-gold-500 text-gold-400' : 'border-transparent text-gray-500 hover:text-gray-300'
           }`}
         >
           Webhooks Entrantes
@@ -884,7 +884,7 @@ export default function AutomatizacionesView() {
         <button
           onClick={() => setActiveTab('notifications')}
           className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-            activeTab === 'notifications' ? 'border-blue-500 text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-300'
+            activeTab === 'notifications' ? 'border-gold-500 text-gold-400' : 'border-transparent text-gray-500 hover:text-gray-300'
           }`}
         >
           Notificaciones

@@ -183,7 +183,7 @@ export default function VideoGenView({ currentUser }: { currentUser?: { name: st
 
   const statusBadge = (s: string) => {
     const map: Record<string, string> = {
-      queued: 'bg-yellow-500/15 text-yellow-300', working: 'bg-blue-500/15 text-blue-300',
+      queued: 'bg-yellow-500/15 text-yellow-300', working: 'bg-gold-500/15 text-amber-300',
       done: 'bg-green-500/15 text-green-300', failed: 'bg-red-500/15 text-red-300',
       cancelled: 'bg-gray-500/15 text-gray-300',
     };

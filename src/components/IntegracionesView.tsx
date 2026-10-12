@@ -687,7 +687,7 @@ export default function IntegracionesView() {
                     </div>
                   ))}
 
-                  <div className="bg-blue-950/20 border border-blue-500/20 rounded-xl p-4 flex items-start gap-3 mt-4 text-blue-400">
+                  <div className="bg-blue-950/20 border border-gold-500/20 rounded-xl p-4 flex items-start gap-3 mt-4 text-gold-400">
                     <Sliders size={18} className="shrink-0 mt-0.5" />
                     <div className="text-xs space-y-1">
                       <p className="font-semibold text-gray-200">Sincronización Automatizada</p>
@@ -904,7 +904,7 @@ export default function IntegracionesView() {
                     {/* Meta Webhook settings */}
                     <div className="space-y-3 pt-3 border-t border-gray-800/60">
                       <h5 className="text-xs font-bold text-white flex items-center gap-1.5">
-                        <Globe size={13} className="text-blue-400" /> Endpoint de Webhook para Facebook Leads Real
+                        <Globe size={13} className="text-gold-400" /> Endpoint de Webhook para Facebook Leads Real
                       </h5>
                       <p className="text-[10px] text-gray-400 leading-relaxed">
                         Copia estos datos y colócalos en tu panel de <a href="https://developers.facebook.com" target="_blank" rel="noopener noreferrer" className="text-gold underline inline-flex items-center gap-0.5">Meta Developers <ExternalLink size={10} /></a> bajo la sección de Webhooks de tu App. El servidor responderá el challenge de verificación de inmediato.
@@ -964,7 +964,7 @@ export default function IntegracionesView() {
                                     onClick={() => handleToggleEvent('meta', ev)}
                                     className={`text-[9px] px-2 py-1 rounded border font-mono font-bold transition ${
                                       active
-                                        ? 'bg-blue-950/40 border-blue-500/40 text-blue-400'
+                                        ? 'bg-blue-950/40 border-gold-500/40 text-gold-400'
                                         : 'bg-transparent border-gray-800 text-gray-500 hover:border-gray-700'
                                     }`}
                                   >
@@ -984,7 +984,7 @@ export default function IntegracionesView() {
                         type="button"
                         disabled={simulatingLogId !== null}
                         onClick={() => handleSimulateWebhook('meta')}
-                        className="px-4 py-2 bg-gradient-to-r from-blue-900/30 to-blue-900/30 hover:from-blue-900/50 hover:to-blue-900/50 border border-blue-500/30 text-blue-400 rounded-xl text-xs font-bold transition flex items-center gap-1.5"
+                        className="px-4 py-2 bg-gradient-to-r from-blue-900/30 to-blue-900/30 hover:from-blue-900/50 hover:to-blue-900/50 border border-gold-500/30 text-gold-400 rounded-xl text-xs font-bold transition flex items-center gap-1.5"
                       >
                         {simulatingLogId === 'meta' ? (
                           <>
@@ -1292,7 +1292,7 @@ export default function IntegracionesView() {
                         <div key={log.id} className="p-3 bg-[#0a0a0a] border border-gray-800 rounded-xl space-y-2 text-[11px] font-mono hover:border-gray-700 transition">
                           <div className="flex items-center justify-between">
                             <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
-                              isMeta ? 'bg-blue-950/50 text-blue-400 border border-blue-900/30' : 'bg-red-950/50 text-red-400 border border-red-900/30'
+                              isMeta ? 'bg-blue-950/50 text-gold-400 border border-blue-900/30' : 'bg-red-950/50 text-red-400 border border-red-900/30'
                             }`}>
                               {isMeta ? 'META ADS' : 'TIKTOK ADS'}
                             </span>

@@ -360,7 +360,7 @@ export default function PasarelaPagoView() {
             onClick={() => setActiveSubTab('pasarelas')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
               activeSubTab === 'pasarelas'
-                ? 'bg-cyan-500 text-black shadow-md shadow-cyan-500/20 font-black'
+                ? 'bg-gold-500 text-black shadow-md shadow-gold-500/20 font-black'
                 : 'bg-gray-900 text-gray-400 hover:text-white border border-gray-800'
             }`}
           >
@@ -371,7 +371,7 @@ export default function PasarelaPagoView() {
             onClick={() => setActiveSubTab('terminal')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
               activeSubTab === 'terminal'
-                ? 'bg-blue-500 text-white shadow-md shadow-blue-500/20 font-black'
+                ? 'bg-gold-500 text-white shadow-md shadow-gold-500/20 font-black'
                 : 'bg-gray-900 text-gray-400 hover:text-white border border-gray-800'
             }`}
           >
@@ -529,7 +529,7 @@ export default function PasarelaPagoView() {
                   </span>
                   <button
                     onClick={handleCalculateServerSignature}
-                    className="text-[10px] font-bold text-cyan-300 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-500/40 hover:bg-cyan-900 cursor-pointer"
+                    className="text-[10px] font-bold text-amber-300 bg-cyan-950/60 px-2 py-0.5 rounded border border-gold-500/40 hover:bg-cyan-900 cursor-pointer"
                   >
                     Verificar Backend
                   </button>
@@ -537,7 +537,7 @@ export default function PasarelaPagoView() {
 
                 <div className="p-2.5 rounded-lg bg-black font-mono text-[11px] text-gray-300 border border-gray-800 break-all">
                   <span className="text-gray-500 block text-[9px] uppercase font-bold mb-0.5">Cadena cruda antes de Hashing:</span>
-                  <span className="text-cyan-300">{concatenatedData}</span>
+                  <span className="text-amber-300">{concatenatedData}</span>
                 </div>
 
                 <div className="pt-1">
@@ -589,14 +589,14 @@ export default function PasarelaPagoView() {
                   <span className="text-3xl font-black font-display text-white block">
                     ${amount.toLocaleString()} <span className="text-sm font-bold text-emerald-400">{currency}</span>
                   </span>
-                  <span className="text-xs text-gray-400">Referencia: <code className="text-cyan-300 font-mono">{reference}</code></span>
+                  <span className="text-xs text-gray-400">Referencia: <code className="text-amber-300 font-mono">{reference}</code></span>
                 </div>
 
                 {/* THE ACTUAL EMBEDDED BUTTON COMPONENT */}
                 <button
                   type="button"
                   onClick={handleLaunchRealCheckout}
-                  className="w-full py-4 px-6 bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-black font-black text-sm rounded-2xl transition-all shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-3 cursor-pointer transform active:scale-95"
+                  className="w-full py-4 px-6 bg-gradient-to-r from-emerald-500 to-gold-400 hover:from-emerald-400 hover:to-amber-300 text-black font-black text-sm rounded-2xl transition-all shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-3 cursor-pointer transform active:scale-95"
                 >
                   <CreditCard size={20} />
                   <span>ABRIR CHECKOUT REAL EN WOMPI (${amount.toLocaleString()} {currency})</span>
@@ -613,7 +613,7 @@ export default function PasarelaPagoView() {
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <label className="text-xs font-bold text-gray-300 flex items-center gap-1.5">
-                    <Code size={14} className="text-cyan-400" /> Código HTML para Embeber en Sitio Web:
+                    <Code size={14} className="text-gold-400" /> Código HTML para Embeber en Sitio Web:
                   </label>
                   <button
                     onClick={() => {
@@ -621,13 +621,13 @@ export default function PasarelaPagoView() {
                       setSavedToast('Código HTML embebido copiado al portapapeles.');
                       setTimeout(() => setSavedToast(null), 3000);
                     }}
-                    className="text-[11px] font-bold text-cyan-300 bg-cyan-950/60 hover:bg-cyan-900 border border-cyan-500/40 px-2.5 py-1 rounded-lg flex items-center gap-1 cursor-pointer"
+                    className="text-[11px] font-bold text-amber-300 bg-cyan-950/60 hover:bg-cyan-900 border border-gold-500/40 px-2.5 py-1 rounded-lg flex items-center gap-1 cursor-pointer"
                   >
                     <Copy size={13} /> Copiar Código
                   </button>
                 </div>
 
-                <pre className="p-4 rounded-xl bg-black border border-gray-800 text-[11px] font-mono text-cyan-200 overflow-x-auto leading-relaxed">
+                <pre className="p-4 rounded-xl bg-black border border-gray-800 text-[11px] font-mono text-amber-200 overflow-x-auto leading-relaxed">
                   {generatedHtmlSnippet}
                 </pre>
               </div>
@@ -730,7 +730,7 @@ export default function PasarelaPagoView() {
       {activeSubTab === 'terminal' && (
         <div className="panel p-6 rounded-2xl bg-gray-950 border border-gray-800 space-y-4">
           <h3 className="text-lg font-bold text-white flex items-center gap-2 border-b border-gray-800 pb-3">
-            <Zap className="text-blue-400" size={20} /> Terminal Rápida de Cobros Directos
+            <Zap className="text-gold-400" size={20} /> Terminal Rápida de Cobros Directos
           </h3>
           <p className="text-xs text-gray-400">
             Genera enlaces directos de cobro y terminales QR para enviar por WhatsApp o correo electrónico.

@@ -331,14 +331,14 @@ export default function CostosSaasView() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header Banner */}
-      <div className="panel p-6 sm:p-8 rounded-2xl border border-cyan-500/30 bg-gradient-to-r from-gray-900 via-gray-900 to-cyan-950/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="panel p-6 sm:p-8 rounded-2xl border border-gold-500/30 bg-gradient-to-r from-gray-900 via-gray-900 to-cyan-950/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="p-3.5 rounded-2xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+          <div className="p-3.5 rounded-2xl bg-gold-500/10 text-gold-400 border border-gold-500/30">
             <Calculator size={28} />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] uppercase font-black px-2.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+              <span className="text-[10px] uppercase font-black px-2.5 py-0.5 rounded bg-gold-500/20 text-amber-300 border border-gold-500/30">
                 PANEL ADMINISTRADOR DE COSTOS OPERATIVOS SAAS
               </span>
               {toastMessage && (
@@ -357,13 +357,13 @@ export default function CostosSaasView() {
         <div className="flex gap-2 shrink-0">
           <button
             onClick={loadLive}
-            className="px-4 py-3 bg-gray-800 hover:bg-gray-700 text-cyan-300 border border-cyan-500/30 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
+            className="px-4 py-3 bg-gray-800 hover:bg-gray-700 text-amber-300 border border-gold-500/30 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
             <RefreshCw size={16} className={liveLoading ? 'animate-spin' : ''} /> {liveLoading ? 'Cargando…' : 'Actualizar métricas'}
           </button>
           <button
             onClick={() => setShowAddModal(true)}
-            className="px-5 py-3 bg-cyan-500 hover:bg-cyan-400 text-black font-black text-xs rounded-xl transition-all shadow-lg shadow-cyan-500/20 flex items-center justify-center gap-2 cursor-pointer"
+            className="px-5 py-3 bg-gold-500 hover:bg-gold-400 text-black font-black text-xs rounded-xl transition-all shadow-lg shadow-gold-500/20 flex items-center justify-center gap-2 cursor-pointer"
           >
             <Plus size={18} /> Registrar Costo / Módulo
           </button>
@@ -390,7 +390,7 @@ export default function CostosSaasView() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="panel p-5 rounded-2xl border border-gray-800 bg-gray-900/60 space-y-2">
           <span className="text-[11px] text-gray-400 uppercase font-bold flex items-center gap-1.5">
-            <Zap size={14} className="text-cyan-400" /> Saldo IA del workspace
+            <Zap size={14} className="text-gold-400" /> Saldo IA del workspace
           </span>
           <div className="flex items-baseline gap-2">
             <span className="text-3xl font-black text-white">{live ? (live.balance?.conversations ?? 0).toLocaleString() : '—'}</span>
@@ -412,7 +412,7 @@ export default function CostosSaasView() {
 
         <div className="panel p-5 rounded-2xl border border-gray-800 bg-gray-900/60 space-y-2">
           <span className="text-[11px] text-gray-400 uppercase font-bold flex items-center gap-1.5">
-            <MessageSquare size={14} className="text-blue-400" /> Conversaciones reales vs demo
+            <MessageSquare size={14} className="text-gold-400" /> Conversaciones reales vs demo
           </span>
           <div className="flex items-baseline gap-2">
             <span className="text-3xl font-black text-white">{live ? live.historyKeys : '—'}</span>
@@ -438,7 +438,7 @@ export default function CostosSaasView() {
         <div className="flex items-center gap-2 text-xs">
           <span className="text-gray-400 font-bold uppercase">Modelo IA para el cálculo:</span>
           {(Object.keys(AI_PRICING) as AiModelKey[]).map((k) => (
-            <button key={k} onClick={() => setAiModel(k)} className={`px-3 py-1.5 rounded-lg font-bold border cursor-pointer ${aiModel === k ? 'bg-cyan-500 text-black border-cyan-400' : 'bg-gray-900 text-gray-300 border-gray-700'}`}>{AI_PRICING[k].label}</button>
+            <button key={k} onClick={() => setAiModel(k)} className={`px-3 py-1.5 rounded-lg font-bold border cursor-pointer ${aiModel === k ? 'bg-gold-500 text-black border-gold-400' : 'bg-gray-900 text-gray-300 border-gray-700'}`}>{AI_PRICING[k].label}</button>
           ))}
         </div>
         <div className="flex items-center gap-2 text-xs">
@@ -465,7 +465,7 @@ export default function CostosSaasView() {
               <div className="flex justify-between items-start">
                 <div>
                   <h4 className="font-black text-white text-base">{plan.name} {plan.popular ? '· Más elegido' : ''}</h4>
-                  <span className="text-[11px] text-cyan-400 font-mono font-bold">{plan.conversations.toLocaleString()} conv · {plan.aiMessagesPerConv} msg IA/conv · {plan.channelsIncluded} canal(es)</span>
+                  <span className="text-[11px] text-gold-400 font-mono font-bold">{plan.conversations.toLocaleString()} conv · {plan.aiMessagesPerConv} msg IA/conv · {plan.channelsIncluded} canal(es)</span>
                 </div>
                 <span className={`px-2.5 py-1 rounded-full text-xs font-black border ${plan.margen < 0 ? 'bg-red-500/20 text-red-300 border-red-500/40' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'}`}>
                   {plan.margenPct.toFixed(1)}% margen
@@ -497,13 +497,13 @@ export default function CostosSaasView() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-800 pb-3">
           <div>
             <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-              <Layers size={16} className="text-cyan-400" /> Registro de Costos Directos por Módulo (corregido)
+              <Layers size={16} className="text-gold-400" /> Registro de Costos Directos por Módulo (corregido)
             </h3>
             <p className="text-xs text-gray-400">Precios unitarios actualizados: IA medida de logs reales; WhatsApp Meta CO por mensaje (no por conversación); Bold 3.59% + $900 COP. Edita los estimados de uso según tu operación.</p>
           </div>
           <button
             onClick={() => setShowAddModal(true)}
-            className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-cyan-400 border border-cyan-500/30 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
+            className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gold-400 border border-gold-500/30 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
           >
             <Plus size={14} /> Añadir Módulo
           </button>
@@ -526,14 +526,14 @@ export default function CostosSaasView() {
               {moduleCosts.map((mc) => (
                 <tr key={mc.id} className="hover:bg-gray-900/50 transition">
                   <td className="p-3 font-sans font-bold text-white">
-                    <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-cyan-400 shrink-0"></span>{mc.moduleName}</span>
+                    <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-gold-400 shrink-0"></span>{mc.moduleName}</span>
                   </td>
                   <td className="p-3 font-sans">
                     <span className="px-2 py-0.5 bg-gray-800 text-gray-300 rounded text-[10px] font-bold uppercase">
                       {mc.category}
                     </span>
                   </td>
-                  <td className="p-3 text-cyan-300">${mc.unitCostUSD < 0.01 ? mc.unitCostUSD.toFixed(5) : mc.unitCostUSD.toFixed(3)} USD</td>
+                  <td className="p-3 text-amber-300">${mc.unitCostUSD < 0.01 ? mc.unitCostUSD.toFixed(5) : mc.unitCostUSD.toFixed(3)} USD</td>
                   <td className="p-3 font-sans text-gray-400">{mc.billingUnit}</td>
                   <td className="p-3 text-amber-400 font-bold">{mc.estimatedUsagePerUser.toLocaleString()} / mes</td>
                   <td className="p-3 text-right text-emerald-400 font-black text-sm">${mc.monthlyTotalPerUser.toFixed(2)} USD</td>
@@ -557,7 +557,7 @@ export default function CostosSaasView() {
       <div className="panel p-6 rounded-2xl border border-gray-800 space-y-4 bg-black/40">
         <div className="border-b border-gray-800 pb-3">
           <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-            <Users size={16} className="text-cyan-400" /> Cuentas por Nivel (editable — hoy en 0 hasta que exista registro real de clientes)
+            <Users size={16} className="text-gold-400" /> Cuentas por Nivel (editable — hoy en 0 hasta que exista registro real de clientes)
           </h3>
           <p className="text-xs text-gray-400">El servidor aún no devuelve una lista real de clientes SaaS (app_state_summary: users 0 en el workspace principal; UsuariosView usa datos iniciales del frontend). Cuando se cree el registro por tenant, esta tabla debe alimentarse de ahí. Totales de referencia: {totalUsers.toLocaleString()} usuarios · costo directo prom. ${totalCostPerUserOverall.toFixed(2)}/usuario · MRR ${totalMonthlyRevenue.toLocaleString('en-US')} · utilidad ${netProfitMonthly.toLocaleString('en-US')} ({profitMargin}%).</p>
         </div>
@@ -572,7 +572,7 @@ export default function CostosSaasView() {
                 <div className="flex justify-between items-start">
                   <div>
                     <h4 className="font-black text-white text-base">{tier.tierName}</h4>
-                    <span className="text-[11px] text-cyan-400 font-mono font-bold">{tier.usersCount} usuarios activos</span>
+                    <span className="text-[11px] text-gold-400 font-mono font-bold">{tier.usersCount} usuarios activos</span>
                   </div>
                   <span className="px-2.5 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full text-xs font-black">
                     {marginTier}% Margen
@@ -595,8 +595,8 @@ export default function CostosSaasView() {
       </div>
 
       {/* Checklist para costo exacto por usuario */}
-      <div className="panel p-6 rounded-2xl border border-cyan-500/30 bg-cyan-950/10 space-y-3">
-        <h3 className="text-sm font-black text-cyan-300 uppercase tracking-wider flex items-center gap-2"><ShieldCheck size={16} /> Para dejar de estar ciego: datos que el CRM debe guardar por cliente</h3>
+      <div className="panel p-6 rounded-2xl border border-gold-500/30 bg-cyan-950/10 space-y-3">
+        <h3 className="text-sm font-black text-amber-300 uppercase tracking-wider flex items-center gap-2"><ShieldCheck size={16} /> Para dejar de estar ciego: datos que el CRM debe guardar por cliente</h3>
         <ul className="text-xs text-gray-300 space-y-1.5 list-disc pl-5">
           <li><strong>Identidad y plan:</strong> tenant_id, usuario, plan contratado, fecha de cobro, monto neto recibido y comisión de pasarela por transacción (hoy las recargas mezclan pruebas de $100/$1.000 COP y quedan en “Procesando”).</li>
           <li><strong>Uso IA por tenant:</strong> en cada llamada guardar tenant, proveedor/modelo, tokens de entrada/salida, costo calculado, latencia y conversación/mensaje asociado (hoy aiDebugLogs es global, máximo 100, sin tenant ni costo).</li>
@@ -611,7 +611,7 @@ export default function CostosSaasView() {
       {/* MODAL: REGISTRAR NUEVO COSTO OPERATIVO */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#121215] border border-cyan-500/30 rounded-2xl max-w-md w-full p-6 space-y-4 text-white shadow-2xl relative">
+          <div className="bg-[#121215] border border-gold-500/30 rounded-2xl max-w-md w-full p-6 space-y-4 text-white shadow-2xl relative">
             <button
               onClick={() => setShowAddModal(false)}
               className="absolute top-4 right-4 text-gray-400 hover:text-white font-bold"
@@ -621,7 +621,7 @@ export default function CostosSaasView() {
 
             <div className="border-b border-gray-800 pb-3">
               <h3 className="text-lg font-black text-white flex items-center gap-2">
-                <Plus size={18} className="text-cyan-400" /> Registrar Costo Operativo de Módulo
+                <Plus size={18} className="text-gold-400" /> Registrar Costo Operativo de Módulo
               </h3>
               <p className="text-xs text-gray-400 mt-1">
                 Ingresa los datos de cobro del proveedor externo para calcular el gasto por usuario.
@@ -637,7 +637,7 @@ export default function CostosSaasView() {
                   value={newModuleName}
                   onChange={(e) => setNewModuleName(e.target.value)}
                   placeholder="ej: Pasarela de Pagos Stripe / Servidor Redis"
-                  className="w-full bg-black border border-gray-800 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-black border border-gray-800 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-gold-500"
                 />
               </div>
 
@@ -647,7 +647,7 @@ export default function CostosSaasView() {
                   <select
                     value={newCategory}
                     onChange={(e) => setNewCategory(e.target.value as ModuleCost['category'])}
-                    className="w-full bg-black border border-gray-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-black border border-gray-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-gold-500"
                   >
                     <option value="ia">Inteligencia Artificial</option>
                     <option value="whatsapp">WhatsApp API</option>
@@ -665,7 +665,7 @@ export default function CostosSaasView() {
                     value={newBillingUnit}
                     onChange={(e) => setNewBillingUnit(e.target.value)}
                     placeholder="ej: Petición, Minuto, GB"
-                    className="w-full bg-black border border-gray-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-black border border-gray-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-gold-500"
                   />
                 </div>
               </div>
@@ -678,7 +678,7 @@ export default function CostosSaasView() {
                     step="0.0001"
                     value={newUnitCost}
                     onChange={(e) => setNewUnitCost(e.target.value)}
-                    className="w-full bg-black border border-gray-800 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-black border border-gray-800 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-gold-500"
                   />
                 </div>
 
@@ -688,7 +688,7 @@ export default function CostosSaasView() {
                     type="number"
                     value={newUsagePerUser}
                     onChange={(e) => setNewUsagePerUser(e.target.value)}
-                    className="w-full bg-black border border-gray-800 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-black border border-gray-800 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-gold-500"
                   />
                 </div>
               </div>
@@ -710,7 +710,7 @@ export default function CostosSaasView() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-3 bg-cyan-500 hover:bg-cyan-400 text-black font-black rounded-xl shadow-lg shadow-cyan-500/20"
+                  className="flex-1 py-3 bg-gold-500 hover:bg-gold-400 text-black font-black rounded-xl shadow-lg shadow-gold-500/20"
                 >
                   Guardar Registro
                 </button>

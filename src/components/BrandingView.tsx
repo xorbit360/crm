@@ -682,7 +682,7 @@ Usa esta directriz para ganarle mercado a la competencia tradicional con copys u
                             </div>
                           )}
                           {uploadedFile.type === 'video' && (
-                            <div className="w-12 h-12 rounded bg-cyan-950/40 border border-cyan-900/40 flex items-center justify-center text-cyan-400">
+                            <div className="w-12 h-12 rounded bg-cyan-950/40 border border-cyan-900/40 flex items-center justify-center text-gold-400">
                               <Video size={20} />
                             </div>
                           )}
@@ -969,7 +969,7 @@ Usa esta directriz para ganarle mercado a la competencia tradicional con copys u
                                         </div>
                                       ) : (
                                         <div className={`w-10 h-10 rounded flex items-center justify-center shrink-0 ${
-                                          msg.role === 'user' ? 'bg-amber-950/20 text-amber-950' : 'bg-cyan-950/40 text-cyan-400 border border-cyan-900/40'
+                                          msg.role === 'user' ? 'bg-amber-950/20 text-amber-950' : 'bg-cyan-950/40 text-gold-400 border border-cyan-900/40'
                                         }`}>
                                           <Video size={18} />
                                         </div>
@@ -1009,7 +1009,7 @@ Usa esta directriz para ganarle mercado a la competencia tradicional con copys u
                           ) : file.type === 'pdf' ? (
                             <FileText size={14} className="text-red-400 font-bold" />
                           ) : (
-                            <Video size={14} className="text-cyan-400 font-bold" />
+                            <Video size={14} className="text-gold-400 font-bold" />
                           )}
                           <span className="text-[10px] text-gray-300 font-bold truncate max-w-[100px]">{file.name}</span>
                           <button

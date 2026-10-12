@@ -454,7 +454,7 @@ export default function PedidosView({ currentUser }: { currentUser?: { role?: st
       {/* Metrics Board */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="panel p-5 rounded-xl border border-gray-800 bg-[#111] flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+          <div className="w-12 h-12 rounded-xl bg-gold-500/10 border border-gold-500/20 flex items-center justify-center text-gold-400">
             <ShoppingCart size={20} />
           </div>
           <div>
@@ -528,8 +528,8 @@ export default function PedidosView({ currentUser }: { currentUser?: { role?: st
 
       {/* Sync State Loader */}
       {isSyncing && (
-        <div className="bg-blue-950/20 border border-blue-500/20 rounded-xl p-4 flex items-center gap-3 text-xs text-blue-300">
-          <RefreshCw size={16} className="animate-spin shrink-0 text-blue-400" />
+        <div className="bg-blue-950/20 border border-gold-500/20 rounded-xl p-4 flex items-center gap-3 text-xs text-amber-300">
+          <RefreshCw size={16} className="animate-spin shrink-0 text-gold-400" />
           <div className="flex-1 text-left">
             <p className="font-bold">Sincronizando con Dropi en tiempo real...</p>
             <p className="text-[10px] text-gray-400 mt-0.5">{syncMessage}</p>
@@ -554,7 +554,7 @@ export default function PedidosView({ currentUser }: { currentUser?: { role?: st
           <button
             onClick={handleDropiSync}
             disabled={isSyncing}
-            className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-2 transition disabled:opacity-50"
+            className="bg-gold-600 hover:bg-gold-500 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-2 transition disabled:opacity-50"
           >
             <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} /> Sincronizar Dropi API
           </button>
@@ -673,7 +673,7 @@ export default function PedidosView({ currentUser }: { currentUser?: { role?: st
                           : order.paymentStatus === 'Contra entrega'
                           ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                           : order.paymentStatus === 'Pago anticipado'
-                          ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                          ? 'bg-gold-500/10 text-gold-400 border border-gold-500/20'
                           : 'bg-red-500/10 text-red-400 border border-red-500/20'
                       }`}>
                         {order.paymentStatus}
@@ -685,14 +685,14 @@ export default function PedidosView({ currentUser }: { currentUser?: { role?: st
                           order.shippingStatus === 'Entregado'
                             ? 'bg-green-500/10 text-green-400 border border-green-500/20'
                             : order.shippingStatus === 'En camino'
-                            ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                            ? 'bg-gold-500/10 text-gold-400 border border-gold-500/20'
                             : 'bg-gray-800 text-gray-400 border border-gray-750'
                         }`}>
                           {order.shippingStatus}
                         </span>
                         <button
                           onClick={() => setActiveTracking(order.trackingCode)}
-                          className="font-mono text-[10px] text-sky-400 hover:underline flex items-center gap-1 cursor-pointer bg-transparent border-none"
+                          className="font-mono text-[10px] text-gold-400 hover:underline flex items-center gap-1 cursor-pointer bg-transparent border-none"
                         >
                           <Truck size={10} /> {order.trackingCode}
                         </button>
@@ -948,7 +948,7 @@ export default function PedidosView({ currentUser }: { currentUser?: { role?: st
                 <div className="relative">
                   <div className={`absolute -left-[31px] top-0 w-4 h-4 rounded-full border-2 bg-black flex items-center justify-center ${
                     ['En camino', 'Entregado'].includes(orders.find(o => o.trackingCode === activeTracking)?.shippingStatus || '')
-                      ? 'border-blue-500 bg-blue-500/20 text-blue-500'
+                      ? 'border-gold-500 bg-gold-500/20 text-gold-500'
                       : 'border-gray-800 text-gray-600'
                   }`}>
                     {['En camino', 'Entregado'].includes(orders.find(o => o.trackingCode === activeTracking)?.shippingStatus || '') && <CheckCircle2 size={10} />}
@@ -963,7 +963,7 @@ export default function PedidosView({ currentUser }: { currentUser?: { role?: st
                 <div className="relative">
                   <div className={`absolute -left-[31px] top-0 w-4 h-4 rounded-full border-2 bg-black flex items-center justify-center ${
                     ['Bodega Medellín', 'En camino', 'Entregado'].includes(orders.find(o => o.trackingCode === activeTracking)?.shippingStatus || '')
-                      ? 'border-blue-500 bg-blue-500/20 text-blue-500'
+                      ? 'border-gold-500 bg-gold-500/20 text-gold-500'
                       : 'border-gray-800 text-gray-600'
                   }`}>
                     {['Bodega Medellín', 'En camino', 'Entregado'].includes(orders.find(o => o.trackingCode === activeTracking)?.shippingStatus || '') && <CheckCircle2 size={10} />}

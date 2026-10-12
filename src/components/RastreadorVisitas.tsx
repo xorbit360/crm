@@ -17,7 +17,7 @@ export default function RastreadorVisitas() {
     <div className="space-y-6 animate-fade-in text-gray-200">
       <div>
         <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-          <Eye className="text-blue-500" />
+          <Eye className="text-gold-500" />
           Rastreador de Visitas & Mapa de Calor IA
         </h2>
         <p className="text-sm text-gray-400 mt-1 max-w-2xl">
@@ -32,7 +32,7 @@ export default function RastreadorVisitas() {
           <div className="grid grid-cols-3 gap-4">
             <div className="panel p-4 rounded-xl border border-gray-800 bg-[#0a0a0a]">
               <div className="flex items-center gap-2 text-gray-400 text-xs font-bold uppercase mb-2">
-                <Activity size={14} className="text-blue-400" /> Tasa de Rebote
+                <Activity size={14} className="text-gold-400" /> Tasa de Rebote
               </div>
               <p className="text-2xl font-black font-mono text-white">68.4%</p>
               <p className="text-[10px] text-red-400 font-bold mt-1">↑ +5% (Requiere atención)</p>
@@ -46,7 +46,7 @@ export default function RastreadorVisitas() {
             </div>
             <div className="panel p-4 rounded-xl border border-gray-800 bg-[#0a0a0a]">
               <div className="flex items-center gap-2 text-gray-400 text-xs font-bold uppercase mb-2">
-                <Clock size={14} className="text-blue-400" /> Tiempo Promedio
+                <Clock size={14} className="text-gold-400" /> Tiempo Promedio
               </div>
               <p className="text-2xl font-black font-mono text-white">00:45</p>
               <p className="text-[10px] text-gray-500 font-bold mt-1">Minutos</p>
@@ -62,7 +62,7 @@ export default function RastreadorVisitas() {
               {/* Heatmap overlay simulation */}
               <div className="absolute top-[20%] left-[10%] w-32 h-32 bg-red-500/40 rounded-full blur-3xl"></div>
               <div className="absolute top-[40%] right-[20%] w-40 h-40 bg-yellow-500/30 rounded-full blur-3xl"></div>
-              <div className="absolute bottom-[20%] left-[30%] w-24 h-24 bg-blue-500/40 rounded-full blur-2xl"></div>
+              <div className="absolute bottom-[20%] left-[30%] w-24 h-24 bg-gold-500/40 rounded-full blur-2xl"></div>
 
               {/* Data points */}
               <div className="absolute top-[25%] left-[15%] flex flex-col items-center animate-bounce">
@@ -80,8 +80,8 @@ export default function RastreadorVisitas() {
               </div>
 
               <div className="absolute bottom-[25%] left-[35%] flex flex-col items-center">
-                <div className="w-4 h-4 bg-blue-500 rounded-full shadow-[0_0_15px_rgba(59,130,246,0.8)] border-2 border-white"></div>
-                <div className="mt-2 px-2 py-1 bg-black/80 rounded text-[9px] font-bold text-white border border-blue-500/50">
+                <div className="w-4 h-4 bg-gold-500 rounded-full shadow-[0_0_15px_rgba(59,130,246,0.8)] border-2 border-white"></div>
+                <div className="mt-2 px-2 py-1 bg-black/80 rounded text-[9px] font-bold text-white border border-gold-500/50">
                   Click fallido en CTA secundario
                 </div>
               </div>
@@ -91,11 +91,11 @@ export default function RastreadorVisitas() {
 
         {/* AI Recommendations Panel */}
         <div className="space-y-6">
-          <div className="panel p-6 rounded-2xl border border-blue-500/20 bg-[#0a0a0a] shadow-[0_0_20px_rgba(59,130,246,0.05)] relative overflow-hidden h-full flex flex-col">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl pointer-events-none"></div>
+          <div className="panel p-6 rounded-2xl border border-gold-500/20 bg-[#0a0a0a] shadow-[0_0_20px_rgba(59,130,246,0.05)] relative overflow-hidden h-full flex flex-col">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gold-500/5 rounded-full blur-3xl pointer-events-none"></div>
 
             <h3 className="text-sm font-bold text-white flex items-center gap-2 mb-4">
-              <Zap className="text-blue-400" size={18} />
+              <Zap className="text-gold-400" size={18} />
               Mejoras IA Recomendadas
             </h3>
 
@@ -142,7 +142,7 @@ export default function RastreadorVisitas() {
                 <button
                   onClick={handleApplyImprovements}
                   disabled={isApplying}
-                  className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(59,130,246,0.3)]"
+                  className="w-full py-3 bg-gold-600 hover:bg-gold-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(59,130,246,0.3)]"
                 >
                   {isApplying ? (
                     <><Zap className="animate-spin" size={16} /> Aplicando cambios...</>

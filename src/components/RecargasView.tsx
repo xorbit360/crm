@@ -626,8 +626,8 @@ export function RecargasView() {
                       <Cpu size={14} className="shrink-0 text-gray-500" />
                       <span>Modelos OpenAI & Gemini incl.</span>
                     </li>
-                    <li className="flex items-center gap-2 text-cyan-300 font-medium">
-                      <MessageSquare size={14} className="shrink-0 text-cyan-400" />
+                    <li className="flex items-center gap-2 text-amber-300 font-medium">
+                      <MessageSquare size={14} className="shrink-0 text-gold-400" />
                       <span>{pkg.channelsIncluded} canal{pkg.channelsIncluded === 1 ? '' : 'es'} incluido{pkg.channelsIncluded === 1 ? '' : 's'}</span>
                     </li>
                     <li className="flex items-center gap-2 text-gray-400">
@@ -770,7 +770,7 @@ export function RecargasView() {
               {selectedPackage.channelsIncluded && (
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-gray-400">Canales incluidos:</span>
-                  <span className="font-bold text-cyan-300">{selectedPackage.channelsIncluded}</span>
+                  <span className="font-bold text-amber-300">{selectedPackage.channelsIncluded}</span>
                 </div>
               )}
               <div className="flex justify-between items-center text-sm gap-4">

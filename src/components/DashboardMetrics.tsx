@@ -222,7 +222,7 @@ export default function DashboardMetrics({
               value={metrics.orders}
               trend={isZeroStats ? "0%" : "+5%"}
               isPositive={true}
-              icon={<CheckCircle className="text-blue-500" size={20} />}
+              icon={<CheckCircle className="text-gold-500" size={20} />}
             />
             <MetricCard
               title="Pedidos Pendientes"

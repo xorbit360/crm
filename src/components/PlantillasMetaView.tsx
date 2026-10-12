@@ -1106,8 +1106,8 @@ export default function PlantillasMetaView({ onBackToCampaigns }: { onBackToCamp
                       <div className="flex items-center gap-1.5">
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
                           tpl.category === 'Utilidad'
-                            ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
-                            : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                            ? 'bg-gold-500/10 text-gold-400 border border-gold-500/20'
+                            : 'bg-gold-500/10 text-gold-400 border border-gold-500/20'
                         }`}>
                           {tpl.category}
                         </span>
@@ -1242,8 +1242,8 @@ export default function PlantillasMetaView({ onBackToCampaigns }: { onBackToCamp
       {activeTab === 'seguimiento' && (
         <div className="space-y-4">
           {/* Blue Info Callout (Image 4) */}
-          <div className="p-4 rounded-xl bg-[#091e3a]/90 border border-blue-500/40 text-blue-200 text-xs leading-relaxed flex items-start gap-3">
-            <Package size={18} className="text-blue-400 shrink-0 mt-0.5" />
+          <div className="p-4 rounded-xl bg-[#091e3a]/90 border border-gold-500/40 text-amber-200 text-xs leading-relaxed flex items-start gap-3">
+            <Package size={18} className="text-gold-400 shrink-0 mt-0.5" />
             <div>
               <p>
                 📦 Estas notificaciones se envían <strong>automáticamente</strong> al cliente por WhatsApp cuando el pedido cambia de estado en Dropi (guía generada, en reparto, entregado...). Requieren que la plantilla esté <strong>aprobada en Meta</strong> (pestaña “Plantillas Meta”). Si no está aprobada, no se envía y queda registrado.

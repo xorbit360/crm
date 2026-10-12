@@ -141,7 +141,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
       tagline: 'Comunidad Oficial de Escalado e IA',
       category: 'E-commerce & Dropshipping',
       accessType: 'Gratis',
-      bannerGradient: 'from-blue-600 to-blue-600',
+      bannerGradient: 'from-gold-600 to-gold-600',
       membersCount: 1420,
       creatorName: 'Equipo Xorbit 360'
     },
@@ -151,7 +151,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
       tagline: 'Señales diarias, gestión de riesgo Smart Money y psicotrading para fondear cuentas',
       category: 'Trading & Cripto',
       accessType: 'VIP Premium ($29/mes)',
-      bannerGradient: 'from-emerald-600 to-cyan-600',
+      bannerGradient: 'from-emerald-600 to-gold-600',
       membersCount: 640,
       creatorName: 'Master Trader Alpha',
       isCustom: true
@@ -173,7 +173,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
       tagline: 'Estrategias de pauta para captación de propiedades y embudos de alta conversión',
       category: 'Bienes Raíces',
       accessType: 'Privada (Invitación)',
-      bannerGradient: 'from-blue-600 to-slate-800',
+      bannerGradient: 'from-gold-600 to-slate-800',
       membersCount: 190,
       creatorName: 'Agencia Inmobiliaria Pro',
       isCustom: true
@@ -947,9 +947,9 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
     if (!newCommunityName.trim()) return;
 
     const gradients = [
-      'from-emerald-600 to-teal-600',
-      'from-blue-600 to-blue-600',
-      'from-blue-600 to-blue-600',
+      'from-emerald-600 to-gold-600',
+      'from-gold-600 to-gold-600',
+      'from-gold-600 to-gold-600',
       'from-amber-600 to-orange-600'
     ];
     const randomGrad = gradients[Math.floor(Math.random() * gradients.length)];
@@ -1229,7 +1229,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                   <Menu size={18} />
                 </button>
               )}
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-blue-500 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-blue-900/40 shrink-0">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-gold-600 to-gold-500 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-blue-900/40 shrink-0">
                 <GraduationCap size={20} className="sm:w-[22px] sm:h-[22px]" />
               </div>
 
@@ -1245,14 +1245,14 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                       setSelectedCourse(null);
                     }
                   }}
-                  className="bg-[#18181c] hover:bg-[#202026] text-white text-xs sm:text-sm font-bold py-1.5 px-2.5 sm:px-3 rounded-xl border border-blue-500/40 focus:outline-none focus:border-blue-500 cursor-pointer w-full max-w-[220px] sm:max-w-[280px] truncate pr-7"
+                  className="bg-[#18181c] hover:bg-[#202026] text-white text-xs sm:text-sm font-bold py-1.5 px-2.5 sm:px-3 rounded-xl border border-gold-500/40 focus:outline-none focus:border-gold-500 cursor-pointer w-full max-w-[220px] sm:max-w-[280px] truncate pr-7"
                 >
                   {userCommunities.map(comm => (
                     <option key={comm.id} value={comm.id}>
                       {comm.name} {comm.isCustom ? '⭐ (Comunidad Activa)' : ''}
                     </option>
                   ))}
-                  <option value="create_new" className="text-blue-400 font-bold bg-[#111115]">
+                  <option value="create_new" className="text-gold-400 font-bold bg-[#111115]">
                     ➕ Crear Mi Comunidad Nueva...
                   </option>
                 </select>
@@ -1270,7 +1270,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
 
               <button
                 onClick={() => setShowNewPostModal(true)}
-                className="px-3.5 sm:px-4 py-1.5 sm:py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-full font-semibold text-xs transition-colors flex items-center gap-1.5 shadow-md shadow-blue-900/30 active:scale-95"
+                className="px-3.5 sm:px-4 py-1.5 sm:py-2 bg-gold-600 hover:bg-gold-500 text-white rounded-full font-semibold text-xs transition-colors flex items-center gap-1.5 shadow-md shadow-blue-900/30 active:scale-95"
               >
                 <Plus size={16} /> <span className="hidden sm:inline">Publicar</span><span className="sm:hidden">Nuevo</span>
               </button>
@@ -1309,7 +1309,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                   }}
                   className={`py-3 px-2 sm:px-1 font-semibold text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2 border-b-2 transition-all whitespace-nowrap min-h-[44px] shrink-0 ${
                     isActive
-                      ? 'border-blue-500 text-blue-400 font-bold'
+                      ? 'border-gold-500 text-gold-400 font-bold'
                       : 'border-transparent text-gray-400 hover:text-slate-200'
                   }`}
                 >
@@ -1329,15 +1329,15 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
         {/* Current Active Community Header Badge */}
         <div className="bg-gradient-to-r from-blue-950/80 via-[#141418] to-blue-950/80 border border-blue-800/40 rounded-2xl p-4 mb-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg">
           <div className="space-y-0.5">
-            <div className="inline-flex items-center gap-2 text-blue-300 text-[11px] font-bold uppercase tracking-wider">
-              <Globe size={13} className="text-blue-400" /> Comunidad Seleccionada Exclusiva
+            <div className="inline-flex items-center gap-2 text-amber-300 text-[11px] font-bold uppercase tracking-wider">
+              <Globe size={13} className="text-gold-400" /> Comunidad Seleccionada Exclusiva
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-white">{activeCommunity.name}</h2>
-            <p className="text-xs text-gray-400">{activeCommunity.tagline} • Categoría: <strong className="text-blue-300">{activeCommunity.category}</strong></p>
+            <p className="text-xs text-gray-400">{activeCommunity.tagline} • Categoría: <strong className="text-amber-300">{activeCommunity.category}</strong></p>
           </div>
 
           <div className="flex items-center gap-2 text-xs font-bold text-gray-300 bg-[#18181c] px-3.5 py-2 rounded-xl border border-gray-800">
-            <Users size={15} className="text-blue-400" /> {activeCommunity.membersCount} Miembros Unidos
+            <Users size={15} className="text-gold-400" /> {activeCommunity.membersCount} Miembros Unidos
           </div>
         </div>
 
@@ -1358,8 +1358,8 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
               >
                 <span>Escribe algo exclusivo para {activeCommunity.name}...</span>
                 <div className="flex items-center gap-2 text-gray-500">
-                  <Film size={16} className="hover:text-blue-400" />
-                  <ImageIcon size={16} className="hover:text-blue-400" />
+                  <Film size={16} className="hover:text-gold-400" />
+                  <ImageIcon size={16} className="hover:text-gold-400" />
                 </div>
               </button>
             </div>
@@ -1383,7 +1383,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                     onClick={() => setActivePostCategory(cat.id)}
                     className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all shrink-0 ${
                       activePostCategory === cat.id
-                        ? 'bg-blue-600 text-white font-semibold'
+                        ? 'bg-gold-600 text-white font-semibold'
                         : 'bg-[#1a1a1e] text-gray-400 hover:bg-[#222228] hover:text-white'
                     }`}
                   >
@@ -1401,12 +1401,12 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
             <div className="space-y-4">
               {activeCategoryFilteredPosts.length === 0 ? (
                 <div className="bg-[#121215] border border-gray-800 rounded-2xl p-8 text-center space-y-3">
-                  <MessageSquare size={32} className="mx-auto text-blue-400 opacity-60" />
+                  <MessageSquare size={32} className="mx-auto text-gold-400 opacity-60" />
                   <h3 className="font-bold text-white text-base">Aún no hay publicaciones en esta comunidad</h3>
                   <p className="text-xs text-gray-400 max-w-md mx-auto">Sé el primero en iniciar la conversación en {activeCommunity.name}.</p>
                   <button
                     onClick={() => setShowNewPostModal(true)}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold"
+                    className="px-4 py-2 bg-gold-600 hover:bg-gold-500 text-white rounded-xl text-xs font-bold"
                   >
                     Crear primera publicación
                   </button>
@@ -1424,7 +1424,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                             alt={post.author}
                             className="w-11 h-11 rounded-full object-cover border border-gray-700"
                           />
-                          <span className="absolute -bottom-1 -right-1 bg-blue-600 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center border border-[#121215]">
+                          <span className="absolute -bottom-1 -right-1 bg-gold-600 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center border border-[#121215]">
                             {post.level}
                           </span>
                         </div>
@@ -1433,7 +1433,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                           <div className="flex flex-wrap items-center gap-2">
                             <h3 className="font-bold text-white text-sm">{post.author}</h3>
                             <span className="text-xs text-gray-500">• {post.timeAgo}</span>
-                            <span className="text-[11px] text-blue-400 bg-blue-950/50 font-medium px-2.5 py-0.5 rounded-md border border-blue-800/50">
+                            <span className="text-[11px] text-gold-400 bg-blue-950/50 font-medium px-2.5 py-0.5 rounded-md border border-blue-800/50">
                               {post.category}
                             </span>
                           </div>
@@ -1471,7 +1471,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                         <button
                           onClick={() => handleLikePost(post.id)}
                           className={`flex items-center gap-1.5 font-medium px-3 py-1.5 rounded-lg transition-colors ${
-                            post.isLiked ? 'text-blue-400 font-bold bg-blue-950/60 border border-blue-800/50' : 'hover:bg-[#1a1a1e] text-gray-400'
+                            post.isLiked ? 'text-gold-400 font-bold bg-blue-950/60 border border-blue-800/50' : 'hover:bg-[#1a1a1e] text-gray-400'
                           }`}
                         >
                           <ThumbsUp size={15} /> {post.likes}
@@ -1518,11 +1518,11 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                             onChange={(e) => setCommentInput(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleAddComment(post.id)}
                             placeholder="Escribe un comentario..."
-                            className="flex-1 px-3.5 py-2 bg-[#121215] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                            className="flex-1 px-3.5 py-2 bg-[#121215] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-gold-500"
                           />
                           <button
                             onClick={() => handleAddComment(post.id)}
-                            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-colors"
+                            className="px-4 py-2 bg-gold-600 hover:bg-gold-500 text-white rounded-xl text-xs font-bold transition-colors"
                           >
                             Comentar
                           </button>
@@ -1548,7 +1548,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                 {/* Creator Upload Bar & Recommendations */}
                 <div className="bg-gradient-to-r from-blue-950/60 via-[#16161a] to-blue-950/60 rounded-2xl border border-blue-800/40 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-blue-600/30 border border-blue-500/50 flex items-center justify-center text-blue-300 shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-gold-600/30 border border-gold-500/50 flex items-center justify-center text-amber-300 shrink-0">
                       <UploadCloud size={20} />
                     </div>
                     <div>
@@ -1559,7 +1559,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
 
                   <button
                     onClick={() => setShowUploadLessonModal(true)}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-xs transition-colors flex items-center gap-2 shadow-lg shadow-blue-950 shrink-0 w-full sm:w-auto justify-center"
+                    className="px-4 py-2 bg-gold-600 hover:bg-gold-500 text-white rounded-xl font-bold text-xs transition-colors flex items-center gap-2 shadow-lg shadow-blue-950 shrink-0 w-full sm:w-auto justify-center"
                   >
                     <Plus size={16} /> Subir VideoDirecto & Recursos
                   </button>
@@ -1570,19 +1570,19 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                     <h2 className="text-xl font-bold text-white">Módulos & Cursos de {activeCommunity.name}</h2>
                     <p className="text-xs text-gray-400">Capacitación exclusiva para los miembros de esta comunidad.</p>
                   </div>
-                  <span className="text-xs font-semibold bg-[#1a1a1e] text-blue-400 border border-blue-900/50 px-3 py-1 rounded-full">
+                  <span className="text-xs font-semibold bg-[#1a1a1e] text-gold-400 border border-blue-900/50 px-3 py-1 rounded-full">
                     {communityCourses.length} Cursos Disponibles
                   </span>
                 </div>
 
                 {communityCourses.length === 0 ? (
                   <div className="bg-[#121215] border border-gray-800 rounded-2xl p-8 text-center space-y-3">
-                    <BookOpen size={32} className="mx-auto text-blue-400 opacity-60" />
+                    <BookOpen size={32} className="mx-auto text-gold-400 opacity-60" />
                     <h3 className="font-bold text-white text-base">Esta comunidad aún no tiene cursos publicados</h3>
                     <p className="text-xs text-gray-400 max-w-md mx-auto">Publica tu primer video-módulo para tus miembros.</p>
                     <button
                       onClick={() => setShowUploadLessonModal(true)}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold"
+                      className="px-4 py-2 bg-gold-600 hover:bg-gold-500 text-white rounded-xl text-xs font-bold"
                     >
                       Subir Primer Video
                     </button>
@@ -1596,7 +1596,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                           setSelectedCourse(course);
                           setSelectedLesson(course.modules[0]?.lessons[0] || null);
                         }}
-                        className="bg-[#121215] rounded-2xl border border-gray-800 overflow-hidden shadow-md hover:border-blue-500/50 transition-all cursor-pointer group flex flex-col justify-between"
+                        className="bg-[#121215] rounded-2xl border border-gray-800 overflow-hidden shadow-md hover:border-gold-500/50 transition-all cursor-pointer group flex flex-col justify-between"
                       >
                         <div>
                           {/* Course Banner Image */}
@@ -1613,7 +1613,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
 
                           {/* Course Body Info */}
                           <div className="p-5 space-y-2">
-                            <h3 className="font-bold text-white text-lg group-hover:text-blue-400 transition-colors leading-snug">
+                            <h3 className="font-bold text-white text-lg group-hover:text-gold-400 transition-colors leading-snug">
                               {course.title}
                             </h3>
                             <p className="text-xs text-gray-400 leading-relaxed line-clamp-3">
@@ -1626,13 +1626,13 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                         <div className="p-5 pt-0">
                           <div className="bg-[#18181c] rounded-full h-2 w-full overflow-hidden mt-2 border border-gray-800">
                             <div
-                              className="bg-blue-500 h-full rounded-full transition-all duration-500"
+                              className="bg-gold-500 h-full rounded-full transition-all duration-500"
                               style={{ width: `${course.progressPercentage}%` }}
                             ></div>
                           </div>
                           <div className="flex justify-between items-center mt-2.5 text-xs font-semibold text-gray-400">
                             <span>{course.progressPercentage}% Completado</span>
-                            <span className="text-blue-400 group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                            <span className="text-gold-400 group-hover:translate-x-1 transition-transform flex items-center gap-1">
                               Ver Módulos <ArrowRight size={14} />
                             </span>
                           </div>
@@ -1652,7 +1652,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                 <div className="flex flex-wrap items-center justify-between border-b border-gray-800 pb-4 gap-3">
                   <button
                     onClick={() => setSelectedCourse(null)}
-                    className="flex items-center gap-2 text-xs font-bold text-blue-400 bg-blue-950/40 border border-blue-800/40 px-3.5 py-2 rounded-xl hover:bg-blue-900/60 transition-colors"
+                    className="flex items-center gap-2 text-xs font-bold text-gold-400 bg-blue-950/40 border border-blue-800/40 px-3.5 py-2 rounded-xl hover:bg-blue-900/60 transition-colors"
                   >
                     <ChevronLeft size={16} /> Volver a Cursos de {activeCommunity.name}
                   </button>
@@ -1660,7 +1660,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                   <div className="flex flex-wrap items-center gap-3">
                     <button
                       onClick={() => setIsFocusMode(true)}
-                      className="px-3.5 py-2 bg-gradient-to-r from-blue-600 to-blue-600 hover:from-blue-500 hover:to-blue-500 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-md shadow-blue-950/50 transition-all border border-blue-400/30"
+                      className="px-3.5 py-2 bg-gradient-to-r from-gold-600 to-gold-600 hover:from-gold-500 hover:to-gold-500 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-md shadow-blue-950/50 transition-all border border-gold-400/30"
                     >
                       <Maximize2 size={15} /> Modo Lectura Focus
                     </button>
@@ -1670,7 +1670,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                         {completedCourseLessons}/{totalCourseLessons} Lecciones ({courseProgressPct}%)
                       </span>
                       <div className="w-28 bg-[#121215] border border-gray-700 h-2 rounded-full overflow-hidden">
-                        <div className="bg-blue-500 h-full rounded-full transition-all duration-300" style={{ width: `${courseProgressPct}%` }}></div>
+                        <div className="bg-gold-500 h-full rounded-full transition-all duration-300" style={{ width: `${courseProgressPct}%` }}></div>
                       </div>
                     </div>
                   </div>
@@ -1706,7 +1706,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                                     key={lesson.id}
                                     onClick={() => setSelectedLesson(lesson)}
                                     className={`p-3.5 flex items-start gap-3 cursor-pointer transition-colors text-xs ${
-                                      isSelected ? 'bg-blue-950/40 border-l-4 border-blue-500 text-white font-bold' : 'hover:bg-[#18181c]/60 text-gray-300'
+                                      isSelected ? 'bg-blue-950/40 border-l-4 border-gold-500 text-white font-bold' : 'hover:bg-[#18181c]/60 text-gray-300'
                                     }`}
                                   >
                                     <button
@@ -1756,7 +1756,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                               className={`px-3.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all ${
                                 completedLessons.includes(selectedLesson.id)
                                   ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                                  : 'bg-blue-600 hover:bg-blue-500 text-white shadow-md'
+                                  : 'bg-gold-600 hover:bg-gold-500 text-white shadow-md'
                               }`}
                             >
                               <CheckCircle size={14} /> {completedLessons.includes(selectedLesson.id) ? 'Completado' : 'Marcar como Completado'}
@@ -1764,7 +1764,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                           </div>
 
                           <div className="flex items-center gap-3 text-xs text-gray-400">
-                            <span>instructor: <strong className="text-blue-300">{selectedLesson.instructor}</strong></span>
+                            <span>instructor: <strong className="text-amber-300">{selectedLesson.instructor}</strong></span>
                             <span>•</span>
                             <span>Dificultad: <strong>{selectedLesson.difficulty}</strong></span>
                           </div>
@@ -1779,7 +1779,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                         {/* Attachments Section */}
                         {selectedLesson.attachments && selectedLesson.attachments.length > 0 && (
                           <div className="bg-[#18181c] rounded-2xl p-4 border border-gray-800 space-y-2">
-                            <h4 className="font-bold text-xs text-blue-300 flex items-center gap-1.5">
+                            <h4 className="font-bold text-xs text-amber-300 flex items-center gap-1.5">
                               <FileText size={15} /> Archivos Descargables Adjuntos
                             </h4>
 
@@ -1790,14 +1790,14 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                                   href={att.url}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="flex items-center justify-between p-3 bg-[#121215] border border-gray-700/60 rounded-xl hover:border-blue-500 transition-colors text-xs text-white group"
+                                  className="flex items-center justify-between p-3 bg-[#121215] border border-gray-700/60 rounded-xl hover:border-gold-500 transition-colors text-xs text-white group"
                                 >
                                   <div className="flex items-center gap-2">
-                                    <FileText size={16} className="text-blue-400" />
-                                    <span className="font-semibold group-hover:text-blue-300">{att.name}</span>
+                                    <FileText size={16} className="text-gold-400" />
+                                    <span className="font-semibold group-hover:text-amber-300">{att.name}</span>
                                     {att.size && <span className="text-[10px] text-gray-500">({att.size})</span>}
                                   </div>
-                                  <span className="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-[11px] font-bold flex items-center gap-1">
+                                  <span className="px-3 py-1 bg-gold-600 hover:bg-gold-500 text-white rounded-lg text-[11px] font-bold flex items-center gap-1">
                                     <Download size={12} /> Descargar
                                   </span>
                                 </a>
@@ -1832,7 +1832,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
 
               <button
                 onClick={() => setShowAddResourceModal(true)}
-                className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-xs shadow-lg shadow-blue-950 flex items-center gap-2 shrink-0"
+                className="px-4 py-2.5 bg-gold-600 hover:bg-gold-500 text-white rounded-xl font-bold text-xs shadow-lg shadow-blue-950 flex items-center gap-2 shrink-0"
               >
                 <Plus size={16} /> Compartir Recurso
               </button>
@@ -1852,7 +1852,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                   onClick={() => setResourcesCategoryFilter(f.id)}
                   className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-colors whitespace-nowrap ${
                     resourcesCategoryFilter === f.id
-                      ? 'bg-blue-600 text-white shadow-md'
+                      ? 'bg-gold-600 text-white shadow-md'
                       : 'bg-[#121215] text-gray-400 border border-gray-800 hover:text-white'
                   }`}
                 >
@@ -1865,15 +1865,15 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {activeCategoryFilteredResources.length === 0 ? (
                 <div className="col-span-2 bg-[#121215] border border-gray-800 rounded-2xl p-8 text-center space-y-2">
-                  <Folder size={32} className="mx-auto text-blue-400 opacity-60" />
+                  <Folder size={32} className="mx-auto text-gold-400 opacity-60" />
                   <p className="font-bold text-white text-sm">No hay recursos en esta categoría para {activeCommunity.name}</p>
                 </div>
               ) : (
                 activeCategoryFilteredResources.map(res => (
-                  <div key={res.id} className="bg-[#121215] border border-gray-800 rounded-2xl p-5 space-y-3 hover:border-blue-500/50 transition-colors flex flex-col justify-between">
+                  <div key={res.id} className="bg-[#121215] border border-gray-800 rounded-2xl p-5 space-y-3 hover:border-gold-500/50 transition-colors flex flex-col justify-between">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-md bg-blue-950/80 text-blue-300 border border-blue-800/50">
+                        <span className="text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-md bg-blue-950/80 text-amber-300 border border-blue-800/50">
                           {res.format}
                         </span>
                         <span className="text-xs text-gray-500 font-mono">{res.downloadsCount} descargas</span>
@@ -1889,7 +1889,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                         href={res.downloadUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-xs flex items-center gap-1.5"
+                        className="px-3.5 py-1.5 bg-gold-600 hover:bg-gold-500 text-white rounded-xl font-bold text-xs flex items-center gap-1.5"
                       >
                         <Download size={14} /> Obtener
                       </a>
@@ -1910,7 +1910,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <Calendar className="text-blue-400" size={22} />
+                    <Calendar className="text-gold-400" size={22} />
                     <h2 className="text-xl font-bold text-white">Calendario de Eventos & Clases ({activeCommunity.name})</h2>
                   </div>
                   <p className="text-xs text-gray-400 mt-1">
@@ -1942,7 +1942,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
 
                   <button
                     onClick={handleGoToday}
-                    className="px-3 py-2 bg-[#18181c] hover:bg-gray-800 text-blue-300 border border-blue-500/30 rounded-2xl text-xs font-bold transition-all"
+                    className="px-3 py-2 bg-[#18181c] hover:bg-gray-800 text-amber-300 border border-gold-500/30 rounded-2xl text-xs font-bold transition-all"
                   >
                     Hoy
                   </button>
@@ -1953,7 +1953,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                       onClick={() => setCalendarViewMode('grid')}
                       className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
                         calendarViewMode === 'grid'
-                          ? 'bg-blue-600 text-white shadow-md'
+                          ? 'bg-gold-600 text-white shadow-md'
                           : 'text-gray-400 hover:text-white'
                       }`}
                     >
@@ -1963,7 +1963,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                       onClick={() => setCalendarViewMode('list')}
                       className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
                         calendarViewMode === 'list'
-                          ? 'bg-blue-600 text-white shadow-md'
+                          ? 'bg-gold-600 text-white shadow-md'
                           : 'text-gray-400 hover:text-white'
                       }`}
                     >
@@ -1977,7 +1977,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                       setNewEventDate(selectedCalendarDate);
                       setShowAddEventModal(true);
                     }}
-                    className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-600 hover:from-blue-500 hover:to-blue-500 text-white font-bold text-xs rounded-2xl shadow-lg shadow-blue-950 flex items-center gap-1.5 transition-all"
+                    className="px-4 py-2 bg-gradient-to-r from-gold-600 to-gold-600 hover:from-gold-500 hover:to-gold-500 text-white font-bold text-xs rounded-2xl shadow-lg shadow-blue-950 flex items-center gap-1.5 transition-all"
                   >
                     <Plus size={16} /> Agendar Evento
                   </button>
@@ -1995,7 +1995,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                   {/* Days of Week Header */}
                   <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2 text-center border-b border-gray-800 pb-3 min-w-[650px]">
                     {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map((day, idx) => (
-                      <div key={day} className={`text-xs font-bold uppercase tracking-wider ${idx >= 5 ? 'text-blue-400' : 'text-gray-400'}`}>
+                      <div key={day} className={`text-xs font-bold uppercase tracking-wider ${idx >= 5 ? 'text-gold-400' : 'text-gray-400'}`}>
                         {day}
                       </div>
                     ))}
@@ -2015,9 +2015,9 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                             !dayObj.isCurrentMonth
                               ? 'bg-[#0d0d0f]/50 border-gray-900/60 text-gray-600 opacity-40'
                               : isSelected
-                                ? 'bg-blue-950/40 border-blue-500 shadow-lg shadow-blue-950/40'
+                                ? 'bg-blue-950/40 border-gold-500 shadow-lg shadow-blue-950/40'
                                 : dayObj.isToday
-                                  ? 'bg-[#181820] border-blue-500/80 shadow-md ring-1 ring-blue-500'
+                                  ? 'bg-[#181820] border-gold-500/80 shadow-md ring-1 ring-gold-500'
                                   : 'bg-[#16161b] border-gray-800/80 hover:border-gray-700 text-gray-200'
                           }`}
                         >
@@ -2025,14 +2025,14 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                           <div className="flex items-center justify-between">
                             <span className={`text-xs font-bold font-mono ${
                               dayObj.isToday
-                                ? 'bg-blue-600 text-white px-2 py-0.5 rounded-full text-[11px]'
+                                ? 'bg-gold-600 text-white px-2 py-0.5 rounded-full text-[11px]'
                                 : dayObj.isCurrentMonth ? 'text-gray-300' : 'text-gray-600'
                             }`}>
                               {dayObj.dayNumber}
                             </span>
 
                             {dayObj.isToday && (
-                              <span className="text-[9px] font-black uppercase text-blue-300 tracking-wider">Hoy</span>
+                              <span className="text-[9px] font-black uppercase text-amber-300 tracking-wider">Hoy</span>
                             )}
                           </div>
 
@@ -2045,7 +2045,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                                   e.stopPropagation();
                                   setSelectedCalendarDate(ev.date);
                                 }}
-                                className="p-1 rounded-lg bg-blue-900/60 hover:bg-blue-800 border border-blue-500/40 text-white text-[10px] leading-tight truncate font-semibold flex items-center gap-1 shadow-sm"
+                                className="p-1 rounded-lg bg-blue-900/60 hover:bg-blue-800 border border-gold-500/40 text-white text-[10px] leading-tight truncate font-semibold flex items-center gap-1 shadow-sm"
                                 title={`${ev.time} - ${ev.title}`}
                               >
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 animate-pulse" />
@@ -2073,8 +2073,8 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                 <div className="bg-[#121215] border border-gray-800 rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl">
                   <div className="flex items-center justify-between border-b border-gray-800 pb-3">
                     <h3 className="text-base font-bold text-white flex items-center gap-2">
-                      <Calendar className="text-blue-400" size={18} />
-                      Eventos para el <span className="text-blue-300 font-mono underline">{selectedCalendarDate}</span>
+                      <Calendar className="text-gold-400" size={18} />
+                      Eventos para el <span className="text-amber-300 font-mono underline">{selectedCalendarDate}</span>
                     </h3>
                     <span className="text-xs text-gray-400 font-mono">
                       {communityEvents.filter(ev => ev.date === selectedCalendarDate).length} programados
@@ -2083,14 +2083,14 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
 
                   {communityEvents.filter(ev => ev.date === selectedCalendarDate).length === 0 ? (
                     <div className="p-8 text-center text-gray-500 space-y-2 bg-[#16161b] rounded-2xl border border-gray-800/60">
-                      <Clock size={28} className="mx-auto text-blue-400/50" />
+                      <Clock size={28} className="mx-auto text-gold-400/50" />
                       <p className="text-xs font-semibold text-gray-400">No hay eventos ni clases agendadas para esta fecha.</p>
                       <button
                         onClick={() => {
                           setNewEventDate(selectedCalendarDate);
                           setShowAddEventModal(true);
                         }}
-                        className="mt-2 px-3.5 py-1.5 bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 border border-blue-500/40 rounded-xl text-xs font-bold transition-all"
+                        className="mt-2 px-3.5 py-1.5 bg-gold-600/30 hover:bg-gold-600/50 text-amber-300 border border-gold-500/40 rounded-xl text-xs font-bold transition-all"
                       >
                         + Agendar clase para este día
                       </button>
@@ -2098,7 +2098,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {communityEvents.filter(ev => ev.date === selectedCalendarDate).map(ev => (
-                        <div key={ev.id} className="bg-[#16161b] border border-gray-800 rounded-2xl overflow-hidden shadow-lg hover:border-blue-500/50 transition-all flex flex-col justify-between">
+                        <div key={ev.id} className="bg-[#16161b] border border-gray-800 rounded-2xl overflow-hidden shadow-lg hover:border-gold-500/50 transition-all flex flex-col justify-between">
                           <div>
                             <div className="h-36 bg-slate-950 relative">
                               <img src={ev.image} alt={ev.title} className="w-full h-full object-cover opacity-85" />
@@ -2108,7 +2108,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                             </div>
 
                             <div className="p-4 space-y-2">
-                              <div className="flex items-center gap-1.5 text-xs text-blue-400 font-mono font-bold">
+                              <div className="flex items-center gap-1.5 text-xs text-gold-400 font-mono font-bold">
                                 <Clock size={14} /> {ev.time}
                               </div>
                               <h4 className="font-bold text-white text-base leading-snug">{ev.title}</h4>
@@ -2118,7 +2118,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                           <div className="p-4 pt-0">
                             <button
                               onClick={() => alert(`Uniéndote a la sala de Zoom/Meet para: ${ev.title}`)}
-                              className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 shadow-md shadow-blue-950 transition-all"
+                              className="w-full py-2.5 bg-gold-600 hover:bg-gold-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 shadow-md shadow-blue-950 transition-all"
                             >
                               <Video size={16} /> Unirse a la Sesión en Vivo
                             </button>
@@ -2135,30 +2135,30 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
               <div className="space-y-4">
                 {communityEvents.length === 0 ? (
                   <div className="bg-[#121215] border border-gray-800 rounded-2xl p-12 text-center text-gray-400 space-y-2">
-                    <Calendar size={32} className="mx-auto text-blue-400 opacity-60" />
+                    <Calendar size={32} className="mx-auto text-gold-400 opacity-60" />
                     <p className="font-bold text-white">No hay llamadas programadas para esta comunidad.</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {communityEvents.map(ev => (
-                      <div key={ev.id} className="bg-[#121215] border border-gray-800 rounded-2xl overflow-hidden shadow-md space-y-3 hover:border-blue-500/50 transition-all">
+                      <div key={ev.id} className="bg-[#121215] border border-gray-800 rounded-2xl overflow-hidden shadow-md space-y-3 hover:border-gold-500/50 transition-all">
                         <div className="h-36 bg-slate-950 relative">
                           <img src={ev.image} alt={ev.title} className="w-full h-full object-cover opacity-80" />
                           <span className="absolute top-3 left-3 bg-red-600 text-white text-[10px] font-black px-2.5 py-1 rounded-md uppercase shadow-md">
                             {ev.badgeText}
                           </span>
-                          <span className="absolute bottom-3 right-3 bg-black/80 backdrop-blur text-blue-300 text-[10px] font-mono px-2 py-0.5 rounded-md border border-blue-500/40">
+                          <span className="absolute bottom-3 right-3 bg-black/80 backdrop-blur text-amber-300 text-[10px] font-mono px-2 py-0.5 rounded-md border border-gold-500/40">
                             📅 {ev.date}
                           </span>
                         </div>
 
                         <div className="p-4 space-y-3">
-                          <span className="text-[11px] text-blue-400 font-mono font-bold block">{ev.time}</span>
+                          <span className="text-[11px] text-gold-400 font-mono font-bold block">{ev.time}</span>
                           <h3 className="font-bold text-white text-base leading-snug">{ev.title}</h3>
 
                           <button
                             onClick={() => alert(`Uniéndote a la sala de Zoom/Meet para: ${ev.title}`)}
-                            className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-md"
+                            className="w-full py-2 bg-gold-600 hover:bg-gold-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-md"
                           >
                             <Video size={14} /> Unirse a la Sesión
                           </button>
@@ -2189,7 +2189,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                   value={memberSearch}
                   onChange={(e) => setMemberSearch(e.target.value)}
                   placeholder="Buscar miembro..."
-                  className="w-full pl-9 pr-3.5 py-2 bg-[#121215] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                  className="w-full pl-9 pr-3.5 py-2 bg-[#121215] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-gold-500"
                 />
               </div>
             </div>
@@ -2207,14 +2207,14 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
 
                     <div className="min-w-0">
                       <h4 className="font-bold text-white text-sm truncate">{m.name}</h4>
-                      <p className="text-xs text-blue-400 font-medium truncate">{m.role}</p>
+                      <p className="text-xs text-gold-400 font-medium truncate">{m.role}</p>
                       <span className="text-[10px] text-gray-500">{m.location}</span>
                     </div>
                   </div>
 
                   <button
                     onClick={() => setActiveMessageMember(m)}
-                    className="p-2.5 bg-[#18181c] hover:bg-[#22222a] text-blue-400 rounded-xl border border-gray-700/60 shrink-0"
+                    className="p-2.5 bg-[#18181c] hover:bg-[#22222a] text-gold-400 rounded-xl border border-gray-700/60 shrink-0"
                     title="Mensaje directo"
                   >
                     <Send size={15} />
@@ -2270,7 +2270,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                         {m.name}
                       </td>
                       <td className="p-3 text-gray-400">{m.role}</td>
-                      <td className="p-3 font-mono font-bold text-blue-400">{m.points.toLocaleString()} pts</td>
+                      <td className="p-3 font-mono font-bold text-gold-400">{m.points.toLocaleString()} pts</td>
                     </tr>
                   ))}
                 </tbody>
@@ -2293,7 +2293,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
               <X size={20} />
             </button>
 
-            <div className="flex items-center gap-2 text-blue-400">
+            <div className="flex items-center gap-2 text-gold-400">
               <MessageSquare size={20} />
               <h3 className="font-bold text-lg text-white">Publicar en {activeCommunity.name}</h3>
             </div>
@@ -2306,7 +2306,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                   value={newPostTitle}
                   onChange={(e) => setNewPostTitle(e.target.value)}
                   placeholder="Ej: Estrategia de cierre por WhatsApp con IA..."
-                  className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-gold-500"
                 />
               </div>
 
@@ -2317,21 +2317,21 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                   value={newPostText}
                   onChange={(e) => setNewPostText(e.target.value)}
                   placeholder="Escribe tu duda, aprendizaje o consejo para esta comunidad..."
-                  className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-gold-500"
                 />
               </div>
 
               {/* Direct Media File Upload for Post */}
               <div>
                 <label className="block text-xs font-bold text-gray-300 mb-1">Adjuntar Imagen o Video Directo (Opcional)</label>
-                <div className="p-3.5 bg-[#18181c] border-2 border-dashed border-gray-700 rounded-xl text-center cursor-pointer hover:border-blue-500 relative transition-colors">
+                <div className="p-3.5 bg-[#18181c] border-2 border-dashed border-gray-700 rounded-xl text-center cursor-pointer hover:border-gold-500 relative transition-colors">
                   <input
                     type="file"
                     accept="image/*,video/*"
                     onChange={handlePostMediaFileChange}
                     className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                   />
-                  <div className="flex items-center justify-center gap-2 text-xs font-bold text-blue-300">
+                  <div className="flex items-center justify-center gap-2 text-xs font-bold text-amber-300">
                     <UploadCloud size={16} /> Seleccionar Imagen o Video de tu Equipo
                   </div>
                 </div>
@@ -2358,7 +2358,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                 <button
                   type="submit"
                   disabled={isPublishingPost}
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-950 flex items-center gap-2 transition-all"
+                  className="px-5 py-2 bg-gold-600 hover:bg-gold-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-950 flex items-center gap-2 transition-all"
                 >
                   {isPublishingPost ? (
                     <>
@@ -2391,7 +2391,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
               <img src={activeMessageMember.avatar} alt={activeMessageMember.name} className="w-10 h-10 rounded-full object-cover border border-gray-700" />
               <div>
                 <h3 className="font-bold text-white text-base">{activeMessageMember.name}</h3>
-                <span className="text-xs text-blue-400">{activeMessageMember.role}</span>
+                <span className="text-xs text-gold-400">{activeMessageMember.role}</span>
               </div>
             </div>
 
@@ -2400,7 +2400,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
               value={directMessageText}
               onChange={(e) => setDirectMessageText(e.target.value)}
               placeholder={`Escribe un mensaje privado para ${activeMessageMember.name}...`}
-              className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+              className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-gold-500"
             />
 
             <div className="flex justify-end gap-2">
@@ -2410,7 +2410,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                   setDirectMessageText('');
                   setActiveMessageMember(null);
                 }}
-                className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-md shadow-blue-950"
+                className="w-full py-2.5 bg-gold-600 hover:bg-gold-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-md shadow-blue-950"
               >
                 <Send size={14} /> Enviar Mensaje
               </button>
@@ -2430,7 +2430,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
               <X size={20} />
             </button>
 
-            <div className="flex items-center gap-2 text-blue-400">
+            <div className="flex items-center gap-2 text-gold-400">
               <Sparkles size={20} />
               <h3 className="font-bold text-lg text-white">Crear Comunidad Independiente</h3>
             </div>
@@ -2447,7 +2447,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                   value={newCommunityName}
                   onChange={(e) => setNewCommunityName(e.target.value)}
                   placeholder="Ej: Academia Trading Forex Pro / Club Dropshipper Elite"
-                  className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-gold-500"
                 />
               </div>
 
@@ -2456,7 +2456,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                 <select
                   value={newCommunityCategory}
                   onChange={(e) => setNewCommunityCategory(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500 font-medium"
+                  className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white focus:outline-none focus:border-gold-500 font-medium"
                 >
                   <option value="Trading & Cripto">📈 Trading, Forex & Cripto</option>
                   <option value="E-commerce & Dropshipping">🛒 E-commerce & Dropshipping</option>
@@ -2475,7 +2475,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                   value={newCommunityTagline}
                   onChange={(e) => setNewCommunityTagline(e.target.value)}
                   placeholder="Ej: Clases de trading en vivo, señales y plantillas de gestión de riesgo"
-                  className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-gold-500"
                 />
               </div>
 
@@ -2484,7 +2484,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                 <select
                   value={newCommunityAccess}
                   onChange={(e) => setNewCommunityAccess(e.target.value as any)}
-                  className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white focus:outline-none focus:border-gold-500"
                 >
                   <option value="Gratis">Pública / Abierta (Gratis)</option>
                   <option value="Privada (Invitación)">Privada (Solo por Invitación)</option>
@@ -2492,7 +2492,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                 </select>
               </div>
 
-              <div className="p-3 bg-[#18181c] rounded-xl border border-blue-900/40 text-[11px] text-blue-300 space-y-1">
+              <div className="p-3 bg-[#18181c] rounded-xl border border-blue-900/40 text-[11px] text-amber-300 space-y-1">
                 <p className="font-bold">✨ Aislamiento Completo Garantizado:</p>
                 <p className="text-gray-400">Los posts, cursos, archivos y miembros creados aquí no se mezclarán con otras comunidades.</p>
               </div>
@@ -2507,7 +2507,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-950"
+                  className="px-5 py-2 bg-gold-600 hover:bg-gold-500 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-950"
                 >
                   Crear Comunidad Ahora
                 </button>
@@ -2528,7 +2528,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
               <X size={20} />
             </button>
 
-            <div className="flex items-center gap-2 text-blue-400">
+            <div className="flex items-center gap-2 text-gold-400">
               <UploadCloud size={20} />
               <h3 className="font-bold text-lg text-white">Subir Video-Lección a {activeCommunity.name}</h3>
             </div>
@@ -2542,7 +2542,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                   value={newLessonTitle}
                   onChange={(e) => setNewLessonTitle(e.target.value)}
                   placeholder="Ej: Cómo validar un producto ganador en TikTok con $10 USD"
-                  className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-gold-500"
                 />
               </div>
 
@@ -2556,7 +2556,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                     onClick={() => setVideoUploadType('file')}
                     className={`py-2 px-3 rounded-xl text-xs font-bold border transition-colors flex items-center justify-center gap-1.5 ${
                       videoUploadType === 'file'
-                        ? 'bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-950'
+                        ? 'bg-gold-600 text-white border-gold-500 shadow-md shadow-blue-950'
                         : 'bg-[#18181c] text-gray-400 border-gray-800 hover:text-white'
                     }`}
                   >
@@ -2567,7 +2567,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                     onClick={() => setVideoUploadType('url')}
                     className={`py-2 px-3 rounded-xl text-xs font-bold border transition-colors flex items-center justify-center gap-1.5 ${
                       videoUploadType === 'url'
-                        ? 'bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-950'
+                        ? 'bg-gold-600 text-white border-gold-500 shadow-md shadow-blue-950'
                         : 'bg-[#18181c] text-gray-400 border-gray-800 hover:text-white'
                     }`}
                   >
@@ -2576,14 +2576,14 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                 </div>
 
                 {videoUploadType === 'file' ? (
-                  <div className="p-4 bg-[#18181c] border-2 border-dashed border-blue-800/60 hover:border-blue-500 rounded-2xl text-center space-y-2 cursor-pointer transition-colors relative">
+                  <div className="p-4 bg-[#18181c] border-2 border-dashed border-blue-800/60 hover:border-gold-500 rounded-2xl text-center space-y-2 cursor-pointer transition-colors relative">
                     <input
                       type="file"
                       accept="video/*"
                       onChange={handleVideoFileChange}
                       className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                     />
-                    <Video size={30} className="mx-auto text-blue-400" />
+                    <Video size={30} className="mx-auto text-gold-400" />
                     <div>
                       <p className="text-xs font-bold text-white">Haz clic o arrastra un archivo de video MP4/MOV de tu equipo</p>
                       <p className="text-[10px] text-gray-400">Soporta videos grabados desde tu celular o computadora</p>
@@ -2600,7 +2600,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                     value={newLessonVideoUrl}
                     onChange={(e) => setNewLessonVideoUrl(e.target.value)}
                     placeholder="https://www.w3schools.com/html/mov_bbb.mp4 (Opcional)"
-                    className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-gold-500"
                   />
                 )}
 
@@ -2624,13 +2624,13 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                   value={newLessonDescription}
                   onChange={(e) => setNewLessonDescription(e.target.value)}
                   placeholder="Detalla los puntos aprendidos y pasos prácticos..."
-                  className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-gold-500"
                 />
               </div>
 
               {/* Adjuntar Archivo o Recurso Descargable */}
               <div className="p-3.5 bg-[#18181c] rounded-xl border border-gray-800 space-y-2">
-                <span className="font-bold text-xs text-blue-300 flex items-center gap-1.5">
+                <span className="font-bold text-xs text-amber-300 flex items-center gap-1.5">
                   <FileText size={15} /> Adjuntar Archivo Descargable (Opcional)
                 </span>
 
@@ -2640,14 +2640,14 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                     value={newLessonAttachmentName}
                     onChange={(e) => setNewLessonAttachmentName(e.target.value)}
                     placeholder="Nombre del archivo (Ej: Plantilla Excel Calculadora.xlsx)"
-                    className="w-full px-3 py-2 bg-[#121215] border border-gray-700/80 rounded-lg text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 mb-2"
+                    className="w-full px-3 py-2 bg-[#121215] border border-gray-700/80 rounded-lg text-xs text-white placeholder-gray-500 focus:outline-none focus:border-gold-500 mb-2"
                   />
                   <input
                     type="text"
                     value={newLessonAttachmentUrl}
                     onChange={(e) => setNewLessonAttachmentUrl(e.target.value)}
                     placeholder="URL de descarga (Google Drive / Dropi Link)"
-                    className="w-full px-3 py-2 bg-[#121215] border border-gray-700/80 rounded-lg text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2 bg-[#121215] border border-gray-700/80 rounded-lg text-xs text-white placeholder-gray-500 focus:outline-none focus:border-gold-500"
                   />
                 </div>
               </div>
@@ -2662,7 +2662,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-950"
+                  className="px-5 py-2 bg-gold-600 hover:bg-gold-500 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-950"
                 >
                   Publicar Lección
                 </button>
@@ -2683,7 +2683,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
               <X size={20} />
             </button>
 
-            <div className="flex items-center gap-2 text-blue-400">
+            <div className="flex items-center gap-2 text-gold-400">
               <Folder size={20} />
               <h3 className="font-bold text-lg text-white">Compartir Recurso en {activeCommunity.name}</h3>
             </div>
@@ -2697,7 +2697,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                   value={newResourceTitle}
                   onChange={(e) => setNewResourceTitle(e.target.value)}
                   placeholder="Ej: Plantilla de Control de Fletes y Devoluciones 2026"
-                  className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-gold-500"
                 />
               </div>
 
@@ -2706,7 +2706,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                 <select
                   value={newResourceCategory}
                   onChange={(e) => setNewResourceCategory(e.target.value as any)}
-                  className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white focus:outline-none focus:border-gold-500"
                 >
                   <option value="Plantillas Excel">Plantillas Excel / Sheets</option>
                   <option value="Creativos & UGC">Creativos & Packs de Anuncios</option>
@@ -2722,7 +2722,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                   value={newResourceDescription}
                   onChange={(e) => setNewResourceDescription(e.target.value)}
                   placeholder="Explica qué incluye y cómo le ayuda a esta comunidad..."
-                  className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-gold-500"
                 />
               </div>
 
@@ -2733,7 +2733,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                   value={newResourceUrl}
                   onChange={(e) => setNewResourceUrl(e.target.value)}
                   placeholder="https://drive.google.com/..."
-                  className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-gold-500"
                 />
               </div>
 
@@ -2747,7 +2747,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-950"
+                  className="px-5 py-2 bg-gold-600 hover:bg-gold-500 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-950"
                 >
                   Compartir Recurso
                 </button>
@@ -2768,7 +2768,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
               <X size={20} />
             </button>
 
-            <div className="flex items-center gap-2 text-blue-400">
+            <div className="flex items-center gap-2 text-gold-400">
               <Calendar size={20} />
               <h3 className="font-bold text-lg text-white">Agendar Clase / Evento en {activeCommunity.name}</h3>
             </div>
@@ -2782,7 +2782,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                   value={newEventTitle}
                   onChange={(e) => setNewEventTitle(e.target.value)}
                   placeholder="Ej: Sesión de Preguntas & Respuestas sobre Meta Ads"
-                  className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-gold-500"
                 />
               </div>
 
@@ -2794,7 +2794,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                     required
                     value={newEventDate}
                     onChange={(e) => setNewEventDate(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white focus:outline-none focus:border-gold-500"
                   />
                 </div>
 
@@ -2806,7 +2806,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                     value={newEventTime}
                     onChange={(e) => setNewEventTime(e.target.value)}
                     placeholder="Ej: 10:00 AM - 11:30 AM"
-                    className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white focus:outline-none focus:border-gold-500"
                   />
                 </div>
               </div>
@@ -2817,7 +2817,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                   <select
                     value={newEventBadge}
                     onChange={(e) => setNewEventBadge(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white focus:outline-none focus:border-gold-500"
                   >
                     <option value="CLASE EN VIVO">CLASE EN VIVO</option>
                     <option value="SOPORTE Y MENTORÍA">SOPORTE Y MENTORÍA</option>
@@ -2834,7 +2834,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                     value={newEventImage}
                     onChange={(e) => setNewEventImage(e.target.value)}
                     placeholder="https://..."
-                    className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-gold-500"
                   />
                 </div>
               </div>
@@ -2846,7 +2846,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                   value={newEventMeetingUrl}
                   onChange={(e) => setNewEventMeetingUrl(e.target.value)}
                   placeholder="https://zoom.us/j/... o https://meet.google.com/..."
-                  className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-gold-500"
                 />
               </div>
 
@@ -2860,7 +2860,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-950 flex items-center gap-1.5"
+                  className="px-5 py-2 bg-gold-600 hover:bg-gold-500 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-950 flex items-center gap-1.5"
                 >
                   <Calendar size={14} /> Agendar Clase
                 </button>
@@ -2878,13 +2878,13 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setIsFocusMode(false)}
-                className="px-3.5 py-1.5 bg-[#1c1c22] hover:bg-blue-950/80 text-blue-300 hover:text-white rounded-xl text-xs font-bold flex items-center gap-2 border border-blue-800/50 transition-colors"
+                className="px-3.5 py-1.5 bg-[#1c1c22] hover:bg-blue-950/80 text-amber-300 hover:text-white rounded-xl text-xs font-bold flex items-center gap-2 border border-blue-800/50 transition-colors"
               >
                 <Minimize2 size={16} /> Salir del Modo Lectura
               </button>
 
               <div className="hidden sm:block border-l border-gray-800 pl-3">
-                <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider block">{selectedCourse.title}</span>
+                <span className="text-[10px] font-bold text-gold-400 uppercase tracking-wider block">{selectedCourse.title}</span>
                 <h3 className="font-bold text-white text-sm truncate max-w-md">{selectedLesson.title}</h3>
               </div>
             </div>
@@ -2893,10 +2893,10 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-3 bg-[#18181c] px-4 py-1.5 rounded-xl border border-gray-800">
                 <span className="text-xs text-gray-300 font-medium">
-                  Lecciones Completadas: <strong className="text-blue-400 font-bold">{completedCourseLessons} de {totalCourseLessons}</strong> ({courseProgressPct}%)
+                  Lecciones Completadas: <strong className="text-gold-400 font-bold">{completedCourseLessons} de {totalCourseLessons}</strong> ({courseProgressPct}%)
                 </span>
                 <div className="w-32 bg-gray-900 border border-gray-700 h-2 rounded-full overflow-hidden">
-                  <div className="bg-gradient-to-r from-blue-500 to-blue-500 h-full rounded-full transition-all duration-300" style={{ width: `${courseProgressPct}%` }}></div>
+                  <div className="bg-gradient-to-r from-gold-500 to-gold-500 h-full rounded-full transition-all duration-300" style={{ width: `${courseProgressPct}%` }}></div>
                 </div>
               </div>
 
@@ -2905,7 +2905,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                 className={`px-4 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all ${
                   completedLessons.includes(selectedLesson.id)
                     ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                    : 'bg-blue-600 hover:bg-blue-500 text-white shadow-md'
+                    : 'bg-gold-600 hover:bg-gold-500 text-white shadow-md'
                 }`}
               >
                 <CheckCircle size={14} /> {completedLessons.includes(selectedLesson.id) ? 'Completado' : 'Marcar Completado'}
@@ -2932,14 +2932,14 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                 <div className="bg-[#121215] border border-gray-800/80 rounded-2xl p-6 space-y-4 shadow-xl">
                   <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-800 pb-4">
                     <div>
-                      <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-blue-950 text-blue-300 border border-blue-800/50 uppercase">
+                      <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-blue-950 text-amber-300 border border-blue-800/50 uppercase">
                         {selectedLesson.difficulty} • {selectedLesson.category}
                       </span>
                       <h1 className="text-2xl font-bold text-white mt-2 leading-tight">{selectedLesson.title}</h1>
                     </div>
 
                     <div className="text-xs text-gray-400 bg-[#18181c] px-3.5 py-2 rounded-xl border border-gray-800">
-                      Instructor: <strong className="text-blue-300">{selectedLesson.instructor}</strong>
+                      Instructor: <strong className="text-amber-300">{selectedLesson.instructor}</strong>
                     </div>
                   </div>
 
@@ -2950,7 +2950,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
 
                   {selectedLesson.attachments && selectedLesson.attachments.length > 0 && (
                     <div className="border-t border-gray-800/80 pt-4 space-y-2">
-                      <h4 className="font-bold text-xs text-blue-300 flex items-center gap-1.5">
+                      <h4 className="font-bold text-xs text-amber-300 flex items-center gap-1.5">
                         <FileText size={15} /> Archivos Adjuntos para Descargar
                       </h4>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -2960,11 +2960,11 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                             href={att.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="p-3 bg-[#18181c] border border-gray-700/60 rounded-xl hover:border-blue-500 flex items-center justify-between text-xs text-white group"
+                            className="p-3 bg-[#18181c] border border-gray-700/60 rounded-xl hover:border-gold-500 flex items-center justify-between text-xs text-white group"
                           >
                             <div className="flex items-center gap-2 truncate">
-                              <FileText size={15} className="text-blue-400 shrink-0" />
-                              <span className="truncate group-hover:text-blue-300">{att.name}</span>
+                              <FileText size={15} className="text-gold-400 shrink-0" />
+                              <span className="truncate group-hover:text-amber-300">{att.name}</span>
                             </div>
                             <Download size={14} className="text-gray-400 hover:text-white shrink-0" />
                           </a>
@@ -2978,7 +2978,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
 
             {/* Course Syllabus Accordion Sidebar */}
             <div className="w-full lg:w-80 bg-[#121216] border-t lg:border-t-0 lg:border-l border-gray-800 p-4 overflow-y-auto space-y-3 shrink-0">
-              <h4 className="font-bold text-xs text-blue-400 uppercase tracking-wider mb-3 flex items-center justify-between">
+              <h4 className="font-bold text-xs text-gold-400 uppercase tracking-wider mb-3 flex items-center justify-between">
                 <span>Estructura del Curso</span>
                 <span className="text-[10px] text-gray-400">{courseProgressPct}% Listo</span>
               </h4>
@@ -2997,7 +2997,7 @@ export default function EntrenamientoView({ onOpenSidebar }: EntrenamientoViewPr
                           key={lesson.id}
                           onClick={() => setSelectedLesson(lesson)}
                           className={`w-full p-3 text-left text-xs flex items-center gap-2.5 transition-colors ${
-                            isCur ? 'bg-blue-950/70 text-white font-bold border-l-2 border-blue-500' : 'text-gray-400 hover:bg-[#202028] hover:text-gray-200'
+                            isCur ? 'bg-blue-950/70 text-white font-bold border-l-2 border-gold-500' : 'text-gray-400 hover:bg-[#202028] hover:text-gray-200'
                           }`}
                         >
                           <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] shrink-0 border ${

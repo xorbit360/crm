@@ -344,14 +344,14 @@ export default function MercadoView({ activeTab = 'publico', onLaunchTraffiker }
 
             <div className="panel p-6 rounded-2xl space-y-4">
               <h3 className="text-base font-semibold text-white flex items-center gap-2">
-                <Target size={18} className="text-blue-400" /> Segmento 2: Oficinista / Home Office (Productividad & Relax)
+                <Target size={18} className="text-gold-400" /> Segmento 2: Oficinista / Home Office (Productividad & Relax)
               </h3>
               <p className="text-xs text-gray-400 leading-relaxed">
                 Profesionales y emprendedores que trabajan desde casa y buscan crear un espacio óptimo, relajante y estimulante para evitar la fatiga mental y mantener el enfoque.
               </p>
 
               <div className="space-y-2 pt-2">
-                <p className="text-xs font-semibold text-blue-400">🔴 Puntos de Dolor principales:</p>
+                <p className="text-xs font-semibold text-gold-400">🔴 Puntos de Dolor principales:</p>
                 <ul className="text-xs text-gray-400 space-y-1.5 list-disc pl-4">
                   <li>Estrés acumulado por largas jornadas de trabajo sentado.</li>
                   <li>Sequedad en los ojos y garganta debido al aire acondicionado.</li>
@@ -359,8 +359,8 @@ export default function MercadoView({ activeTab = 'publico', onLaunchTraffiker }
                 </ul>
               </div>
 
-              <div className="bg-blue-500/5 border border-blue-500/10 p-4 rounded-xl text-xs space-y-1">
-                <p className="font-bold text-blue-400">🔥 Gancho de Retención UGC Sugerido:</p>
+              <div className="bg-gold-500/5 border border-gold-500/10 p-4 rounded-xl text-xs space-y-1">
+                <p className="font-bold text-gold-400">🔥 Gancho de Retención UGC Sugerido:</p>
                 <p className="text-gray-300">"Si trabajas desde casa y no tienes esto en tu escritorio, estás saboteando tu productividad..."</p>
               </div>
             </div>
@@ -393,7 +393,7 @@ export default function MercadoView({ activeTab = 'publico', onLaunchTraffiker }
             {/* Interest Score card 2 */}
             <div className="panel p-6 rounded-2xl bg-black/40 border border-gray-800 flex flex-col justify-between">
               <div>
-                <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider">Demanda Dropshipping</span>
+                <span className="text-[10px] text-gold-400 font-bold uppercase tracking-wider">Demanda Dropshipping</span>
                 <h4 className="text-base font-bold text-white mt-1">Humidificadores Ultrasónicos</h4>
                 <p className="text-xs text-gray-500 mt-2">Interés acumulado en importaciones y plataformas dropshipping locales.</p>
               </div>
@@ -402,7 +402,7 @@ export default function MercadoView({ activeTab = 'publico', onLaunchTraffiker }
                   <span className="text-2xl font-bold text-white">+18.2%</span>
                   <span className="text-[9px] text-emerald-400 font-bold ml-1.5">▲ ESTABLE</span>
                 </div>
-                <div className="w-16 h-8 bg-blue-500/10 rounded border border-blue-500/20 flex items-center justify-center text-xs font-mono font-bold text-blue-400">
+                <div className="w-16 h-8 bg-gold-500/10 rounded border border-gold-500/20 flex items-center justify-center text-xs font-mono font-bold text-gold-400">
                   85/100
                 </div>
               </div>
@@ -411,16 +411,16 @@ export default function MercadoView({ activeTab = 'publico', onLaunchTraffiker }
             {/* Interest Score card 3 */}
             <div className="panel p-6 rounded-2xl bg-black/40 border border-gray-800 flex flex-col justify-between">
               <div>
-                <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider">Moda Bienestar</span>
+                <span className="text-[10px] text-gold-400 font-bold uppercase tracking-wider">Moda Bienestar</span>
                 <h4 className="text-base font-bold text-white mt-1">Aceites Esenciales / Aromas</h4>
                 <p className="text-xs text-gray-500 mt-2">Productos recurrentes para aumentar el valor del ticket promedio (Upsell).</p>
               </div>
               <div className="mt-4 pt-4 border-t border-gray-900 flex items-end justify-between">
                 <div>
                   <span className="text-2xl font-bold text-white">+31.0%</span>
-                  <span className="text-[9px] text-blue-400 font-bold ml-1.5">▲ EXTREMO</span>
+                  <span className="text-[9px] text-gold-400 font-bold ml-1.5">▲ EXTREMO</span>
                 </div>
-                <div className="w-16 h-8 bg-blue-500/10 rounded border border-blue-500/20 flex items-center justify-center text-xs font-mono font-bold text-blue-400">
+                <div className="w-16 h-8 bg-gold-500/10 rounded border border-gold-500/20 flex items-center justify-center text-xs font-mono font-bold text-gold-400">
                   96/100
                 </div>
               </div>
@@ -611,7 +611,7 @@ export default function MercadoView({ activeTab = 'publico', onLaunchTraffiker }
                       </div>
                       <div>
                         <span className="text-gray-500 uppercase block text-[8px]">Viral UGC:</span>
-                        <span className="text-blue-400 block mt-0.5">{idea.viralPotential}</span>
+                        <span className="text-gold-400 block mt-0.5">{idea.viralPotential}</span>
                       </div>
                       <div>
                         <span className="text-gray-500 uppercase block text-[8px]">Barrera Entrada:</span>
@@ -643,17 +643,17 @@ export default function MercadoView({ activeTab = 'publico', onLaunchTraffiker }
               </div>
             </div>
             <div className="panel p-4 rounded-xl bg-black/40 border border-gray-800 flex flex-col justify-between">
-              <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider">Fuentes de Datos</span>
+              <span className="text-[10px] text-gold-400 font-bold uppercase tracking-wider">Fuentes de Datos</span>
               <div className="mt-2 flex items-baseline justify-between">
                 <span className="text-xl font-bold text-white">TikTok, Meta, AMZ</span>
                 <span className="text-[10px] text-emerald-400 font-bold">ACTIVO</span>
               </div>
             </div>
             <div className="panel p-4 rounded-xl bg-black/40 border border-gray-800 flex flex-col justify-between">
-              <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider">Volumen Estimado Dropshipping</span>
+              <span className="text-[10px] text-gold-400 font-bold uppercase tracking-wider">Volumen Estimado Dropshipping</span>
               <div className="mt-2 flex items-baseline justify-between">
                 <span className="text-xl font-bold text-white">$42,500 USD</span>
-                <span className="text-[10px] text-blue-400 font-bold">Últimas 24h</span>
+                <span className="text-[10px] text-gold-400 font-bold">Últimas 24h</span>
               </div>
             </div>
             <div className="panel p-4 rounded-xl bg-black/40 border border-gray-800 flex flex-col justify-between">
@@ -695,8 +695,8 @@ export default function MercadoView({ activeTab = 'publico', onLaunchTraffiker }
               <span className="text-[10px] text-gray-500 font-bold uppercase self-center mr-2">Filtrar por origen:</span>
               {[
                 { id: 'todos', label: 'Todos', icon: <Globe size={12} /> },
-                { id: 'tiktok', label: 'TikTok Virals', icon: <Sparkle size={12} className="text-teal-400" /> },
-                { id: 'meta', label: 'Meta Ads Library', icon: <Facebook size={12} className="text-blue-400" /> },
+                { id: 'tiktok', label: 'TikTok Virals', icon: <Sparkle size={12} className="text-gold-400" /> },
+                { id: 'meta', label: 'Meta Ads Library', icon: <Facebook size={12} className="text-gold-400" /> },
                 { id: 'amazon', label: 'Amazon BestSellers', icon: <ShoppingBag size={12} className="text-yellow-500" /> },
                 { id: 'local', label: 'Proveedores Locales', icon: <Award size={12} className="text-orange-500" /> },
               ].map(src => (
@@ -789,7 +789,7 @@ export default function MercadoView({ activeTab = 'publico', onLaunchTraffiker }
                         <div className="grid grid-cols-2 gap-2">
                           <button
                             onClick={() => setSelectedProductForAds(product)}
-                            className="py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 font-semibold text-[10px] rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer"
+                            className="py-2 bg-gold-500/10 hover:bg-gold-500/20 text-gold-400 border border-gold-500/20 font-semibold text-[10px] rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer"
                           >
                             <Facebook size={12} /> Meta Ads Spy
                           </button>
@@ -891,7 +891,7 @@ export default function MercadoView({ activeTab = 'publico', onLaunchTraffiker }
 
                   {/* Demographic target strategy */}
                   <div className="space-y-2">
-                    <h5 className="font-bold text-blue-400 text-xs uppercase tracking-wider">Público Objetivo Recomendado</h5>
+                    <h5 className="font-bold text-gold-400 text-xs uppercase tracking-wider">Público Objetivo Recomendado</h5>
                     <div className="p-4 bg-gray-950 rounded-xl border border-gray-900 text-xs space-y-2 text-gray-300">
                       <p><span className="font-bold text-white">🟢 Target Principal:</span> Mujeres y hombres de 18-35 años, interesados en tendencias de redes sociales, gadgets estéticos, decoración del hogar u oficina, bienestar, belleza o creación de contenido.</p>
                       <p><span className="font-bold text-white">🟢 Estrategia de Segmentación en Facebook Ads:</span> Deja el público abierto (Broad) o segmenta por intereses relacionados (e.g., "Decoración de Interiores", "Compras Online", "TikTok") y deja que el creativo UGC filtre el público ideal.</p>
@@ -900,7 +900,7 @@ export default function MercadoView({ activeTab = 'publico', onLaunchTraffiker }
 
                   {/* Complete Script for UGC Video */}
                   <div className="space-y-2">
-                    <h5 className="font-bold text-blue-400 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                    <h5 className="font-bold text-gold-400 text-xs uppercase tracking-wider flex items-center gap-1.5">
                       <Play size={12} /> Guión y Estructura del Video UGC Viral
                     </h5>
                     <div className="p-4 bg-gray-900/60 border border-gray-800 rounded-xl text-xs font-mono text-gray-300 whitespace-pre-wrap leading-loose">
@@ -925,9 +925,9 @@ export default function MercadoView({ activeTab = 'publico', onLaunchTraffiker }
           {selectedProductForAds && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
               <div className="w-full max-w-xl bg-[#0f1115] border border-gray-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
-                <div className="p-5 border-b border-gray-800 bg-blue-600/5 flex items-center justify-between">
+                <div className="p-5 border-b border-gray-800 bg-gold-600/5 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                    <div className="w-10 h-10 rounded-xl bg-gold-500/10 border border-gold-500/20 flex items-center justify-center text-gold-400">
                       <Facebook size={20} />
                     </div>
                     <div>
@@ -971,7 +971,7 @@ export default function MercadoView({ activeTab = 'publico', onLaunchTraffiker }
 
                     <div className="flex items-center justify-between text-[10px] text-gray-500 font-mono pt-2 border-t border-gray-900">
                       <span>Plataformas: {selectedProductForAds.adSpy.platforms.join(', ')}</span>
-                      <span className="text-blue-400 font-bold">{selectedProductForAds.adSpy.activeAdsCount} anuncios similares activos</span>
+                      <span className="text-gold-400 font-bold">{selectedProductForAds.adSpy.activeAdsCount} anuncios similares activos</span>
                     </div>
                   </div>
 
@@ -980,7 +980,7 @@ export default function MercadoView({ activeTab = 'publico', onLaunchTraffiker }
                     <p className="font-bold text-white">Vista Previa del Creativo:</p>
                     <div className="relative rounded-xl overflow-hidden border border-gray-800 aspect-video bg-gray-950 flex flex-col items-center justify-center text-center p-6">
                       <div className="absolute inset-0 opacity-40 bg-cover bg-center" style={{ backgroundImage: `url(${selectedProductForAds.imgUrl})` }}></div>
-                      <div className="relative z-10 w-12 h-12 rounded-full bg-blue-500/20 border border-blue-500 flex items-center justify-center text-blue-400 animate-pulse cursor-pointer">
+                      <div className="relative z-10 w-12 h-12 rounded-full bg-gold-500/20 border border-gold-500 flex items-center justify-center text-gold-400 animate-pulse cursor-pointer">
                         <Play size={20} className="ml-0.5" />
                       </div>
                       <p className="relative z-10 mt-3 text-[11px] font-bold text-white font-mono bg-black/80 px-2.5 py-1 rounded-full border border-gray-800">
@@ -995,7 +995,7 @@ export default function MercadoView({ activeTab = 'publico', onLaunchTraffiker }
                     onClick={() => {
                       alert('Descarga de video creativo iniciada con éxito. El video se descargará en formato MP4 en su dispositivo.');
                     }}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5"
+                    className="px-4 py-2 bg-gold-600 hover:bg-gold-500 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5"
                   >
                     Descargar Creativo
                   </button>

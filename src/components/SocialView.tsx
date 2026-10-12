@@ -8,10 +8,10 @@ import {
 type TabId = 'automatizaciones' | 'contenido' | 'embudo';
 
 const ORIGIN_META: Record<string, { label: string; icon: React.ReactNode; cls: string }> = {
-  dm: { label: 'DM', icon: <MessageCircle size={12} />, cls: 'bg-blue-500/15 text-blue-300 border-blue-500/30' },
+  dm: { label: 'DM', icon: <MessageCircle size={12} />, cls: 'bg-gold-500/15 text-amber-300 border-gold-500/30' },
   comment: { label: 'Comentario', icon: <MessageSquare size={12} />, cls: 'bg-amber-500/15 text-amber-300 border-amber-500/30' },
-  story_reply: { label: 'Historia', icon: <Camera size={12} />, cls: 'bg-purple-500/15 text-purple-300 border-purple-500/30' },
-  mention: { label: 'Mención', icon: <AtSign size={12} />, cls: 'bg-pink-500/15 text-pink-300 border-pink-500/30' },
+  story_reply: { label: 'Historia', icon: <Camera size={12} />, cls: 'bg-gold-500/15 text-amber-300 border-gold-500/30' },
+  mention: { label: 'Mención', icon: <AtSign size={12} />, cls: 'bg-gold-500/15 text-amber-300 border-gold-500/30' },
   referral: { label: 'Referido', icon: <Link2 size={12} />, cls: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' },
 };
 

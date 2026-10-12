@@ -1336,11 +1336,11 @@ OBJETIVO: Pedir Ciudad, Nombre, Dirección y Teléfono para generar la guía Dro
               👆 Hacé click en cada miniatura para elegir qué fotos/videos envía el bot después del saludo. Aparecerá un número verde indicando el orden. Después podés arrastrarlas para reordenar.
             </p>
 
-            <div className="p-4 rounded-2xl bg-[#091e3a]/80 border border-blue-500/30 text-blue-200 text-xs flex items-start gap-3">
+            <div className="p-4 rounded-2xl bg-[#091e3a]/80 border border-gold-500/30 text-amber-200 text-xs flex items-start gap-3">
               <span className="text-lg">👇</span>
               <div>
-                <p className="font-bold text-blue-100">Tocá las miniaturas de abajo para elegir cuáles se envían al cliente</p>
-                <p className="text-[11px] text-blue-300/80 mt-0.5">
+                <p className="font-bold text-amber-100">Tocá las miniaturas de abajo para elegir cuáles se envían al cliente</p>
+                <p className="text-[11px] text-amber-300/80 mt-0.5">
                   Si no elegís ninguna, el bot enviará solo el mensaje de texto sin archivos. Podés elegir varias (en el orden que quieras) y reordenarlas arrastrando.
                 </p>
               </div>
@@ -1462,14 +1462,14 @@ OBJETIVO: Pedir Ciudad, Nombre, Dirección y Teléfono para generar la guía Dro
           </div>
 
           {/* Info callout on how guided mode works (Image 11) */}
-          <div className="p-4 rounded-2xl bg-[#091e3a]/80 border border-blue-500/30 text-blue-200 text-xs leading-relaxed space-y-1">
-            <p className="font-bold text-blue-100 flex items-center gap-1.5">
+          <div className="p-4 rounded-2xl bg-[#091e3a]/80 border border-gold-500/30 text-amber-200 text-xs leading-relaxed space-y-1">
+            <p className="font-bold text-amber-100 flex items-center gap-1.5">
               <span>ℹ️</span> Cómo funciona el modo guiado
             </p>
-            <p className="text-[11px] text-blue-300/90 leading-relaxed">
+            <p className="text-[11px] text-amber-300/90 leading-relaxed">
               El bot ya sabe <strong>vender tu producto</strong> con los datos del Paso 1 (precio, ofertas, variantes) — no necesitás escribir ningún prompt.
             </p>
-            <p className="text-[11px] text-blue-300/90 leading-relaxed">
+            <p className="text-[11px] text-amber-300/90 leading-relaxed">
               Acá configurás <strong>reglas</strong>: "cuando pase X, que el bot envíe Y" — un texto, un texto con archivo, o solo un archivo. Y opcionalmente la <strong>personalidad</strong> (tono y estilo) del asistente.
             </p>
           </div>
@@ -1666,9 +1666,9 @@ OBJETIVO: Pedir Ciudad, Nombre, Dirección y Teléfono para generar la guía Dro
         <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-between shadow-md">
           <div>
             <p className="text-[11px] font-medium text-zinc-400">Precio Promedio</p>
-            <p className="text-2xl font-bold text-blue-400 mt-1 font-mono">${avgPrice.toLocaleString()} COP</p>
+            <p className="text-2xl font-bold text-gold-400 mt-1 font-mono">${avgPrice.toLocaleString()} COP</p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center border border-blue-500/20">
+          <div className="w-10 h-10 rounded-xl bg-gold-500/10 text-gold-400 flex items-center justify-center border border-gold-500/20">
             <DollarSign size={18} />
           </div>
         </div>
@@ -1875,11 +1875,11 @@ OBJETIVO: Pedir Ciudad, Nombre, Dirección y Teléfono para generar la guía Dro
               <div className="w-5 h-5 rounded-full bg-[#3b82f6]/20 text-[#60a5fa] flex items-center justify-center shrink-0 mt-0.5">
                 <HelpCircle size={13} />
               </div>
-              <div className="space-y-1 text-blue-200/90 text-xs">
+              <div className="space-y-1 text-amber-200/90 text-xs">
                 <h5 className="font-bold text-[#60a5fa]">Como obtener el ID</h5>
-                <ul className="space-y-1 text-[11px] text-blue-100/80">
+                <ul className="space-y-1 text-[11px] text-amber-100/80">
                   <li>• Ve a <strong className="text-white font-semibold">app.dropi.co</strong> y abre el producto</li>
-                  <li>• El ID aparece arriba (ej: ID: 64917) o en la URL: <span className="font-mono text-blue-300">.../product-details/{dropiProductId || '64917'}/...</span></li>
+                  <li>• El ID aparece arriba (ej: ID: 64917) o en la URL: <span className="font-mono text-amber-300">.../product-details/{dropiProductId || '64917'}/...</span></li>
                 </ul>
               </div>
             </div>

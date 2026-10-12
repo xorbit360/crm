@@ -189,9 +189,9 @@ export default function UsuariosView({
       case 'superadmin':
         return <span className="px-2.5 py-1 bg-red-950/60 text-red-400 border border-red-800 rounded-full text-[11px] font-bold flex items-center gap-1 w-fit"><Shield size={12}/> Super Admin</span>;
       case 'admin':
-        return <span className="px-2.5 py-1 bg-blue-950/60 text-blue-400 border border-blue-800 rounded-full text-[11px] font-bold flex items-center gap-1 w-fit"><UserCog size={12}/> Admin</span>;
+        return <span className="px-2.5 py-1 bg-blue-950/60 text-gold-400 border border-blue-800 rounded-full text-[11px] font-bold flex items-center gap-1 w-fit"><UserCog size={12}/> Admin</span>;
       case 'tester':
-        return <span className="px-2.5 py-1 bg-violet-500/20 text-violet-300 border border-violet-500/40 rounded-full text-[11px] font-bold flex items-center gap-1 w-fit"><FlaskConical size={12}/> Tester (Beta)</span>;
+        return <span className="px-2.5 py-1 bg-gold-500/20 text-amber-300 border border-gold-500/40 rounded-full text-[11px] font-bold flex items-center gap-1 w-fit"><FlaskConical size={12}/> Tester (Beta)</span>;
       case 'lider_networker':
         return <span className="px-2.5 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-full text-[11px] font-bold flex items-center gap-1 w-fit"><Crown size={12}/> Líder Networker (+10%)</span>;
       case 'droshipper':
@@ -238,7 +238,7 @@ export default function UsuariosView({
               {isAdmin ? 'Usuarios y Roles de la Plataforma' : 'Mi Cuenta y Estructura de Usuarios'}
             </h2>
             <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
-              isAdmin ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'bg-gold/20 text-gold border border-gold/30'
+              isAdmin ? 'bg-gold-500/20 text-amber-300 border border-gold-500/30' : 'bg-gold/20 text-gold border border-gold/30'
             }`}>
               {isAdmin ? 'Vista Administrador' : 'Mi Estructura (Usuario)'}
             </span>
@@ -271,9 +271,9 @@ export default function UsuariosView({
           <span className="text-[10px] text-amber-400 font-bold uppercase block">Pendientes de Pago</span>
           <span className="text-xl font-black text-amber-400">{users.filter(u => u.status === 'pendiente').length}</span>
         </div>
-        <div className="p-3.5 bg-blue-950/20 border border-blue-500/30 rounded-xl space-y-1">
-          <span className="text-[10px] text-blue-400 font-bold uppercase block">Herramientas Habilitadas</span>
-          <span className="text-xl font-black text-blue-400">
+        <div className="p-3.5 bg-blue-950/20 border border-gold-500/30 rounded-xl space-y-1">
+          <span className="text-[10px] text-gold-400 font-bold uppercase block">Herramientas Habilitadas</span>
+          <span className="text-xl font-black text-gold-400">
             {Math.round(users.reduce((acc, u) => acc + u.enabledTools.length, 0) / (users.length || 1))} prom.
           </span>
         </div>
@@ -682,7 +682,7 @@ export default function UsuariosView({
 
            {/* Admin */}
            <div className="panel p-6 rounded-2xl border flex flex-col border-blue-900/30 bg-gradient-to-b from-blue-950/10 to-black">
-              <div className="w-12 h-12 rounded-xl bg-blue-900/20 text-blue-500 flex items-center justify-center mb-4 border border-blue-900/50">
+              <div className="w-12 h-12 rounded-xl bg-blue-900/20 text-gold-500 flex items-center justify-center mb-4 border border-blue-900/50">
                  <UserCog size={24} />
               </div>
               <h3 className="text-xl font-bold text-white mb-2">Administrador</h3>
@@ -690,9 +690,9 @@ export default function UsuariosView({
                 Personal de gestión de la plataforma. Pueden crear automatizaciones, manejar catálogos de productos y ver métricas generales, pero no alteran contratos ni roles globales.
               </p>
               <div className="space-y-3 pb-6 border-b border-gray-800 mb-6">
-                 <h4 className="text-xs font-bold text-blue-500 uppercase tracking-widest mb-3">Permisos Destacados</h4>
-                 <div className="flex items-center gap-2 text-sm text-gray-300"><Check size={16} className="text-blue-500" /> Aprobar/Rechazar contenido</div>
-                 <div className="flex items-center gap-2 text-sm text-gray-300"><Check size={16} className="text-blue-500" /> Ver métricas de ventas agregadas</div>
+                 <h4 className="text-xs font-bold text-gold-500 uppercase tracking-widest mb-3">Permisos Destacados</h4>
+                 <div className="flex items-center gap-2 text-sm text-gray-300"><Check size={16} className="text-gold-500" /> Aprobar/Rechazar contenido</div>
+                 <div className="flex items-center gap-2 text-sm text-gray-300"><Check size={16} className="text-gold-500" /> Ver métricas de ventas agregadas</div>
                  <div className="flex items-center gap-2 text-sm text-gray-500"><X size={16} className="text-gray-600" /> Modificar contrato inteligente</div>
                  <div className="flex items-center gap-2 text-sm text-gray-500"><X size={16} className="text-gray-600" /> Asignar roles a usuarios</div>
               </div>
@@ -732,7 +732,7 @@ export default function UsuariosView({
            <div className="bg-[#111] border border-gray-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in relative text-left">
              <div className="p-6 border-b border-gray-800 flex items-center justify-between">
                <div>
-                  <h3 className="text-xl font-bold text-white flex items-center gap-2"><UserCog className="text-blue-500" size={20} /> Permisos de Droshipper</h3>
+                  <h3 className="text-xl font-bold text-white flex items-center gap-2"><UserCog className="text-gold-500" size={20} /> Permisos de Droshipper</h3>
                   <p className="text-xs text-gray-400 mt-1">Selecciona qué módulos están visibles para este rol.</p>
                </div>
                <button onClick={() => setShowDroshipperPermissions(false)} className="text-gray-500 hover:text-white transition-colors">
@@ -757,7 +757,7 @@ export default function UsuariosView({
              <div className="p-6 border-t border-gray-800 bg-black/50 flex justify-end gap-3">
                <button
                  onClick={() => setShowDroshipperPermissions(false)}
-                 className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-lg transition-colors flex items-center gap-2"
+                 className="px-6 py-2 bg-gold-600 hover:bg-gold-500 text-white text-sm font-bold rounded-lg transition-colors flex items-center gap-2"
                >
                  Guardar Configuración
                </button>
@@ -781,7 +781,7 @@ export default function UsuariosView({
             </div>
 
             <div className="p-6 space-y-6">
-              <div className="bg-blue-900/10 border border-blue-900/30 p-4 rounded-xl flex gap-3 text-sm text-blue-200">
+              <div className="bg-blue-900/10 border border-blue-900/30 p-4 rounded-xl flex gap-3 text-sm text-amber-200">
                  <Wallet className="flex-shrink-0 mt-0.5" size={18} />
                  <div>
                     <span className="font-bold block mb-1">Wallet Principal (Fee Administrativo 25%)</span>

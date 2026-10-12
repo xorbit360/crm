@@ -484,7 +484,7 @@ export default function ClientesView({ currentUser }: { currentUser?: { role?: s
         </div>
         <div className="max-w-2xl relative z-10">
           <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse"></span>
+            <span className="w-2.5 h-2.5 rounded-full bg-gold-500 animate-pulse"></span>
             CRM de Clientes Inteligente
           </h3>
           <p className="text-xs text-gray-400">
@@ -497,7 +497,7 @@ export default function ClientesView({ currentUser }: { currentUser?: { role?: s
       {/* Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="panel p-5 rounded-xl border border-gray-800 bg-[#111] flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+          <div className="w-12 h-12 rounded-xl bg-gold-500/10 border border-gold-500/20 flex items-center justify-center text-gold-400">
             <Users size={20} />
           </div>
           <div>
@@ -527,7 +527,7 @@ export default function ClientesView({ currentUser }: { currentUser?: { role?: s
         </div>
 
         <div className="panel p-5 rounded-xl border border-gray-800 bg-[#111] flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+          <div className="w-12 h-12 rounded-xl bg-gold-500/10 border border-gold-500/20 flex items-center justify-center text-gold-400">
             <ShoppingBag size={20} />
           </div>
           <div className="flex-1 min-w-0">
@@ -553,7 +553,7 @@ export default function ClientesView({ currentUser }: { currentUser?: { role?: s
         <div className="flex flex-wrap gap-2 w-full md:w-auto">
           <button
             onClick={() => setIsAiOpen(true)}
-            className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-2 transition"
+            className="bg-gold-600 hover:bg-gold-500 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-2 transition"
           >
             <Sparkles size={14} /> Extraer con IA
           </button>
@@ -697,7 +697,7 @@ export default function ClientesView({ currentUser }: { currentUser?: { role?: s
                               <UserCheck size={10} /> Excelente ({returnRate}% Dev)
                             </span>
                           ) : (
-                            <span className="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider flex items-center gap-1 w-fit">
+                            <span className="bg-gold-500/10 text-gold-400 border border-gold-500/20 px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider flex items-center gap-1 w-fit">
                               <Clock size={10} /> Nuevo ({returnRate}% Dev)
                             </span>
                           )}
@@ -720,7 +720,7 @@ export default function ClientesView({ currentUser }: { currentUser?: { role?: s
                         <div className="flex items-center justify-center gap-1.5">
                           <button
                             onClick={() => setHistoryModalClient(client)}
-                            className="p-1.5 bg-blue-950/30 hover:bg-blue-900/40 text-blue-400 hover:text-blue-300 rounded border border-blue-900/20 transition flex items-center gap-1"
+                            className="p-1.5 bg-blue-950/30 hover:bg-blue-900/40 text-gold-400 hover:text-amber-300 rounded border border-blue-900/20 transition flex items-center gap-1"
                             title="Ver Perfil Logístico e Historial"
                           >
                             <Eye size={13} />
@@ -914,7 +914,7 @@ export default function ClientesView({ currentUser }: { currentUser?: { role?: s
             </button>
             <div className="p-6 border-b border-gray-800 bg-[#111]">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Sparkles size={18} className="text-blue-400" />
+                <Sparkles size={18} className="text-gold-400" />
                 Extraer Ficha de Cliente con IA
               </h3>
               <p className="text-[10px] text-gray-400 mt-1">
@@ -932,7 +932,7 @@ export default function ClientesView({ currentUser }: { currentUser?: { role?: s
                   placeholder="Pegue aquí el chat. Ej:
 [10:01] Cliente: Hola me llamo María Camila Restrepo, vi un anuncio en Facebook del Smartwatch Ultra y me interesa. Tienen envío a Bogotá?
 [10:02] Bot: ¡Hola María! Sí claro, tenemos envío a Bogotá, departamento de Cundinamarca por $120,000 con pago contra entrega."
-                  className="w-full bg-black border border-gray-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-blue-500 h-40 resize-none font-mono placeholder:text-gray-600"
+                  className="w-full bg-black border border-gray-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-gold-500 h-40 resize-none font-mono placeholder:text-gray-600"
                 />
               </div>
 
@@ -947,7 +947,7 @@ export default function ClientesView({ currentUser }: { currentUser?: { role?: s
                 <button
                   onClick={handleAiExtract}
                   disabled={isAiAnalyzing}
-                  className="flex-1 bg-blue-600 hover:bg-blue-500 text-white transition font-bold py-2.5 rounded-lg text-xs flex items-center justify-center gap-1.5 disabled:opacity-50"
+                  className="flex-1 bg-gold-600 hover:bg-gold-500 text-white transition font-bold py-2.5 rounded-lg text-xs flex items-center justify-center gap-1.5 disabled:opacity-50"
                 >
                   {isAiAnalyzing ? (
                     <>
@@ -1121,7 +1121,7 @@ export default function ClientesView({ currentUser }: { currentUser?: { role?: s
                             item.status === 'Entregado' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
                             item.status === 'Devuelto' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
                             item.status === 'Cancelado' ? 'bg-gray-800 text-gray-400 border border-gray-700' :
-                            'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                            'bg-gold-500/10 text-gold-400 border border-gold-500/20'
                           }`}>
                             {item.status}
                           </span>

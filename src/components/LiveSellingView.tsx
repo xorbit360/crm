@@ -548,7 +548,7 @@ export default function LiveSellingView() {
         <div className="panel h-fit rounded-2xl border border-gray-800 bg-gray-900/80 p-4">
           <h2 className="mb-3 flex items-center gap-2 text-sm font-bold text-white"><Layers size={15} className="text-gold" /> Mis landings</h2>
           {landings.some(isTemplateLanding) && (
-            <p className="mb-3 rounded-lg border border-violet-500/30 bg-violet-500/10 px-3 py-2 text-[11px] leading-relaxed text-violet-200">
+            <p className="mb-3 rounded-lg border border-gold-500/30 bg-gold-500/10 px-3 py-2 text-[11px] leading-relaxed text-amber-200">
               Las marcadas <strong>PLANTILLA</strong> son ejemplos reales en vivo: abre su pagina con <strong>Ver en directo</strong>, copia su link o clonala con <strong>Usar esta plantilla</strong> para vender con tu propio video y producto.
             </p>
           )}
@@ -572,7 +572,7 @@ export default function LiveSellingView() {
                   </div>
                 </button>
                 <div className="mt-2 flex flex-wrap items-center gap-1.5 border-t border-gray-800/80 pt-2">
-                  {isTemplateLanding(landing) && <span className="rounded-full bg-violet-500/20 px-2 py-0.5 text-[10px] font-bold text-violet-300">PLANTILLA</span>}
+                  {isTemplateLanding(landing) && <span className="rounded-full bg-gold-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-300">PLANTILLA</span>}
                   <button className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-gray-800 bg-gray-900 px-2 py-1 text-[11px] font-semibold text-gray-300 hover:bg-gray-800" onClick={() => { navigator.clipboard?.writeText(`${window.location.origin}/live/${landing.slug}`).catch(() => {}); flash('Link de la plataforma copiado.'); }}><Copy size={11} /> Copiar link</button>
                   <a className="inline-flex items-center gap-1 rounded-lg border border-gray-800 bg-gray-900 px-2 py-1 text-[11px] font-semibold text-gray-300 hover:bg-gray-800" href={`${window.location.origin}/live/${landing.slug}`} target="_blank" rel="noreferrer"><ExternalLink size={11} /> Ver en directo</a>
                   {isTemplateLanding(landing) && (
@@ -851,7 +851,7 @@ export default function LiveSellingView() {
                               <td className="px-3 py-2"><div className="font-mono text-emerald-300">{o.orderRef}</div><div className="text-gray-500">{formatDate(o.createdAt)}</div></td>
                               <td className="px-3 py-2"><div className="font-semibold text-white">{o.customerName || 'Lead sin nombre'}</div><div className="text-gray-500">{o.phone} · {o.city} {o.department}</div></td>
                               <td className="px-3 py-2 text-gray-300">{o.productName} × {o.quantity}</td>
-                              <td className="px-3 py-2"><span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${o.paymentMethod === 'prepaid' ? 'bg-violet-500/20 text-violet-300' : 'bg-gray-700/40 text-gray-300'}`}>{o.paymentMethod === 'prepaid' ? 'Anticipado' : 'Contraentrega'}</span></td>
+                              <td className="px-3 py-2"><span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${o.paymentMethod === 'prepaid' ? 'bg-gold-500/20 text-amber-300' : 'bg-gray-700/40 text-gray-300'}`}>{o.paymentMethod === 'prepaid' ? 'Anticipado' : 'Contraentrega'}</span></td>
                               <td className="px-3 py-2 font-bold text-white">{money(o.total)}</td>
                               <td className="px-3 py-2">
                                 <select className="rounded-lg border border-gray-800 bg-gray-950 px-2 py-1 text-xs text-white" value={o.status} onChange={(e) => handleOrderStatus(o, e.target.value)}>

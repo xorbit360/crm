@@ -44,7 +44,7 @@ export default function OrganigramaView({ onNavigateModule, onNavigateWhatsappTa
       suggestedPrompt: "¿Cuál es el margen de ganancia promedio de los pedidos completados hoy?",
       linkedModuleId: "whatsapp",
       linkedWhatsappTabId: "reportes",
-      icon: <BarChart3 className="text-blue-400" size={24} />
+      icon: <BarChart3 className="text-gold-400" size={24} />
     },
     legales: {
       title: "Legales y Cumplimiento",
@@ -53,7 +53,7 @@ export default function OrganigramaView({ onNavigateModule, onNavigateWhatsappTa
       aiPower: "Consultoría de contratos comerciales de dropshipping y redacción automática de políticas de devolución/garantías para landing pages.",
       suggestedPrompt: "Redacta una política de retracto y garantía transparente para nuestra tienda de comercio electrónico",
       linkedModuleId: "branding",
-      icon: <Scale className="text-blue-400" size={24} />
+      icon: <Scale className="text-gold-400" size={24} />
     },
     rrhh: {
       title: "Recursos Humanos (RRHH)",
@@ -62,7 +62,7 @@ export default function OrganigramaView({ onNavigateModule, onNavigateWhatsappTa
       aiPower: "Asignación inteligente de cargas de trabajo de asesores y control centralizado de usuarios en la plataforma.",
       suggestedPrompt: "¿Cómo puedo configurar los permisos para que mis repartidores solo vean sus guías de despacho?",
       linkedModuleId: "usuarios",
-      icon: <Users className="text-blue-400" size={24} />
+      icon: <Users className="text-gold-400" size={24} />
     },
 
     // MARKETING
@@ -143,7 +143,7 @@ export default function OrganigramaView({ onNavigateModule, onNavigateWhatsappTa
       aiPower: "Directorio interactivo de proveedores certificados, estimación de costos de importación y plantillas de cotización.",
       suggestedPrompt: "Muéstrame el listado de proveedores recomendados en el sector de hogar y sus datos de contacto",
       linkedModuleId: "proveedores",
-      icon: <ClipboardCheck className="text-blue-400" size={24} />
+      icon: <ClipboardCheck className="text-gold-400" size={24} />
     },
     importacion: {
       title: "Importación y Aduanas",
@@ -152,7 +152,7 @@ export default function OrganigramaView({ onNavigateModule, onNavigateWhatsappTa
       aiPower: "Asesoría automatizada en partidas arancelarias, cálculo estimado de nacionalización y seguimiento de contenedores.",
       suggestedPrompt: "¿Qué documentos legales necesito típicamente para importar tecnología de consumo a Colombia?",
       linkedModuleId: "proveedores",
-      icon: <Share2 className="text-blue-400" size={24} />
+      icon: <Share2 className="text-gold-400" size={24} />
     },
     calidad: {
       title: "Control de Calidad",
@@ -161,7 +161,7 @@ export default function OrganigramaView({ onNavigateModule, onNavigateWhatsappTa
       aiPower: "Cuestionarios interactivos de verificación de calidad y listado de reporte de inconformidades de clientes.",
       suggestedPrompt: "Genera una plantilla de control de calidad para inspeccionar un lote de productos electrónicos",
       linkedModuleId: "branding",
-      icon: <ShieldCheck className="text-blue-400" size={24} />
+      icon: <ShieldCheck className="text-gold-400" size={24} />
     },
 
     // TECNOLOGIA
@@ -268,7 +268,7 @@ export default function OrganigramaView({ onNavigateModule, onNavigateWhatsappTa
 
               {/* Department 1: ADMINISTRACION */}
               <div className="space-y-4">
-                <div className="bg-gray-900 border border-blue-500/20 px-3 py-2 rounded-xl text-blue-400 font-bold text-xs uppercase tracking-wider">
+                <div className="bg-gray-900 border border-gold-500/20 px-3 py-2 rounded-xl text-gold-400 font-bold text-xs uppercase tracking-wider">
                   Administración
                 </div>
                 <div className="space-y-2 flex flex-col items-center">
@@ -282,7 +282,7 @@ export default function OrganigramaView({ onNavigateModule, onNavigateWhatsappTa
                       onClick={() => handleNodeClick(item.key)}
                       className={`w-full py-2.5 px-3 rounded-lg text-xs font-medium border transition-all text-center ${
                         selectedNode?.title.toLowerCase().includes(item.key.substring(0,4))
-                          ? 'bg-blue-500/15 text-blue-300 border-blue-400 shadow-[0_0_8px_rgba(59,130,246,0.3)] scale-102 font-semibold'
+                          ? 'bg-gold-500/15 text-amber-300 border-gold-400 shadow-[0_0_8px_rgba(59,130,246,0.3)] scale-102 font-semibold'
                           : 'bg-black/40 text-gray-400 border-gray-800 hover:border-gray-700 hover:text-gray-200'
                       }`}
                     >
@@ -347,7 +347,7 @@ export default function OrganigramaView({ onNavigateModule, onNavigateWhatsappTa
 
               {/* Department 4: PRODUCCION / IMPORTACION */}
               <div className="space-y-4">
-                <div className="bg-gray-900 border border-blue-500/20 px-3 py-2 rounded-xl text-blue-400 font-bold text-xs uppercase tracking-wider line-clamp-1">
+                <div className="bg-gray-900 border border-gold-500/20 px-3 py-2 rounded-xl text-gold-400 font-bold text-xs uppercase tracking-wider line-clamp-1">
                   Producción
                 </div>
                 <div className="space-y-2 flex flex-col items-center">
@@ -361,7 +361,7 @@ export default function OrganigramaView({ onNavigateModule, onNavigateWhatsappTa
                       onClick={() => handleNodeClick(item.key)}
                       className={`w-full py-2.5 px-3 rounded-lg text-xs font-medium border transition-all text-center ${
                         selectedNode?.title.toLowerCase().includes(item.key.substring(0,4)) || (item.key === 'compras' && selectedNode?.title.includes('Compras')) || (item.key === 'importacion' && selectedNode?.title.includes('Importación'))
-                          ? 'bg-blue-500/15 text-blue-300 border-blue-400 shadow-[0_0_8px_rgba(168,85,247,0.3)] scale-102 font-semibold'
+                          ? 'bg-gold-500/15 text-amber-300 border-gold-400 shadow-[0_0_8px_rgba(168,85,247,0.3)] scale-102 font-semibold'
                           : 'bg-black/40 text-gray-400 border-gray-800 hover:border-gray-700 hover:text-gray-200 text-ellipsis overflow-hidden whitespace-nowrap'
                       }`}
                       title={item.label}

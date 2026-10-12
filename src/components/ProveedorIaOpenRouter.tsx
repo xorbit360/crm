@@ -90,7 +90,7 @@ export default function ProveedorIaOpenRouter() {
   return (
     <div className="panel p-6 rounded-2xl border border-gray-800 space-y-5 md:col-span-2">
       <div className="flex items-center gap-3 border-b border-gray-800/80 pb-4">
-        <div className="p-2 rounded-xl bg-violet-500/10 text-violet-400 border border-violet-500/20">
+        <div className="p-2 rounded-xl bg-gold-500/10 text-gold-400 border border-gold-500/20">
           <KeyRound size={20} />
         </div>
         <div>
@@ -128,7 +128,7 @@ export default function ProveedorIaOpenRouter() {
                 Sin clave configurada
               </span>
             )}
-            <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold border ${info.routeActive ? 'bg-violet-500/15 text-violet-300 border-violet-500/30' : 'bg-gray-800 text-gray-400 border-gray-700'}`}>
+            <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold border ${info.routeActive ? 'bg-gold-500/15 text-amber-300 border-gold-500/30' : 'bg-gray-800 text-gray-400 border-gray-700'}`}>
               Ruta OpenRouter: {info.routeActive ? 'ACTIVA' : 'inactiva (fallback del panel)'}
             </span>
             {info.source === 'env' && (
@@ -146,7 +146,7 @@ export default function ProveedorIaOpenRouter() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
             <div className="rounded-xl border border-gray-800 bg-gray-900/40 p-3.5">
               <div className="flex items-center gap-2 text-gray-300 font-semibold mb-1">
-                <Cpu size={13} className="text-violet-300" />
+                <Cpu size={13} className="text-amber-300" />
                 Modelo clasificador (filtro)
               </div>
               <p className="text-gray-400 font-mono text-[11px] break-all">{info.classifierModel}</p>
@@ -154,7 +154,7 @@ export default function ProveedorIaOpenRouter() {
             </div>
             <div className="rounded-xl border border-gray-800 bg-gray-900/40 p-3.5">
               <div className="flex items-center gap-2 text-gray-300 font-semibold mb-1">
-                <Cpu size={13} className="text-violet-300" />
+                <Cpu size={13} className="text-amber-300" />
                 Modelo de respuesta
               </div>
               <p className="text-gray-400 font-mono text-[11px] break-all">{info.responseModel}</p>
@@ -173,13 +173,13 @@ export default function ProveedorIaOpenRouter() {
                 onChange={(e) => setApiKey(e.target.value)}
                 placeholder="sk-or-..."
                 autoComplete="new-password"
-                className="flex-1 rounded-xl border border-gray-800 bg-gray-900/60 px-3.5 py-2.5 text-sm text-white placeholder:text-gray-500 outline-none focus:border-violet-500/60"
+                className="flex-1 rounded-xl border border-gray-800 bg-gray-900/60 px-3.5 py-2.5 text-sm text-white placeholder:text-gray-500 outline-none focus:border-gold-500/60"
               />
               <button
                 type="button"
                 onClick={handleSave}
                 disabled={busy || !apiKey.trim() || !info.encryptionEnabled}
-                className="px-4 py-2.5 rounded-xl bg-violet-600 text-white text-sm font-bold flex items-center justify-center gap-2 hover:bg-violet-500 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                className="px-4 py-2.5 rounded-xl bg-gold-600 text-white text-sm font-bold flex items-center justify-center gap-2 hover:bg-gold-500 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
               >
                 <Save size={15} />
                 {info.configured && info.source === 'db' ? 'Reemplazar' : 'Guardar'} clave

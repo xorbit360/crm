@@ -119,7 +119,7 @@ export default function SoporteTicketsView() {
       case 'abierto':
         return <span className="px-2.5 py-1 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-full text-xs font-bold flex items-center gap-1"><Clock size={12} /> Abierto</span>;
       case 'en_proceso':
-        return <span className="px-2.5 py-1 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-full text-xs font-bold flex items-center gap-1"><AlertCircle size={12} /> En Proceso</span>;
+        return <span className="px-2.5 py-1 bg-gold-500/20 text-gold-400 border border-gold-500/30 rounded-full text-xs font-bold flex items-center gap-1"><AlertCircle size={12} /> En Proceso</span>;
       case 'resuelto':
         return <span className="px-2.5 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full text-xs font-bold flex items-center gap-1"><CheckCircle2 size={12} /> Resuelto</span>;
     }
@@ -129,7 +129,7 @@ export default function SoporteTicketsView() {
     switch (priority) {
       case 'urgente': return <span className="text-[10px] bg-red-950 text-red-400 px-2 py-0.5 rounded font-black border border-red-800">URGENTE</span>;
       case 'alta': return <span className="text-[10px] bg-amber-950 text-amber-400 px-2 py-0.5 rounded font-black border border-amber-800">ALTA</span>;
-      case 'media': return <span className="text-[10px] bg-blue-950 text-blue-400 px-2 py-0.5 rounded font-black border border-blue-800">MEDIA</span>;
+      case 'media': return <span className="text-[10px] bg-blue-950 text-gold-400 px-2 py-0.5 rounded font-black border border-blue-800">MEDIA</span>;
       case 'baja': return <span className="text-[10px] bg-gray-800 text-gray-400 px-2 py-0.5 rounded font-black">BAJA</span>;
     }
   };

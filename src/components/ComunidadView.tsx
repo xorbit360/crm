@@ -348,7 +348,7 @@ export default function ComunidadView({ currentUser, onUpdateUser }: ComunidadVi
           <h2 className="text-2xl font-display text-white mb-2">Red de Referidos</h2>
           <p className="text-gray-400">Gestiona tu red, ganancias y contratos inteligentes en un solo lugar.</p>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-900/10 border border-blue-900/30 text-xs text-blue-400">
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-900/10 border border-blue-900/30 text-xs text-gold-400">
            <Radio size={14} className="animate-pulse" /> Servidor Telegram Smart Contract Activo
         </div>
       </div>
@@ -449,7 +449,7 @@ export default function ComunidadView({ currentUser, onUpdateUser }: ComunidadVi
                  <tbody className="divide-y divide-gray-800">
                    {transactions.filter(tx => currentUser?.role !== 'droshipper' || (tx.level !== 'Admin Fee' && tx.level !== 'Admin Principal')).map((tx, index) => (
                      <tr key={index} className="hover:bg-white/5 transition-colors">
-                       <td className="px-4 py-3 font-mono text-xs text-blue-400">{tx.txId}</td>
+                       <td className="px-4 py-3 font-mono text-xs text-gold-400">{tx.txId}</td>
                        <td className="px-4 py-3 text-gray-300">
                           <span className="block font-medium">{tx.source}</span>
                           <span className="block text-[10px] text-gray-500">{tx.plan}</span>
@@ -524,7 +524,7 @@ export default function ComunidadView({ currentUser, onUpdateUser }: ComunidadVi
                   <div className="pt-6 border-t border-gray-800 grid grid-cols-2 gap-4 text-sm font-mono">
                      <div className="space-y-1">
                         <span className="text-gray-500 font-medium block">Pasarela Integrada En:</span>
-                        <span className="text-blue-400 flex items-center gap-2 block"><span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span> Telegram TON / Pagos Nativos</span>
+                        <span className="text-gold-400 flex items-center gap-2 block"><span className="w-2 h-2 rounded-full bg-gold-500 animate-pulse"></span> Telegram TON / Pagos Nativos</span>
                      </div>
                      <div className="space-y-1">
                         <span className="text-gray-500 font-medium block">Distribución Automática:</span>
@@ -571,7 +571,7 @@ export default function ComunidadView({ currentUser, onUpdateUser }: ComunidadVi
         {activeTab === 'wallet' && (
           <div className="max-w-2xl space-y-6">
              <div className="flex items-start gap-6 bg-black/40 p-6 rounded-2xl border border-gray-800">
-                <div className="w-16 h-16 rounded-full bg-blue-500/10 flex items-center justify-center flex-shrink-0 border border-blue-500/20">
+                <div className="w-16 h-16 rounded-full bg-gold-500/10 flex items-center justify-center flex-shrink-0 border border-gold-500/20">
                    <img src="https://cryptologos.cc/logos/tether-usdt-logo.svg?v=024" alt="USDT" className="w-8 h-8 opacity-90" />
                 </div>
                 <div className="space-y-4 flex-1 text-left">
@@ -594,8 +594,8 @@ export default function ComunidadView({ currentUser, onUpdateUser }: ComunidadVi
                      Vincular Telegram Wallet
                    </button>
 
-                   <div className="p-4 bg-blue-900/10 border border-blue-900/30 rounded-lg mt-4 flex gap-3 text-sm text-blue-200 items-start">
-                      <ShieldCheck size={18} className="mt-0.5 text-blue-400 flex-shrink-0" />
+                   <div className="p-4 bg-blue-900/10 border border-blue-900/30 rounded-lg mt-4 flex gap-3 text-sm text-amber-200 items-start">
+                      <ShieldCheck size={18} className="mt-0.5 text-gold-400 flex-shrink-0" />
                       <p>Sugerencia: Todas las comisiones de tu Unilevel se depositan automáticamente e instantáneamente en esta wallet de Telegram cuando un referido adquiere un paquete.</p>
                    </div>
                 </div>
@@ -699,7 +699,7 @@ export default function ComunidadView({ currentUser, onUpdateUser }: ComunidadVi
             {/* Simulation Header */}
             <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-[#1e293b]/50">
               <div className="flex items-center gap-3">
-                 <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white">
+                 <div className="w-10 h-10 rounded-full bg-gold-600 flex items-center justify-center text-white">
                     <Smartphone size={20} />
                  </div>
                  <div>
@@ -724,14 +724,14 @@ export default function ComunidadView({ currentUser, onUpdateUser }: ComunidadVi
                     <div className="space-y-6 text-center py-4 flex-1 flex flex-col justify-center items-center">
                        {isCreatingInvoice ? (
                           <div className="space-y-4">
-                             <RefreshCw className="text-blue-400 w-12 h-12 animate-spin mx-auto" />
+                             <RefreshCw className="text-gold-400 w-12 h-12 animate-spin mx-auto" />
                              <p className="text-sm text-slate-400 font-mono">Iniciando pasarela de pagos on-chain, firmando factura...</p>
                           </div>
                        ) : createdInvoice ? (
                           <>
                              <div className="space-y-2 text-center">
                                  <h4 className="text-lg font-bold text-white flex items-center justify-center gap-2 font-sans">
-                                   <ShieldCheck className="text-blue-400" size={20} /> {payCurrency === 'USDT' ? 'Pasarela Telegram Payments (USDT)' : 'Pasarela Telegram Payments (TON)'}
+                                   <ShieldCheck className="text-gold-400" size={20} /> {payCurrency === 'USDT' ? 'Pasarela Telegram Payments (USDT)' : 'Pasarela Telegram Payments (TON)'}
                                   </h4>
 
                                   {/* Selector de Moneda */}
@@ -783,7 +783,7 @@ export default function ComunidadView({ currentUser, onUpdateUser }: ComunidadVi
                                   href={payCurrency === 'USDT' ? createdInvoice.usdtTransferLink : createdInvoice.tonTransferLink}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-xs text-blue-400 underline hover:text-blue-300 break-all font-mono block max-w-md mx-auto font-sans font-semibold"
+                                  className="text-xs text-gold-400 underline hover:text-amber-300 break-all font-mono block max-w-md mx-auto font-sans font-semibold"
                                 >
                                   {payCurrency === 'USDT' ? `🚀 Abrir Enlace TON/USDT Directo en Wallet` : `🚀 Abrir Enlace TON Nativo Directo en Wallet`}
                                 </a>
@@ -791,7 +791,7 @@ export default function ComunidadView({ currentUser, onUpdateUser }: ComunidadVi
                                 <div className="flex gap-4 w-full justify-center pt-2">
                                    <button
                                      onClick={runSmartContractSplit}
-                                     className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-8 py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-900/30 w-full sm:w-auto"
+                                     className="bg-gold-600 hover:bg-gold-500 text-white font-bold px-8 py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-900/30 w-full sm:w-auto"
                                    >
                                       Confirmar Pago <Send size={16} />
                                    </button>
@@ -810,7 +810,7 @@ export default function ComunidadView({ currentUser, onUpdateUser }: ComunidadVi
                  {/* Step 1: Connecting */}
                  {simStep === 1 && (
                     <div className="space-y-6 text-center py-4 flex-1 flex flex-col justify-center items-center text-center">
-                       <RefreshCw className="text-sky-400 w-12 h-12 animate-spin mx-auto" />
+                       <RefreshCw className="text-gold-400 w-12 h-12 animate-spin mx-auto" />
                        <div className="space-y-2">
                           <h4 className="text-lg font-bold text-white">Procesando pago real en la red de TON...</h4>
                           <p className="text-xs text-slate-500 font-mono">Verificando balance y preparando transferencia on-chain</p>

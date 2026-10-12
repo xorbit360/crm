@@ -522,16 +522,16 @@ export default function ComentariosSocialesView() {
 
                 {/* AI suggestion panel */}
                 {!selectedComment.replyText && (
-                  <div className="bg-gradient-to-r from-blue-950/20 to-blue-950/20 border border-blue-500/20 rounded-xl p-4 space-y-2 relative">
+                  <div className="bg-gradient-to-r from-blue-950/20 to-blue-950/20 border border-gold-500/20 rounded-xl p-4 space-y-2 relative">
                     <div className="flex items-center justify-between">
-                      <h5 className="text-xs font-bold text-white flex items-center gap-1.5 text-blue-300">
-                        <Sparkles size={14} className="text-blue-400" /> Copiloto AI Generador de Respuestas
+                      <h5 className="text-xs font-bold text-white flex items-center gap-1.5 text-amber-300">
+                        <Sparkles size={14} className="text-gold-400" /> Copiloto AI Generador de Respuestas
                       </h5>
                       <button
                         type="button"
                         disabled={generatingAIId !== null}
                         onClick={handleGenerateAISuggestion}
-                        className="text-[10px] bg-blue-600 hover:bg-blue-500 text-white font-bold px-2.5 py-1 rounded transition flex items-center gap-1 shrink-0 shadow-sm shadow-blue-600/10"
+                        className="text-[10px] bg-gold-600 hover:bg-gold-500 text-white font-bold px-2.5 py-1 rounded transition flex items-center gap-1 shrink-0 shadow-sm shadow-gold-600/10"
                       >
                         {generatingAIId ? <RefreshCw size={10} className="animate-spin" /> : <RefreshCw size={10} />}
                         Generar Sugerencia
@@ -547,7 +547,7 @@ export default function ComentariosSocialesView() {
                           <button
                             type="button"
                             onClick={() => setReplyInput(selectedComment.aiSuggestedReply || '')}
-                            className="text-[10px] text-blue-400 hover:text-blue-300 font-bold flex items-center gap-1"
+                            className="text-[10px] text-gold-400 hover:text-amber-300 font-bold flex items-center gap-1"
                           >
                             Usar esta respuesta
                           </button>
@@ -666,21 +666,21 @@ export default function ComentariosSocialesView() {
                   <button
                     type="button"
                     onClick={() => setSimPlatform('facebook')}
-                    className={`p-2.5 rounded-xl border text-xs font-bold transition flex flex-col items-center gap-1.5 ${simPlatform === 'facebook' ? 'bg-blue-600/10 border-blue-500/40 text-blue-400' : 'bg-transparent border-gray-850 text-gray-400'}`}
+                    className={`p-2.5 rounded-xl border text-xs font-bold transition flex flex-col items-center gap-1.5 ${simPlatform === 'facebook' ? 'bg-gold-600/10 border-gold-500/40 text-gold-400' : 'bg-transparent border-gray-850 text-gray-400'}`}
                   >
                     <Facebook size={16} /> Facebook
                   </button>
                   <button
                     type="button"
                     onClick={() => setSimPlatform('instagram')}
-                    className={`p-2.5 rounded-xl border text-xs font-bold transition flex flex-col items-center gap-1.5 ${simPlatform === 'instagram' ? 'bg-blue-600/10 border-blue-500/40 text-blue-400' : 'bg-transparent border-gray-850 text-gray-400'}`}
+                    className={`p-2.5 rounded-xl border text-xs font-bold transition flex flex-col items-center gap-1.5 ${simPlatform === 'instagram' ? 'bg-gold-600/10 border-gold-500/40 text-gold-400' : 'bg-transparent border-gray-850 text-gray-400'}`}
                   >
                     <Instagram size={16} /> Instagram
                   </button>
                   <button
                     type="button"
                     onClick={() => setSimPlatform('tiktok')}
-                    className={`p-2.5 rounded-xl border text-xs font-bold transition flex flex-col items-center gap-1.5 ${simPlatform === 'tiktok' ? 'bg-blue-600/10 border-blue-500/40 text-blue-400' : 'bg-transparent border-gray-850 text-gray-400'}`}
+                    className={`p-2.5 rounded-xl border text-xs font-bold transition flex flex-col items-center gap-1.5 ${simPlatform === 'tiktok' ? 'bg-gold-600/10 border-gold-500/40 text-gold-400' : 'bg-transparent border-gray-850 text-gray-400'}`}
                   >
                     <Video size={16} /> TikTok
                   </button>

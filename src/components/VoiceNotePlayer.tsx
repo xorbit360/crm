@@ -229,8 +229,8 @@ export const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({
             onClick={togglePlay}
             className={`w-11 h-11 rounded-full flex items-center justify-center transition shadow-md active:scale-95 ${
               isGreenTheme
-                ? 'bg-emerald-400 hover:bg-emerald-300 text-slate-950'
-                : 'bg-blue-500 hover:bg-blue-400 text-white'
+                ? 'bg-emerald-400 hover:bg-emerald-500 text-slate-950'
+                : 'bg-gold-500 hover:bg-gold-400 text-white'
             }`}
             title={isPlaying ? 'Pausar' : 'Reproducir'}
           >
@@ -269,7 +269,7 @@ export const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({
                   }}
                   className={`flex-1 rounded-full transition-all duration-150 ${
                     isPlayed
-                      ? (isGreenTheme ? 'bg-emerald-300 scale-y-105' : 'bg-blue-400 scale-y-105')
+                      ? (isGreenTheme ? 'bg-emerald-500 scale-y-105' : 'bg-gold-400 scale-y-105')
                       : (isGreenTheme ? 'bg-white/45 hover:bg-white/70' : 'bg-gray-400/60 hover:bg-gray-300')
                   }`}
                   style={{ height: `${Math.max(15, h)}%` }}

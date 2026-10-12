@@ -385,16 +385,16 @@ export default function McpApiView({ currentUser }: McpApiViewProps) {
 
       {/* Header Banner */}
       <div className="panel p-6 sm:p-8 rounded-2xl border border-gray-800 bg-gradient-to-r from-gray-900 via-gray-900/95 to-blue-950/30 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
+        <div className="absolute top-0 right-0 w-80 h-80 bg-gold-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <div className="p-3.5 rounded-2xl bg-blue-500/10 text-blue-400 border border-blue-500/20 shadow-lg shadow-blue-500/5 shrink-0">
+            <div className="p-3.5 rounded-2xl bg-gold-500/10 text-gold-400 border border-gold-500/20 shadow-lg shadow-gold-500/5 shrink-0">
               <Terminal size={32} />
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-md bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                <span className="text-xs uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-md bg-gold-500/20 text-amber-300 border border-gold-500/30">
                   Model Context Protocol & API v1
                 </span>
                 <span className="text-xs text-emerald-400 flex items-center gap-1">
@@ -419,7 +419,7 @@ export default function McpApiView({ currentUser }: McpApiViewProps) {
               rel="noopener noreferrer"
               className="px-3.5 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-300 border border-gray-700 text-xs font-semibold transition flex items-center gap-1.5"
             >
-              <Cpu size={14} className="text-blue-400" />
+              <Cpu size={14} className="text-gold-400" />
               <span>Ver Manifest MCP</span>
               <ExternalLink size={12} />
             </a>
@@ -433,8 +433,8 @@ export default function McpApiView({ currentUser }: McpApiViewProps) {
           onClick={() => setActiveTab('mcp')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
             activeTab === 'mcp'
-              ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20 font-bold'
-              : 'text-blue-400 hover:text-white hover:bg-blue-950/30 border border-blue-500/20'
+              ? 'bg-gold-600 text-white shadow-lg shadow-gold-600/20 font-bold'
+              : 'text-gold-400 hover:text-white hover:bg-blue-950/30 border border-gold-500/20'
           }`}
         >
           <Cpu size={16} />
@@ -475,8 +475,8 @@ export default function McpApiView({ currentUser }: McpApiViewProps) {
             {isAdmin && (
             <div className="panel p-5 rounded-2xl border border-gray-800 bg-gray-900/60 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-blue-400">Super Admin MCP</span>
-                <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 text-[10px] font-mono">POST</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-gold-400">Super Admin MCP</span>
+                <span className="px-2 py-0.5 rounded bg-gold-500/20 text-amber-300 text-[10px] font-mono">POST</span>
               </div>
               <p className="font-mono text-xs text-white break-all bg-gray-950 p-2 rounded-lg border border-gray-800">
                 {currentDomain}/api/mcp/superadmin
@@ -493,8 +493,8 @@ export default function McpApiView({ currentUser }: McpApiViewProps) {
 
             <div className="panel p-5 rounded-2xl border border-gray-800 bg-gray-900/60 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-blue-400">Usuario MCP</span>
-                <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 text-[10px] font-mono">POST</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-gold-400">Usuario MCP</span>
+                <span className="px-2 py-0.5 rounded bg-gold-500/20 text-amber-300 text-[10px] font-mono">POST</span>
               </div>
               <p className="font-mono text-xs text-white break-all bg-gray-950 p-2 rounded-lg border border-gray-800">
                 {currentDomain}/api/mcp/user
@@ -527,18 +527,18 @@ export default function McpApiView({ currentUser }: McpApiViewProps) {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-800 pb-4">
               <div>
                 <h2 className="text-lg font-bold font-display text-white flex items-center gap-2">
-                  <Terminal size={20} className="text-blue-400" />
+                  <Terminal size={20} className="text-gold-400" />
                   Conexión con Claude Desktop & Cursor
                 </h2>
                 <p className="text-xs text-gray-400 mt-1">
-                  Agrega este bloque de configuración en tu archivo <code className="text-blue-300">claude_desktop_config.json</code> o en los ajustes de MCP de Cursor.
+                  Agrega este bloque de configuración en tu archivo <code className="text-amber-300">claude_desktop_config.json</code> o en los ajustes de MCP de Cursor.
                 </p>
               </div>
 
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => copyToClipboard(claudeConfigSnippet, 'claude_cfg')}
-                  className="px-3 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 text-xs font-semibold transition flex items-center gap-1.5"
+                  className="px-3 py-1.5 rounded-lg bg-gold-600/20 hover:bg-gold-600/30 text-amber-300 border border-gold-500/30 text-xs font-semibold transition flex items-center gap-1.5"
                 >
                   {copiedId === 'claude_cfg' ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
                   <span>{copiedId === 'claude_cfg' ? 'Copiado' : 'Copiar Config Claude'}</span>
@@ -546,7 +546,7 @@ export default function McpApiView({ currentUser }: McpApiViewProps) {
 
                 <button
                   onClick={() => copyToClipboard(cursorConfigSnippet, 'cursor_cfg')}
-                  className="px-3 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 text-xs font-semibold transition flex items-center gap-1.5"
+                  className="px-3 py-1.5 rounded-lg bg-gold-600/20 hover:bg-gold-600/30 text-amber-300 border border-gold-500/30 text-xs font-semibold transition flex items-center gap-1.5"
                 >
                   {copiedId === 'cursor_cfg' ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
                   <span>{copiedId === 'cursor_cfg' ? 'Copiado' : 'Copiar Config Cursor'}</span>
@@ -563,7 +563,7 @@ export default function McpApiView({ currentUser }: McpApiViewProps) {
           <div className="panel p-6 sm:p-8 rounded-2xl border border-gray-800 bg-gray-900/80 space-y-6">
             <div>
               <h2 className="text-lg font-bold font-display text-white flex items-center gap-2">
-                <Play size={20} className="text-blue-400" />
+                <Play size={20} className="text-gold-400" />
                 Ejecutor y Probador de Herramientas MCP en Vivo
               </h2>
               <p className="text-xs text-gray-400 mt-1">
@@ -585,12 +585,12 @@ export default function McpApiView({ currentUser }: McpApiViewProps) {
                       onClick={() => handleMcpToolSelect(tool.name)}
                       className={`w-full text-left p-3 rounded-xl transition border cursor-pointer ${
                         selectedMcpTool === tool.name
-                          ? 'bg-blue-600/20 border-blue-500/40 text-white shadow-sm'
+                          ? 'bg-gold-600/20 border-gold-500/40 text-white shadow-sm'
                           : 'bg-gray-950/60 border-gray-800 text-gray-400 hover:text-white hover:bg-gray-900'
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-mono text-xs font-bold text-blue-300">{tool.name}</span>
+                        <span className="font-mono text-xs font-bold text-amber-300">{tool.name}</span>
                         <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-gray-800 text-gray-400">
                           {tool.category}
                         </span>
@@ -608,7 +608,7 @@ export default function McpApiView({ currentUser }: McpApiViewProps) {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-bold text-gray-300 uppercase tracking-wider">
-                      Argumentos JSON para <span className="font-mono text-blue-400">{selectedMcpTool}</span>:
+                      Argumentos JSON para <span className="font-mono text-gold-400">{selectedMcpTool}</span>:
                     </label>
                     <span className="text-[11px] text-gray-500">Parámetros del schema</span>
                   </div>
@@ -617,7 +617,7 @@ export default function McpApiView({ currentUser }: McpApiViewProps) {
                     rows={6}
                     value={mcpArguments}
                     onChange={(e) => setMcpArguments(e.target.value)}
-                    className="w-full bg-gray-950 border border-gray-800 rounded-xl p-3 text-xs font-mono text-gray-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
+                    className="w-full bg-gray-950 border border-gray-800 rounded-xl p-3 text-xs font-mono text-gray-200 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition"
                   />
 
                   <div className="flex items-center justify-between pt-1">
@@ -632,7 +632,7 @@ export default function McpApiView({ currentUser }: McpApiViewProps) {
                     <button
                       onClick={executeMcpTool}
                       disabled={isExecutingMcp}
-                      className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition shadow-lg shadow-blue-600/20 flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                      className="px-5 py-2.5 rounded-xl bg-gold-600 hover:bg-gold-500 text-white font-bold text-xs transition shadow-lg shadow-gold-600/20 flex items-center gap-2 cursor-pointer disabled:opacity-50"
                     >
                       {isExecutingMcp ? (
                         <>
@@ -832,7 +832,7 @@ export default function McpApiView({ currentUser }: McpApiViewProps) {
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <span className={`px-2.5 py-1 rounded text-xs font-mono font-bold ${
-                        ep.method === 'GET' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                        ep.method === 'GET' ? 'bg-gold-500/20 text-gold-400 border border-gold-500/30' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                       }`}>
                         {ep.method}
                       </span>
@@ -1035,7 +1035,7 @@ export default function McpApiView({ currentUser }: McpApiViewProps) {
             <div className="flex items-center justify-between border-b border-gray-800 pb-4">
               <div>
                 <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <Database size={18} className="text-blue-400" />
+                  <Database size={18} className="text-gold-400" />
                   Webhooks Entrantes (Inbound - Para recibir datos externos)
                 </h3>
                 <p className="text-xs text-gray-400 mt-1">
@@ -1043,7 +1043,7 @@ export default function McpApiView({ currentUser }: McpApiViewProps) {
                 </p>
               </div>
 
-              <span className="px-2.5 py-1 rounded bg-blue-500/20 text-blue-400 text-xs font-mono font-bold">
+              <span className="px-2.5 py-1 rounded bg-gold-500/20 text-gold-400 text-xs font-mono font-bold">
                 POST
               </span>
             </div>

@@ -19,22 +19,22 @@ interface PersonalizacionPlataformaViewProps {
 const COLOR_PRESETS = [
   { name: 'Dorado Imperial (Predeterminado)', hex: '#d4af37', border: 'border-yellow-500/50' },
   { name: 'Esmeralda Neón', hex: '#10b981', border: 'border-emerald-500/50' },
-  { name: 'Azul Zafiro', hex: '#3b82f6', border: 'border-blue-500/50' },
-  { name: 'Púrpura Cyber', hex: '#a855f7', border: 'border-blue-500/50' },
+  { name: 'Azul Zafiro', hex: '#3b82f6', border: 'border-gold-500/50' },
+  { name: 'Púrpura Cyber', hex: '#a855f7', border: 'border-gold-500/50' },
   { name: 'Carmesí Intenso', hex: '#ef4444', border: 'border-red-500/50' },
   { name: 'Naranja Fuego', hex: '#f97316', border: 'border-orange-500/50' }
 ];
 
 const AVAILABLE_TOOLS = [
   { id: 'whatsapp', name: 'Bot de WhatsApp & CRM Multicanal', icon: <Bot size={18} className="text-green-400" />, desc: 'Respuestas automáticas con IA y gestión de chats' },
-  { id: 'llamadas', name: 'Llamadas de Voz IA', icon: <Phone size={18} className="text-blue-400" />, desc: 'Agentes telefónicos para cierres y confirmaciones' },
+  { id: 'llamadas', name: 'Llamadas de Voz IA', icon: <Phone size={18} className="text-gold-400" />, desc: 'Agentes telefónicos para cierres y confirmaciones' },
   { id: 'email', name: 'Email Marketing & Secuencias', icon: <Mail size={18} className="text-amber-400" />, desc: 'Campañas automatizadas y carritos abandonados' },
-  { id: 'contenido', name: 'Creación & Contenido UGC', icon: <Sparkles size={18} className="text-blue-400" />, desc: 'Guiones virales, clones de video y copys' },
+  { id: 'contenido', name: 'Creación & Contenido UGC', icon: <Sparkles size={18} className="text-gold-400" />, desc: 'Guiones virales, clones de video y copys' },
   { id: 'branding', name: 'Branding & Identidad de Marca', icon: <Briefcase size={18} className="text-yellow-400" />, desc: 'Manual de marca, logos y propuesta de valor' },
   { id: 'mercado', name: 'Estudio de Mercado & Ganadores', icon: <TrendingUp size={18} className="text-orange-400" />, desc: 'Análisis de nichos, competencia y precios' },
-  { id: 'landing', name: 'Landing Pages & Editor Web', icon: <Monitor size={18} className="text-cyan-400" />, desc: 'Embudos de alta conversión y rastreador de visitas' },
+  { id: 'landing', name: 'Landing Pages & Editor Web', icon: <Monitor size={18} className="text-gold-400" />, desc: 'Embudos de alta conversión y rastreador de visitas' },
   { id: 'ads', name: 'Gestión de Campañas Ads', icon: <Megaphone size={18} className="text-red-400" />, desc: 'Traffiker IA y métricas en Meta & TikTok Ads' },
-  { id: 'comunidad', name: 'Comunidad & Mentor 360°', icon: <Users size={18} className="text-blue-400" />, desc: 'Chat con copiloto de negocios y red de miembros' },
+  { id: 'comunidad', name: 'Comunidad & Mentor 360°', icon: <Users size={18} className="text-gold-400" />, desc: 'Chat con copiloto de negocios y red de miembros' },
   { id: 'proveedores', name: 'Catálogo de Proveedores COD', icon: <Package size={18} className="text-emerald-400" />, desc: 'Bodegas Dropi / MasterShop y productos en stock' },
   { id: 'recargas', name: 'Recargas y Saldo de Billetera', icon: <CreditCard size={18} className="text-amber-400" />, desc: 'Planes de saldo, pasarelas de pago y consumo de IA' }
 ];
@@ -180,8 +180,8 @@ export default function PersonalizacionPlataformaView({
       {/* Scope Alert: Admin vs Normal User */}
       <div className={`p-4 rounded-2xl border text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
         isAdmin
-          ? 'bg-blue-950/20 border-blue-800/40 text-blue-200'
-          : 'bg-blue-950/20 border-blue-800/40 text-blue-200'
+          ? 'bg-blue-950/20 border-blue-800/40 text-amber-200'
+          : 'bg-blue-950/20 border-blue-800/40 text-amber-200'
       }`}>
         <div className="flex items-start gap-2.5">
           <Shield className="w-5 h-5 shrink-0 mt-0.5 text-gold" />
@@ -210,7 +210,7 @@ export default function PersonalizacionPlataformaView({
             <button
               onClick={() => setScope('user')}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                scope === 'user' ? 'bg-blue-600 text-white font-bold' : 'text-gray-400 hover:text-white'
+                scope === 'user' ? 'bg-gold-600 text-white font-bold' : 'text-gray-400 hover:text-white'
               }`}
             >
               Solo Mi Cuenta
@@ -443,7 +443,7 @@ export default function PersonalizacionPlataformaView({
           {/* Custom Domain & Referral Link */}
           <div className="panel p-6 rounded-2xl border border-gray-800 bg-[#0d0d0d] space-y-4">
             <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <Globe size={18} className="text-blue-400" />
+              <Globe size={18} className="text-gold-400" />
               Dominio Propio y Referidos
             </h3>
 
@@ -454,7 +454,7 @@ export default function PersonalizacionPlataformaView({
                 value={customDomain}
                 onChange={(e) => setCustomDomain(e.target.value)}
                 placeholder="app.tumarca.com"
-                className="w-full bg-black border border-gray-800 rounded-xl px-3 py-2 text-xs font-mono text-white outline-none focus:border-blue-500"
+                className="w-full bg-black border border-gray-800 rounded-xl px-3 py-2 text-xs font-mono text-white outline-none focus:border-gold-500"
               />
               <p className="text-[10px] text-gray-500 mt-1">
                 La URL oficial de respaldo siempre es <span className="font-mono text-gray-400">https://crm.xorbit360.com/</span>

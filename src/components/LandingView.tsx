@@ -177,7 +177,7 @@ export default function LandingView({ activeTab = 'plantillas' }: LandingViewPro
 <body class="min-h-screen">
 
   <!-- Announcement Bar (Urgency Header) -->
-  <div class="bg-gradient-to-r from-blue-700 via-blue-600 to-blue-600 text-white text-center py-2 px-4 text-xs font-black tracking-wide flex items-center justify-center gap-2 shadow-md">
+  <div class="bg-gradient-to-r from-gold-700 via-gold-600 to-gold-600 text-white text-center py-2 px-4 text-xs font-black tracking-wide flex items-center justify-center gap-2 shadow-md">
     <span>🔥 OFERTA DE LANZAMIENTO: Paga al recibir en tu puerta + Envío Gratis Hoy</span>
     <span class="bg-black/30 px-2 py-0.5 rounded font-mono text-[11px]" id="timer-header">14:59</span>
   </div>
@@ -200,7 +200,7 @@ export default function LandingView({ activeTab = 'plantillas' }: LandingViewPro
   <!-- Product Gallery & Conversion Benefits -->
   <main class="py-8 md:py-12 px-4 max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
     <div class="relative group">
-      <div class="absolute -inset-1 bg-gradient-to-r from-blue-600 to-blue-600 rounded-3xl blur opacity-30 group-hover:opacity-60 transition duration-500"></div>
+      <div class="absolute -inset-1 bg-gradient-to-r from-gold-600 to-gold-600 rounded-3xl blur opacity-30 group-hover:opacity-60 transition duration-500"></div>
       <img src="${page.imageUrl}" alt="${page.name}" class="relative rounded-2xl shadow-2xl border border-[${borderClass}] w-full object-cover aspect-square" />
       <div class="absolute top-4 right-4 bg-rose-600 text-white text-xs font-black px-3 py-1 rounded-full uppercase tracking-wider shadow-md">
         -40% OFF
@@ -210,7 +210,7 @@ export default function LandingView({ activeTab = 'plantillas' }: LandingViewPro
     <div class="space-y-5">
       <div class="border-b border-gray-800 pb-3">
         <h2 class="text-2xl font-black text-white">${page.name}</h2>
-        <p class="text-xs text-blue-400 font-bold uppercase tracking-widest mt-1">${page.niche}</p>
+        <p class="text-xs text-gold-400 font-bold uppercase tracking-widest mt-1">${page.niche}</p>
       </div>
 
       <ul class="space-y-3">
@@ -422,7 +422,7 @@ export default function LandingView({ activeTab = 'plantillas' }: LandingViewPro
           <button
             onClick={() => setInternalTab('dominio')}
             className={`px-3.5 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-              internalTab === 'dominio' ? 'bg-blue-500 text-white shadow font-bold' : 'text-blue-400 hover:text-white hover:bg-blue-950/30'
+              internalTab === 'dominio' ? 'bg-gold-500 text-white shadow font-bold' : 'text-gold-400 hover:text-white hover:bg-blue-950/30'
             }`}
           >
             <Globe size={13} />
@@ -443,10 +443,10 @@ export default function LandingView({ activeTab = 'plantillas' }: LandingViewPro
 
       {/* DOMINIO PERSONALIZADO DE LA LANDING VIEW */}
       {internalTab === 'dominio' && activePage && (
-        <div className="panel p-6 sm:p-8 rounded-2xl border border-blue-500/30 bg-gradient-to-br from-gray-900 via-gray-900/90 to-blue-950/30 space-y-6">
+        <div className="panel p-6 sm:p-8 rounded-2xl border border-gold-500/30 bg-gradient-to-br from-gray-900 via-gray-900/90 to-blue-950/30 space-y-6">
           <div className="flex items-center justify-between border-b border-gray-800 pb-4">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-blue-500/20 text-blue-400 rounded-xl border border-blue-500/30">
+              <div className="p-3 bg-gold-500/20 text-gold-400 rounded-xl border border-gold-500/30">
                 <Globe size={22} />
               </div>
               <div>
@@ -473,11 +473,11 @@ export default function LandingView({ activeTab = 'plantillas' }: LandingViewPro
                     value={formData.customDomain}
                     onChange={(e) => setFormData({ ...formData, customDomain: e.target.value })}
                     placeholder="ej: oferta.mitienda.com o www.calzadovip.com"
-                    className="flex-1 bg-black/80 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 font-mono"
+                    className="flex-1 bg-black/80 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-gold-500 font-mono"
                   />
                   <button
                     onClick={handleUpdateActivePage}
-                    className="px-5 py-2.5 bg-blue-500 hover:bg-blue-400 text-white font-bold text-xs rounded-xl transition-all shadow-md shadow-blue-500/20 flex items-center gap-1.5 shrink-0 cursor-pointer"
+                    className="px-5 py-2.5 bg-gold-500 hover:bg-gold-400 text-white font-bold text-xs rounded-xl transition-all shadow-md shadow-gold-500/20 flex items-center gap-1.5 shrink-0 cursor-pointer"
                   >
                     <Check size={16} /> Guardar Dominio
                   </button>
@@ -504,14 +504,14 @@ export default function LandingView({ activeTab = 'plantillas' }: LandingViewPro
             {/* CNAME DNS Setup Instructions */}
             <div className="p-5 rounded-2xl bg-black/60 border border-gray-800 space-y-3 text-xs">
               <h4 className="font-bold text-white flex items-center gap-2">
-                <Settings2 size={16} className="text-blue-400" /> Registros DNS Necesarios en tu Dominio
+                <Settings2 size={16} className="text-gold-400" /> Registros DNS Necesarios en tu Dominio
               </h4>
               <p className="text-gray-400">Agrega un registro A en el panel DNS de tu proveedor:</p>
 
               <div className="space-y-2 font-mono">
                 <div className="p-3 bg-gray-900 rounded-xl border border-gray-800 flex justify-between items-center">
                   <div>
-                    <span className="text-[10px] text-blue-400 font-bold block uppercase">Registro A para subdominio</span>
+                    <span className="text-[10px] text-gold-400 font-bold block uppercase">Registro A para subdominio</span>
                     <span className="text-gray-200">Host: <strong className="text-white">subdominio</strong> → IP: <strong className="text-emerald-400">2.25.221.151</strong></span>
                   </div>
                   <button
@@ -524,7 +524,7 @@ export default function LandingView({ activeTab = 'plantillas' }: LandingViewPro
 
                 <div className="p-3 bg-gray-900 rounded-xl border border-gray-800 flex justify-between items-center">
                   <div>
-                    <span className="text-[10px] text-blue-400 font-bold block uppercase">Registro A (Para Dominio Raíz @)</span>
+                    <span className="text-[10px] text-gold-400 font-bold block uppercase">Registro A (Para Dominio Raíz @)</span>
                     <span className="text-gray-200">Host: <strong className="text-white">@</strong> → IP: <strong className="text-emerald-400">2.25.221.151</strong></span>
                   </div>
                   <button
@@ -572,7 +572,7 @@ export default function LandingView({ activeTab = 'plantillas' }: LandingViewPro
                     type="button"
                     onClick={() => setFormData({ ...formData, checkoutType: 'mercadopago' })}
                     className={`p-3 rounded-xl border text-left text-xs font-bold transition-all ${
-                      formData.checkoutType === 'mercadopago' ? 'bg-blue-500/20 border-blue-500 text-blue-300' : 'bg-black border-gray-800 text-gray-400'
+                      formData.checkoutType === 'mercadopago' ? 'bg-gold-500/20 border-gold-500 text-amber-300' : 'bg-black border-gray-800 text-gray-400'
                     }`}
                   >
                     💳 Pasarela Digital (MercadoPago/Bold)

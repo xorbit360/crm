@@ -86,7 +86,7 @@ export default function FidelizacionView() {
                  <p className="text-xs text-gray-500 mt-1">Aplica a: Clientes Nuevos • Cualquier producto</p>
               </div>
               <div className="flex items-center gap-3">
-                 <div className="px-3 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded text-xs flex items-center gap-1">
+                 <div className="px-3 py-1 bg-gold-500/10 text-gold-400 border border-gold-500/20 rounded text-xs flex items-center gap-1">
                     <MessageSquare size={12} /> Plantilla: "Agradecimiento_y_Descuento"
                  </div>
                  <button className="text-xs text-gold hover:underline">Editar</button>
@@ -101,7 +101,7 @@ export default function FidelizacionView() {
                  <p className="text-xs text-gray-500 mt-1">Aplica a: Clientes Recurrentes • Producto A</p>
               </div>
               <div className="flex items-center gap-3">
-                 <div className="px-3 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded text-xs flex items-center gap-1">
+                 <div className="px-3 py-1 bg-gold-500/10 text-gold-400 border border-gold-500/20 rounded text-xs flex items-center gap-1">
                     <MessageSquare size={12} /> Plantilla: "Recompra_Promo"
                  </div>
                  <button className="text-xs text-gold hover:underline">Editar</button>

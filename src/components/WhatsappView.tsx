@@ -59,10 +59,10 @@ export const getInitials = (name: string, phone?: string) => {
 };
 
 const SOCIAL_ORIGIN_META: Record<string, { label: string; icon: React.ReactNode; cls: string }> = {
-  dm: { label: 'DM', icon: <MessageCircle size={11} />, cls: 'bg-blue-500/15 text-blue-300 border-blue-500/30' },
+  dm: { label: 'DM', icon: <MessageCircle size={11} />, cls: 'bg-gold-500/15 text-amber-300 border-gold-500/30' },
   comment: { label: 'Comentario', icon: <MessageSquare size={11} />, cls: 'bg-amber-500/15 text-amber-300 border-amber-500/30' },
-  story_reply: { label: 'Historia', icon: <Camera size={11} />, cls: 'bg-purple-500/15 text-purple-300 border-purple-500/30' },
-  mention: { label: 'Menci\u00f3n', icon: <AtSign size={11} />, cls: 'bg-pink-500/15 text-pink-300 border-pink-500/30' },
+  story_reply: { label: 'Historia', icon: <Camera size={11} />, cls: 'bg-gold-500/15 text-amber-300 border-gold-500/30' },
+  mention: { label: 'Menci\u00f3n', icon: <AtSign size={11} />, cls: 'bg-gold-500/15 text-amber-300 border-gold-500/30' },
   referral: { label: 'Referido', icon: <Link2 size={11} />, cls: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' },
 };
 function SocialOriginBadge({ origin }: { origin: string }) {
@@ -4484,7 +4484,7 @@ ${parametersString}
               type: 'Meta Graph API',
               status: isIgActive ? 'Conectado' : 'Disponible',
               isActive: isIgActive,
-              icon: <Instagram size={18} className="text-blue-400" />,
+              icon: <Instagram size={18} className="text-gold-400" />,
               accountId: igAccount?.id,
               actionType: 'instagram',
               date: isIgActive ? 'Sincronizado' : '-'
@@ -4498,7 +4498,7 @@ ${parametersString}
               type: 'TikTok Open API',
               status: isTtActive ? 'Conectado' : 'Disponible',
               isActive: isTtActive,
-              icon: <Video size={18} className="text-cyan-400" />,
+              icon: <Video size={18} className="text-gold-400" />,
               accountId: ttAccount?.id,
               actionType: 'tiktok',
               date: isTtActive ? 'Sincronizado' : '-'
@@ -4526,7 +4526,7 @@ ${parametersString}
               type: 'Meta Pages API',
               status: isFbActive ? 'Conectado' : 'Disponible',
               isActive: isFbActive,
-              icon: <Facebook size={18} className="text-blue-400" />,
+              icon: <Facebook size={18} className="text-gold-400" />,
               accountId: fbAccount?.id,
               actionType: 'facebook',
               date: isFbActive ? 'Sincronizado' : '-'
@@ -4553,7 +4553,7 @@ ${parametersString}
               , ['CAN-18', 'Shopify Commerce', 'shopify'], ['CAN-19', 'WordPress Blog', 'wordpress']
             ].map(([id, name, category]) => ({
               id, name, category, platformLabel: name, identifier: 'No vinculado', type: 'Xorbit 360 Omnicanal',
-              status: 'Disponible', isActive: false, icon: category === 'shopify' ? <ShoppingCart size={18} className="text-emerald-400" /> : category === 'wordpress' ? <Globe size={18} className="text-blue-400" /> : category === 'tiktok' ? <Video size={18} className="text-cyan-400" /> : category === 'telegram' ? <Send size={18} className="text-sky-400" /> : category === 'youtube' ? <Video size={18} className="text-red-400" /> : category === 'linkedin' ? <Users size={18} className="text-blue-400" /> : category === 'discord' || category === 'slack' ? <MessageSquare size={18} className="text-indigo-400" /> : category === 'reddit' ? <Globe size={18} className="text-orange-400" /> : <Globe size={18} className="text-zinc-400" />,
+              status: 'Disponible', isActive: false, icon: category === 'shopify' ? <ShoppingCart size={18} className="text-emerald-400" /> : category === 'wordpress' ? <Globe size={18} className="text-gold-400" /> : category === 'tiktok' ? <Video size={18} className="text-gold-400" /> : category === 'telegram' ? <Send size={18} className="text-gold-400" /> : category === 'youtube' ? <Video size={18} className="text-red-400" /> : category === 'linkedin' ? <Users size={18} className="text-gold-400" /> : category === 'discord' || category === 'slack' ? <MessageSquare size={18} className="text-gold-400" /> : category === 'reddit' ? <Globe size={18} className="text-orange-400" /> : <Globe size={18} className="text-zinc-400" />,
               accountId: null, actionType: category, date: '-'
             }))
           ];
@@ -4682,7 +4682,7 @@ ${parametersString}
                     <span className="text-[11px] text-zinc-400 font-medium block mb-1">Instagram Direct</span>
                     <span className="text-2xl font-bold text-white tracking-tight">{isIgActive ? 1 : 0}</span>
                   </div>
-                  <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-blue-400">
+                  <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-gold-400">
                     <Instagram size={18} />
                   </div>
                 </div>
@@ -4692,7 +4692,7 @@ ${parametersString}
                     <span className="text-[11px] text-zinc-400 font-medium block mb-1">TikTok Messaging</span>
                     <span className="text-2xl font-bold text-white tracking-tight">{isTtActive ? 1 : 0}</span>
                   </div>
-                  <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-cyan-400">
+                  <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-gold-400">
                     <Video size={18} />
                   </div>
                 </div>
@@ -4702,7 +4702,7 @@ ${parametersString}
                     <span className="text-[11px] text-zinc-400 font-medium block mb-1">Facebook Messenger</span>
                     <span className="text-2xl font-bold text-white tracking-tight">{isFbActive ? 1 : 0}</span>
                   </div>
-                  <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-blue-400">
+                  <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-gold-400">
                     <Facebook size={18} />
                   </div>
                 </div>
@@ -4908,7 +4908,7 @@ ${parametersString}
                       {/* Instagram Direct */}
                       <div className="p-4 rounded-xl bg-zinc-900/60 border border-zinc-800 flex items-center justify-between gap-4 hover:border-zinc-700 transition">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
+                          <div className="w-10 h-10 rounded-xl bg-gold-500/10 border border-gold-500/20 text-gold-400 flex items-center justify-center shrink-0">
                             <Instagram size={20} />
                           </div>
                           <div>
@@ -4921,7 +4921,7 @@ ${parametersString}
                           type="button"
                           onClick={() => handleConnectPlatform('instagram')}
                           disabled={isConnectingPlatform === 'instagram'}
-                          className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-3.5 py-2 rounded-lg text-xs transition cursor-pointer flex items-center gap-1.5"
+                          className="bg-gold-600 hover:bg-gold-500 text-white font-bold px-3.5 py-2 rounded-lg text-xs transition cursor-pointer flex items-center gap-1.5"
                         >
                           {isConnectingPlatform === 'instagram' ? <RefreshCw size={14} className="animate-spin" /> : <Instagram size={14} />}
                           Conectar Instagram
@@ -4931,7 +4931,7 @@ ${parametersString}
                       {/* TikTok Messaging */}
                       <div className="p-4 rounded-xl bg-zinc-900/60 border border-zinc-800 flex items-center justify-between gap-4 hover:border-zinc-700 transition">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0">
+                          <div className="w-10 h-10 rounded-xl bg-gold-500/10 border border-gold-500/20 text-gold-400 flex items-center justify-center shrink-0">
                             <Video size={20} />
                           </div>
                           <div>
@@ -4943,7 +4943,7 @@ ${parametersString}
                           type="button"
                           onClick={() => handleConnectPlatform('tiktok')}
                           disabled={isConnectingPlatform === 'tiktok'}
-                          className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-3.5 py-2 rounded-lg text-xs transition cursor-pointer flex items-center gap-1.5"
+                          className="bg-gold-600 hover:bg-gold-500 text-white font-bold px-3.5 py-2 rounded-lg text-xs transition cursor-pointer flex items-center gap-1.5"
                         >
                           {isConnectingPlatform === 'tiktok' ? <RefreshCw size={14} className="animate-spin" /> : <Video size={14} />}
                           Conectar TikTok
@@ -4953,7 +4953,7 @@ ${parametersString}
                       {/* Facebook Messenger */}
                       <div className="p-4 rounded-xl bg-zinc-900/60 border border-zinc-800 flex items-center justify-between gap-4 hover:border-zinc-700 transition">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
+                          <div className="w-10 h-10 rounded-xl bg-gold-500/10 border border-gold-500/20 text-gold-400 flex items-center justify-center shrink-0">
                             <Facebook size={20} />
                           </div>
                           <div>
@@ -4965,7 +4965,7 @@ ${parametersString}
                           type="button"
                           onClick={() => handleConnectPlatform('facebook')}
                           disabled={isConnectingPlatform === 'facebook'}
-                          className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-3.5 py-2 rounded-lg text-xs transition cursor-pointer flex items-center gap-1.5"
+                          className="bg-gold-600 hover:bg-gold-500 text-white font-bold px-3.5 py-2 rounded-lg text-xs transition cursor-pointer flex items-center gap-1.5"
                         >
                           {isConnectingPlatform === 'facebook' ? <RefreshCw size={14} className="animate-spin" /> : <Facebook size={14} />}
                           Conectar Facebook
@@ -5366,8 +5366,8 @@ ${parametersString}
                        <div className="flex-1 min-w-0 border-b border-gray-800 pb-2">
                           <div className="flex justify-between items-center mb-1">
                              <h4 className="text-[#e9edef] text-sm truncate font-medium flex items-center gap-1.5">
-                               {chat.platform === 'instagram' && <Instagram size={13} className="text-pink-400 shrink-0" />}
-                               {chat.platform === 'messenger' && <Facebook size={13} className="text-blue-400 shrink-0" />}
+                               {chat.platform === 'instagram' && <Instagram size={13} className="text-gold-400 shrink-0" />}
+                               {chat.platform === 'messenger' && <Facebook size={13} className="text-gold-400 shrink-0" />}
                                {chat.name}
                                {(chat as any).isSocialThread && ((chat as any).origins || []).map((o: string) => <SocialOriginBadge key={o} origin={o} />)}
                              </h4>
@@ -5376,7 +5376,7 @@ ${parametersString}
                           <div className="flex justify-between items-center">
                              <div className="min-w-0">
                                <p className="text-[#8696a0] text-sm truncate">{chat.msg}</p>
-                               {(chat.platform === 'instagram' || chat.externalId) && <span className="text-[9px] text-pink-300/80 font-mono truncate block">ID: {chat.externalId || chat.phone}</span>}
+                               {(chat.platform === 'instagram' || chat.externalId) && <span className="text-[9px] text-amber-300/80 font-mono truncate block">ID: {chat.externalId || chat.phone}</span>}
                              </div>
                              {chat.unread > 0 && <span className="bg-[#00a884] text-[#111b21] text-[10px] font-bold px-1.5 py-0.5 rounded-full">{chat.unread}</span>}
                           </div>
@@ -5608,7 +5608,7 @@ ${parametersString}
                                     </div>
                                     <div className="bg-[#111b21] px-3 py-2 text-xs text-gray-200 truncate flex items-center justify-between border-t border-gray-800">
                                       <span className="flex items-center gap-1.5 truncate">
-                                        <ImageIcon size={13} className="text-blue-400 shrink-0" />
+                                        <ImageIcon size={13} className="text-gold-400 shrink-0" />
                                         <span className="truncate">{effectiveAttachment.name}</span>
                                       </span>
                                       <button
@@ -5632,7 +5632,7 @@ ${parametersString}
                                       className="w-full max-h-60"
                                     />
                                     <div className="bg-black/30 px-2 py-1.5 text-[11px] text-gray-300 truncate flex items-center gap-1 border-t border-gray-800">
-                                      <Video size={12} className="text-blue-400" /> {effectiveAttachment.name}
+                                      <Video size={12} className="text-gold-400" /> {effectiveAttachment.name}
                                     </div>
                                   </div>
                                 )}
@@ -5782,14 +5782,14 @@ ${parametersString}
                           onClick={() => { setShowAttachMenu(false); triggerAttachmentUpload('imagen'); }}
                           className="flex items-center gap-3 p-2 hover:bg-[#111b21] rounded-xl cursor-pointer text-[#d1d7db] transition-colors"
                         >
-                           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white"><ImageIcon size={16}/></div>
+                           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gold-500 to-gold-700 flex items-center justify-center text-white"><ImageIcon size={16}/></div>
                            <span className="text-sm font-medium text-left">Foto / Imagen</span>
                         </div>
                         <div
                           onClick={() => { setShowAttachMenu(false); triggerAttachmentUpload('video'); }}
                           className="flex items-center gap-3 p-2 hover:bg-[#111b21] rounded-xl cursor-pointer text-[#d1d7db] transition-colors"
                         >
-                           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white"><Video size={16}/></div>
+                           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gold-500 to-gold-700 flex items-center justify-center text-white"><Video size={16}/></div>
                            <span className="text-sm font-medium text-left">Video</span>
                         </div>
                         <div
@@ -5803,7 +5803,7 @@ ${parametersString}
                           onClick={() => { setShowAttachMenu(false); triggerAttachmentUpload('archivo'); }}
                           className="flex items-center gap-3 p-2 hover:bg-[#111b21] rounded-xl cursor-pointer text-[#d1d7db] transition-colors"
                         >
-                           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white"><FileText size={16}/></div>
+                           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gold-500 to-gold-700 flex items-center justify-center text-white"><FileText size={16}/></div>
                            <span className="text-sm font-medium text-left">Documento / PDF</span>
                         </div>
                         <div
@@ -5887,7 +5887,7 @@ ${parametersString}
                              ) : /audio|voice/i.test(String(m.attachment.type || '')) ? (
                                <audio controls src={m.attachment.url} className="max-w-full mb-1" />
                              ) : (
-                               <a href={m.attachment.url} target="_blank" rel="noreferrer" className="text-blue-300 underline text-xs block mb-1">📎 {m.attachment.name || 'Adjunto'}</a>
+                               <a href={m.attachment.url} target="_blank" rel="noreferrer" className="text-amber-300 underline text-xs block mb-1">📎 {m.attachment.name || 'Adjunto'}</a>
                              )
                            )}
                            {m.text ? <div className="whitespace-pre-wrap break-words">{m.text}</div> : null}
@@ -5919,7 +5919,7 @@ ${parametersString}
                          type="button"
                          onClick={() => sendSocialReply(true)}
                          disabled={socialSending || !socialReply.trim()}
-                         className="mt-2 text-xs text-blue-300 hover:text-blue-200 inline-flex items-center gap-1 disabled:opacity-40"
+                         className="mt-2 text-xs text-amber-300 hover:text-amber-200 inline-flex items-center gap-1 disabled:opacity-40"
                        >
                          <MessageCircle size={12} /> Pasar a DM privado con este mensaje
                        </button>
@@ -6107,7 +6107,7 @@ ${parametersString}
                         <button
                           type="button"
                           onClick={() => setShowTagManagerModal(true)}
-                          className="text-[10px] text-blue-400 hover:text-blue-300 font-bold flex items-center gap-1 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20 transition-all"
+                          className="text-[10px] text-gold-400 hover:text-amber-300 font-bold flex items-center gap-1 bg-gold-500/10 px-1.5 py-0.5 rounded border border-gold-500/20 transition-all"
                         >
                           <Settings size={10} /> Gestionar
                         </button>
@@ -6204,7 +6204,7 @@ ${parametersString}
                             onClick={() => setActivePipelineId(pip.id)}
                             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 border ${
                               activePipelineId === pip.id
-                                ? 'bg-blue-600/20 text-blue-400 border-blue-500/40 font-bold shadow-md'
+                                ? 'bg-gold-600/20 text-gold-400 border-gold-500/40 font-bold shadow-md'
                                 : 'bg-black text-gray-400 border-gray-850 hover:text-white hover:border-gray-700'
                             }`}
                           >
@@ -6214,7 +6214,7 @@ ${parametersString}
                               <span className="bg-red-500/20 text-red-400 text-[9px] px-1.5 py-0.2 rounded-full border border-red-500/30 animate-pulse">Anidación</span>
                             )}
                             {pip.isNestLogistics && (
-                              <span className="bg-blue-500/20 text-blue-400 text-[9px] px-1.5 py-0.2 rounded-full border border-blue-500/30 animate-pulse">Logística</span>
+                              <span className="bg-gold-500/20 text-gold-400 text-[9px] px-1.5 py-0.2 rounded-full border border-gold-500/30 animate-pulse">Logística</span>
                             )}
                           </button>
                           {/* Only allow deleting custom pipelines */}
@@ -6251,7 +6251,7 @@ ${parametersString}
                       <button
                         type="button"
                         onClick={() => setShowEditPipelineModal(true)}
-                        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-950/40 hover:bg-blue-900/45 text-blue-400 border border-blue-500/30 transition flex items-center gap-1 shrink-0"
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-950/40 hover:bg-blue-900/45 text-gold-400 border border-gold-500/30 transition flex items-center gap-1 shrink-0"
                         title="Editar nombre o propiedades del embudo activo"
                       >
                         <Edit3 size={13} /> Editar Embudo
@@ -6269,7 +6269,7 @@ ${parametersString}
                             setKanbanColumns([...kanbanColumns, { id, name, color: '#a855f7', pipelineId: activePipelineId }]);
                           }
                         }}
-                        className="text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition font-bold shadow-md"
+                        className="text-xs bg-gold-600 hover:bg-gold-500 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition font-bold shadow-md"
                       >
                         <Plus size={14} /> Nueva Columna
                       </button>
@@ -6295,7 +6295,7 @@ ${parametersString}
                   {pipelines.find(p => p.id === activePipelineId)?.isNestLogistics && (
                     <div className="bg-gradient-to-r from-blue-950/40 via-black to-blue-950/20 border-b border-blue-900/30 px-4 py-2 flex items-center justify-between text-left shrink-0">
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-5 h-5 rounded bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400 animate-pulse">
+                        <div className="w-5 h-5 rounded bg-gold-500/15 border border-gold-500/30 flex items-center justify-center text-gold-400 animate-pulse">
                           <Package size={12} />
                         </div>
                         <div>
@@ -6303,7 +6303,7 @@ ${parametersString}
                           <div className="text-[10px] text-gray-400">Este Canva captura y enruta automáticamente según el estado del pedido detectado por la IA (Pendiente, En Ruta, Entregado, Novedades).</div>
                         </div>
                       </div>
-                      <span className="text-[9px] bg-blue-500/10 text-blue-300 font-mono px-2 py-0.5 rounded border border-blue-500/20 shrink-0 font-bold">Ruta Logística IA</span>
+                      <span className="text-[9px] bg-gold-500/10 text-amber-300 font-mono px-2 py-0.5 rounded border border-gold-500/20 shrink-0 font-bold">Ruta Logística IA</span>
                     </div>
                   )}
 
@@ -6329,7 +6329,7 @@ ${parametersString}
                               placeholder="Ej: Embudo VIP, Reclamos Mayoristas, etc..."
                               value={newPipelineName}
                               onChange={(e) => setNewPipelineName(e.target.value)}
-                              className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-blue-500 placeholder:text-gray-600"
+                              className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-gold-500 placeholder:text-gray-600"
                             />
                           </div>
 
@@ -6340,7 +6340,7 @@ ${parametersString}
                                   value={newPipelineInstructions}
                                   onChange={(e) => setNewPipelineInstructions(e.target.value)}
                                   placeholder="Qué debe pasar para que pase en este embudo..."
-                                  className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-blue-500 h-24"
+                                  className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-gold-500 h-24"
                                 />
                             </div>
                             <div>
@@ -6349,7 +6349,7 @@ ${parametersString}
                                   value={newPipelineAutomation}
                                   onChange={(e) => setNewPipelineAutomation(e.target.value)}
                                   placeholder="Define las columnas y sus reglas..."
-                                  className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-blue-500 h-32"
+                                  className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-gold-500 h-32"
                                 />
                             </div>
                           </div>
@@ -6429,13 +6429,13 @@ ${parametersString}
 
                         {/* Form to create tag */}
                         <div className="bg-black/40 p-3 rounded-xl border border-gray-850 mb-4 shrink-0">
-                          <span className="text-[10px] uppercase font-bold text-blue-400 block mb-2">Nueva Etiqueta</span>
+                          <span className="text-[10px] uppercase font-bold text-gold-400 block mb-2">Nueva Etiqueta</span>
                           <div className="flex gap-2">
                             <input
                               type="text"
                               id="new-tag-name-input"
                               placeholder="Nombre de la etiqueta..."
-                              className="flex-1 bg-black border border-gray-800 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder:text-gray-600 focus:outline-none focus:border-blue-500"
+                              className="flex-1 bg-black border border-gray-800 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder:text-gray-600 focus:outline-none focus:border-gold-500"
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
                                   e.preventDefault();
@@ -6488,7 +6488,7 @@ ${parametersString}
                                   type="text"
                                   value={tag.name}
                                   onChange={(e) => handleEditTag(tag.id, e.target.value, tag.color)}
-                                  className="bg-transparent border-none text-xs text-white focus:outline-none focus:ring-1 focus:ring-blue-500 rounded px-1.5 py-0.5 flex-1 min-w-0 font-medium"
+                                  className="bg-transparent border-none text-xs text-white focus:outline-none focus:ring-1 focus:ring-gold-500 rounded px-1.5 py-0.5 flex-1 min-w-0 font-medium"
                                 />
                               </div>
                               <button
@@ -6507,7 +6507,7 @@ ${parametersString}
                           <button
                             type="button"
                             onClick={() => setShowTagManagerModal(false)}
-                            className="px-4 py-2 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white transition shadow-md"
+                            className="px-4 py-2 rounded-lg text-xs font-bold bg-gold-600 hover:bg-gold-500 text-white transition shadow-md"
                           >
                             Listo
                           </button>
@@ -6545,7 +6545,7 @@ ${parametersString}
                                     const val = e.target.value;
                                     setPipelines(prev => prev.map(p => p.id === activePipelineId ? { ...p, name: val } : p));
                                   }}
-                                  className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                                  className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-gold-500"
                                 />
                               </div>
 
@@ -6559,7 +6559,7 @@ ${parametersString}
                                         setPipelines(prev => prev.map(p => p.id === activePipelineId ? { ...p, instructions: val } : p));
                                       }}
                                       placeholder="Qué debe pasar para que pase en este embudo..."
-                                      className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-blue-500 h-24"
+                                      className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-gold-500 h-24"
                                     />
                                 </div>
                                 <div>
@@ -6571,7 +6571,7 @@ ${parametersString}
                                         setPipelines(prev => prev.map(p => p.id === activePipelineId ? { ...p, automation: val } : p));
                                       }}
                                       placeholder="Define las columnas y sus reglas..."
-                                      className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-blue-500 h-32"
+                                      className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-gold-500 h-32"
                                     />
                                 </div>
                               </div>
@@ -6603,7 +6603,7 @@ ${parametersString}
                           <button
                             type="button"
                             onClick={() => setShowEditPipelineModal(false)}
-                            className="px-4 py-2 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white transition shadow-md"
+                            className="px-4 py-2 rounded-lg text-xs font-bold bg-gold-600 hover:bg-gold-500 text-white transition shadow-md"
                           >
                             Guardar y Cerrar
                           </button>
@@ -6678,7 +6678,7 @@ ${parametersString}
                                   onChange={(e) => {
                                     setKanbanColumns(prev => prev.map(c => c.id === col.id ? { ...c, name: e.target.value } : c));
                                   }}
-                                  className="bg-transparent border-none text-sm font-semibold text-white focus:outline-none focus:ring-1 focus:ring-blue-500 rounded px-1 w-40 truncate"
+                                  className="bg-transparent border-none text-sm font-semibold text-white focus:outline-none focus:ring-1 focus:ring-gold-500 rounded px-1 w-40 truncate"
                                   title="Editar nombre de columna"
                                 />
                               </div>
@@ -6738,7 +6738,7 @@ ${parametersString}
                                              className={`text-[9px] px-1.5 py-0.5 rounded font-medium border ${
                                                tag === 'Queja' || tag === 'Mala Atención'
                                                  ? 'bg-red-500/10 text-red-300 border-red-500/20 animate-pulse'
-                                                 : 'bg-blue-500/10 text-blue-300 border-blue-500/20'
+                                                 : 'bg-gold-500/10 text-amber-300 border-gold-500/20'
                                              }`}
                                            >
                                              {tag}
@@ -6753,7 +6753,7 @@ ${parametersString}
                                           onChange={(e) => {
                                             setChats(prev => prev.map(c => c.id === lead.id ? { ...c, columnId: e.target.value } : c));
                                           }}
-                                          className="bg-black/60 border border-gray-800 text-[10px] rounded px-1.5 py-1 text-gray-300 w-32 focus:outline-none focus:border-blue-500 cursor-pointer font-medium text-left"
+                                          className="bg-black/60 border border-gray-800 text-[10px] rounded px-1.5 py-1 text-gray-300 w-32 focus:outline-none focus:border-gold-500 cursor-pointer font-medium text-left"
                                         >
                                           {kanbanColumns.map(colOpt => (
                                             <option key={colOpt.id} value={colOpt.id}>{colOpt.name}</option>
@@ -6850,12 +6850,12 @@ ${parametersString}
 
                     {/* Card Frío */}
                     <div className="bg-[#111b21] border border-blue-900/20 rounded-2xl p-4 flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 border border-blue-500/20">
+                      <div className="w-10 h-10 rounded-xl bg-gold-500/10 flex items-center justify-center text-gold-400 border border-gold-500/20">
                         <Smile size={20} />
                       </div>
                       <div>
                         <span className="text-[10px] uppercase font-bold text-gray-500 tracking-wider block">Frío (❄️)</span>
-                        <span className="text-xl font-bold text-blue-400 block">
+                        <span className="text-xl font-bold text-gold-400 block">
                           {chats.filter(c => c.leadStatus === 'frío').length}
                           <span className="text-xs text-gray-500 font-normal">
                             {" "}({chats.length > 0 ? Math.round((chats.filter(c => c.leadStatus === 'frío').length / chats.length) * 100) : 0}%)
@@ -6960,12 +6960,12 @@ ${parametersString}
                                             ? 'bg-red-500/10 text-red-400 border-red-500/30'
                                             : lead.leadStatus === 'tibio'
                                             ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                                            : 'bg-blue-500/10 text-blue-400 border-blue-500/30'
+                                            : 'bg-gold-500/10 text-gold-400 border-gold-500/30'
                                         }`}
                                       >
                                         <option value="caliente" className="bg-[#111] text-red-400 font-bold">🔥 Caliente</option>
                                         <option value="tibio" className="bg-[#111] text-amber-400 font-bold">⚡ Tibio</option>
-                                        <option value="frío" className="bg-[#111] text-blue-400 font-bold">❄️ Frío</option>
+                                        <option value="frío" className="bg-[#111] text-gold-400 font-bold">❄️ Frío</option>
                                       </select>
                                     </div>
                                   </td>
@@ -7186,17 +7186,17 @@ ${parametersString}
               <button
                 type="button"
                 onClick={() => setTrainingSubTab('ai_models')}
-                className={`px-4 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-colors ${trainingSubTab === 'ai_models' ? 'border-blue-500 text-blue-400 font-bold' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
+                className={`px-4 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-colors ${trainingSubTab === 'ai_models' ? 'border-gold-500 text-gold-400 font-bold' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
               >
-                <Database size={14} className="inline mr-1.5 text-blue-400" />
+                <Database size={14} className="inline mr-1.5 text-gold-400" />
                 Consultor IA / Modelos
               </button>
               <button
                 type="button"
                 onClick={() => setTrainingSubTab('debug')}
-                className={`px-4 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-colors ${trainingSubTab === 'debug' ? 'border-cyan-500 text-cyan-400 font-bold' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
+                className={`px-4 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-colors ${trainingSubTab === 'debug' ? 'border-gold-500 text-gold-400 font-bold' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
               >
-                <Terminal size={14} className="inline mr-1.5 text-cyan-400 animate-pulse" />
+                <Terminal size={14} className="inline mr-1.5 text-gold-400 animate-pulse" />
                 Depuración OpenAI & Tokens
               </button>
             </div>
@@ -7211,7 +7211,7 @@ ${parametersString}
                         <Shield size={12} className="text-emerald-400 animate-pulse" />
                         Configuración central del asistente
                       </span>
-                      <span className="bg-blue-500/20 text-blue-400 border border-blue-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      <span className="bg-gold-500/20 text-gold-400 border border-gold-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full">
                         🟢 IA Sin Alucinaciones
                       </span>
                     </div>
@@ -7226,7 +7226,7 @@ ${parametersString}
                     <button
                       type="button"
                       onClick={() => setIsWizardOpen(true)}
-                      className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 transition shadow-lg active:scale-95"
+                      className="bg-gold-600 hover:bg-gold-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 transition shadow-lg active:scale-95"
                     >
                       <Wand2 size={14} /> Asistente IA (Auto-Configurar)
                     </button>
@@ -7340,14 +7340,14 @@ ${parametersString}
                     <div className="hidden panel p-5 rounded-2xl bg-[#0e0e0e] border border-gray-800 space-y-4">
                       <div>
                         <h3 className="text-sm font-bold text-white flex items-center gap-2 mb-1">
-                          <MessageCircle size={16} className="text-blue-400" /> 2. Saludo Inicial Base
+                          <MessageCircle size={16} className="text-gold-400" /> 2. Saludo Inicial Base
                         </h3>
                         <p className="text-xs text-gray-400">
                           Mensaje de bienvenida automático que la IA enviará al primer contacto de cada cliente.
                         </p>
                       </div>
                       <textarea
-                        className="w-full bg-[#141414] border border-gray-800 rounded-xl p-3 text-xs text-gray-200 h-28 focus:border-blue-500 outline-none leading-relaxed"
+                        className="w-full bg-[#141414] border border-gray-800 rounded-xl p-3 text-xs text-gray-200 h-28 focus:border-gold-500 outline-none leading-relaxed"
                         placeholder="¡Hola! Gracias por escribirnos..."
                         value={greetingMessage}
                         onChange={(e) => { setGreetingMessage(e.target.value); isGreetingEditedRef.current = true; }}
@@ -7411,7 +7411,7 @@ ${parametersString}
                             {greetingAttachments.map((att, idx) => (
                               <div key={idx} className="bg-[#141414] border border-gray-800 rounded-lg p-2 flex items-center justify-between text-xs">
                                 <span className="text-gray-300 font-medium truncate flex items-center gap-1.5">
-                                  {att.type === 'audio' ? <Mic size={12} className="text-emerald-400" /> : <Paperclip size={12} className="text-blue-400" />}
+                                  {att.type === 'audio' ? <Mic size={12} className="text-emerald-400" /> : <Paperclip size={12} className="text-gold-400" />}
                                   {att.name}
                                 </span>
                                 <button
@@ -7519,7 +7519,7 @@ ${parametersString}
                     <div className="panel p-5 rounded-2xl bg-[#0e0e0e] border border-gray-800 space-y-3">
                       <div className="flex items-center justify-between">
                         <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                          <Shield size={16} className="text-blue-400" /> 4. Reglas y Límites de la IA
+                          <Shield size={16} className="text-gold-400" /> 4. Reglas y Límites de la IA
                         </h3>
                         <button
                           type="button"
@@ -7527,7 +7527,7 @@ ${parametersString}
                             const r = prompt('Escribe una nueva regla de comportamiento (ej: No ofrecer descuentos mayores al 10% sin autorización):');
                             if (r) setRules([...rules, r]);
                           }}
-                          className="text-xs text-blue-400 hover:text-blue-300 font-bold flex items-center gap-1"
+                          className="text-xs text-gold-400 hover:text-amber-300 font-bold flex items-center gap-1"
                         >
                           <Plus size={14} /> Añadir Regla
                         </button>
@@ -7537,7 +7537,7 @@ ${parametersString}
                         {rules.map((rule, i) => (
                           <div key={i} className="flex items-center justify-between gap-2 bg-[#141414] border border-gray-800 p-2.5 rounded-lg text-xs text-gray-300">
                             <div className="flex items-center gap-2 truncate">
-                              <div className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0"></div>
+                              <div className="w-1.5 h-1.5 rounded-full bg-gold-400 shrink-0"></div>
                               <span className="truncate">{rule}</span>
                             </div>
                             <button
@@ -7592,7 +7592,7 @@ ${parametersString}
 
                   <div className="panel p-5 rounded-2xl bg-[#0e0e0e] border border-gray-800 space-y-3">
                     <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                      <Database size={16} className="text-blue-400" />
+                      <Database size={16} className="text-gold-400" />
                       Documentos y Material de Soporte (PDFs)
                     </h3>
                     <p className="text-xs text-gray-400">
@@ -7743,7 +7743,7 @@ ${parametersString}
                     {greetingAttachments.map((att, idx) => (
                       <div key={idx} className="bg-[#111] border border-gray-800 rounded-lg p-2.5 flex items-center justify-between">
                         <div className="flex items-center gap-2 truncate">
-                          {att.type === 'audio' ? <Mic size={14} className="text-emerald-400" /> : <Paperclip size={14} className="text-blue-400" />}
+                          {att.type === 'audio' ? <Mic size={14} className="text-emerald-400" /> : <Paperclip size={14} className="text-gold-400" />}
                           <span className="text-xs text-gray-300 font-medium truncate">{att.name}</span>
                         </div>
                         <button
@@ -7834,7 +7834,7 @@ ${parametersString}
                   handleUpdateFaqs(newFaqs);
                   alert("✨ Se han auto-generado 3 FAQs de ejemplo con respuestas profesionales para tu tienda.");
                 }}
-                className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition"
+                className="bg-gold-600 hover:bg-gold-500 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition"
               >
                 <Wand2 size={14} /> Auto-Generar Ejemplos
               </button>
@@ -7860,12 +7860,12 @@ ${parametersString}
                     const newFaqs = [...faqs];
                     newFaqs[idx].question = e.target.value;
                     handleUpdateFaqs(newFaqs);
-                  }} className="w-full bg-transparent text-sm font-semibold text-white mb-2 outline-none border-b border-gray-850 pb-1 focus:border-blue-500" placeholder="Escribe la pregunta del cliente..." />
+                  }} className="w-full bg-transparent text-sm font-semibold text-white mb-2 outline-none border-b border-gray-850 pb-1 focus:border-gold-500" placeholder="Escribe la pregunta del cliente..." />
                   <textarea value={faq.answer} onFocus={() => { isFaqsFocusedRef.current = true; }} onBlur={() => { isFaqsFocusedRef.current = false; }} onChange={(e) => {
                     const newFaqs = [...faqs];
                     newFaqs[idx].answer = e.target.value;
                     handleUpdateFaqs(newFaqs);
-                  }} className="w-full bg-[#161616] p-2 rounded text-xs text-gray-400 mb-3 outline-none border border-gray-800 focus:border-blue-500" placeholder="Escribe la respuesta automática de la IA..." />
+                  }} className="w-full bg-[#161616] p-2 rounded text-xs text-gray-400 mb-3 outline-none border border-gray-800 focus:border-gold-500" placeholder="Escribe la respuesta automática de la IA..." />
                   <div className="mt-3 border-t border-gray-850 pt-3">
                     <div className="flex items-center justify-between mb-2">
                       <h5 className="text-[11px] font-bold text-gray-400 flex items-center gap-1">
@@ -7901,7 +7901,7 @@ ${parametersString}
                             );
                           }
                           const IconComp = att.type === 'imagen' ? ImageIcon : att.type === 'video' ? Video : FileText;
-                          const iconColor = att.type === 'imagen' ? 'text-blue-400' : att.type === 'video' ? 'text-red-400' : 'text-amber-400';
+                          const iconColor = att.type === 'imagen' ? 'text-gold-400' : att.type === 'video' ? 'text-red-400' : 'text-amber-400';
                           return (
                             <div key={aIdx} className="bg-[#181818] border border-gray-800 rounded p-2 flex items-center justify-between gap-2">
                               <span className="text-[10px] font-medium text-gray-300 flex items-center gap-1.5 truncate">
@@ -7959,7 +7959,7 @@ ${parametersString}
                         <Mic size={11} /> 🎤 Grabar / Subir Nota de Voz PTT
                       </button>
 
-                      <label className="text-[10px] bg-blue-900/60 hover:bg-blue-600 text-blue-200 hover:text-white px-2.5 py-1 rounded flex items-center gap-1 transition cursor-pointer font-semibold border border-blue-500/30">
+                      <label className="text-[10px] bg-blue-900/60 hover:bg-gold-600 text-amber-200 hover:text-white px-2.5 py-1 rounded flex items-center gap-1 transition cursor-pointer font-semibold border border-gold-500/30">
                         <UploadCloud size={11} /> 📁 Subir Adjunto (Imagen, Video, PDF)
                         <input
                           type="file"
@@ -8030,11 +8030,11 @@ ${parametersString}
         {currentViewTab === 'training' && trainingSubTab === 'base' && (
           <div className="training-professional space-y-6">
             {/* Multi-User Bot Profile Configurator */}
-            <div className="panel p-6 rounded-2xl bg-[#0e0e11] border border-blue-500/20 space-y-4">
+            <div className="panel p-6 rounded-2xl bg-[#0e0e11] border border-gold-500/20 space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <h3 className="text-base font-bold text-white flex items-center gap-2">
-                    <Users size={18} className="text-blue-400" /> Configuración de Bots Independientes por Usuario
+                    <Users size={18} className="text-gold-400" /> Configuración de Bots Independientes por Usuario
                   </h3>
                   <p className="text-xs text-gray-400">Cada miembro del equipo o usuario puede tener su propia IA configurada independientemente.</p>
                 </div>
@@ -8042,7 +8042,7 @@ ${parametersString}
                   <select
                     value={activeBotProfileId}
                     onChange={(e) => setActiveBotProfileId(e.target.value)}
-                    className="bg-black border border-gray-800 text-xs font-bold text-blue-300 rounded-lg px-3 py-2 outline-none cursor-pointer"
+                    className="bg-black border border-gray-800 text-xs font-bold text-amber-300 rounded-lg px-3 py-2 outline-none cursor-pointer"
                   >
                     {botProfiles.map(p => (
                       <option key={p.id} value={p.id}>{p.name} ({p.role})</option>
@@ -8064,7 +8064,7 @@ ${parametersString}
                       setActiveBotProfileId(newId);
                       alert(`✅ Bot asignado a "${name}" creado exitosamente.`);
                     }}
-                    className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-3 py-2 rounded-lg flex items-center gap-1 transition"
+                    className="bg-gold-600 hover:bg-gold-500 text-white text-xs font-bold px-3 py-2 rounded-lg flex items-center gap-1 transition"
                   >
                     <Plus size={14} /> Crear Bot Usuario
                   </button>
@@ -8218,7 +8218,7 @@ ${parametersString}
                       <div className="flex items-center justify-between gap-4">
                         <div>
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="text-[10px] bg-blue-500/15 text-blue-400 border border-blue-500/25 px-2 py-0.5 rounded font-mono font-bold uppercase">Regla #{idx + 1}</span>
+                            <span className="text-[10px] bg-gold-500/15 text-gold-400 border border-gold-500/25 px-2 py-0.5 rounded font-mono font-bold uppercase">Regla #{idx + 1}</span>
                             <span className="text-xs text-gray-400 font-medium">Si el cliente dice algo con la palabra clave:</span>
                           </div>
                           <p className="text-sm font-semibold text-white mb-2 italic">"{ruleKw}"</p>
@@ -8275,7 +8275,7 @@ ${parametersString}
                                 );
                               }
                               const IconComp = att.type === 'imagen' ? ImageIcon : att.type === 'video' ? Video : FileText;
-                              const iconColor = att.type === 'imagen' ? 'text-blue-400' : att.type === 'video' ? 'text-red-400' : 'text-amber-400';
+                              const iconColor = att.type === 'imagen' ? 'text-gold-400' : att.type === 'video' ? 'text-red-400' : 'text-amber-400';
                               return (
                                 <div key={aIdx} className="bg-[#181818] border border-gray-800 rounded p-2 flex items-center justify-between gap-2">
                                   <span className="text-[10px] font-medium text-gray-300 flex items-center gap-1.5 truncate">
@@ -8332,7 +8332,7 @@ ${parametersString}
                             <Mic size={11} /> 🎤 Grabar / Subir Nota de Voz PTT
                           </button>
 
-                          <label className="text-[10px] bg-blue-900/60 hover:bg-blue-600 text-blue-200 hover:text-white px-2.5 py-1 rounded flex items-center gap-1 transition cursor-pointer font-semibold border border-blue-500/30">
+                          <label className="text-[10px] bg-blue-900/60 hover:bg-gold-600 text-amber-200 hover:text-white px-2.5 py-1 rounded flex items-center gap-1 transition cursor-pointer font-semibold border border-gold-500/30">
                             <UploadCloud size={11} /> 📁 Subir Adjunto (Imagen, Video, PDF)
                             <input
                               type="file"
@@ -8456,10 +8456,10 @@ ${parametersString}
         {/* Memoria Module */}
         {currentViewTab === 'training' && trainingSubTab === 'base' && (
           <div className="training-professional space-y-6">
-            <div className="panel p-6 rounded-2xl bg-black border border-blue-500/20 space-y-6">
+            <div className="panel p-6 rounded-2xl bg-black border border-gold-500/20 space-y-6">
               <div className="flex items-center justify-between pb-4 border-b border-gray-800">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                  <div className="w-12 h-12 rounded-2xl bg-gold-500/10 border border-gold-500/20 flex items-center justify-center text-gold-400">
                     <Bot size={24} />
                   </div>
                   <div>
@@ -8493,13 +8493,13 @@ ${parametersString}
 
                 <div className="bg-[#111] border border-gray-800 rounded-xl p-4">
                   <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider block mb-1">Último Borrado de Memoria</span>
-                  <span className="text-sm font-bold text-blue-400 mt-1 block">{lastMemoryClearTime || 'Ninguno en esta sesión'}</span>
+                  <span className="text-sm font-bold text-gold-400 mt-1 block">{lastMemoryClearTime || 'Ninguno en esta sesión'}</span>
                 </div>
               </div>
 
               <div className="bg-[#111] border border-gray-800 rounded-xl p-5 space-y-4">
                 <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                  <RefreshCw size={16} className="text-blue-400" /> Reiniciar Conversaciones Específicas
+                  <RefreshCw size={16} className="text-gold-400" /> Reiniciar Conversaciones Específicas
                 </h4>
                 <p className="text-xs text-gray-400">
                   Selecciona una conversación de cliente para borrar su historial de mensajes y forzar a la IA a reiniciar el flujo desde cero con el saludo inicial y entrenamiento actual.
@@ -8510,7 +8510,7 @@ ${parametersString}
                     <div className="flex-1 w-full space-y-1.5">
                       <label className="text-[10px] text-gray-500 uppercase font-bold">Seleccionar Chat:</label>
                       <select
-                        className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-xs text-white focus:border-blue-500 outline-none cursor-pointer"
+                        className="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-xs text-white focus:border-gold-500 outline-none cursor-pointer"
                         onChange={(e) => setSelectedChatIdToReset(e.target.value)}
                         value={selectedChatIdToReset}
                       >
@@ -8529,7 +8529,7 @@ ${parametersString}
                           setSelectedChatIdToReset("");
                         }
                       }}
-                      className="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition shrink-0 cursor-pointer"
+                      className="w-full sm:w-auto bg-gold-600 hover:bg-gold-500 disabled:opacity-40 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition shrink-0 cursor-pointer"
                     >
                       Reiniciar Conversación
                     </button>
@@ -8539,8 +8539,8 @@ ${parametersString}
                 )}
               </div>
 
-              <div className="bg-blue-950/20 border border-blue-500/30 p-5 rounded-xl space-y-2">
-                <h4 className="text-sm font-bold text-blue-300 flex items-center gap-2">
+              <div className="bg-blue-950/20 border border-gold-500/30 p-5 rounded-xl space-y-2">
+                <h4 className="text-sm font-bold text-amber-300 flex items-center gap-2">
                   <Sparkles size={16} /> ¿Para qué sirve borrar las conversaciones?
                 </h4>
                 <p className="text-xs text-gray-300 leading-relaxed">
@@ -8764,7 +8764,7 @@ ${parametersString}
                                     {stepAtts.map((att: any, attIdx: number) => (
                                       <div key={attIdx} className="bg-black/60 border border-gray-855 rounded-lg p-2 flex items-center justify-between text-xs">
                                         <span className="text-gray-300 truncate font-mono text-[11px] flex items-center gap-1.5">
-                                          {att.type === 'audio' ? <Mic size={12} className="text-emerald-400" /> : <Paperclip size={12} className="text-blue-400" />}
+                                          {att.type === 'audio' ? <Mic size={12} className="text-emerald-400" /> : <Paperclip size={12} className="text-gold-400" />}
                                           {att.name}
                                         </span>
                                         <button
@@ -8816,16 +8816,16 @@ ${parametersString}
         {currentViewTab === 'training' && trainingSubTab === 'debug' && (
           <div className="space-y-6 animate-fade-in">
             {/* Header / Intro Banner */}
-            <div className="panel p-6 rounded-2xl bg-gradient-to-r from-gray-900 via-[#0d1117] to-gray-900 border border-cyan-500/30 relative overflow-hidden">
+            <div className="panel p-6 rounded-2xl bg-gradient-to-r from-gray-900 via-[#0d1117] to-gray-900 border border-gold-500/30 relative overflow-hidden">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0 shadow-[0_0_15px_rgba(6,182,212,0.15)]">
+                  <div className="w-12 h-12 rounded-2xl bg-gold-500/10 border border-gold-500/30 flex items-center justify-center text-gold-400 shrink-0 shadow-[0_0_15px_rgba(6,182,212,0.15)]">
                     <Terminal size={24} />
                   </div>
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="text-lg font-bold text-white">Panel de Depuración & Diagnóstico OpenAI</h3>
-                      <span className="px-2 py-0.5 text-[10px] bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 rounded-full font-mono uppercase tracking-wider font-semibold animate-pulse">
+                      <span className="px-2 py-0.5 text-[10px] bg-gold-500/20 text-amber-300 border border-gold-500/30 rounded-full font-mono uppercase tracking-wider font-semibold animate-pulse">
                         Tiempo Real
                       </span>
                     </div>
@@ -8840,7 +8840,7 @@ ${parametersString}
                     onClick={() => setAutoRefreshDebugLogs(!autoRefreshDebugLogs)}
                     className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all border ${
                       autoRefreshDebugLogs
-                        ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
+                        ? 'bg-gold-500/20 text-amber-300 border-gold-500/40'
                         : 'bg-gray-800/80 text-gray-400 border-gray-700'
                     }`}
                   >
@@ -8877,7 +8877,7 @@ ${parametersString}
                   {debugActiveProvider === 'openai' ? 'OpenAI (ChatGPT)' : debugActiveProvider === 'gemini' ? 'Google Gemini' : debugActiveProvider}
                 </div>
                 <div className="flex items-center gap-2 text-xs text-gray-400">
-                  <span className="bg-gray-800 px-2 py-0.5 rounded text-[11px] font-mono text-cyan-300">{debugActiveModel}</span>
+                  <span className="bg-gray-800 px-2 py-0.5 rounded text-[11px] font-mono text-amber-300">{debugActiveModel}</span>
                   <span className="text-[11px]">{hasCustomKeySet ? '🔑 API Key propia' : '⚠️ Clave genérica'}</span>
                 </div>
               </div>
@@ -8908,7 +8908,7 @@ ${parametersString}
               <div className="panel p-5 rounded-2xl bg-[#0f1117] border border-gray-800 hover:border-gray-700 transition-all">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Total Peticiones</span>
-                  <Bot size={14} className="text-blue-400" />
+                  <Bot size={14} className="text-gold-400" />
                 </div>
                 <div className="text-xl font-bold text-white mb-1">
                   {debugLogs.length} <span className="text-xs text-gray-500 font-normal">registradas</span>
@@ -8952,10 +8952,10 @@ ${parametersString}
             </div>
 
             {/* Interactive Live Connection Test Box */}
-            <div className="panel p-6 rounded-2xl bg-[#0e1017] border border-blue-500/20 space-y-4">
+            <div className="panel p-6 rounded-2xl bg-[#0e1017] border border-gold-500/20 space-y-4">
               <div className="flex items-center justify-between border-b border-gray-800/80 pb-3">
                 <div className="flex items-center gap-2">
-                  <Zap size={18} className="text-blue-400" />
+                  <Zap size={18} className="text-gold-400" />
                   <h4 className="font-semibold text-white text-sm">Prueba Directa de API (Live Connection Tester)</h4>
                 </div>
                 <span className="text-[11px] text-gray-400">Verifica tu API Key sin enviar mensajes de WhatsApp</span>
@@ -8967,12 +8967,12 @@ ${parametersString}
                   value={testPrompt}
                   onChange={(e) => setTestPrompt(e.target.value)}
                   placeholder="Escribe una pregunta para probar la API de OpenAI..."
-                  className="flex-1 bg-black/60 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:border-blue-500 outline-none font-mono"
+                  className="flex-1 bg-black/60 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:border-gold-500 outline-none font-mono"
                 />
                 <button
                   onClick={handleTestAiConnection}
                   disabled={isTestingAi}
-                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shrink-0 shadow-[0_0_15px_rgba(79,70,229,0.3)]"
+                  className="px-5 py-2.5 bg-gold-600 hover:bg-gold-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shrink-0 shadow-[0_0_15px_rgba(79,70,229,0.3)]"
                 >
                   {isTestingAi ? (
                     <>
@@ -9038,7 +9038,7 @@ ${parametersString}
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-800 pb-4">
                 <div>
                   <h4 className="font-bold text-white text-sm flex items-center gap-2">
-                    <Terminal size={16} className="text-cyan-400" />
+                    <Terminal size={16} className="text-gold-400" />
                     Registro de Llamadas a la API en Tiempo Real (Live Traffic)
                   </h4>
                   <p className="text-xs text-gray-500 mt-0.5">
@@ -9089,7 +9089,7 @@ ${parametersString}
                   <p className="text-xs text-gray-400">Aún no hay llamadas API registradas en esta sesión.</p>
                   <button
                     onClick={handleTestAiConnection}
-                    className="px-4 py-2 bg-blue-600/20 text-blue-300 border border-blue-500/30 rounded-xl text-xs font-semibold hover:bg-blue-600/30 transition-colors"
+                    className="px-4 py-2 bg-gold-600/20 text-amber-300 border border-gold-500/30 rounded-xl text-xs font-semibold hover:bg-gold-600/30 transition-colors"
                   >
                     Haz clic aquí para realizar la primera llamada de prueba
                   </button>
@@ -9127,7 +9127,7 @@ ${parametersString}
                                   <span className="font-mono font-bold text-white uppercase text-[11px] bg-gray-800 px-2 py-0.5 rounded">
                                     {log.provider}
                                   </span>
-                                  <span className="font-mono text-cyan-300 text-[11px]">
+                                  <span className="font-mono text-amber-300 text-[11px]">
                                     {log.model}
                                   </span>
                                   <span className="text-gray-500 text-[10px] font-mono">
@@ -9241,7 +9241,7 @@ ${parametersString}
                   <button onClick={() => handleSaveAIConfig('openai')} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white text-xs font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
                     <Shield size={14} /> Guardar
                   </button>
-                  <button onClick={() => { setTrainingSubTab('debug'); handleTestAiConnection(); }} className="flex-1 bg-cyan-600/20 text-cyan-400 border border-cyan-600/30 hover:bg-cyan-600/30 text-xs font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
+                  <button onClick={() => { setTrainingSubTab('debug'); handleTestAiConnection(); }} className="flex-1 bg-gold-600/20 text-gold-400 border border-gold-600/30 hover:bg-gold-600/30 text-xs font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
                     <Terminal size={14} /> Probar & Depurar API
                   </button>
                 </div>
@@ -9250,7 +9250,7 @@ ${parametersString}
               {/* Google Integration */}
               <div className="panel p-6 rounded-2xl flex flex-col space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                  <div className="w-10 h-10 rounded-xl bg-gold-500/10 border border-gold-500/20 flex items-center justify-center text-gold-400">
                     <Database size={20} />
                   </div>
                   <div>
@@ -9261,14 +9261,14 @@ ${parametersString}
 
                 <div>
                   <label className="text-[10px] text-gray-400 uppercase tracking-widest mb-1 block">API Key</label>
-                  <input type="password" placeholder="AIzaSy..." value={googleAiKey} onChange={(e) => setGoogleAiKey(e.target.value)} className="w-full bg-[#111] border border-gray-800 rounded-xl p-2 text-xs text-white focus:border-blue-500 outline-none" />
+                  <input type="password" placeholder="AIzaSy..." value={googleAiKey} onChange={(e) => setGoogleAiKey(e.target.value)} className="w-full bg-[#111] border border-gray-800 rounded-xl p-2 text-xs text-white focus:border-gold-500 outline-none" />
                 </div>
 
                 <div className="flex gap-2">
                   <button onClick={() => handleSaveAIConfig('gemini')} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white text-xs font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
                     <Shield size={14} /> Guardar
                   </button>
-                  <button className="flex-1 bg-blue-600/20 text-blue-400 border border-blue-600/30 hover:bg-blue-600/30 text-xs font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
+                  <button className="flex-1 bg-gold-600/20 text-gold-400 border border-gold-600/30 hover:bg-gold-600/30 text-xs font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
                     <Zap size={14} /> Verificar API
                   </button>
                 </div>
@@ -9316,7 +9316,7 @@ ${parametersString}
                   </div>
                   <div className="bg-[#111] border border-gray-800 rounded-xl p-4">
                     <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Total Tokens</p>
-                    <p className="text-xl font-bold font-mono text-blue-400">{(apiTokens?.total || 0).toLocaleString()}</p>
+                    <p className="text-xl font-bold font-mono text-gold-400">{(apiTokens?.total || 0).toLocaleString()}</p>
                   </div>
                   <div className="bg-[#111] border border-gray-800 rounded-xl p-4 flex flex-col justify-between">
                     <div>
@@ -9337,7 +9337,7 @@ ${parametersString}
                    <span className="text-[10px] font-bold text-white">10.78%</span>
                  </div>
                  <div className="w-full bg-gray-900 rounded-full h-2.5 overflow-hidden">
-                   <div className="bg-gradient-to-r from-green-500 via-yellow-500 to-red-500 h-2.5 rounded-full" style={{ width: '10.78%' }}></div>
+                   <div className="bg-gradient-to-r from-gold-600 via-gold-500 to-amber-400 h-2.5 rounded-full" style={{ width: '10.78%' }}></div>
                  </div>
                </div>
             </div>
@@ -9348,7 +9348,7 @@ ${parametersString}
                 { name: 'Dropi', status: 'Conectado', color: 'bg-green-500', icon: '📦' },
                 { name: 'MasterShop', status: 'Desconectado', color: 'bg-gray-600', icon: '🛒' },
                 { name: 'Effix', status: 'Desconectado', color: 'bg-gray-600', icon: '🚀' },
-                { name: 'Shopify API', status: 'Configure API Key', color: 'bg-blue-500', icon: '🛍️' },
+                { name: 'Shopify API', status: 'Configure API Key', color: 'bg-gold-500', icon: '🛍️' },
               ].map((platform, i) => (
                 <div key={i} className="panel p-5 rounded-2xl flex flex-col items-center text-center group cursor-pointer hover:border-gray-600 transition-colors">
                   <div className="text-3xl mb-3 opacity-90 group-hover:scale-110 transition-transform">{platform.icon}</div>
@@ -9478,7 +9478,7 @@ ${parametersString}
                           const top = window.screen.height / 2 - h / 2;
                           window.open(`${window.location.origin}/auth/meta-whatsapp?mode=${whatsappMode}`, 'MetaWabaConnection', `width=${w},height=${h},top=${top},left=${left}`);
                         }}
-                        className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-5 py-3 rounded-xl flex items-center gap-2 transition shadow-lg shadow-blue-600/15"
+                        className="bg-gold-600 hover:bg-gold-500 text-white text-xs font-bold px-5 py-3 rounded-xl flex items-center gap-2 transition shadow-lg shadow-gold-600/15"
                       >
                         <Facebook size={16} /> Vincular con Facebook
                       </button>
@@ -9592,7 +9592,7 @@ ${parametersString}
               <div className="panel p-6 rounded-2xl space-y-4 text-left border border-gray-800">
                 <div className="border-b border-gray-800 pb-3">
                   <h4 className="font-bold text-white flex items-center gap-2 text-sm">
-                    <Globe size={16} className="text-blue-400" /> 2. Redes Sociales Reales
+                    <Globe size={16} className="text-gold-400" /> 2. Redes Sociales Reales
                   </h4>
                   <p className="text-xs text-gray-400 mt-0.5">Vincule sus cuentas comerciales para automatizar mensajes privados de inmediato.</p>
                 </div>
@@ -9601,7 +9601,7 @@ ${parametersString}
                   {/* Facebook Messenger */}
                   <div className="bg-[#111] border border-gray-850 rounded-xl p-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-blue-600/10 border border-blue-600/20 flex items-center justify-center text-blue-500">
+                      <div className="w-9 h-9 rounded-lg bg-gold-600/10 border border-gold-600/20 flex items-center justify-center text-gold-500">
                         <Facebook size={18} />
                       </div>
                       <div className="text-left">
@@ -9623,7 +9623,7 @@ ${parametersString}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
                         facebookConnected
                           ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20'
-                          : 'bg-blue-600 hover:bg-blue-500 text-white shadow-sm'
+                          : 'bg-gold-600 hover:bg-gold-500 text-white shadow-sm'
                       }`}
                     >
                       {facebookConnected ? 'Desconectar' : 'Conectar'}
@@ -9633,7 +9633,7 @@ ${parametersString}
                   {/* Instagram Direct */}
                   <div className="bg-[#111] border border-gray-850 rounded-xl p-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-blue-600/10 border border-blue-600/20 flex items-center justify-center text-blue-500">
+                      <div className="w-9 h-9 rounded-lg bg-gold-600/10 border border-gold-600/20 flex items-center justify-center text-gold-500">
                         <Instagram size={18} />
                       </div>
                       <div className="text-left">
@@ -9655,7 +9655,7 @@ ${parametersString}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
                         instagramConnected
                           ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20'
-                          : 'bg-blue-600 hover:bg-blue-500 text-white shadow-sm'
+                          : 'bg-gold-600 hover:bg-gold-500 text-white shadow-sm'
                       }`}
                     >
                       {instagramConnected ? 'Desconectar' : 'Conectar'}
@@ -9665,7 +9665,7 @@ ${parametersString}
                   {/* TikTok DM */}
                   <div className="bg-[#111] border border-gray-850 rounded-xl p-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-blue-600/10 border border-blue-600/20 flex items-center justify-center text-blue-400">
+                      <div className="w-9 h-9 rounded-lg bg-gold-600/10 border border-gold-600/20 flex items-center justify-center text-gold-400">
                         <Video size={18} />
                       </div>
                       <div className="text-left">
@@ -9687,7 +9687,7 @@ ${parametersString}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
                         tiktokConnected
                           ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20'
-                          : 'bg-blue-600 hover:bg-blue-500 text-white shadow-sm'
+                          : 'bg-gold-600 hover:bg-gold-500 text-white shadow-sm'
                       }`}
                     >
                       {tiktokConnected ? 'Desconectar' : 'Conectar'}
@@ -9745,8 +9745,8 @@ ${parametersString}
                         <div className="flex items-center justify-between pt-1 border-t border-gray-900 text-[10px]">
                           <span className="text-gray-500 flex items-center gap-1">
                             {tpl.headerType === 'NONE' && <span className="text-gray-600">❌ Sin multimedia</span>}
-                            {tpl.headerType === 'IMAGE' && <span className="text-blue-400 flex items-center gap-1"><ImageIcon size={10} /> 🖼️ Imagen</span>}
-                            {tpl.headerType === 'VIDEO' && <span className="text-blue-400 flex items-center gap-1"><Video size={10} /> 🎥 Video</span>}
+                            {tpl.headerType === 'IMAGE' && <span className="text-gold-400 flex items-center gap-1"><ImageIcon size={10} /> 🖼️ Imagen</span>}
+                            {tpl.headerType === 'VIDEO' && <span className="text-gold-400 flex items-center gap-1"><Video size={10} /> 🎥 Video</span>}
                             {tpl.headerType === 'DOCUMENT' && <span className="text-red-400 flex items-center gap-1"><FileText size={10} /> 📄 Documento</span>}
                           </span>
                           <span className="text-[9px] text-gray-500 font-mono group-hover:text-green-400 transition-colors">
@@ -9853,7 +9853,7 @@ ${parametersString}
                               <img src={newTemplateHeaderUrl} alt="New Thumbnail" className="w-10 h-10 rounded object-cover border border-gray-800" referrerPolicy="no-referrer" />
                             )}
                             {newTemplateHeaderType === 'VIDEO' && (
-                              <div className="w-10 h-10 rounded bg-blue-500/10 flex items-center justify-center text-blue-400 border border-blue-500/20">
+                              <div className="w-10 h-10 rounded bg-gold-500/10 flex items-center justify-center text-gold-400 border border-gold-500/20">
                                 <Video size={16} />
                               </div>
                             )}
@@ -10064,7 +10064,7 @@ ${parametersString}
                                   <img src={activeTpl.headerUrl} alt="Active Thumbnail" className="w-10 h-10 rounded object-cover border border-gray-800" referrerPolicy="no-referrer" />
                                 )}
                                 {activeTpl.headerType === 'VIDEO' && (
-                                  <div className="w-10 h-10 rounded bg-blue-500/10 flex items-center justify-center text-blue-400 border border-blue-500/20">
+                                  <div className="w-10 h-10 rounded bg-gold-500/10 flex items-center justify-center text-gold-400 border border-gold-500/20">
                                     <Video size={16} />
                                   </div>
                                 )}
@@ -10236,7 +10236,7 @@ ${parametersString}
                       </div>
                       <div className="text-left">
                         <p className="text-xs font-bold flex items-center gap-1">
-                          Xorbit 360 <span className="text-[10px] text-sky-400">●</span>
+                          Xorbit 360 <span className="text-[10px] text-gold-400">●</span>
                         </p>
                         <p className="text-[8px] text-gray-200">En línea / Canal de Pruebas</p>
                       </div>
@@ -10320,7 +10320,7 @@ ${parametersString}
 
                               // Push variable wrapper
                               parts.push(
-                                <span key={matchIndex} className="bg-[#1877f2] text-white font-bold px-1 rounded mx-0.5 shadow-sm border border-blue-400/20">
+                                <span key={matchIndex} className="bg-[#1877f2] text-white font-bold px-1 rounded mx-0.5 shadow-sm border border-gold-400/20">
                                   {varVal}
                                 </span>
                               );
@@ -10346,10 +10346,10 @@ ${parametersString}
 
                       {/* Quick action buttons mockup */}
                       <div className="space-y-1.5 w-[85%] ml-1">
-                        <button className="w-full bg-[#1e2a30] hover:bg-[#2c3e46] text-sky-400 text-[10px] font-bold py-2 rounded-xl border border-[#2b3c43] flex items-center justify-center gap-1.5">
+                        <button className="w-full bg-[#1e2a30] hover:bg-[#2c3e46] text-gold-400 text-[10px] font-bold py-2 rounded-xl border border-[#2b3c43] flex items-center justify-center gap-1.5">
                           Confirmar Pedido 📦
                         </button>
-                        <button className="w-full bg-[#1e2a30] hover:bg-[#2c3e46] text-sky-400 text-[10px] font-bold py-2 rounded-xl border border-[#2b3c43] flex items-center justify-center gap-1.5">
+                        <button className="w-full bg-[#1e2a30] hover:bg-[#2c3e46] text-gold-400 text-[10px] font-bold py-2 rounded-xl border border-[#2b3c43] flex items-center justify-center gap-1.5">
                           Hablar con Soporte 💬
                         </button>
                       </div>
@@ -10370,7 +10370,7 @@ ${parametersString}
             {/* Top Modal Bar */}
             <div className="p-2 sm:p-3.5 border-b border-gray-800 flex items-center justify-between bg-[#111] shrink-0">
               <div className="flex items-center gap-2 min-w-0 flex-1">
-                <Wand2 size={16} className="text-blue-400 shrink-0" />
+                <Wand2 size={16} className="text-gold-400 shrink-0" />
                 <div className="min-w-0">
                   <h3 className="text-xs sm:text-sm font-bold text-white truncate">Chat Interactivo de Entrenamiento IA</h3>
                   <p className="text-[10px] sm:text-[11px] text-gray-400 truncate hidden xs:block">Entrena a la IA conversando con voz, texto, imágenes o archivos.</p>
@@ -10391,7 +10391,7 @@ ${parametersString}
                 <div className="bg-[#202c33] p-2 sm:p-3 text-white flex items-center justify-between border-b border-gray-800 shrink-0 gap-2">
                   <div className="flex items-center gap-2 min-w-0">
                     <div className="relative shrink-0">
-                      <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-gradient-to-tr from-blue-600 to-blue-600 flex items-center justify-center font-bold text-white shadow-lg border border-white/10">
+                      <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-gradient-to-tr from-gold-600 to-gold-600 flex items-center justify-center font-bold text-white shadow-lg border border-white/10">
                         <Bot size={15} className="sm:w-[18px] sm:h-[18px]" />
                       </div>
                       <span className="absolute bottom-0 right-0 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-emerald-500 border-2 border-[#202c33] rounded-full"></span>
@@ -10487,12 +10487,12 @@ ${parametersString}
                               />
                             ) : msg.attachment.type === 'imagen' ? (
                               <div className="flex items-center gap-2 truncate p-1">
-                                <ImageIcon size={18} className="text-blue-400 shrink-0" />
+                                <ImageIcon size={18} className="text-gold-400 shrink-0" />
                                 <span className="text-[11px] text-gray-200 font-semibold truncate">{msg.attachment.name}</span>
                               </div>
                             ) : msg.attachment.type === 'video' ? (
                               <div className="flex items-center gap-2 truncate p-1">
-                                <Video size={18} className="text-blue-400 shrink-0" />
+                                <Video size={18} className="text-gold-400 shrink-0" />
                                 <span className="text-[11px] text-gray-200 font-semibold truncate">{msg.attachment.name}</span>
                               </div>
                             ) : (
@@ -10513,7 +10513,7 @@ ${parametersString}
                   {isTrainerThinking && (
                     <div className="flex justify-start">
                       <div className="bg-[#202c33] p-3 rounded-2xl rounded-tl-none border border-gray-700/50 text-xs text-gray-400 flex items-center gap-2">
-                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-ping shrink-0"></div>
+                        <div className="w-2 h-2 bg-gold-400 rounded-full animate-ping shrink-0"></div>
                         Analizando indicación e integrando al Prompt Definitivo...
                       </div>
                     </div>
@@ -10542,7 +10542,7 @@ ${parametersString}
                 {/* Input Bar */}
                 <div className="bg-[#202c33] p-2 sm:p-3 border-t border-gray-800 shrink-0">
                   {trainerAttachment && (
-                    <div className="mb-2 p-1.5 bg-black/40 rounded-lg flex items-center justify-between text-xs text-blue-300 border border-blue-500/20">
+                    <div className="mb-2 p-1.5 bg-black/40 rounded-lg flex items-center justify-between text-xs text-amber-300 border border-gold-500/20">
                       <span className="truncate max-w-[200px]">📎 Adjunto: {trainerAttachment.name}</span>
                       <button onClick={() => setTrainerAttachment(null)} className="text-gray-400 hover:text-white p-0.5">
                         <X size={14} />
@@ -10552,7 +10552,7 @@ ${parametersString}
 
                   <div className="flex items-center gap-1.5 sm:gap-2">
                     <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
-                      <label className="p-1.5 sm:p-2 text-gray-400 hover:text-blue-400 hover:bg-[#2a3942] rounded-full cursor-pointer transition" title="Adjuntar Imagen">
+                      <label className="p-1.5 sm:p-2 text-gray-400 hover:text-gold-400 hover:bg-[#2a3942] rounded-full cursor-pointer transition" title="Adjuntar Imagen">
                         <ImageIcon size={18} />
                         <input
                           type="file"
@@ -10566,7 +10566,7 @@ ${parametersString}
                           }}
                         />
                       </label>
-                      <label className="p-1.5 sm:p-2 text-gray-400 hover:text-blue-400 hover:bg-[#2a3942] rounded-full cursor-pointer transition" title="Adjuntar Video">
+                      <label className="p-1.5 sm:p-2 text-gray-400 hover:text-gold-400 hover:bg-[#2a3942] rounded-full cursor-pointer transition" title="Adjuntar Video">
                         <Video size={18} />
                         <input
                           type="file"
@@ -10580,7 +10580,7 @@ ${parametersString}
                           }}
                         />
                       </label>
-                      <label className="p-1.5 sm:p-2 text-gray-400 hover:text-blue-400 hover:bg-[#2a3942] rounded-full cursor-pointer transition" title="Adjuntar Archivo o PDF">
+                      <label className="p-1.5 sm:p-2 text-gray-400 hover:text-gold-400 hover:bg-[#2a3942] rounded-full cursor-pointer transition" title="Adjuntar Archivo o PDF">
                         <Paperclip size={18} />
                         <input
                           type="file"
@@ -10599,7 +10599,7 @@ ${parametersString}
                     <input
                       type="text"
                       placeholder="Escribe instrucciones, preguntas frecuentes o bienvenida..."
-                      className="flex-1 min-w-0 bg-[#2a3942] border border-gray-700/50 rounded-xl px-2.5 sm:px-3 py-2 text-xs text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                      className="flex-1 min-w-0 bg-[#2a3942] border border-gray-700/50 rounded-xl px-2.5 sm:px-3 py-2 text-xs text-white placeholder-gray-400 focus:outline-none focus:border-gold-500"
                       value={trainerInput}
                       onChange={(e) => setTrainerInput(e.target.value)}
                       onKeyDown={(e) => {
@@ -10623,7 +10623,7 @@ ${parametersString}
                     <button
                       type="button"
                       onClick={() => handleSendTrainerMessage()}
-                      className="bg-blue-600 hover:bg-blue-500 text-white p-2 rounded-xl transition shadow-md shrink-0"
+                      className="bg-gold-600 hover:bg-gold-500 text-white p-2 rounded-xl transition shadow-md shrink-0"
                       title="Enviar mensaje"
                     >
                       <Send size={18} />
@@ -10724,7 +10724,7 @@ ${parametersString}
           <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-scale-up">
             <div className="p-5 border-b border-zinc-850 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 bg-blue-500/10 text-blue-400 rounded-xl">
+                <div className="p-2 bg-gold-500/10 text-gold-400 rounded-xl">
                   <Smartphone size={18} />
                 </div>
                 <div>
@@ -10749,7 +10749,7 @@ ${parametersString}
                   value={guideToken}
                   onChange={(e) => setGuideToken(e.target.value)}
                   placeholder="EAAG..."
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white font-mono text-xs focus:border-blue-500 outline-none"
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white font-mono text-xs focus:border-gold-500 outline-none"
                 />
               </div>
 
@@ -10761,7 +10761,7 @@ ${parametersString}
                     value={guideWabaId}
                     onChange={(e) => setGuideWabaId(e.target.value)}
                     placeholder="109283918239"
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white font-mono text-xs focus:border-blue-500 outline-none"
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white font-mono text-xs focus:border-gold-500 outline-none"
                   />
                 </div>
                 <div>
@@ -10771,7 +10771,7 @@ ${parametersString}
                     value={guidePhoneId}
                     onChange={(e) => setGuidePhoneId(e.target.value)}
                     placeholder="982349823491"
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white font-mono text-xs focus:border-blue-500 outline-none"
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white font-mono text-xs focus:border-gold-500 outline-none"
                   />
                 </div>
               </div>
@@ -10787,7 +10787,7 @@ ${parametersString}
                   value={guidePin}
                   onChange={(e) => setGuidePin(e.target.value)}
                   placeholder="123456 (opcional si no tiene 2FA)"
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white font-mono text-xs focus:border-blue-500 outline-none"
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white font-mono text-xs focus:border-gold-500 outline-none"
                 />
               </div>
 
@@ -10814,7 +10814,7 @@ ${parametersString}
                 type="button"
                 disabled={isVerifyingCreds}
                 onClick={handleConnectHeadlessWaba}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition"
+                className="px-4 py-2 bg-gold-600 hover:bg-gold-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition"
               >
                 {isVerifyingCreds ? 'Conectando WABA...' : 'Vincular WABA Oficial'}
               </button>
@@ -10884,7 +10884,7 @@ ${parametersString}
                       onClick={() => setLogisticsAction(act.id as any)}
                       className={`py-2 px-2.5 rounded-xl border text-[11px] font-bold transition text-center ${
                         logisticsAction === act.id
-                          ? 'bg-blue-500/10 border-blue-500 text-blue-300'
+                          ? 'bg-gold-500/10 border-gold-500 text-amber-300'
                           : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
                       }`}
                     >

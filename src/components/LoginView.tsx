@@ -62,7 +62,7 @@ export default function LoginView({ onLogin, onGoToRegister }: LoginViewProps) {
   return (
     <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md panel p-8 rounded-2xl relative overflow-hidden group border border-zinc-800 shadow-2xl">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-600 via-amber-500 to-emerald-500"></div>
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-gold-700 via-gold-500 to-gold-400"></div>
         <div className="absolute -top-32 -right-32 w-64 h-64 bg-red-600/10 rounded-full blur-3xl pointer-events-none"></div>
 
         <div className="relative z-10">
@@ -112,7 +112,7 @@ export default function LoginView({ onLogin, onGoToRegister }: LoginViewProps) {
                       href="https://xorbit360.com"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-full py-2.5 px-3 rounded-lg bg-gradient-to-r from-red-600 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md transition-all text-center no-underline"
+                      className="w-full py-2.5 px-3 rounded-lg bg-gradient-to-r from-red-600 to-amber-500 hover:from-gold-500 hover:to-amber-400 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md transition-all text-center no-underline"
                     >
                       <ShoppingBag size={14} /> Adquirir Plan en xorbit360.com
                     </a>
@@ -154,7 +154,7 @@ export default function LoginView({ onLogin, onGoToRegister }: LoginViewProps) {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-gradient-to-r from-red-600 via-red-500 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-extrabold py-3.5 rounded-xl shadow-lg shadow-red-600/25 transition-all flex items-center justify-center gap-2 mt-4 cursor-pointer disabled:opacity-50 text-xs tracking-wide uppercase"
+              className="w-full bg-gradient-to-r from-gold-600 via-gold-500 to-amber-500 hover:from-gold-500 hover:to-amber-400 text-white font-extrabold py-3.5 rounded-xl shadow-lg shadow-gold-600/25 transition-all flex items-center justify-center gap-2 mt-4 cursor-pointer disabled:opacity-50 text-xs tracking-wide uppercase"
             >
               {isLoading ? (
                 <span>Verificando Acceso...</span>

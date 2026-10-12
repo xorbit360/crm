@@ -122,7 +122,7 @@ export default function ProgramacionesBotView() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 text-xs font-mono text-blue-400 bg-blue-900/10 p-2 rounded-lg border border-blue-900/30">
+              <div className="flex items-center gap-2 text-xs font-mono text-gold-400 bg-blue-900/10 p-2 rounded-lg border border-blue-900/30">
                 <Link size={12} /> {task.api}
               </div>
 

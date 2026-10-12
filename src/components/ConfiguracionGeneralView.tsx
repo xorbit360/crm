@@ -136,8 +136,8 @@ export default function ConfiguracionGeneralView({
             onClick={() => setActiveTab('costos')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap cursor-pointer ${
               activeTab === 'costos'
-                ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/20 font-bold'
-                : 'text-cyan-400 hover:text-white hover:bg-cyan-950/40 border border-cyan-500/20'
+                ? 'bg-gold-500 text-black shadow-lg shadow-gold-500/20 font-bold'
+                : 'text-gold-400 hover:text-white hover:bg-cyan-950/40 border border-gold-500/20'
             }`}
           >
             <Calculator size={16} />
@@ -148,8 +148,8 @@ export default function ConfiguracionGeneralView({
             onClick={() => setActiveTab('dominio')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap cursor-pointer ${
               activeTab === 'dominio'
-                ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20 font-bold'
-                : 'text-blue-400 hover:text-white hover:bg-blue-950/40 border border-blue-500/20'
+                ? 'bg-gold-500 text-white shadow-lg shadow-gold-500/20 font-bold'
+                : 'text-gold-400 hover:text-white hover:bg-blue-950/40 border border-gold-500/20'
             }`}
           >
             <Globe size={16} />
@@ -220,8 +220,8 @@ export default function ConfiguracionGeneralView({
             onClick={() => setActiveTab('mcp_api')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap cursor-pointer ${
               activeTab === 'mcp_api'
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20 font-bold'
-                : 'text-blue-400 hover:text-white hover:bg-blue-950/40 border border-blue-500/20'
+                ? 'bg-gold-600 text-white shadow-lg shadow-gold-600/20 font-bold'
+                : 'text-gold-400 hover:text-white hover:bg-blue-950/40 border border-gold-500/20'
             }`}
           >
             <Terminal size={16} />
@@ -310,7 +310,7 @@ export default function ConfiguracionGeneralView({
             {/* Language Box */}
             <div className="panel p-6 rounded-2xl border border-gray-800 space-y-5">
               <div className="flex items-center gap-3 border-b border-gray-800/80 pb-4">
-                <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                <div className="p-2 rounded-xl bg-gold-500/10 text-gold-400 border border-gold-500/20">
                   <Globe size={20} />
                 </div>
                 <div>
@@ -430,7 +430,7 @@ export default function ConfiguracionGeneralView({
           {/* Preferences Section */}
           <div className="panel p-6 rounded-2xl border border-gray-800 space-y-6">
             <div className="flex items-center gap-3 border-b border-gray-800/80 pb-4">
-              <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
+              <div className="p-2 rounded-xl bg-gold-500/10 text-gold-400 border border-gold-500/20">
                 <Sparkles size={20} />
               </div>
               <div>

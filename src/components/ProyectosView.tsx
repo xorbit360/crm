@@ -439,7 +439,7 @@ export default function ProyectosView({ onNavigateToModule }: ProyectosViewProps
                 </button>
                 <button
                   onClick={() => handleAddQuickTool('landing')}
-                  className="px-2.5 py-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+                  className="px-2.5 py-1.5 rounded-lg bg-gold-500/10 hover:bg-gold-500/20 text-gold-400 border border-gold-500/30 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
                 >
                   <Globe size={14} /> + Landing
                 </button>
@@ -470,11 +470,11 @@ export default function ProyectosView({ onNavigateToModule }: ProyectosViewProps
                     <div className="flex items-start gap-3.5">
                       <div className="p-3 rounded-xl bg-gray-800 border border-gray-700 text-amber-400 shrink-0 mt-0.5">
                         {tool.type === 'whatsapp' && <Bot size={20} className="text-green-400" />}
-                        {tool.type === 'landing' && <Globe size={20} className="text-blue-400" />}
+                        {tool.type === 'landing' && <Globe size={20} className="text-gold-400" />}
                         {tool.type === 'ads' && <Megaphone size={20} className="text-amber-400" />}
-                        {tool.type === 'branding' && <Sparkles size={20} className="text-blue-400" />}
-                        {tool.type === 'contenido' && <FileText size={20} className="text-blue-400" />}
-                        {tool.type === 'email' && <MessageSquare size={20} className="text-cyan-400" />}
+                        {tool.type === 'branding' && <Sparkles size={20} className="text-gold-400" />}
+                        {tool.type === 'contenido' && <FileText size={20} className="text-gold-400" />}
+                        {tool.type === 'email' && <MessageSquare size={20} className="text-gold-400" />}
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
