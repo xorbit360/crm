@@ -10,7 +10,7 @@ import { Layout, Plus, Pencil, Trash2, Eye, Rocket, Copy, Check, X, ChevronUp, C
 type BlockType = 'hero' | 'beneficios' | 'producto' | 'testimonios' | 'garantia' | 'faq' | 'cta' | 'checkout' | 'countdown' | 'video' | 'imagen_texto' | 'footer';
 interface PageBlock { id: string; type: BlockType; props: Record<string, any>; }
 interface BuilderSettings { whatsappNumber?: string; metaDescription?: string; checkoutType?: string; currency?: string; metaPixelId?: string; accentColor?: string; socials?: any; announcement?: string; }
-interface BuilderPage { id: string; slug: string; name: string; page_type: string; status: string; conversion_score?: number; blocks?: PageBlock[]; settings?: BuilderSettings; created_at?: string; updated_at?: string; }
+interface BuilderPage { id: string; slug: string; name: string; page_type: string; status: string; conversion_score?: number; rawHtml?: string; blocks?: PageBlock[]; settings?: BuilderSettings; created_at?: string; updated_at?: string; }
 interface Finding { id: string; title: string; severity: string; category: string; evidence: string; impact: string; }
 interface CheckResult { score: number; grade: string; gradeLabel: string; blocks: { key: string; label: string; score: number; weight: number }[]; findings: Finding[]; stats: { problems: number; critical: number }; }
 
@@ -119,12 +119,17 @@ export default function ConstructorView() {
       </div>
 
       {view === 'list' && <PageList pages={pages} loading={loading} onNew={openNew} onEdit={openEdit} onPublish={publish} onDelete={async (id) => { if (!window.confirm('¿Eliminar esta página?')) return; await api(`/api/page-builder/pages/${id}`, 'DELETE'); load(); }} onShopify={() => setView('shopify')} />}
-      {view === 'editor' && editing && <Editor page={editing} setPage={setEditing} onSave={save} saving={saving} onPublish={() => publish(editing.id)} showToast={showToast} />}
-      {view === 'clone' && <Cloner onUse={async (blocks, meta) => {
+      {view === 'editor' && editing && (editing.rawHtml
+        ? <VisualEditor page={editing} setPage={setEditing} onPublish={publish} showToast={showToast} />
+        : <Editor page={editing} setPage={setEditing} onSave={save} saving={saving} onPublish={() => publish(editing.id)} showToast={showToast} />)}
+      {view === 'clone' && <Cloner onUse={async (data, meta) => {
         const name = (meta.title || 'Página clonada').slice(0, 60);
-        const j = await api('/api/page-builder/pages', 'POST', { name, pageType: 'landing', blocks, settings: { whatsappNumber: meta.whatsapp || '', accentColor: meta.accent || '#f5b942' } });
+        const isVisual = typeof data === 'string';
+        const body: any = { name, pageType: 'landing', settings: { whatsappNumber: meta.whatsapp || '', accentColor: meta.accent || '#f5b942' } };
+        if (isVisual) body.rawHtml = data; else body.blocks = data;
+        const j = await api('/api/page-builder/pages', 'POST', body);
         await load(); const full = await api(`/api/page-builder/pages/${j.page.id}`);
-        setEditing(full.page); setView('editor'); showToast('Clon cargado en el editor ✓');
+        setEditing(full.page); setView('editor'); showToast('Clon visual cargado ✓ Toca elementos para editarlos');
       }} showToast={showToast} />}
       {view === 'shopify' && <ShopifyPanel pages={pages} showToast={showToast} />}
 
@@ -565,6 +570,171 @@ function Editor({ page, setPage, onSave, saving, onPublish, showToast }: any) {
   );
 }
 
+// ============================================================================
+// Editor visual in-situ para páginas clonadas (rawHtml) — 2026-10-11.
+// Iframe con el HTML clonado + panel lateral: clic en un elemento para
+// editar su texto, imagen, enlace o colores. Sin convertir a bloques.
+// ============================================================================
+function VisualEditor({ page, setPage, onPublish, showToast }: any) {
+  const iframeRef = React.useRef<HTMLIFrameElement>(null);
+  const [sel, setSel] = useState<any>(null);
+  const [saving, setSaving] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [check, setCheck] = useState<CheckResult | null>(null);
+  const [draft, setDraft] = useState({ text: '', src: '', href: '', color: '', bg: '', fontSize: '' });
+  const [ready, setReady] = useState(false);
+
+  const frameUrl = `/api/page-builder/pages/${page.id}/edit-frame`;
+  const publicUrl = `https://crm.xorbit360.com/p/${page.slug}`;
+
+  useEffect(() => {
+    const onMsg = (e: MessageEvent) => {
+      const d = e.data || {};
+      if (d.type === 'xorbit-editor-ready') setReady(true);
+      if (d.type === 'xorbit-select' && d.el) {
+        setSel(d.el);
+        setDraft({ text: d.el.text || '', src: d.el.src || '', href: d.el.href || '', color: '', bg: '', fontSize: '' });
+      }
+      if (d.type === 'xorbit-html' && typeof d.html === 'string') {
+        finishSave(d.html);
+      }
+    };
+    window.addEventListener('message', onMsg);
+    return () => window.removeEventListener('message', onMsg);
+  }, []);
+
+  const post = (msg: any) => {
+    try { iframeRef.current?.contentWindow?.postMessage(msg, '*'); } catch {}
+  };
+
+  useEffect(() => {
+    if (ready) post({ type: 'xorbit-edit-on' });
+  }, [ready]);
+
+  const apply = () => {
+    if (!sel) return;
+    const changes: any = {};
+    if (sel.canText) changes.text = draft.text;
+    if (sel.tag === 'IMG' && draft.src) changes.src = draft.src;
+    if (sel.tag === 'A' && draft.href) changes.href = draft.href;
+    if (draft.color) changes.color = draft.color;
+    if (draft.bg) changes.bg = draft.bg;
+    if (draft.fontSize) changes.fontSize = draft.fontSize;
+    post({ type: 'xorbit-apply', changes });
+    showToast('Aplicado ✓ (guarda para conservarlo)');
+  };
+
+  const requestSave = () => {
+    setSaving(true);
+    post({ type: 'xorbit-get-html' });
+    setTimeout(() => setSaving((s) => { if (s) { showToast('El editor no respondió. Intenta de nuevo.'); return false; } return s; }), 8000);
+  };
+
+  const finishSave = async (html: string) => {
+    try {
+      await api(`/api/page-builder/pages/${page.id}`, 'PUT', { rawHtml: html });
+      const full = await api(`/api/page-builder/pages/${page.id}`);
+      setPage(full.page);
+      showToast('Guardado ✓');
+    } catch (e: any) { showToast(e.message); }
+    setSaving(false);
+  };
+
+  const runCheck = async () => {
+    setChecking(true); setCheck(null);
+    post({ type: 'xorbit-get-html' });
+    const onHtml = async (e: MessageEvent) => {
+      if (e.data?.type !== 'xorbit-html') return;
+      window.removeEventListener('message', onHtml);
+      try {
+        const j = await api('/api/page-builder/check', 'POST', { rawHtml: e.data.html, pageType: page.page_type, name: page.name });
+        setCheck(j);
+      } catch (err: any) { showToast(err.message); }
+      setChecking(false);
+    };
+    window.addEventListener('message', onHtml);
+    setTimeout(() => { window.removeEventListener('message', onHtml); setChecking((c) => { if (c) showToast('El editor no respondió.'); return false; }); }, 10000);
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className={card + ' flex flex-wrap items-center gap-2'}>
+        <div className="font-bold text-[#f5efe2] flex items-center gap-2 mr-auto">
+          <Pencil size={18} className="text-[#f5b942]" /> Editor visual — {page.name}
+        </div>
+        <span className="text-xs bg-[#f5b94222] text-[#f5b942] px-2.5 py-1 rounded-full">Clon de alta fidelidad</span>
+        <button className={btnGhost} onClick={runCheck} disabled={checking}>{checking ? 'Revisando…' : 'Chequeo de conversión'}</button>
+        <button className={btnGold} onClick={requestSave} disabled={saving}>{saving ? 'Guardando…' : 'Guardar'}</button>
+        <button className={btnGhost} onClick={() => onPublish(page.id)}><Rocket size={15} /> Publicar</button>
+        <a className={btnGhost} href={publicUrl} target="_blank" rel="noopener"><Eye size={15} /> Ver</a>
+      </div>
+
+      {check && (
+        <div className={card + ' space-y-2'}>
+          <div className="flex items-center gap-3">
+            <div className="text-3xl font-black text-[#f5b942]">{check.score}<span className="text-base text-gray-400">/100</span></div>
+            <div className="text-sm font-bold text-[#f5efe2]">Calificación {check.grade}</div>
+            <div className="text-xs text-gray-400 ml-auto">{check.stats.problems} fugas · {check.stats.critical} críticas</div>
+          </div>
+          {check.findings.slice(0, 5).map((f: Finding) => (
+            <div key={f.id} className="text-xs bg-white/5 rounded-xl p-2.5">
+              <span className={`font-bold ${f.severity === 'Crítico' ? 'text-red-400' : 'text-amber-300'}`}>{f.title}</span>
+              <span className="text-gray-400"> — {f.evidence}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="grid gap-3 lg:grid-cols-[1fr_300px]">
+        <div className={card + ' p-2'}>
+          <div className="text-xs text-gray-400 px-2 pb-2">Toca cualquier elemento de la página para editarlo {ready ? '' : '(cargando editor…)'}</div>
+          <iframe ref={iframeRef} src={frameUrl} title="Editor visual"
+            className="w-full rounded-xl bg-white" style={{ height: '70vh', border: '1px solid #f5b94233' }} />
+        </div>
+        <div className={card + ' space-y-3 h-fit'}>
+          <div className="font-bold text-[#f5efe2] text-sm">Elemento seleccionado</div>
+          {!sel && <p className="text-xs text-gray-400">Toca un texto, imagen, botón o enlace dentro de la página.</p>}
+          {sel && (
+            <div className="space-y-2.5">
+              <div className="text-xs text-gray-400">Tipo: <span className="text-[#f5b942] font-bold">{sel.tag}</span></div>
+              {sel.canText && (
+                <div>
+                  <label className="text-xs text-gray-400">Texto</label>
+                  <textarea className={inputCls} rows={3} value={draft.text} onChange={(e) => setDraft({ ...draft, text: e.target.value })} />
+                </div>
+              )}
+              {sel.tag === 'IMG' && (
+                <div>
+                  <label className="text-xs text-gray-400">URL de la imagen</label>
+                  <input className={inputCls} value={draft.src} onChange={(e) => setDraft({ ...draft, src: e.target.value })} placeholder="https://…" />
+                </div>
+              )}
+              {sel.tag === 'A' && (
+                <div>
+                  <label className="text-xs text-gray-400">Enlace destino</label>
+                  <input className={inputCls} value={draft.href} onChange={(e) => setDraft({ ...draft, href: e.target.value })} placeholder="https://…" />
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs text-gray-400">Color texto</label>
+                  <input type="color" className="w-full h-10 rounded-xl bg-[#0e0c07] border border-white/15 cursor-pointer" value={/^#[0-9a-fA-F]{6}$/.test(draft.color) ? draft.color : '#000000'} onChange={(e) => setDraft({ ...draft, color: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400">Color fondo</label>
+                  <input type="color" className="w-full h-10 rounded-xl bg-[#0e0c07] border border-white/15 cursor-pointer" value={/^#[0-9a-fA-F]{6}$/.test(draft.bg) ? draft.bg : '#000000'} onChange={(e) => setDraft({ ...draft, bg: e.target.value })} />
+                </div>
+              </div>
+              <button className={btnGold + ' w-full'} onClick={apply}>Aplicar cambios</button>
+              <p className="text-[11px] text-gray-500">Los cambios se aplican en la vista previa. Pulsa <b>Guardar</b> para conservarlos.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Cloner({ onUse, showToast }: any) {
   const [url, setUrl] = useState('');
   const [cloning, setCloning] = useState(false);
@@ -581,7 +751,7 @@ function Cloner({ onUse, showToast }: any) {
     <div className="space-y-4">
       <div className={card + ' space-y-3'}>
         <div className="font-bold text-[#f5efe2] flex items-center gap-2"><Copy size={18} className="text-[#f5b942]" /> Clonar una página existente</div>
-        <p className="text-sm text-gray-400">Pega la dirección de cualquier landing o web y la convertimos en bloques editables en el constructor.</p>
+        <p className="text-sm text-gray-400">Pega la dirección de cualquier landing o web y la clonamos con su diseño original, lista para editar.</p>
         <div className="flex gap-2">
           <input className={inputCls} placeholder="https://tutienda.com" value={url} onChange={(e) => setUrl(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && clone()} />
           <button className={btnGold} disabled={cloning || !url.trim()} onClick={clone}>{cloning ? 'Clonando…' : 'Clonar'}</button>
@@ -591,15 +761,17 @@ function Cloner({ onUse, showToast }: any) {
         <div className={card + ' space-y-3'}>
           <div className="flex items-center gap-2 text-sm">
             <CheckCircle2 size={18} className="text-green-400" />
-            <span className="text-[#f5efe2] font-bold">Extraídos {result.blocks.length} bloques{result.meta?.title ? ` de "${result.meta.title}"` : ''}</span>
+            <span className="text-[#f5efe2] font-bold">Clon visual listo{result.meta?.title ? ` de "${result.meta.title}"` : ''}</span>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {result.blocks.map((b: PageBlock) => (
-              <span key={b.id} className="text-xs bg-[#f5b94222] text-[#f5b942] px-2.5 py-1 rounded-full">{BLOCK_LABELS[b.type]}</span>
-            ))}
-          </div>
+          {result.stats && (
+            <div className="flex flex-wrap gap-2 text-xs">
+              <span className="bg-[#f5b94222] text-[#f5b942] px-2.5 py-1 rounded-full">{result.stats.cssFiles || 0} hojas de estilo</span>
+              <span className="bg-[#f5b94222] text-[#f5b942] px-2.5 py-1 rounded-full">{result.stats.ctasRewired || 0} botones al checkout</span>
+              <span className="bg-[#f5b94222] text-[#f5b942] px-2.5 py-1 rounded-full">{Math.round((result.stats.finalBytes || 0) / 1024)} KB</span>
+            </div>
+          )}
           <div className="text-xs text-amber-300/90 bg-amber-500/10 border border-amber-500/30 rounded-xl p-3">{result.limits}</div>
-          <button className={btnGold} onClick={() => onUse(result.blocks, result.meta || {})}>Usar como base en el editor</button>
+          <button className={btnGold} onClick={() => onUse(result.rawHtml, result.meta || {})}>Usar en el editor visual</button>
         </div>
       )}
     </div>

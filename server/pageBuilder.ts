@@ -74,7 +74,7 @@ function pbStore(): { pages: AnyRow[] } {
   return mdb.pageBuilder;
 }
 function pageSummary(p: AnyRow): AnyRow {
-  return { id: p.id, slug: p.slug, name: p.name, page_type: p.page_type, status: p.status, conversion_score: p.conversion_score ?? null, custom_domain: p.custom_domain || '', domain_verified: !!p.domain_verified, domain_status: p.domain_status || 'not_configured', created_at: p.created_at, updated_at: p.updated_at };
+  return { id: p.id, slug: p.slug, name: p.name, page_type: p.page_type, status: p.status, conversion_score: p.conversion_score ?? null, is_visual: isVisualPage(p), custom_domain: p.custom_domain || '', domain_verified: !!p.domain_verified, domain_status: p.domain_status || 'not_configured', created_at: p.created_at, updated_at: p.updated_at };
 }
 function tenantId(req: Request): string {
   const user: any = (req as any).authUser || {};
@@ -275,6 +275,7 @@ ${payRadios}
 
 // --- Documento completo ------------------------------------------------------
 export function renderPageHtml(page: AnyRow): string {
+  if (isVisualPage(page)) return renderRawHtmlPage(page);
   const blocks: PageBlock[] = Array.isArray(page.blocks) ? page.blocks : [];
   const s: BuilderSettings = page.settings || {};
   const accent = /^#[0-9a-fA-F]{6}$/.test(String(s.accentColor || '')) ? String(s.accentColor) : '#f5b942';
@@ -652,13 +653,14 @@ export function setupPageBuilderAdminRoutes(app: Express) {
       const b = req.body || {};
       const name = cleanText(b.name, 120) || 'Nueva página';
       const pageType = ['landing', 'website', 'product'].includes(b.pageType) ? b.pageType : 'landing';
-      const blocks = b.blocks ? sanitizeBlocks(b.blocks) : templateBlocks((TEMPLATE_IDS as string[]).includes(b.template) ? b.template : 'oferta');
+      const rawHtml = b.rawHtml ? sanitizeRawHtml(b.rawHtml) : '';
+      const blocks = rawHtml ? [] : (b.blocks ? sanitizeBlocks(b.blocks) : templateBlocks((TEMPLATE_IDS as string[]).includes(b.template) ? b.template : 'oferta'));
       const settings = sanitizeSettings(b.settings);
       const slug = await uniqueSlug(b.slug || name);
       const now = new Date().toISOString();
       const page: AnyRow = {
         id: uid('pg'), tenant_id: tenantId(req), slug, name, page_type: pageType,
-        status: 'draft', blocks, settings, conversion_score: null, created_at: now, updated_at: now,
+        status: 'draft', blocks, settings, rawHtml, conversion_score: null, created_at: now, updated_at: now,
       };
       pbStore().pages.unshift(page);
       saveMemDB();
@@ -683,6 +685,7 @@ export function setupPageBuilderAdminRoutes(app: Express) {
       if (b.name !== undefined) patch.name = cleanText(b.name, 120);
       if (b.pageType !== undefined && ['landing', 'website', 'product'].includes(b.pageType)) patch.page_type = b.pageType;
       if (b.blocks !== undefined) patch.blocks = sanitizeBlocks(b.blocks);
+      if (b.rawHtml !== undefined) { patch.rawHtml = sanitizeRawHtml(b.rawHtml); patch.blocks = []; }
       if (b.settings !== undefined) patch.settings = sanitizeSettings(b.settings);
       const page = findPage(req.params.id, tenantId(req));
       if (!page) { res.status(404).json({ ok: false, error: 'Página no encontrada' }); return; }
@@ -709,10 +712,11 @@ export function setupPageBuilderAdminRoutes(app: Express) {
   app.post('/api/page-builder/check', async (req: Request, res: Response) => {
     try {
       const b = req.body || {};
+      const rawHtml = b.rawHtml ? sanitizeRawHtml(b.rawHtml) : '';
       const blocks = sanitizeBlocks(b.blocks);
       const settings = sanitizeSettings(b.settings);
       const pageType = b.pageType === 'product' ? 'product' : 'home';
-      const html = renderPageHtml({ id: 'preview', name: b.name || 'Vista previa', blocks, settings });
+      const html = rawHtml ? renderRawHtmlPage({ id: 'preview', name: b.name || 'Vista previa', rawHtml, settings }) : renderPageHtml({ id: 'preview', name: b.name || 'Vista previa', blocks, settings });
       const result = analyzeHtmlSnapshot(html, 'https://crm.xorbit360.com/p/vista-previa', pageType);
       res.json({ ok: true, ...result });
     } catch (e: any) { res.status(e.status || 500).json({ ok: false, error: e.message || 'Error en el chequeo' }); }
@@ -820,17 +824,28 @@ export function setupPageBuilderAdminRoutes(app: Express) {
     } catch (e: any) { res.status(500).send('Error en la vista previa'); }
   });
 
-  // --- Clonador ------------------------------------------------------------
+  // --- Clonador visual de alta fidelidad ---------------------------------------
   app.post('/api/page-builder/clone', async (req: Request, res: Response) => {
     try {
       if (!checkRate(req, res, 'pb-clone', 5)) return;
       const url = normalizeStoreUrl(req.body?.url || '');
       if (!url) { res.status(400).json({ ok: false, error: 'Pega una URL válida, por ejemplo https://tutienda.com' }); return; }
-      const html = await fetchHtmlSafe(url);
-      if (!html) { res.status(422).json({ ok: false, error: 'No pudimos abrir esa página. Revisa que la dirección esté bien.' }); return; }
-      const { blocks, meta } = extractBlocks(html, url);
-      res.json({ ok: true, blocks, meta, limits: 'Clonamos textos, imágenes y estructura. Animaciones, menús complejos y funciones con JavaScript no se clonan: revísalos en el editor.' });
+      const { rawHtml, meta, stats } = await cloneVisual(url);
+      res.json({ ok: true, rawHtml, meta, stats,
+        limits: 'Clonamos el diseño original (estructura, estilos, imágenes). No se clonan: apps embebidas de la tienda, funciones con JavaScript complejo ni su checkout original — la compra usa el checkout del CRM.' });
     } catch (e: any) { res.status(e.status || 500).json({ ok: false, error: e.message || 'Error clonando' }); }
+  });
+
+  // --- Frame de edición visual (iframe del editor) -----------------------------
+  app.get('/api/page-builder/pages/:id/edit-frame', async (req: Request, res: Response) => {
+    try {
+      const page = findPage(req.params.id, tenantId(req));
+      if (!page || !isVisualPage(page)) { res.status(404).type('html').send('<h1>Página no encontrada</h1>'); return; }
+      let h = String(page.rawHtml || '');
+      if (/<\/body\s*>/i.test(h)) h = h.replace(/<\/body\s*>/i, `${VISUAL_EDITOR_SCRIPT}\n</body>`);
+      else h += VISUAL_EDITOR_SCRIPT;
+      res.type('html').send(h);
+    } catch { res.status(404).type('html').send('<h1>Error</h1>'); }
   });
 
   // --- Shopify ---------------------------------------------------------------
@@ -975,6 +990,463 @@ function extractBlocks(html: string, baseUrl: string): { blocks: PageBlock[]; me
   return { blocks, meta: { title, whatsapp: waMatch ? (waMatch[1] || waMatch[2]) : '', accent: /^#[0-9a-fA-F]{3,6}$/.test(accent) ? accent : '' } };
 }
 
+// ============================================================================
+// Clonador visual de alta fidelidad (2026-10-11) — orden del CEO.
+// En vez de extraer textos a bloques genericos, preserva el DOM y los estilos
+// originales: descarga las hojas CSS del tema y las pone inline, absolutiza
+// URLs, sanitiza (sin scripts/trackers/popups) y re-cablea los CTAs de compra
+// al checkout del CRM. El resultado se guarda como `rawHtml` en la pagina y
+// se edita con el editor visual in-situ.
+// Limites honestos: no se clonan apps embebidas de Shopify, JS interactivo
+// complejo (sliders con JS, carritos AJAX), ni el checkout nativo de la tienda
+// original. Ver ~/workspace/xorbit360/clonador-visual-2026-10-11.md
+// ============================================================================
+
+const CLONE_ENGINE_V = 4;
+const MAX_CSS_FILES = 8;
+const MAX_CSS_BYTES = 500_000;
+const MAX_RAW_HTML_BYTES = 2_500_000;
+
+// URLs de origen para re-clonar las demos con el motor visual
+const DEMO_CLONE_URLS: Record<string, string> = {
+  'demo-tienda': 'https://exofootlabs.com/',
+  'demo-producto': 'https://exofootlabs.com/products/plantillas-en-fibra-de-carbono-1',
+  'demo-corporativa': 'https://mwinternational.co/',
+};
+
+function isVisualPage(p: AnyRow): boolean {
+  return typeof p?.rawHtml === 'string' && p.rawHtml.length > 200;
+}
+
+// Fetch de CSS con las mismas reglas SSRF que el HTML
+async function fetchCssSafe(url: string): Promise<string | null> {
+  let current = url;
+  for (let hop = 0; hop < 3; hop++) {
+    let parsed: URL;
+    try { parsed = new URL(current); } catch { return null; }
+    if (!normalizeStoreUrl(current)) return null;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+    let res: Response;
+    try {
+      res = await fetch(current, {
+        signal: ctrl.signal, redirect: 'manual',
+        headers: { 'User-Agent': UA, Accept: 'text/css,*/*;q=0.1' },
+      });
+    } catch { clearTimeout(timer); return null; }
+    clearTimeout(timer);
+    if (res.status >= 300 && res.status < 400) {
+      const loc = res.headers.get('location');
+      if (!loc) return null;
+      try { current = new URL(loc, current).toString(); } catch { return null; }
+      continue;
+    }
+    if (!res.ok) return null;
+    const buf = Buffer.from(await res.arrayBuffer());
+    return buf.subarray(0, MAX_CSS_BYTES).toString('utf8');
+  }
+  return null;
+}
+
+// Reescribe url(...) relativos dentro de un CSS a absolutos
+function absolutizeCssUrls(css: string, cssUrl: string): string {
+  return css.replace(/url\(\s*(['"]?)([^'")]+)\1\s*\)/gi, (_m, q: string, u: string) => {
+    const t = String(u).trim();
+    if (!t || /^(data:|https?:|blob:)/i.test(t)) return `url(${q}${t}${q})`;
+    const abs = absUrl(cssUrl, t);
+    return abs ? `url(${q}${abs}${q})` : `url(${q}${t}${q})`;
+  });
+}
+
+// Absolutiza src/href/srcset/poster/data-src en el HTML
+function absolutizeHtmlUrls(html: string, base: string): string {
+  for (const name of ['src', 'href', 'poster', 'data-src', 'data-lazy-src']) {
+    const re = new RegExp(`(\\s${name}\\s*=\\s*["'])([^"']+)(["'])`, 'gi');
+    html = html.replace(re, (_m: string, pre: string, u: string, post: string) => {
+      const t = String(u).trim();
+      if (!t || /^(data:|https?:|blob:|mailto:|tel:|#)/i.test(t)) return `${pre}${t}${post}`;
+      const abs = absUrl(base, t);
+      return abs ? `${pre}${abs}${post}` : `${pre}${t}${post}`;
+    });
+  }
+  html = html.replace(/(\ssrcset\s*=\s*["'])([^"']+)(["'])/gi, (_m: string, pre: string, set: string, post: string) => {
+    const fixed = String(set).split(',').map((part) => {
+      const seg = part.trim().split(/\s+/);
+      const u = seg[0] || '';
+      if (!u || /^(data:|https?:|blob:)/i.test(u)) return part.trim();
+      const abs = absUrl(base, u);
+      return abs ? [abs, ...seg.slice(1)].join(' ') : part.trim();
+    }).join(', ');
+    return `${pre}${fixed}${post}`;
+  });
+  return html;
+}
+
+// Sanitiza HTML clonado: sin scripts, sin trackers, sin iframes, sin handlers
+// inline, sin javascript:, formularios neutralizados, sin meta refresh.
+function sanitizeClonedHtml(html: string): string {
+  let h = html;
+  h = h.replace(/<!--[\s\S]*?-->/g, ' ');
+  h = h.replace(/<script[\s\S]*?<\/script\s*>/gi, ' ');
+  h = h.replace(/\son\w+\s*=\s*"[^"]*"/gi, ' ').replace(/\son\w+\s*=\s*'[^']*'/gi, ' ');
+  h = h.replace(/\son\w+\s*=\s*[^\s>]+/gi, ' ');
+  h = h.replace(/(href|src|action)\s*=\s*["']\s*javascript:[^"']*["']/gi, '$1="#"');
+  h = h.replace(/<iframe[\s\S]*?<\/iframe\s*>/gi, ' ');
+  h = h.replace(/<meta[^>]+http-equiv\s*=\s*["']?refresh["']?[^>]*>/gi, ' ');
+  h = h.replace(/<form([^>]*)>/gi, (_m: string, attrs: string) => {
+    const clean = String(attrs).replace(/\saction\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, ' ');
+    return `<form${clean} data-xorbit-form="1">`;
+  });
+  h = h.replace(/<img[^>]*(facebook\.com\/tr|googletagmanager|google-analytics|analytics\.tiktok|hotjar|clarity\.ms)[^>]*>/gi, ' ');
+  // Quitar preloads de JS que ya no existe
+  h = h.replace(/<link[^>]+as\s*=\s*["']script["'][^>]*>/gi, ' ');
+  return h;
+}
+
+// Intencion de compra en textos de botones/enlaces (ES + EN)
+const BUY_INTENT = /(comprar|compra\s+ahora|agreg\w*\s+al\s+carrito|a[ñn]adir\s+al\s+carrito|add\s+to\s+(cart|bag)|buy\s+now|buy\s+it\s+now|pagar|checkout|realizar\s+pedido|hacer\s+pedido|pedir\s+ahora|ordena(r)?\s+ahora|lo\s+quiero|me\s+lo\s+llevo|adquirir|finalizar\s+compra)/i;
+
+function rewireCtas(html: string): { html: string; count: number } {
+  let count = 0;
+  let h = html;
+  // Enlaces <a> con texto de compra -> abren el checkout del CRM
+  h = h.replace(/<a\b([^>]*)>([\s\S]*?)<\/a\s*>/gi, (m: string, attrs: string, inner: string) => {
+    if (/data-xorbit-checkout/.test(attrs)) return m;
+    const text = inner.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    if (text.length >= 3 && text.length <= 60 && BUY_INTENT.test(text)) {
+      count++;
+      const clean = String(attrs).replace(/\shref\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, ' ');
+      return `<a${clean} href="#xorbit-checkout" data-xorbit-checkout="1">${inner}</a>`;
+    }
+    return m;
+  });
+  // Botones <button> con texto de compra
+  h = h.replace(/<button\b([^>]*)>([\s\S]*?)<\/button\s*>/gi, (m: string, attrs: string, inner: string) => {
+    if (/data-xorbit-checkout/.test(attrs)) return m;
+    const text = inner.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    if (text.length >= 3 && text.length <= 60 && BUY_INTENT.test(text)) {
+      count++;
+      return `<button${attrs} data-xorbit-checkout="1" type="button">${inner}</button>`;
+    }
+    return m;
+  });
+  // Formularios de producto Shopify (/cart/add): el submit abre el checkout del CRM
+  h = h.replace(/<form([^>]*action\s*=\s*["'][^"']*cart\/add[^"']*["'][^>]*)>/gi,
+    (_m: string, attrs: string) => `<form${attrs} data-xorbit-product-form="1">`);
+  return { html: h, count };
+}
+
+// --- Mejora 2026-10-11: CTAs cortos + botón de compra inyectado en páginas de producto
+// (las tiendas Shopify modernas renderizan el "add to cart" con JS; el clon
+// estático lo reemplaza por un botón CRM garantizado).
+
+const BUY_INTENT_SHORT = /^(add|añadir|comprar|buy|checkout|pagar)$/i;
+
+function rewireCtasV2(html: string, pageUrl: string): { html: string; count: number } {
+  const rw = rewireCtas(html);
+  let h = rw.html;
+  let count = rw.count;
+  // 2a. Botones/enlaces con texto corto de compra (ADD, Añadir, Buy)
+  h = h.replace(/<(a|button)\b([^>]*)>([\s\S]*?)<\/\1\s*>/gi, (m: string, tag: string, attrs: string, inner: string) => {
+    if (/data-xorbit-checkout/.test(attrs)) return m;
+    const text = inner.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    if (text.length >= 2 && text.length <= 20 && BUY_INTENT_SHORT.test(text)) {
+      // No tocar botones de formularios ajenos (descuentos, newsletter, login)
+      if (/<form[\s\S]*?$/i.test(h.slice(0, h.indexOf(m)).slice(-500)) && /discount|newsletter|login/i.test(h.slice(0, h.indexOf(m)).slice(-500))) return m;
+      count++;
+      if (tag.toLowerCase() === 'a') {
+        const clean = String(attrs).replace(/\shref\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, ' ');
+        return `<a${clean} href="#xorbit-checkout" data-xorbit-checkout="1">${inner}</a>`;
+      }
+      return `<${tag}${attrs} data-xorbit-checkout="1" type="button">${inner}</${tag}>`;
+    }
+    return m;
+  });
+
+  // 2b. Página de producto sin CTAs cableados: inyectar botón de compra CRM
+  const isProduct = /\/products\//i.test(pageUrl);
+  if (isProduct && count === 0) {
+    const nameM = h.match(/<h1[^>]*>([\s\S]*?)<\/h1\s*>/i);
+    const prodName = nameM ? nameM[1].replace(/<[^>]+>/g, '').trim().slice(0, 80) : 'este producto';
+    const priceM = h.match(/<meta[^>]+property\s*=\s*["'](?:[a-z]+:)?price:amount["'][^>]*content\s*=\s*["']([^"']+)["']/i)
+      || h.match(/content\s*=\s*["']([^"']+)["'][^>]*property\s*=\s*["'](?:[a-z]+:)?price:amount["']/i);
+    const price = priceM ? priceM[1].trim() : '';
+    const buyBtn = `
+<div data-xorbit-buybar style="position:sticky;bottom:0;z-index:99990;background:rgba(14,12,7,.96);border-top:1px solid #f5b94244;padding:12px 16px;display:flex;align-items:center;gap:12px;backdrop-filter:blur(8px)">
+  <div style="flex:1;min-width:0">
+    <div style="font-weight:800;color:#f5efe2;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escAttr(prodName)}</div>
+    ${price ? `<div style="color:#f5b942;font-weight:800;font-size:18px">$${escAttr(price)}</div>` : ''}
+  </div>
+  <button data-xorbit-checkout="1" type="button" style="background:linear-gradient(135deg,#f5b942,#b97f16);color:#1a1206;font-weight:800;font-size:16px;padding:14px 28px;border:none;border-radius:12px;cursor:pointer;white-space:nowrap">Comprar ahora</button>
+</div>`;
+    if (/<\/body\s*>/i.test(h)) h = h.replace(/<\/body\s*>/i, `${buyBtn}\n</body>`);
+    else h += buyBtn;
+    count++;
+  }
+  return { html: h, count };
+}
+
+function escAttr(s: unknown): string {
+  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').slice(0, 200);
+}
+
+// Clonado visual: HTML + CSS inline + URLs absolutas + sanitizado + CTAs al CRM
+async function cloneVisual(url: string): Promise<{ rawHtml: string; meta: AnyRow; stats: AnyRow }> {
+  const html = await fetchHtmlSafe(url);
+  if (!html) {
+    const err: any = new Error('No pudimos abrir esa página. Revisa que la dirección esté bien.');
+    err.status = 422; throw err;
+  }
+  let h = html;
+  const stats: AnyRow = { htmlBytes: html.length, cssFiles: 0, cssBytes: 0, ctasRewired: 0 };
+
+  // 1. Extraer hojas de estilo e inlinearlas
+  const cssHrefs: string[] = [];
+  const linkRe = /<link\b[^>]*rel\s*=\s*["']stylesheet["'][^>]*>/gi;
+  let lm: RegExpExecArray | null;
+  while ((lm = linkRe.exec(html)) && cssHrefs.length < MAX_CSS_FILES) {
+    const hrefM = lm[0].match(/href\s*=\s*["']([^"']+)["']/i);
+    if (hrefM) {
+      const abs = absUrl(url, hrefM[1]);
+      if (abs && !cssHrefs.includes(abs)) cssHrefs.push(abs);
+    }
+  }
+  let inlinedCss = '';
+  for (const cssUrl of cssHrefs) {
+    try {
+      const css = await fetchCssSafe(cssUrl);
+      if (css && css.length > 50) {
+        inlinedCss += `\n/* xorbit-clone: ${cssUrl} */\n${absolutizeCssUrls(css, cssUrl)}`;
+      }
+    } catch { /* seguir sin esa hoja */ }
+  }
+  if (inlinedCss) {
+    stats.cssFiles = cssHrefs.length; stats.cssBytes = inlinedCss.length;
+    h = h.replace(/<link\b[^>]*rel\s*=\s*["']stylesheet["'][^>]*>/gi, (tag: string) => {
+      const hrefM = tag.match(/href\s*=\s*["']([^"']+)["']/i);
+      const abs = hrefM ? absUrl(url, hrefM[1]) : '';
+      return (abs && cssHrefs.includes(abs)) ? ' ' : tag; // inlineados fuera; el resto queda como fallback
+    });
+    if (/<\/head\s*>/i.test(h)) h = h.replace(/<\/head\s*>/i, `<style data-xorbit-clone-css>${inlinedCss}</style>\n</head>`);
+    else h = `<style data-xorbit-clone-css>${inlinedCss}</style>\n${h}`;
+  }
+
+  // 2. Absolutizar URLs de recursos
+  h = absolutizeHtmlUrls(h, url);
+
+  // 3. Sanitizar
+  h = sanitizeClonedHtml(h);
+
+  // 4. Re-cablear CTAs de compra al checkout del CRM (v2: + botón inyectado en productos)
+  const rw = rewireCtasV2(h, url);
+  h = rw.html; stats.ctasRewired = rw.count;
+
+  // 5. Meta
+  const title = (html.match(/<title[^>]*>([\s\S]*?)<\/title\s*>/i)?.[1] || '')
+    .replace(/<[^>]+>/g, '').trim().slice(0, 120);
+  const waMatch = html.match(/wa\.me\/(\d+)|api\.whatsapp\.com\/send\?phone=(\d+)/i);
+  const accent = (html.match(/<meta[^>]+name\s*=\s*["']theme-color["'][^>]*content\s*=\s*["']([^"']+)["']/i)?.[1] || '').trim();
+
+  if (h.length > MAX_RAW_HTML_BYTES) {
+    const err: any = new Error('La página es demasiado grande para clonarla (límite 2.5 MB).');
+    err.status = 422; throw err;
+  }
+  stats.finalBytes = h.length;
+  return {
+    rawHtml: h,
+    meta: {
+      title,
+      whatsapp: waMatch ? (waMatch[1] || waMatch[2]) : '',
+      accent: /^#[0-9a-fA-F]{3,6}$/.test(accent) ? accent : '',
+    },
+    stats,
+  };
+}
+
+// Sanitiza el rawHtml guardado (defensa en profundidad al guardar/editar)
+function sanitizeRawHtml(html: unknown): string {
+  let h = String(html || '');
+  if (h.length > MAX_RAW_HTML_BYTES) h = h.slice(0, MAX_RAW_HTML_BYTES);
+  // Quitar el script del editor visual si quedó pegado, y la capa CRM inyectada
+  h = h.replace(/<script[^>]*data-xorbit-editor[^>]*>[\s\S]*?<\/script\s*>/gi, ' ');
+  h = h.replace(/<div[^>]*id="xorbit-co"[\s\S]*?<!--\/xorbit-co-->/gi, ' ');
+  h = sanitizeClonedHtml(h);
+  // Preservar el marcador de checkout del CRM
+  return h;
+}
+
+// Render de página visual: HTML clonado + capa CRM (checkout, WhatsApp, beacon)
+function renderRawHtmlPage(page: AnyRow): string {
+  const s: BuilderSettings = page.settings || {};
+  const wa = s.whatsappNumber ? normPhone(s.whatsappNumber) : '';
+  const pageId = esc(String(page.id || ''));
+  const checkoutType = s.checkoutType || 'both';
+  const showCod = checkoutType === 'cod' || checkoutType === 'both';
+  const showPrepaid = checkoutType === 'prepaid' || checkoutType === 'both';
+  const defaultPm = showCod ? 'cod' : 'prepaid';
+
+  const crmLayer = `
+<div id="xorbit-co" style="display:none;position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,.72);align-items:center;justify-content:center;padding:16px;font-family:system-ui,sans-serif">
+  <div style="background:#161208;color:#f5efe2;border:1px solid #f5b94266;border-radius:20px;max-width:440px;width:100%;padding:26px;max-height:92vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.5)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <h3 style="margin:0;font-size:20px;font-weight:800;color:#f5efe2">Completa tu pedido</h3>
+      <button id="xorbit-co-x" type="button" style="background:none;border:none;color:#f5efe2;font-size:26px;cursor:pointer;line-height:1">&times;</button>
+    </div>
+    <form id="xorbit-co-form">
+      <label style="display:block;font-size:13px;margin:10px 0 4px;color:#c9bfa8">Nombre completo</label>
+      <input name="co_name" required style="width:100%;padding:12px;border-radius:10px;border:1px solid #ffffff22;background:#0e0c07;color:#f5efe2;font-size:15px" placeholder="Tu nombre">
+      <label style="display:block;font-size:13px;margin:10px 0 4px;color:#c9bfa8">WhatsApp</label>
+      <input name="co_phone" required inputmode="tel" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ffffff22;background:#0e0c07;color:#f5efe2;font-size:15px" placeholder="300 123 4567">
+      <label style="display:block;font-size:13px;margin:10px 0 4px;color:#c9bfa8">Ciudad</label>
+      <input name="co_city" required style="width:100%;padding:12px;border-radius:10px;border:1px solid #ffffff22;background:#0e0c07;color:#f5efe2;font-size:15px" placeholder="Tu ciudad">
+      <label style="display:block;font-size:13px;margin:10px 0 4px;color:#c9bfa8">Dirección</label>
+      <input name="co_addr" required style="width:100%;padding:12px;border-radius:10px;border:1px solid #ffffff22;background:#0e0c07;color:#f5efe2;font-size:15px" placeholder="Calle, número, barrio">
+      <label style="display:block;font-size:13px;margin:10px 0 4px;color:#c9bfa8">Cantidad</label>
+      <input name="co_qty" type="number" min="1" max="10" value="1" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ffffff22;background:#0e0c07;color:#f5efe2;font-size:15px">
+      <label style="display:block;font-size:13px;margin:10px 0 4px;color:#c9bfa8">Método de pago</label>
+      <select name="co_pm" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ffffff22;background:#0e0c07;color:#f5efe2;font-size:15px">
+        ${showCod ? '<option value="cod">Pago contra entrega</option>' : ''}
+        ${showPrepaid ? '<option value="prepaid">Pago anticipado</option>' : ''}
+      </select>
+      <button type="submit" id="xorbit-co-send" style="width:100%;margin-top:18px;background:linear-gradient(135deg,#f5b942,#b97f16);color:#1a1206;font-weight:800;font-size:17px;padding:15px;border:none;border-radius:12px;cursor:pointer">Confirmar pedido</button>
+    </form>
+    <div id="xorbit-co-ok" style="display:none;text-align:center;padding:20px 0">
+      <div style="font-size:48px;margin-bottom:10px">&#9989;</div>
+      <div style="font-size:18px;font-weight:800;margin-bottom:6px">¡Pedido recibido!</div>
+      <div style="color:#c9bfa8">Te contactaremos por WhatsApp para confirmar el envío.</div>
+    </div>
+  </div>
+</div>
+<!--/xorbit-co-->
+${wa ? `<a href="https://wa.me/${wa}?text=${encodeURIComponent('Hola, vengo de la página ' + (page.name || ''))}" target="_blank" rel="noopener" aria-label="WhatsApp" style="position:fixed;right:18px;bottom:18px;z-index:99998;width:58px;height:58px;border-radius:50%;background:#25d366;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 20px rgba(0,0,0,.35)"><svg width="30" height="30" viewBox="0 0 24 24" fill="#fff"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5.1-1.3A10 10 0 1 0 12 2zm5.5 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.4-.7-2.9-1.2-4.7-4.1-4.9-4.3-.1-.2-1.1-1.5-1.1-2.9s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5s.8 1.9.8 2c.1.1.1.3 0 .5-.3.6-.6.8-.4 1.1.7 1.2 1.6 2 2.8 2.6.3.2.5.1.7-.1l.8-.9c.2-.3.4-.2.7-.1l2 1c.3.1.5.2.6.4 0 .1 0 .7-.4 1.3z"/></svg></a>` : ''}
+<script data-xorbit-crm>
+(function(){
+  var PID = "${pageId}";
+  var modal = document.getElementById('xorbit-co');
+  function openM(){ if(modal){ modal.style.display='flex'; document.body.style.overflow='hidden'; } }
+  function closeM(){ if(modal){ modal.style.display='none'; document.body.style.overflow=''; } }
+  document.addEventListener('click', function(e){
+    var t = e.target && e.target.closest ? e.target.closest('[data-xorbit-checkout]') : null;
+    if (t) { e.preventDefault(); openM(); return; }
+    if (e.target && (e.target.id === 'xorbit-co' || e.target.id === 'xorbit-co-x')) closeM();
+  });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeM(); });
+  var form = document.getElementById('xorbit-co-form');
+  if (form) form.addEventListener('submit', function(e){
+    e.preventDefault();
+    var btn = document.getElementById('xorbit-co-send');
+    if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
+    var data = {
+      name: form.co_name.value, phone: form.co_phone.value, city: form.co_city.value,
+      address: form.co_addr.value, qty: form.co_qty.value, payment_method: form.co_pm.value
+    };
+    fetch('/api/public/pages/' + PID + '/orders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        if (j && j.ok) { form.style.display='none'; document.getElementById('xorbit-co-ok').style.display='block'; }
+        else { alert((j && j.error) || 'No se pudo registrar el pedido. Intenta de nuevo.'); if (btn) { btn.disabled = false; btn.textContent = 'Confirmar pedido'; } }
+      })
+      .catch(function(){ alert('Error de conexión. Intenta de nuevo.'); if (btn) { btn.disabled = false; btn.textContent = 'Confirmar pedido'; } });
+  });
+  try { fetch('/api/public/pages/' + PID + '/pageview', { method: 'POST' }).catch(function(){}); } catch(e){}
+})();
+</script>`;
+
+  let h = String(page.rawHtml || '');
+  if (/<\/body\s*>/i.test(h)) h = h.replace(/<\/body\s*>/i, `${crmLayer}\n</body>`);
+  else h += crmLayer;
+  return h;
+}
+
+// Re-clona las demos con el motor visual (2ª pasada, en background al arrancar)
+async function recloneDemoVisual(): Promise<{ ok: number; fail: number }> {
+  const store = pbStore();
+  let ok = 0, fail = 0;
+  for (const [slug, url] of Object.entries(DEMO_CLONE_URLS)) {
+    try {
+      const page = store.pages.find((p: AnyRow) => p.slug === slug);
+      if (!page) continue;
+      if ((page.clone_engine_v || 0) >= CLONE_ENGINE_V && isVisualPage(page)) continue;
+      const { rawHtml, meta } = await cloneVisual(url);
+      page.rawHtml = rawHtml;
+      page.blocks = [];
+      page.clone_engine_v = CLONE_ENGINE_V;
+      page.clone_source = url;
+      if (meta?.title && !String(page.name || '').trim()) page.name = String(meta.title).slice(0, 120);
+      page.updated_at = new Date().toISOString();
+      try {
+        const html = renderPageHtml(page);
+        const check = analyzeHtmlSnapshot(html, 'https://crm.xorbit360.com/p/' + slug, page.page_type === 'product' ? 'product' : 'home');
+        page.conversion_score = check.score;
+      } catch { /* puntaje opcional */ }
+      ok++;
+    } catch (e) { fail++; }
+  }
+  if (ok > 0) saveMemDB();
+  return { ok, fail };
+}
+
+// Script del editor visual in-situ (se inyecta solo en el iframe de edición)
+const VISUAL_EDITOR_SCRIPT = `
+<script data-xorbit-editor>
+(function(){
+  var selected = null, editOn = false;
+  function cleanSel(){ if (selected) { selected.style.outline=''; selected = null; } }
+  function elInfo(el){
+    var cs = window.getComputedStyle(el);
+    var kids = el.childNodes;
+    var onlyText = kids.length === 1 && kids[0].nodeType === 3;
+    return {
+      tag: el.tagName,
+      text: onlyText ? String(el.textContent).trim().slice(0, 600) : '',
+      canText: onlyText,
+      src: el.tagName === 'IMG' ? (el.getAttribute('src') || '') : '',
+      href: el.tagName === 'A' ? (el.getAttribute('href') || '') : '',
+      color: cs.color || '', bg: cs.backgroundColor || '', fontSize: cs.fontSize || ''
+    };
+  }
+  document.addEventListener('click', function(e){
+    if (!editOn) return;
+    e.preventDefault(); e.stopPropagation();
+    cleanSel();
+    selected = e.target;
+    if (!selected || selected === document.documentElement || selected === document.body) { selected = null; return; }
+    selected.style.outline = '3px solid #f5b942';
+    selected.style.outlineOffset = '2px';
+    try { parent.postMessage({ type: 'xorbit-select', el: elInfo(selected) }, '*'); } catch(err){}
+  }, true);
+  document.addEventListener('mouseover', function(e){
+    if (!editOn || e.target === selected) return;
+    e.target.style.outline = '1px dashed #f5b94288';
+    setTimeout(function(){ if (e.target !== selected) e.target.style.outline=''; }, 600);
+  }, true);
+  window.addEventListener('message', function(e){
+    var d = e.data || {};
+    if (d.type === 'xorbit-edit-on') { editOn = true; try { parent.postMessage({ type: 'xorbit-editor-ready' }, '*'); } catch(err){} }
+    if (d.type === 'xorbit-edit-off') { editOn = false; cleanSel(); }
+    if (d.type === 'xorbit-apply' && selected) {
+      var c = d.changes || {};
+      try {
+        if (c.text !== undefined && selected.childNodes.length === 1 && selected.childNodes[0].nodeType === 3) selected.textContent = c.text;
+        if (c.src !== undefined && selected.tagName === 'IMG' && c.src) selected.setAttribute('src', c.src);
+        if (c.href !== undefined && selected.tagName === 'A' && c.href) selected.setAttribute('href', c.href);
+        if (c.color) selected.style.color = c.color;
+        if (c.bg) selected.style.background = c.bg;
+        if (c.fontSize) selected.style.fontSize = c.fontSize;
+        parent.postMessage({ type: 'xorbit-select', el: elInfo(selected) }, '*');
+      } catch(err){}
+    }
+    if (d.type === 'xorbit-get-html') {
+      cleanSel();
+      var clone = document.documentElement.cloneNode(true);
+      var es = clone.querySelector('script[data-xorbit-editor]');
+      if (es) es.remove();
+      try { parent.postMessage({ type: 'xorbit-html', html: '<!DOCTYPE html>\\n' + clone.outerHTML }, '*'); } catch(err){}
+    }
+  });
+})();
+</script>`;
+
 // --- Rutas públicas ------------------------------------------------------------
 const memStats = new Map<string, { views: number; clicks: number }>();
 function bumpStat(id: string, field: 'views' | 'clicks') {
@@ -984,6 +1456,8 @@ function bumpStat(id: string, field: 'views' | 'clicks') {
 
 export function setupPageBuilderPublicRoutes(app: Express) {
   seedDemoPages();
+  // Re-clona las demos con el motor visual v2 (una sola vez, en background)
+  setTimeout(() => { recloneDemoVisual().then((r) => { if (r.ok) console.log(`[pageBuilder] demos re-clonadas: ${r.ok}`); }).catch(() => {}); }, 45_000);
   // Página pública
   app.get('/p/:slug', async (req: Request, res: Response) => {
     try {
