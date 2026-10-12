@@ -1722,6 +1722,21 @@ function saveDBData(data: any) {
 // In-memory load
 let currentDB = getDBData();
 
+// Puente para los modulos (ads, pageBuilder, social): leen/escriben su estado
+// en globalThis.currentDB. Sin este puente, getMemDB() devolvia un objeto
+// desechable y nada persistia (paginas del constructor, reglas del piloto...).
+Object.defineProperty(globalThis, 'currentDB', {
+  get: () => currentDB,
+  set: (v: any) => { if (v && typeof v === 'object') currentDB = v; },
+  configurable: true,
+});
+(globalThis as any).saveDB = (next?: any) => {
+  if (next && typeof next === 'object') currentDB = next;
+  saveDBData(currentDB);
+};
+(globalThis as any).persistDB = (globalThis as any).saveDB;
+(globalThis as any).saveDBData = saveDBData;
+
 // Ref al auto-bot de canales sociales (Zernio). Se asigna donde processWithAgents es visible;
 // el webhook de ingesta Zernio vive en otro scope y lo invoca por esta referencia.
 let handleSocialAutoBotRef: ((ctx: any) => Promise<void>) | null = null;

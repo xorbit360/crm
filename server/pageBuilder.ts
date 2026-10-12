@@ -116,7 +116,7 @@ function mdLine(s: string): string {
 }
 const BRAND_CSS = (accent: string) => `
 :root{--acc:${accent};--bg:#0e0c07;--bg2:#161208;--card:#1b160b;--txt:#f5efe2;--mut:#c9bfa8}
-*{box-sizing:border-box;margin:0;padding:0}
+*{box-sizing:border-box;margin:0;padding:0}img{max-width:100%;height:auto}
 body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--txt);line-height:1.6}
 .wrap{max-width:1080px;margin:0 auto;padding:0 20px}
 section{padding:56px 0}
@@ -151,7 +151,7 @@ h2{font-size:clamp(24px,3.6vw,36px);margin-bottom:14px}
 .form{background:var(--card);border:1px solid rgba(245,185,66,.25);border-radius:18px;padding:30px;max-width:520px;margin:0 auto}
 .form label{display:block;font-size:14px;color:var(--mut);margin:12px 0 4px}
 .form input,.form select{width:100%;padding:13px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#0e0c07;color:var(--txt);font-size:16px}
-.payopts{display:flex;gap:10px;margin-top:6px}
+.payopts{display:flex;gap:10px;margin-top:6px;flex-wrap:wrap}
 .payopts label{flex:1;background:#0e0c07;border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:12px;text-align:center;cursor:pointer;font-size:15px;color:var(--txt);margin:0}
 .payopts input{width:auto;margin-right:6px}
 .wa-float{position:fixed;right:18px;bottom:18px;z-index:50;background:#25d366;color:#fff;width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(0,0,0,.45);text-decoration:none}
@@ -598,6 +598,43 @@ function sanitizeSettings(raw: unknown): BuilderSettings {
   };
 }
 
+// --- Paginas demo (semilla idempotente) ---------------------------------------
+// El CEO pidio ver las plantillas en vivo: estas 4 paginas demo se crean una
+// sola vez (por slug) y quedan publicadas en /p/<slug>. Sin la palabra
+// "ejemplo" en ningun slug (regla permanente).
+const DEMO_PAGES: Array<{ slug: string; name: string; template: TemplateKind; pageType: string; desc: string }> = [
+  { slug: "demo-ecommerce", name: "Demo \u00b7 E-commerce Contraentrega", template: "ecommerce", pageType: "landing", desc: "Pagina demo de la plantilla E-commerce Contraentrega del Constructor Xorbit 360." },
+  { slug: "demo-tienda", name: "Demo \u00b7 Tienda (clon)", template: "ecommerce_clon", pageType: "landing", desc: "Pagina demo de la plantilla Tienda del Constructor Xorbit 360." },
+  { slug: "demo-producto", name: "Demo \u00b7 Landing de Producto (clon)", template: "producto_clon", pageType: "product", desc: "Pagina demo de la plantilla Landing de Producto del Constructor Xorbit 360." },
+  { slug: "demo-corporativa", name: "Demo \u00b7 Web Corporativa (clon)", template: "corporativa_clon", pageType: "website", desc: "Pagina demo de la plantilla Web Corporativa del Constructor Xorbit 360." },
+];
+
+export function seedDemoPages(): void {
+  try {
+    const store = pbStore();
+    const now = new Date().toISOString();
+    let changed = false;
+    for (const d of DEMO_PAGES) {
+      if (store.pages.some((p) => p.slug === d.slug)) continue;
+      const blocks = templateBlocks(d.template);
+      const settings = sanitizeSettings({ checkoutType: "both", currency: "COP", metaDescription: d.desc });
+      const page: AnyRow = {
+        id: uid('pg'), tenant_id: DEFAULT_TENANT, slug: d.slug, name: d.name,
+        page_type: d.pageType, status: 'published', blocks, settings,
+        conversion_score: null, created_at: now, updated_at: now,
+      };
+      try {
+        const html = renderPageHtml(page);
+        const check = analyzeHtmlSnapshot(html, 'https://crm.xorbit360.com/p/' + d.slug, d.pageType === 'product' ? 'product' : 'home');
+        page.conversion_score = check.score;
+      } catch { /* el puntaje es opcional */ }
+      store.pages.unshift(page);
+      changed = true;
+    }
+    if (changed) saveMemDB();
+  } catch { /* nunca romper el arranque */ }
+}
+
 export function setupPageBuilderAdminRoutes(app: Express) {
   // Listar
   app.get('/api/page-builder/pages', async (req: Request, res: Response) => {
@@ -946,6 +983,7 @@ function bumpStat(id: string, field: 'views' | 'clicks') {
 }
 
 export function setupPageBuilderPublicRoutes(app: Express) {
+  seedDemoPages();
   // Página pública
   app.get('/p/:slug', async (req: Request, res: Response) => {
     try {
