@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from 'express';
 import { getSupabase } from './supabase.ts';
 import { renderLivePage } from './livePage.ts';
+import { findPageByDomain as findBuilderPageByDomain, renderPageHtml as renderBuilderPageHtml } from './pageBuilder.ts';
 
 // ============================================================================
 // Live Selling real: landings multi-tenant, API pública y panel CRM.
@@ -788,6 +789,12 @@ export function setupLiveSellingPublicRoutes(app: Express): void {
       if (byDomain) {
         res.setHeader('Cache-Control', 'no-store');
         res.type('html').send(renderLivePage(byDomain.slug));
+        return;
+      }
+      const builderPage = findBuilderPageByDomain(host);
+      if (builderPage) {
+        res.setHeader('Cache-Control', 'no-store');
+        res.type('html').send(renderBuilderPageHtml(builderPage));
         return;
       }
       const subdomainSlug = platformSubdomainSlug(host);

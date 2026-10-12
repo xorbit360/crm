@@ -74,7 +74,7 @@ function pbStore(): { pages: AnyRow[] } {
   return mdb.pageBuilder;
 }
 function pageSummary(p: AnyRow): AnyRow {
-  return { id: p.id, slug: p.slug, name: p.name, page_type: p.page_type, status: p.status, conversion_score: p.conversion_score ?? null, created_at: p.created_at, updated_at: p.updated_at };
+  return { id: p.id, slug: p.slug, name: p.name, page_type: p.page_type, status: p.status, conversion_score: p.conversion_score ?? null, custom_domain: p.custom_domain || '', domain_verified: !!p.domain_verified, domain_status: p.domain_status || 'not_configured', created_at: p.created_at, updated_at: p.updated_at };
 }
 function tenantId(req: Request): string {
   const user: any = (req as any).authUser || {};
@@ -223,7 +223,7 @@ ${emb ? `<div class="video-wrap"><iframe src="${esc(emb)}" allowfullscreen></ifr
     }
     case 'imagen_texto': {
       return `<section><div class="wrap"><div class="split">
-<div>${p.image ? `<img src="${esc(p.image)}" alt="">` : ''}</div>
+<div>${p.image ? `<img src="${esc(p.image)}" alt="${esc(p.title)}">` : ''}</div>
 <div><h2>${esc(p.title || 'Título')}</h2><p class="sub">${mdLine(p.text || '')}</p>
 ${p.ctaText ? `<a class="btn" href="${esc(p.ctaUrl || '#pedido')}">${esc(p.ctaText)}</a>` : ''}</div></div></div></section>`;
     }
@@ -302,7 +302,150 @@ ${wa ? `<a class="wa-float" href="https://wa.me/${wa}?text=${encodeURIComponent(
 function blk(type: BlockType, props: Record<string, any> = {}): PageBlock {
   return { id: uid('b'), type, props };
 }
-export function templateBlocks(kind: 'oferta' | 'premium' | 'whatsapp' | 'producto'): PageBlock[] {
+
+// ============================================================================
+// 9 plantillas nuevas del Constructor (2026-10-11) — orden del CEO.
+// Reglas: H1 con palabra de beneficio, precio visible, imágenes con alt,
+// señales de confianza (vía trustChips), CTAs claros. Sin "ejemplo" en URLs.
+// ============================================================================
+
+const IMG = {
+  product: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&q=80&w=800',
+  store: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=800',
+  food1: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&q=80&w=800',
+  food2: 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?auto=format&fit=crop&q=80&w=800',
+  team: 'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=800',
+  analytics: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800',
+  clinic: 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&q=80&w=800',
+  skincare: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&q=80&w=800',
+  house1: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=800',
+  house2: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=800',
+  webinar: 'https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&q=80&w=800',
+  speaker: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=800',
+  sport: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&q=80&w=800',
+  tech: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80&w=800',
+};
+
+function tplEcommerce(): PageBlock[] {
+  return [
+    blk('hero', { badge: 'Pago contra entrega en todo el país', title: 'Lo que buscas, con envío gratis y pago al recibir', subtitle: 'Miles de clientes ya recibieron su pedido. Pide hoy y paga cuando lo tengas en tus manos.', ctaText: 'Pedir ahora', image: IMG.store }),
+    blk('beneficios', { title: 'Compra sin riesgo', items: ['**Envío gratis** a todo el país', '**Pagas al recibir** tu pedido', '**Garantía de devolución** total', '**Soporte por WhatsApp** inmediato'] }),
+    blk('producto', { name: 'Producto destacado', description: 'Calidad verificada, despacho en 24 horas y pago contra entrega o anticipado.', price: '$99.900', comparePrice: '$149.900', image: IMG.product, includes: 'Producto original\nEmpaque seguro\nGarantía de 12 meses', ctaText: 'Lo quiero — pedir ahora' }),
+    blk('testimonios', { title: 'Clientes que ya recibieron su pedido', items: [{ text: 'Llegó en 3 días y pagué al recibir. Total confianza.', name: 'Carolina M.', stars: 5 }, { text: 'El producto es tal cual la foto. Volveré a comprar.', name: 'Andrés R.', stars: 5 }, { text: 'Me asesoraron por WhatsApp antes de pedir. Excelente.', name: 'Diana L.', stars: 5 }] }),
+    blk('garantia', { title: 'Garantía de devolución total', text: 'Si no te encanta, lo devuelves y te devolvemos tu dinero. Sin preguntas incómodas.' }),
+    blk('faq', { items: [{ q: '¿Cuánto tarda el envío?', a: 'Entre 2 y 5 días hábiles según tu ciudad. El envío es gratis.' }, { q: '¿Cómo pago?', a: 'Pagas al recibir tu pedido (contra entrega) o por anticipado con descuento.' }, { q: '¿Y si no me gusta?', a: 'Tienes garantía de devolución total.' }] }),
+    blk('checkout', { title: 'Completa tu pedido', subtitle: 'Déjanos tus datos y te contactamos para confirmar el envío.' }),
+    blk('footer', {}),
+  ];
+}
+
+function tplServicios(): PageBlock[] {
+  return [
+    blk('hero', { badge: 'Agenda abierta', title: 'Hacemos crecer tu negocio con resultados garantizados', subtitle: 'Planes desde $299.000/mes. Sin permanencia: si no ves resultados, no pagas el siguiente mes.', ctaText: 'Agendar llamada gratis', image: IMG.team }),
+    blk('beneficios', { title: 'Nuestros servicios', items: ['**Estrategia digital** a tu medida', '**Publicidad** que sí retorna', '**Automatización** de ventas', '**Reportes claros** cada semana'] }),
+    blk('imagen_texto', { title: 'Un proceso simple, sin humo', text: 'Diagnóstico gratuito, plan de acción en 48 horas y resultados desde el primer mes. Tú apruebas cada paso.', image: IMG.analytics, ctaText: 'Quiero mi diagnóstico', ctaUrl: '#contacto' }),
+    blk('testimonios', { title: 'Casos de clientes', items: [{ text: 'Duplicamos sus ventas en 90 días con el mismo presupuesto.', name: 'Gerente Comercial', stars: 5 }, { text: 'Por fin una agencia que reporta con números reales.', name: 'Fundadora E-commerce', stars: 5 }, { text: 'El diagnóstico gratuito ya nos dio más claridad que años de intentos.', name: 'Director PYME', stars: 5 }] }),
+    blk('cta', { title: '¿Hablamos de tu proyecto?', subtitle: 'Agenda una llamada gratuita de 20 minutos. Sin compromiso.', text: 'Agendar por WhatsApp' }),
+    blk('faq', { items: [{ q: '¿Cuánto cuesta?', a: 'Planes desde $299.000/mes según tus objetivos. El diagnóstico inicial es gratis.' }, { q: '¿Hay permanencia?', a: 'No. Trabajamos mes a mes: si no hay resultados, no sigues pagando.' }] }),
+    blk('footer', {}),
+  ];
+}
+
+function tplRestaurante(): PageBlock[] {
+  return [
+    blk('hero', { badge: 'Domicilios hoy mismo', title: 'El sabor que amas, con envío gratis en tu zona', subtitle: 'Pide por WhatsApp y recíbelo caliente en menos de 45 minutos.', ctaText: 'Pedir por WhatsApp', image: IMG.food1 }),
+    blk('producto', { name: 'Plato estrella de la casa', description: 'Nuestra receta insignia, preparada al momento con ingredientes frescos.', price: '$32.900', comparePrice: '$39.900', image: IMG.food2, ctaText: 'Pedir este plato' }),
+    blk('beneficios', { title: 'Por qué pedir aquí', items: ['**Envío gratis** en la zona', '**Preparación al momento**', '**Ingredientes frescos** del día', '**Pago al recibir** o anticipado'] }),
+    blk('testimonios', { title: 'Lo que dicen los comensales', items: [{ text: 'El mejor domicilio de la zona. Llegó caliente y rapidísimo.', name: 'Paola G.', stars: 5 }, { text: 'Porciones generosas y sabor casero de verdad.', name: 'Felipe T.', stars: 5 }] }),
+    blk('imagen_texto', { title: 'Encuéntranos', text: 'Abierto todos los días de 11:00 a. m. a 10:00 p. m. Domicilios en toda la zona.', image: IMG.food1 }),
+    blk('cta', { title: '¿Hambre? Pide ahora', subtitle: 'Escríbenos y te tomamos el pedido en 1 minuto.', text: 'Pedir por WhatsApp' }),
+    blk('footer', {}),
+  ];
+}
+
+function tplClinica(): PageBlock[] {
+  return [
+    blk('hero', { badge: 'Primera valoración gratis', title: 'Resultados visibles con garantía de satisfacción', subtitle: 'Tratamientos desde $149.000. Agenda tu valoración sin costo por WhatsApp.', ctaText: 'Agendar valoración gratis', image: IMG.clinic }),
+    blk('beneficios', { title: 'Nuestros tratamientos', items: ['**Limpieza facial** profunda', '**Rejuvenecimiento** con tecnología', '**Tratamientos corporales**', '**Asesoría** personalizada'] }),
+    blk('imagen_texto', { title: 'Resultados reales', text: 'Cada tratamiento incluye seguimiento y garantía: si no ves cambios, ajustamos tu plan sin costo.', image: IMG.skincare, ctaText: 'Ver tratamientos' }),
+    blk('testimonios', { title: 'Pacientes felices', items: [{ text: 'Desde la primera sesión noté el cambio. Profesionales de verdad.', name: 'Marcela V.', stars: 5 }, { text: 'La valoración gratuita me dio total confianza para empezar.', name: 'Johana P.', stars: 5 }] }),
+    blk('garantia', { title: 'Garantía de satisfacción', text: 'Si no ves resultados, reevaluamos tu tratamiento sin costo adicional.' }),
+    blk('cta', { title: 'Agenda tu valoración gratis', subtitle: 'Cupos limitados por semana. Escríbenos hoy.', text: 'Agendar por WhatsApp' }),
+    blk('faq', { items: [{ q: '¿La valoración tiene costo?', a: 'No, la primera valoración es completamente gratis y sin compromiso.' }, { q: '¿Cuántas sesiones necesito?', a: 'Depende de tu caso; en la valoración te damos un plan claro con precios desde $149.000.' }] }),
+    blk('footer', {}),
+  ];
+}
+
+function tplInmobiliaria(): PageBlock[] {
+  return [
+    blk('hero', { badge: 'Oportunidad destacada', title: 'Tu próxima propiedad, con asesoría garantizada', subtitle: 'Acompañamiento legal y financiero incluido en cada negocio.', ctaText: 'Agendar visita', image: IMG.house1 }),
+    blk('producto', { name: 'Propiedad destacada', description: 'Ubicación privilegiada, acabados premium y valorización asegurada.', price: '$485.000.000', comparePrice: '$520.000.000', image: IMG.house2, includes: 'Escrituración incluida\nEstudio de títulos\nAcompañamiento bancario', ctaText: 'Quiero visitarla' }),
+    blk('beneficios', { title: 'Características', items: ['**3 habitaciones** + estudio', '**2 baños** con acabados premium', '**Parqueadero** doble cubierto', '**Zona social** completa'] }),
+    blk('imagen_texto', { title: 'Galería', text: 'Recorre cada espacio con nuestro tour virtual o agenda una visita presencial.', image: IMG.house1, ctaText: 'Agendar visita' }),
+    blk('testimonios', { title: 'Familias que ya se mudaron', items: [{ text: 'Nos acompañaron en todo el proceso. Cero estrés.', name: 'Familia Rojas', stars: 5 }, { text: 'Encontramos justo lo que buscábamos en dos semanas.', name: 'Carlos y Ana', stars: 5 }] }),
+    blk('cta', { title: '¿Agendamos tu visita?', subtitle: 'Escríbenos y coordinamos el día y la hora que prefieras.', text: 'Agendar por WhatsApp' }),
+    blk('footer', {}),
+  ];
+}
+
+function tplWebinar(): PageBlock[] {
+  return [
+    blk('hero', { badge: 'Cupo 100% gratis', title: 'Aprende el método con resultados garantizados en 90 minutos', subtitle: 'Valor $197.000 — hoy gratis. Solo 500 cupos por sesión.', ctaText: 'Reservar mi cupo gratis', image: IMG.webinar }),
+    blk('countdown', { title: 'La próxima sesión empieza en:', minutes: 120, ctaText: 'Reservar mi cupo' }),
+    blk('beneficios', { title: 'Lo que aprenderás', items: ['**El método** paso a paso, sin tecnicismos', '**Los 3 errores** que frenan tus resultados', '**Plantillas listas** para aplicar hoy', '**Sesión de preguntas** en vivo'] }),
+    blk('imagen_texto', { title: 'Tu ponente', text: 'Años de experiencia ayudando a cientos de personas a lograr resultados reales. Sin humo, solo método.', image: IMG.speaker }),
+    blk('testimonios', { title: 'Asistentes anteriores', items: [{ text: 'En 90 minutos aprendí más que en cursos de meses.', name: 'Sandra Q.', stars: 5 }, { text: 'Apliqué lo del webinar esa misma semana y funcionó.', name: 'Ricardo M.', stars: 5 }] }),
+    blk('cta', { title: 'Reserva tu cupo gratis', subtitle: 'Regístrate ahora y recibe el acceso por WhatsApp.', text: 'Reservar por WhatsApp' }),
+    blk('faq', { items: [{ q: '¿De verdad es gratis?', a: 'Sí, el cupo es 100% gratis. El valor real de la sesión es $197.000.' }, { q: '¿Queda grabado?', a: 'Solo los registrados reciben la repetición por 48 horas.' }] }),
+    blk('footer', {}),
+  ];
+}
+
+function tplEcommerceClon(): PageBlock[] {
+  return [
+    blk('hero', { badge: 'Tecnología probada por miles', title: 'Rendimiento superior con garantía total', subtitle: 'Diseño de última generación para quienes exigen más. Envío gratis y pago al recibir.', ctaText: 'Comprar ahora', image: IMG.tech }),
+    blk('beneficios', { title: 'Beneficios', items: ['**Mayor rendimiento** en cada uso', '**Estabilidad total** garantizada', '**Menos fatiga**, más resistencia', '**Protección y confort** superior'] }),
+    blk('imagen_texto', { title: 'Nosotros vs. lo tradicional', text: 'Mientras los productos convencionales se quedan cortos, nuestra tecnología entrega estabilidad, respuesta y durabilidad en cada uso.', image: IMG.sport, ctaText: 'Quiero el mío' }),
+    blk('testimonios', { title: 'Más de 1.600 clientes felices · 4.9/5', items: [{ text: 'La diferencia se siente desde el primer uso. No vuelvo a lo de antes.', name: 'Cliente verificado', stars: 5 }, { text: 'Calidad premium y el envío llegó rapidísimo.', name: 'Cliente verificado', stars: 5 }, { text: 'Pensé que era marketing, pero superó mis expectativas.', name: 'Cliente verificado', stars: 5 }] }),
+    blk('producto', { name: 'Producto insignia', description: 'La versión más completa: máximo rendimiento, garantía total y envío gratis.', price: '$159.900', comparePrice: '$199.900', image: IMG.product, ctaText: 'Comprar ahora' }),
+    blk('garantia', { title: 'Garantía incondicional', text: 'Si no supera tus expectativas, te devolvemos tu dinero. Compra sin riesgo.' }),
+    blk('faq', { items: [{ q: '¿Cuánto tarda el envío?', a: 'De 3 a 5 días hábiles con envío gratis.' }, { q: '¿Tiene garantía?', a: 'Sí, garantía total de satisfacción.' }] }),
+    blk('checkout', {}),
+    blk('footer', {}),
+  ];
+}
+
+function tplProductoClon(): PageBlock[] {
+  return [
+    blk('hero', { badge: '+187 reseñas · 4.9/5', title: 'Más rendimiento en cada uso, con envío gratis', subtitle: 'Tecnología avanzada que aprovecha al máximo cada movimiento. Págalo al recibir.', ctaText: 'Comprar ahora', image: IMG.tech }),
+    blk('beneficios', { title: 'Por qué funciona', items: ['**Máxima estabilidad** en cada movimiento', '**Menos fatiga** y más resistencia', '**Mayor impulso** en cada uso', '**Resultados** desde el primer día'] }),
+    blk('imagen_texto', { title: 'Potencia sin límites', text: 'Diseñado para ayudarte a aprovechar mejor tu energía, con materiales que responden cuando más los necesitas.', image: IMG.sport }),
+    blk('imagen_texto', { title: 'Soporte total', text: 'Una base firme y estable que acompaña tus movimientos para que reacciones con mayor confianza y control.', image: IMG.product }),
+    blk('testimonios', { title: 'Lo que dicen los clientes', items: [{ text: 'Se nota la calidad desde que lo sacas del empaque.', name: 'Cliente verificado', stars: 5 }, { text: 'El envío fue rápido y el producto superó lo esperado.', name: 'Cliente verificado', stars: 5 }] }),
+    blk('producto', { name: 'Producto insignia', description: 'Incluye garantía total, envío gratis de 3 a 5 días y pago contra entrega.', price: '$159.900', comparePrice: '$199.900', image: IMG.tech, includes: 'Producto original\nManual de uso\nGarantía total', ctaText: 'Comprar ahora' }),
+    blk('garantia', {}),
+    blk('faq', { items: [{ q: '¿Es original?', a: 'Sí, 100% original con garantía total.' }, { q: '¿Métodos de pago?', a: 'Contra entrega, transferencia y tarjeta.' }, { q: '¿Cuánto tarda?', a: 'Recíbelo en 3 a 5 días hábiles.' }] }),
+    blk('checkout', {}),
+    blk('footer', {}),
+  ];
+}
+
+function tplCorporativaClon(): PageBlock[] {
+  return [
+    blk('hero', { badge: 'Oferta del mes', title: 'Tu bienestar empieza aquí, con envío gratis', subtitle: 'Encuentra el plan ideal para ti y recibe 15% de descuento pagando por anticipado.', ctaText: 'Ver planes', image: IMG.skincare }),
+    blk('beneficios', { title: 'Elige tu punto de partida', items: ['**Plan Esencial**: para empezar tu cambio', '**Plan Clásico**: nuestra fórmula tradicional', '**Plan Total**: el acompañamiento más completo'] }),
+    blk('beneficios', { title: 'Compra con confianza', items: ['**Envío gratis** a todo el país', '**Devolución total** si no te encanta', '**Pago seguro** en línea', '**Asesoría** personalizada incluida'] }),
+    blk('testimonios', { title: 'Lo que dicen nuestros clientes', items: [{ text: 'El acompañamiento marcó la diferencia en mi proceso.', name: 'Clienta verificada', stars: 5 }, { text: 'Resultados reales en pocas semanas. Lo recomiendo.', name: 'Cliente verificado', stars: 5 }] }),
+    blk('imagen_texto', { title: 'Asesores que te acompañan', text: 'Nuestro equipo te guía paso a paso para que logres tus objetivos con un plan a tu medida.', image: IMG.team, ctaText: 'Hablar con un asesor' }),
+    blk('cta', { title: 'Empieza hoy mismo', subtitle: 'Escríbenos y un asesor te ayuda a elegir tu plan ideal.', text: 'Hablar por WhatsApp' }),
+    blk('faq', { items: [{ q: '¿El envío es gratis?', a: 'Sí, a todo el país.' }, { q: '¿Y si no me funciona?', a: 'Tienes devolución total garantizada.' }] }),
+    blk('footer', {}),
+  ];
+}
+
+export type TemplateKind = 'oferta' | 'premium' | 'whatsapp' | 'producto' | 'ecommerce' | 'servicios' | 'restaurante' | 'clinica' | 'inmobiliaria' | 'webinar' | 'ecommerce_clon' | 'producto_clon' | 'corporativa_clon';
+export const TEMPLATE_IDS: TemplateKind[] = ['oferta', 'premium', 'whatsapp', 'producto', 'ecommerce', 'servicios', 'restaurante', 'clinica', 'inmobiliaria', 'webinar', 'ecommerce_clon', 'producto_clon', 'corporativa_clon'];
+export function templateBlocks(kind: TemplateKind): PageBlock[] {
   const demo = 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&q=80&w=800';
   const base = {
     title: 'El producto que estabas buscando, con envío a todo el país',
@@ -335,6 +478,15 @@ export function templateBlocks(kind: 'oferta' | 'premium' | 'whatsapp' | 'produc
     blk('checkout', {}),
     blk('footer', {}),
   ];
+  if (kind === 'ecommerce') return tplEcommerce();
+  if (kind === 'servicios') return tplServicios();
+  if (kind === 'restaurante') return tplRestaurante();
+  if (kind === 'clinica') return tplClinica();
+  if (kind === 'inmobiliaria') return tplInmobiliaria();
+  if (kind === 'webinar') return tplWebinar();
+  if (kind === 'ecommerce_clon') return tplEcommerceClon();
+  if (kind === 'producto_clon') return tplProductoClon();
+  if (kind === 'corporativa_clon') return tplCorporativaClon();
   return [ // oferta
     blk('hero', { badge: 'Oferta por tiempo limitado', title: base.title, subtitle: base.subtitle, ctaText: base.ctaText, image: demo }),
     blk('countdown', { minutes: 60 }),
@@ -351,7 +503,57 @@ export const TEMPLATES = [
   { id: 'premium', name: 'Producto Premium', desc: 'Con prueba social fuerte y garantía incondicional.', },
   { id: 'whatsapp', name: 'Captación WhatsApp', desc: 'Sin formulario: todo el tráfico va al WhatsApp.', },
   { id: 'producto', name: 'Página de Producto', desc: 'Estilo ficha de producto con fotos, precio y pedido.', },
+  { id: 'ecommerce', name: 'E-commerce Contraentrega', desc: 'Tienda con pago al recibir: hero, oferta, testimonios y pedido.', },
+  { id: 'servicios', name: 'Servicios / Agencia', desc: 'Para agencias y profesionales: servicios, proceso, casos y contacto.', },
+  { id: 'restaurante', name: 'Restaurante / Comida', desc: 'Menú destacado, platos, ubicación y pedidos por WhatsApp.', },
+  { id: 'clinica', name: 'Clínica / Estética', desc: 'Tratamientos, resultados, testimonios y agenda por WhatsApp.', },
+  { id: 'inmobiliaria', name: 'Inmobiliaria', desc: 'Propiedad destacada, galería, características y agenda tu visita.', },
+  { id: 'webinar', name: 'Lanzamiento / Webinar', desc: 'Cuenta regresiva, beneficios, ponente y registro gratis.', },
+  { id: 'ecommerce_clon', name: 'E-commerce (clon)', desc: 'Estructura probada de tienda: comparativa, beneficios y prueba social.', },
+  { id: 'producto_clon', name: 'Landing Producto (clon)', desc: 'Página de producto larga: beneficios, detalles, reseñas y pedido.', },
+  { id: 'corporativa_clon', name: 'Corporativa (clon)', desc: 'Web de marca: planes, confianza, equipo y contacto.', },
 ];
+
+
+// --- Dominio propio (2026-10-11) -----------------------------------------------
+// Permite usar un dominio del usuario (ej: tienda.tudominio.com) en las páginas
+// del Constructor. Reutiliza el mecanismo de Live Selling: verificación por DNS,
+// mapa en app_settings y routers Traefik generados por xorbit-live-traefik-sync.
+function normalizeDomainPB(value: unknown): string {
+  const domain = String(value ?? '').trim().toLowerCase()
+    .replace(/^https?:\/\//, '').split('/')[0].split(':')[0].replace(/\.$/, '');
+  if (!domain || domain.length > 253) return '';
+  if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(domain)) return '';
+  if (domain === 'xorbit360.com' || domain.endsWith('.xorbit360.com')) return '';
+  return domain;
+}
+
+export function findPageByDomain(domain: string): AnyRow | null {
+  const d = normalizeDomainPB(domain);
+  if (!d) return null;
+  return pbStore().pages.find((p) => p.custom_domain === d && p.domain_verified && p.status === 'published') || null;
+}
+
+const BUILDER_DOMAINS_KEY = 'pagebuilder:custom_domains';
+
+async function syncBuilderDomains(): Promise<void> {
+  try {
+    const map: Record<string, { page_id: string; slug: string }> = {};
+    for (const p of pbStore().pages) {
+      if (p.custom_domain && p.domain_verified && p.status === 'published') {
+        map[p.custom_domain] = { page_id: p.id, slug: p.slug };
+      }
+    }
+    await db().from('app_settings').upsert(
+      { workspace_id: 'global', key: BUILDER_DOMAINS_KEY, value: map }
+    );
+  } catch { /* noop: se reintenta en la próxima verificación */ }
+}
+
+function builderDomainInstructions(domain: string): string {
+  const target = (process.env.PAGEBUILDER_CNAME_TARGET || 'crm.xorbit360.com').toLowerCase();
+  return `1. Entra a tu proveedor de DNS (Namecheap, GoDaddy, Hostinger, Cloudflare).\n2. Crea un registro CNAME: ${domain} → ${target} (o un registro A hacia 2.25.221.151).\n3. Si quieres la raíz del dominio (sin www), usa un subdominio como www.${domain}: la raíz no admite CNAME.\n4. Espera 5-10 minutos y pulsa "Verificar dominio".`;
+}
 
 // --- Rutas admin -------------------------------------------------------------
 function slugify(name: string): string {
@@ -413,7 +615,7 @@ export function setupPageBuilderAdminRoutes(app: Express) {
       const b = req.body || {};
       const name = cleanText(b.name, 120) || 'Nueva página';
       const pageType = ['landing', 'website', 'product'].includes(b.pageType) ? b.pageType : 'landing';
-      const blocks = b.blocks ? sanitizeBlocks(b.blocks) : templateBlocks(['oferta', 'premium', 'whatsapp', 'producto'].includes(b.template) ? b.template : 'oferta');
+      const blocks = b.blocks ? sanitizeBlocks(b.blocks) : templateBlocks((TEMPLATE_IDS as string[]).includes(b.template) ? b.template : 'oferta');
       const settings = sanitizeSettings(b.settings);
       const slug = await uniqueSlug(b.slug || name);
       const now = new Date().toISOString();
@@ -493,9 +695,72 @@ export function setupPageBuilderAdminRoutes(app: Express) {
       }
       page.status = 'published'; page.conversion_score = check.score; page.updated_at = new Date().toISOString();
       saveMemDB();
+      syncBuilderDomains().catch(() => {});
       res.json({ ok: true, score: check.score, url: `https://crm.xorbit360.com/p/${page.slug}` });
     } catch (e: any) { res.status(e.status || 500).json({ ok: false, error: e.message || 'Error publicando' }); }
   });
+
+
+  // --- Dominio propio ------------------------------------------------------
+  app.post('/api/page-builder/pages/:id/domain', async (req: Request, res: Response) => {
+    try {
+      const page = findPage(req.params.id, tenantId(req));
+      if (!page) { res.status(404).json({ ok: false, error: 'Página no encontrada' }); return; }
+      const domain = normalizeDomainPB(req.body?.domain);
+      if (!domain) { res.status(400).json({ ok: false, error: 'Dominio no válido. Ej: tienda.tudominio.com' }); return; }
+      const other = pbStore().pages.find((p) => p.id !== page.id && p.custom_domain === domain && p.domain_verified);
+      if (other) { res.status(409).json({ ok: false, error: 'Ese dominio ya está en uso en otra página.' }); return; }
+      page.custom_domain = domain;
+      page.domain_verified = false;
+      page.domain_status = 'pending';
+      page.updated_at = new Date().toISOString();
+      saveMemDB();
+      res.json({ ok: true, domain, verified: false, instructions: builderDomainInstructions(domain) });
+    } catch (e: any) { res.status(500).json({ ok: false, error: e.message || 'Error guardando dominio' }); }
+  });
+
+  app.post('/api/page-builder/pages/:id/verify-domain', async (req: Request, res: Response) => {
+    try {
+      const page = findPage(req.params.id, tenantId(req));
+      if (!page || !page.custom_domain) { res.status(404).json({ ok: false, error: 'Primero guarda un dominio.' }); return; }
+      const domain = page.custom_domain;
+      const target = (process.env.PAGEBUILDER_CNAME_TARGET || 'crm.xorbit360.com').toLowerCase();
+      const lookup = async (name: string, type: string): Promise<string[]> => {
+        try {
+          const r = await fetch(`https://dns.google/resolve?name=${encodeURIComponent(name)}&type=${type}`, { signal: AbortSignal.timeout(8000) });
+          const j: any = await r.json();
+          return (j?.Answer || []).map((a: any) => String(a.data || '').replace(/\.$/, '').toLowerCase());
+        } catch { return []; }
+      };
+      const [cname, a, targetA] = await Promise.all([lookup(domain, 'CNAME'), lookup(domain, 'A'), lookup(target, 'A')]);
+      const cnameMatch = cname.some((v) => v === target || v.endsWith('.' + target));
+      const addressMatch = a.some((v) => targetA.includes(v));
+      const verified = cnameMatch || addressMatch;
+      page.domain_verified = verified;
+      page.domain_status = verified ? 'verified' : 'failed';
+      page.domain_checked_at = new Date().toISOString();
+      page.updated_at = page.domain_checked_at;
+      saveMemDB();
+      await syncBuilderDomains();
+      res.json({ ok: true, verified, domain,
+        message: verified ? 'Dominio verificado ✓. En unos minutos estará activo con HTTPS.' : 'Aún no vemos el registro DNS. Revisa tu proveedor y reintenta en unos minutos.' });
+    } catch (e: any) { res.status(500).json({ ok: false, error: e.message || 'Error verificando' }); }
+  });
+
+  app.delete('/api/page-builder/pages/:id/domain', async (req: Request, res: Response) => {
+    try {
+      const page = findPage(req.params.id, tenantId(req));
+      if (!page) { res.status(404).json({ ok: false, error: 'Página no encontrada' }); return; }
+      page.custom_domain = '';
+      page.domain_verified = false;
+      page.domain_status = 'not_configured';
+      page.updated_at = new Date().toISOString();
+      saveMemDB();
+      await syncBuilderDomains();
+      res.json({ ok: true });
+    } catch (e: any) { res.status(500).json({ ok: false, error: e.message || 'Error' }); }
+  });
+
 
   // Despublicar
   app.post('/api/page-builder/pages/:id/unpublish', async (req: Request, res: Response) => {
@@ -504,6 +769,7 @@ export function setupPageBuilderAdminRoutes(app: Express) {
       if (!page) { res.status(404).json({ ok: false, error: 'Página no encontrada' }); return; }
       page.status = 'draft'; page.updated_at = new Date().toISOString();
       saveMemDB();
+      syncBuilderDomains().catch(() => {});
       res.json({ ok: true });
     } catch (e: any) { res.status(e.status || 500).json({ ok: false, error: e.message || 'Error' }); }
   });

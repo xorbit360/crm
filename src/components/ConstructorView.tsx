@@ -28,6 +28,15 @@ const TEMPLATES = [
   { id: 'premium', name: 'Producto Premium', desc: 'Prueba social fuerte y garantía incondicional.' },
   { id: 'whatsapp', name: 'Captación WhatsApp', desc: 'Sin formulario: todo el tráfico va a tu WhatsApp.' },
   { id: 'producto', name: 'Página de Producto', desc: 'Estilo ficha de producto con precio y pedido.' },
+  { id: 'ecommerce', name: 'E-commerce Contraentrega', desc: 'Tienda con pago al recibir: hero, oferta, testimonios y pedido.' },
+  { id: 'servicios', name: 'Servicios / Agencia', desc: 'Para agencias y profesionales: servicios, proceso, casos y contacto.' },
+  { id: 'restaurante', name: 'Restaurante / Comida', desc: 'Menú destacado, platos, ubicación y pedidos por WhatsApp.' },
+  { id: 'clinica', name: 'Clínica / Estética', desc: 'Tratamientos, resultados, testimonios y agenda por WhatsApp.' },
+  { id: 'inmobiliaria', name: 'Inmobiliaria', desc: 'Propiedad destacada, galería, características y agenda tu visita.' },
+  { id: 'webinar', name: 'Lanzamiento / Webinar', desc: 'Cuenta regresiva, beneficios, ponente y registro gratis.' },
+  { id: 'ecommerce_clon', name: 'E-commerce (clon)', desc: 'Estructura probada de tienda: comparativa, beneficios y prueba social.' },
+  { id: 'producto_clon', name: 'Landing Producto (clon)', desc: 'Página de producto larga: beneficios, detalles, reseñas y pedido.' },
+  { id: 'corporativa_clon', name: 'Corporativa (clon)', desc: 'Web de marca: planes, confianza, equipo y contacto.' },
 ];
 
 const card = 'bg-[#161208] border border-[#f5b94233] rounded-2xl p-4';
@@ -311,6 +320,77 @@ function BlockPropsEditor({ block, onChange }: { block: PageBlock; onChange: (p:
   );
 }
 
+
+function DomainPanel({ page, setPage, showToast }: any) {
+  const [open, setOpen] = useState(false);
+  const [domain, setDomain] = useState(page.custom_domain || '');
+  const [busy, setBusy] = useState(false);
+  const [instructions, setInstructions] = useState('');
+  const [msg, setMsg] = useState('');
+
+  const save = async () => {
+    setBusy(true); setMsg(''); setInstructions('');
+    try {
+      const j = await api(`/api/page-builder/pages/${page.id}/domain`, 'POST', { domain });
+      setPage({ ...page, custom_domain: j.domain, domain_verified: false, domain_status: 'pending' });
+      setInstructions(j.instructions || '');
+      setMsg('Dominio guardado. Sigue los pasos y verifícalo.');
+    } catch (e: any) { setMsg(e.message); }
+    setBusy(false);
+  };
+  const verify = async () => {
+    setBusy(true); setMsg('');
+    try {
+      const j = await api(`/api/page-builder/pages/${page.id}/verify-domain`, 'POST', {});
+      setPage({ ...page, domain_verified: j.verified, domain_status: j.verified ? 'verified' : 'failed' });
+      setMsg(j.message);
+      if (j.verified) showToast('Dominio verificado ✓');
+    } catch (e: any) { setMsg(e.message); }
+    setBusy(false);
+  };
+  const remove = async () => {
+    if (!window.confirm('¿Quitar el dominio propio de esta página?')) return;
+    setBusy(true);
+    try {
+      await api(`/api/page-builder/pages/${page.id}/domain`, 'DELETE');
+      setPage({ ...page, custom_domain: '', domain_verified: false, domain_status: 'not_configured' });
+      setDomain(''); setInstructions(''); setMsg('Dominio eliminado.');
+    } catch (e: any) { setMsg(e.message); }
+    setBusy(false);
+  };
+
+  const statusBadge = !page.custom_domain ? null : page.domain_verified
+    ? <span className="text-xs font-bold text-green-300 bg-green-500/15 rounded-full px-2.5 py-1">✓ Verificado</span>
+    : <span className="text-xs font-bold text-[#f5b942] bg-[#f5b94222] rounded-full px-2.5 py-1">Pendiente de verificación</span>;
+
+  return (
+    <div className={card}>
+      <button className="w-full flex items-center gap-2 font-bold text-[#f5efe2]" onClick={() => setOpen(!open)}>
+        <Globe size={16} className="text-[#f5b942]" /> Dominio propio
+        <span className="ml-auto text-gray-500 text-sm">{open ? '▲' : '▼'}</span>
+      </button>
+      {page.custom_domain && <div className="mt-2 flex items-center gap-2 text-sm text-gray-300">{page.custom_domain} {statusBadge}</div>}
+      {open && (
+        <div className="mt-3 space-y-3">
+          <div className="text-xs text-gray-400">Usa tu propio dominio (ej: tienda.tudominio.com) en vez de crm.xorbit360.com/p/....</div>
+          <div className="flex gap-2">
+            <input className={inputCls} placeholder="tienda.tudominio.com" value={domain} onChange={(e) => setDomain(e.target.value)} />
+            <button className={btnGold + ' whitespace-nowrap'} disabled={busy || !domain.trim()} onClick={save}>Guardar</button>
+          </div>
+          {instructions && <pre className="text-xs text-gray-300 bg-[#0e0c07] rounded-xl p-3 whitespace-pre-wrap">{instructions}</pre>}
+          <div className="flex flex-wrap gap-2">
+            {page.custom_domain && !page.domain_verified && <button className={btnGold} disabled={busy} onClick={verify}>{busy ? 'Verificando…' : 'Verificar dominio'}</button>}
+            {page.custom_domain && <button className={btnGhost} disabled={busy} onClick={remove}>Quitar</button>}
+          </div>
+          {page.domain_verified && <div className="text-xs text-green-300">Tu página ya abre en <b>https://{page.custom_domain}</b> con HTTPS automático.</div>}
+          {msg && <div className="text-xs text-gray-300">{msg}</div>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 function Editor({ page, setPage, onSave, saving, onPublish, showToast }: any) {
   const [previewHtml, setPreviewHtml] = useState('');
   const [check, setCheck] = useState<CheckResult | null>(null);
@@ -396,6 +476,8 @@ function Editor({ page, setPage, onSave, saving, onPublish, showToast }: any) {
           {settings.checkoutType === 'whatsapp' && <div className="text-xs text-amber-300">Sin formulario: los botones llevan al WhatsApp y el bloque de pedido se oculta.</div>}
         </div>
       )}
+
+      <DomainPanel page={page} setPage={setPage} showToast={showToast} />
 
       {check && (
         <div className={card + ' space-y-3'}>
