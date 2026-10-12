@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   PhoneCall, PhoneOutgoing, PhoneIncoming, Mic, Volume2, Play, Pause,
   Settings, Bot, Sparkles, CheckCircle2, XCircle, AlertCircle, RefreshCw,
@@ -73,6 +73,51 @@ export default function LlamadasView() {
   const [customPrompt, setCustomPrompt] = useState<string>(
     'Eres una asistente virtual amigable y profesional llamada Valeria. Tu meta principal es saludar al cliente por su nombre, confirmar la dirección registrada para el despacho Contra Entrega y resolver cualquier duda sobre el tiempo de llegada (2 a 4 días hábiles).'
   );
+
+  // --- Configuración del proveedor de voz (Google Live / Gemini) ---
+  const [voiceCfg, setVoiceCfg] = useState<{ provider: string; voice: string; voices: Array<{ id: string; label: string }>; googleKeySet: boolean; googleKeyMasked: string | null }>(
+    { provider: 'google', voice: 'Kore', voices: [], googleKeySet: false, googleKeyMasked: null }
+  );
+  const [googleKeyInput, setGoogleKeyInput] = useState('');
+  const [savingVoice, setSavingVoice] = useState(false);
+  const [testText, setTestText] = useState('¡Hola! Soy el asistente de voz de tu tienda. ¿En qué te puedo ayudar hoy?');
+  const [testingVoice, setTestingVoice] = useState(false);
+  const [testAudioUrl, setTestAudioUrl] = useState('');
+  const [voiceError, setVoiceError] = useState('');
+
+  const loadVoiceConfig = async () => {
+    try {
+      const r = await fetch('/api/voice/config');
+      const j = await r.json();
+      if (j && j.success) setVoiceCfg(j.config);
+    } catch { /* silencioso */ }
+  };
+  useEffect(() => { loadVoiceConfig(); }, []);
+
+  const saveVoiceConfig = async () => {
+    setSavingVoice(true); setVoiceError('');
+    try {
+      const payload: any = { provider: voiceCfg.provider, voice: voiceCfg.voice };
+      if (googleKeyInput.trim()) payload.googleKey = googleKeyInput.trim();
+      const r = await fetch('/api/voice/config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const j = await r.json();
+      if (!j || !j.success) throw new Error(j?.error || 'No se pudo guardar');
+      setVoiceCfg((c: any) => ({ ...c, ...j.config, voices: c.voices.length ? c.voices : (j.config.voices || []) }));
+      setGoogleKeyInput('');
+    } catch (e: any) { setVoiceError(e?.message || 'Error al guardar'); }
+    setSavingVoice(false);
+  };
+
+  const testVoice = async () => {
+    setTestingVoice(true); setVoiceError(''); setTestAudioUrl('');
+    try {
+      const r = await fetch('/api/voice/test-tts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: testText, voice: voiceCfg.voice }) });
+      const j = await r.json();
+      if (!j || !j.success) throw new Error(j?.error || 'No se pudo generar el audio');
+      setTestAudioUrl('data:' + (j.mimeType || 'audio/wav') + ';base64,' + j.audioBase64);
+    } catch (e: any) { setVoiceError(e?.message || 'Error al generar audio'); }
+    setTestingVoice(false);
+  };
 
   // Call Records State
   const [calls, setCalls] = useState<CallRecord[]>([
@@ -428,6 +473,71 @@ export default function LlamadasView() {
 
       {/* TAB 2: AGENTES & ENTRENAMIENTO DE VOZ */}
       {activeTab === 'agentes' && (
+        <>
+        <div className="bg-[#121215] border border-amber-500/30 rounded-3xl p-6 space-y-4 mb-6">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <h3 className="font-bold text-white text-base flex items-center gap-2">
+              <Volume2 size={18} className="text-amber-400" /> Proveedor de Voz
+            </h3>
+            {voiceCfg.googleKeySet ? (
+              <span className="text-[10px] bg-emerald-500/20 text-emerald-400 font-bold px-2 py-0.5 rounded-full">
+                <Check size={12} className="inline mr-1" />Clave guardada {voiceCfg.googleKeyMasked || ''}
+              </span>
+            ) : (
+              <span className="text-[10px] bg-amber-500/20 text-amber-300 font-bold px-2 py-0.5 rounded-full">Sin clave configurada</span>
+            )}
+          </div>
+          <p className="text-xs text-gray-400">
+            Las voces <span className="text-amber-300 font-semibold">Google Live</span> (las mismas de la API de Gemini)
+            cuestan una fracción de otros proveedores. Configúralas aquí y escucha cómo suenan antes de activar el agente real.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs text-gray-400 font-semibold">Proveedor</label>
+              <select value={voiceCfg.provider} onChange={(e) => setVoiceCfg({ ...voiceCfg, provider: e.target.value })}
+                className="mt-1 w-full bg-[#18181c] border border-gray-700 rounded-xl px-3 py-2 text-sm text-white">
+                <option value="google">Google Live / Gemini — recomendado (más barato)</option>
+                <option value="elevenlabs">ElevenLabs</option>
+                <option value="vapi">Vapi</option>
+                <option value="retell">Retell AI</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-gray-400 font-semibold">Voz de Google</label>
+              <select value={voiceCfg.voice} onChange={(e) => setVoiceCfg({ ...voiceCfg, voice: e.target.value })}
+                className="mt-1 w-full bg-[#18181c] border border-gray-700 rounded-xl px-3 py-2 text-sm text-white">
+                {voiceCfg.voices.map((v: any) => (<option key={v.id} value={v.id}>{v.label}</option>))}
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="text-xs text-gray-400 font-semibold">Clave de Google AI Studio</label>
+            <input type="password" value={googleKeyInput} onChange={(e) => setGoogleKeyInput(e.target.value)}
+              placeholder={voiceCfg.googleKeySet ? 'Clave guardada: pega otra solo si la vas a reemplazar' : 'Pega tu API key de Google AI Studio'}
+              className="mt-1 w-full bg-[#18181c] border border-gray-700 rounded-xl px-3 py-2 text-sm text-white" />
+            <p className="text-[11px] text-gray-500 mt-1">Gratis en Google AI Studio (aistudio.google.com). Se guarda cifrada.</p>
+          </div>
+          <div>
+            <button onClick={saveVoiceConfig} disabled={savingVoice}
+              className="px-4 py-2 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-black rounded-xl text-sm font-bold">
+              {savingVoice ? 'Guardando...' : 'Guardar configuración'}
+            </button>
+          </div>
+          <div className="border-t border-gray-800 pt-4">
+            <label className="text-xs text-gray-400 font-semibold">Probar voz</label>
+            <div className="flex gap-2 mt-1 flex-col sm:flex-row">
+              <input value={testText} onChange={(e) => setTestText(e.target.value)}
+                placeholder="Escribe algo en español para escuchar la voz..."
+                className="flex-1 bg-[#18181c] border border-gray-700 rounded-xl px-3 py-2 text-sm text-white" />
+              <button onClick={testVoice} disabled={testingVoice}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-1">
+                <Play size={14} /> {testingVoice ? 'Generando...' : 'Escuchar'}
+              </button>
+            </div>
+            {voiceError && <p className="text-xs text-red-400 mt-2">{voiceError}</p>}
+            {testAudioUrl && <audio controls src={testAudioUrl} className="w-full mt-3" />}
+          </div>
+        </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
           {/* Agent Selection List */}
@@ -547,6 +657,7 @@ export default function LlamadasView() {
           </div>
 
         </div>
+        </>
       )}
 
       {/* TAB 3: CAMPAÑAS DE CONFIRMACIÓN COD */}

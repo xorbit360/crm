@@ -38,6 +38,7 @@ import { setupAdsRoutes } from './server/ads.ts';
 import { setupRadarRoutes } from './server/radar.ts';
 import { setupPushRoutes } from './server/push.ts';
 import { setupDiagnosticAdminRoutes, setupDiagnosticPublicRoutes } from './server/diagnostic.ts';
+import { setupVoiceAdminRoutes } from './server/voice.ts';
 import { setupPageBuilderAdminRoutes, setupPageBuilderPublicRoutes } from './server/pageBuilder.ts';
 import { setupVideoGenAdminRoutes, startVideoWorker } from './server/videoGen.ts';
 import { setupZernioRoutes } from './server/zernio/routes.ts';
@@ -2463,6 +2464,7 @@ async function createServer() {
   setupRadarRoutes(app);
   setupPushRoutes(app);
   setupDiagnosticAdminRoutes(app);
+  setupVoiceAdminRoutes(app);
   setupPageBuilderAdminRoutes(app);
   setupVideoGenAdminRoutes(app);
   startVideoWorker();
