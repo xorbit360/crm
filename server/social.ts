@@ -325,7 +325,7 @@ export async function handleIncomingSocialComment(event: any): Promise<void> {
     }
 
     // ---- Modo sentimiento automático: clasifica y actúa según positivo/negativo/neutro ----
-    const sentimentActive = list.filter((a: AnyRow) => a.type === 'comment_sentiment' && a.isActive !== false && String(a.accountId) === accountId);
+    const sentimentActive = list.filter((a: AnyRow) => a.type === 'comment_sentiment' && a.isActive !== false && (String(a.accountId) === accountId || String((a as any).scope) === 'all'));
     for (const auto of sentimentActive) {
       const sentiment = await classifyCommentSentiment(text);
       const platform = String(data?.platform || 'instagram').toLowerCase();
@@ -522,7 +522,7 @@ export function setupSocialRoutes(app: express.Express) {
   router.post('/automations', async (req, res) => {
     try {
       const db = getDB();
-      const { type, accountId, name, keywords, dmMessage, commentReply, isActive } = req.body || {};
+      const { type, accountId, name, keywords, dmMessage, commentReply, isActive, scope } = req.body || {};
       if (!type || !accountId) return res.status(400).json({ success: false, error: 'Faltan type y accountId' });
 
       if (type === 'ice_breakers') {
@@ -542,17 +542,19 @@ export function setupSocialRoutes(app: express.Express) {
         return res.json({ success: true, automation: item });
       }
 
-      if (type === 'comment_ai') {
+      if (type === 'comment_ai' || type === 'comment_sentiment') {
         const aiPrompt = String((req.body as any)?.aiPrompt || '').trim();
         if (!aiPrompt) return res.status(400).json({ success: false, error: 'Escribe el prompt para la IA' });
         const item: AnyRow = {
           id: `cai-${accountId}-${Date.now()}`,
           type, accountId,
-          name: name || 'Respuesta IA a comentarios',
+          name: name || (type === 'comment_sentiment' ? 'Sentimiento automático' : 'Respuesta IA a comentarios'),
           aiPrompt,
+          scope: scope === 'all' ? 'all' : 'account',
           isActive: isActive !== false,
           updatedAt: new Date().toISOString(),
         };
+        if (dmMessage) (item as any).dmMessage = dmMessage;
         const list2 = getAutomations(db);
         list2.push(item);
         saveDB(db);

@@ -33,7 +33,7 @@ function Automatizaciones() {
   const [automations, setAutomations] = useState<any[]>([]);
   const [accountId, setAccountId] = useState('');
   const [showNew, setShowNew] = useState(false);
-  const [form, setForm] = useState({ type: 'comment_to_dm', name: '', keywords: '', dmMessage: '', commentReply: '', aiPrompt: '' });
+  const [form, setForm] = useState({ type: 'comment_to_dm', name: '', keywords: '', dmMessage: '', commentReply: '', aiPrompt: '', scope: 'account' });
   const [icePrompts, setIcePrompts] = useState<string[]>(['', '', '', '']);
   const [saving, setSaving] = useState(false);
 
@@ -63,7 +63,7 @@ function Automatizaciones() {
         body: JSON.stringify({ ...form, accountId, keywords: form.keywords.split(',').map((s) => s.trim()).filter(Boolean) }),
       });
       const j = await r.json();
-      if (j.success) { setShowNew(false); setForm({ type: 'comment_to_dm', name: '', keywords: '', dmMessage: '', commentReply: '', aiPrompt: '' }); await load(); }
+      if (j.success) { setShowNew(false); setForm({ type: 'comment_to_dm', name: '', keywords: '', dmMessage: '', commentReply: '', aiPrompt: '', scope: 'account' }); await load(); }
       else alert(j.error || 'No se pudo crear');
     } catch { alert('Error de red'); }
     setSaving(false);
@@ -146,6 +146,19 @@ function Automatizaciones() {
             </div>
           )}
           {form.type === 'comment_sentiment' && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-400">Alcance:</span>
+              <button type="button" onClick={() => setForm({ ...form, scope: 'account' })}
+                className={`text-xs px-3 py-1.5 rounded-lg border ${form.scope === 'account' ? 'bg-gold text-black border-gold font-semibold' : 'bg-gray-900 text-gray-300 border-gray-700'}`}>
+                Esta cuenta
+              </button>
+              <button type="button" onClick={() => setForm({ ...form, scope: 'all' })}
+                className={`text-xs px-3 py-1.5 rounded-lg border ${form.scope === 'all' ? 'bg-gold text-black border-gold font-semibold' : 'bg-gray-900 text-gray-300 border-gray-700'}`}>
+                🌐 Todos los canales
+              </button>
+            </div>
+          )}
+          {form.type === 'comment_sentiment' && (
             <textarea value={form.dmMessage} onChange={(e) => setForm({ ...form, dmMessage: e.target.value })} rows={2}
               placeholder="DM para comentarios POSITIVOS (opcional)" className={inputCls} />
           )}
@@ -181,7 +194,7 @@ function Automatizaciones() {
             </button>
             <div className="flex-1 min-w-0">
               <div className="text-sm font-semibold text-gray-100">{a.name}</div>
-              <div className="text-xs text-gray-500">{TYPE_LABEL[a.type] || a.type}{(a.type === 'comment_ai' || a.type === 'comment_sentiment') ? ' · 🤖' : (a.keywords?.length ? ` · "${a.keywords.join(', ')}"` : '')}</div>
+              <div className="text-xs text-gray-500">{TYPE_LABEL[a.type] || a.type}{(a.type === 'comment_ai' || a.type === 'comment_sentiment') ? ' · 🤖' : (a.keywords?.length ? ` · "${a.keywords.join(', ')}"` : '')}{a.type === 'comment_sentiment' && a.scope === 'all' ? ' · 🌐 todos' : ''}</div>
             </div>
             <button onClick={() => remove(a)} className="text-gray-500 hover:text-red-400"><Trash2 size={15} /></button>
           </div>
