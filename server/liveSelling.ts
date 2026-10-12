@@ -2,6 +2,8 @@ import type { Express, Request, Response } from 'express';
 import { getSupabase } from './supabase.ts';
 import { renderLivePage } from './livePage.ts';
 import { findPageByDomain as findBuilderPageByDomain, renderPageHtml as renderBuilderPageHtml } from './pageBuilder.ts';
+import crypto from 'crypto';
+import { encryptSecret, decryptSecret, isEncryptedSecret, maskSecret } from './secretBox.ts';
 
 // ============================================================================
 // Live Selling real: landings multi-tenant, API pública y panel CRM.
@@ -498,6 +500,145 @@ function route(handler: Handler) {
 // ---------------------------------------------------------------------------
 // Rutas públicas (sin sesión)
 // ---------------------------------------------------------------------------
+
+// ============================================================================
+// Webhooks salientes de Live Selling: sistema estándar y genérico al que
+// cualquier aplicación externa se puede conectar (URL + eventos + firma HMAC).
+// Fire-and-forget: nunca bloquean el flujo principal.
+// ============================================================================
+const LIVE_WEBHOOK_EVENTS = [
+  'live_started',
+  'live_ended',
+  'viewer_joined',
+  'comment_received',
+  'lead_captured',
+  'order_created',
+  'whatsapp_click',
+  'checkout_started',
+] as const;
+
+interface LiveWebhook {
+  id: string;
+  url: string;
+  events: string[];
+  active: boolean;
+  secret: string;
+  lastDelivery: { ok: boolean; at: string; status?: number; detail?: string } | null;
+}
+
+function liveSummary(row: AnyRow): AnyRow {
+  return { id: row?.id || null, slug: row?.slug || null, title: row?.title || null, status: row?.status || null };
+}
+
+function getLiveWebhooks(landing: AnyRow): LiveWebhook[] {
+  const raw = landing?.config?.webhooks;
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((w: any) => w && typeof w.url === 'string' && w.url.startsWith('https://'))
+    .map((w: any) => ({
+      id: String(w.id || ''),
+      url: w.url,
+      events: Array.isArray(w.events) && w.events.length ? w.events.map(String) : ['all'],
+      active: w.active !== false,
+      secret: typeof w.secret === 'string' ? w.secret : '',
+      lastDelivery: w.lastDelivery && typeof w.lastDelivery === 'object' ? w.lastDelivery : null,
+    }));
+}
+
+function webhookSubscribed(wh: LiveWebhook, event: string): boolean {
+  if (!wh.active) return false;
+  return wh.events.includes('all') || wh.events.includes(event);
+}
+
+function sanitizeLiveWebhooks(input: unknown, existing: LiveWebhook[]): LiveWebhook[] {
+  if (!Array.isArray(input)) return [];
+  const out: LiveWebhook[] = [];
+  for (const w of (input as AnyRow[]).slice(0, 10)) {
+    const url = cleanHttpUrl((w as AnyRow)?.url);
+    if (!url || !url.startsWith('https://')) continue;
+    const idRaw = String((w as AnyRow)?.id || '');
+    const id = /^[0-9a-f-]{8,40}$/i.test(idRaw) ? idRaw : crypto.randomUUID();
+    const prev = existing.find((e) => e.id === id);
+    const secretRaw = String((w as AnyRow)?.secret ?? '').trim();
+    // Si el campo viene vacío se conserva el secreto ya guardado.
+    const secret = secretRaw ? encryptSecret(secretRaw.slice(0, 200)) : (prev?.secret || '');
+    const eventsRaw = Array.isArray((w as AnyRow)?.events) ? (w as AnyRow).events : [];
+    const events = [...new Set(eventsRaw.map(String).filter((e: string) => (LIVE_WEBHOOK_EVENTS as readonly string[]).includes(e)))];
+    out.push({
+      id,
+      url,
+      events: (w as AnyRow)?.all === true || events.length === 0 ? ['all'] : events,
+      active: (w as AnyRow)?.active !== false,
+      secret,
+      lastDelivery: prev?.lastDelivery || null,
+    });
+  }
+  return out;
+}
+
+function publicLiveWebhooks(hooks: LiveWebhook[]): AnyRow[] {
+  return hooks.map((h) => {
+    let masked: string | null = null;
+    if (h.secret) {
+      try {
+        const raw = isEncryptedSecret(h.secret) ? decryptSecret(h.secret) : h.secret;
+        masked = maskSecret(raw);
+      } catch { masked = '••••••'; }
+    }
+    return { id: h.id, url: h.url, events: h.events, active: h.active, hasSecret: !!h.secret, secretMasked: masked, lastDelivery: h.lastDelivery };
+  });
+}
+
+async function dispatchLiveWebhooks(landing: AnyRow, event: string, data: AnyRow): Promise<void> {
+  const hooks = getLiveWebhooks(landing).filter((h) => webhookSubscribed(h, event));
+  if (!hooks.length) return;
+  const payload = JSON.stringify({
+    event,
+    occurred_at: new Date().toISOString(),
+    live_id: landing.id,
+    live_slug: landing.slug || null,
+    live_title: landing.title || null,
+    data,
+  });
+  const results: Array<{ id: string; ok: boolean; status?: number; detail?: string }> = [];
+  await Promise.all(hooks.map(async (h) => {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 10000);
+    try {
+      let secret = '';
+      if (h.secret) {
+        try { secret = isEncryptedSecret(h.secret) ? decryptSecret(h.secret) : h.secret; } catch { secret = ''; }
+      }
+      const headers: Record<string, string> = { 'Content-Type': 'application/json', 'User-Agent': 'Xorbit360-LiveSelling/1.0' };
+      if (secret) headers['X-Webhook-Signature'] = crypto.createHmac('sha256', secret).update(payload).digest('hex');
+      const res = await fetch(h.url, { method: 'POST', headers, body: payload, signal: ctrl.signal });
+      results.push({ id: h.id, ok: res.ok, status: res.status, detail: res.ok ? 'entregado' : `HTTP ${res.status}` });
+    } catch (e: any) {
+      results.push({ id: h.id, ok: false, detail: e?.name === 'AbortError' ? 'timeout 10s' : String(e?.message || 'error').slice(0, 120) });
+    } finally { clearTimeout(timer); }
+  }));
+  // Log de última entrega (best-effort, sin datos sensibles).
+  try {
+    const client = db();
+    const { data: row } = await client.from('live_landings').select('config').eq('id', landing.id).single();
+    const cfg: AnyRow = row?.config && typeof row.config === 'object' ? row.config : {};
+    const arr: AnyRow[] = Array.isArray(cfg.webhooks) ? cfg.webhooks : [];
+    let changed = false;
+    for (const r of results) {
+      const w = arr.find((x: AnyRow) => String(x?.id) === String(r.id));
+      if (w) { w.lastDelivery = { ok: r.ok, at: new Date().toISOString(), status: r.status, detail: r.detail }; changed = true; }
+    }
+    if (changed) await client.from('live_landings').update({ config: cfg }).eq('id', landing.id);
+  } catch { /* best-effort: nunca rompe el flujo */ }
+}
+
+function fireLiveEvent(landing: AnyRow, event: string, data: AnyRow): void {
+  try {
+    const p = dispatchLiveWebhooks(landing, event, data);
+    p.catch(() => {});
+  } catch { /* nunca bloquea */ }
+}
+
 export function setupLiveSellingPublicRoutes(app: Express): void {
   app.get('/api/public/live/by-host', route(async (req, res) => {
     if (!checkRate(req, res, 'live-get', 180)) return;
@@ -547,6 +688,10 @@ export function setupLiveSellingPublicRoutes(app: Express): void {
       .select('id, created_at')
       .single();
     if (error) throw new Error(error.message);
+    fireLiveEvent(landing, 'comment_received', {
+      type: 'visitor',
+      comment: { id: data.id, content, visitor_id: cleanText(req.body?.visitorId, 80) || null, created_at: data.created_at },
+    });
     res.status(201).json({ success: true, commentId: data.id, createdAt: data.created_at });
   }));
 
@@ -590,7 +735,8 @@ export function setupLiveSellingPublicRoutes(app: Express): void {
         .select('id, order_ref')
         .single();
       if (!error && data) {
-        res.json({ success: true, leadId: data.id, orderRef: data.order_ref, status: 'lead' });
+        fireLiveEvent(landing, 'lead_captured', { lead: { id: data.id, order_ref: data.order_ref, phone: base.phone, product_name: base.product_name, quantity: base.quantity, total: base.total, visitor_id: base.visitor_id } });
+    res.json({ success: true, leadId: data.id, orderRef: data.order_ref, status: 'lead' });
         return;
       }
     }
@@ -611,7 +757,8 @@ export function setupLiveSellingPublicRoutes(app: Express): void {
           .select('id, order_ref')
           .single();
         if (error) throw new Error(error.message);
-        res.json({ success: true, leadId: data.id, orderRef: data.order_ref, status: 'lead' });
+        fireLiveEvent(landing, 'lead_captured', { lead: { id: data.id, order_ref: data.order_ref, phone: base.phone, product_name: base.product_name, quantity: base.quantity, total: base.total, visitor_id: base.visitor_id } });
+    res.json({ success: true, leadId: data.id, orderRef: data.order_ref, status: 'lead' });
         return;
       }
     }
@@ -621,6 +768,7 @@ export function setupLiveSellingPublicRoutes(app: Express): void {
       .select('id, order_ref')
       .single();
     if (error) throw new Error(error.message);
+    fireLiveEvent(landing, 'lead_captured', { lead: { id: data.id, order_ref: data.order_ref, phone: base.phone, product_name: base.product_name, quantity: base.quantity, total: base.total, visitor_id: base.visitor_id } });
     res.status(201).json({ success: true, leadId: data.id, orderRef: data.order_ref, status: 'lead' });
   }));
 
@@ -690,7 +838,8 @@ export function setupLiveSellingPublicRoutes(app: Express): void {
         .select('id, order_ref, subtotal, discount, shipping, total')
         .single();
       if (!error && data) {
-        res.json({ success: true, orderId: data.id, orderRef: data.order_ref, ...totals, status: 'order', paymentMethod, productName: orderData.product_name });
+        fireLiveEvent(landing, 'order_created', { order: { id: data.id, order_ref: data.order_ref, product_name: orderData.product_name, product_price: orderData.product_price, quantity: orderData.quantity, subtotal: orderData.subtotal, discount: orderData.discount, shipping: orderData.shipping, total: orderData.total, payment_method: paymentMethod, coupon_code: orderData.coupon_code, customer_name: orderData.customer_name, phone: orderData.phone, address: orderData.address, department: orderData.department, city: orderData.city, email: orderData.email, visitor_id: orderData.visitor_id } });
+    res.json({ success: true, orderId: data.id, orderRef: data.order_ref, ...totals, status: 'order', paymentMethod, productName: orderData.product_name });
         return;
       }
     }
@@ -700,6 +849,7 @@ export function setupLiveSellingPublicRoutes(app: Express): void {
       .select('id, order_ref')
       .single();
     if (error) throw new Error(error.message);
+    fireLiveEvent(landing, 'order_created', { order: { id: data.id, order_ref: data.order_ref, product_name: orderData.product_name, product_price: orderData.product_price, quantity: orderData.quantity, subtotal: orderData.subtotal, discount: orderData.discount, shipping: orderData.shipping, total: orderData.total, payment_method: paymentMethod, coupon_code: orderData.coupon_code, customer_name: orderData.customer_name, phone: orderData.phone, address: orderData.address, department: orderData.department, city: orderData.city, email: orderData.email, visitor_id: orderData.visitor_id } });
     res.status(201).json({ success: true, orderId: data.id, orderRef: data.order_ref, ...totals, status: 'order', paymentMethod, productName: orderData.product_name });
   }));
 
@@ -720,6 +870,7 @@ export function setupLiveSellingPublicRoutes(app: Express): void {
       .select('id')
       .single();
     if (error) throw new Error(error.message);
+    fireLiveEvent(landing, 'viewer_joined', { viewer: { visitor_id: cleanText(req.body?.visitorId, 80) || null, utm: cleanUtm(req.body?.utm) } });
     res.status(201).json({ success: true, pageviewId: data.id });
   }));
 
@@ -741,6 +892,7 @@ export function setupLiveSellingPublicRoutes(app: Express): void {
       .select('id')
       .single();
     if (error) throw new Error(error.message);
+    fireLiveEvent(landing, 'checkout_started', { click: { mode: landing.checkout_mode || 'crm', visitor_id: cleanText(req.body?.visitorId, 80) || null, utm: cleanUtm(req.body?.utm) } });
     res.status(201).json({ success: true, clickId: data.id });
   }));
 
@@ -761,7 +913,21 @@ export function setupLiveSellingPublicRoutes(app: Express): void {
       .select('id')
       .single();
     if (error) throw new Error(error.message);
+    fireLiveEvent(landing, 'whatsapp_click', { click: { visitor_id: cleanText(req.body?.visitorId, 80) || null, utm: cleanUtm(req.body?.utm) } });
     res.status(201).json({ success: true, clickId: data.id });
+  }));
+
+  // Ping del reproductor cuando muestra un comentario simulado (uno a uno).
+  app.post('/api/public/live/:id/comment-shown', route(async (req, res) => {
+    if (!checkRate(req, res, 'live-comment-shown', 60)) return;
+    const client = db();
+    const landing = await fetchLandingByRef(client, req.params.id, true);
+    if (!landing) { res.status(404).json({ success: false, error: 'Live no encontrado o no activo' }); return; }
+    const content = cleanText(req.body?.content, 500);
+    const author = cleanText(req.body?.author, 80);
+    if (!content) { res.status(400).json({ success: false, error: 'Contenido requerido' }); return; }
+    fireLiveEvent(landing, 'comment_received', { type: 'simulated', comment: { content, author: author || null } });
+    res.json({ success: true });
   }));
 
   // Página pública del vivo por slug.
@@ -970,6 +1136,7 @@ export function setupLiveSellingAdminRoutes(app: Express): void {
         if (fakeError) throw new Error(fakeError.message);
       }
     }
+    if (data.status === 'active') fireLiveEvent(data, 'live_started', { live: liveSummary(data) });
     res.status(201).json({ success: true, landing: landingToAdmin(data) });
   }));
 
@@ -1064,6 +1231,11 @@ export function setupLiveSellingAdminRoutes(app: Express): void {
       .select('*')
       .single();
     if (error) throw new Error(error.message);
+    if (current.status !== 'active' && data.status === 'active') {
+      fireLiveEvent(data, 'live_started', { live: liveSummary(data) });
+    } else if (current.status === 'active' && (data.status === 'paused' || data.status === 'archived')) {
+      fireLiveEvent(data, 'live_ended', { live: liveSummary(data) });
+    }
     res.json({ success: true, landing: landingToAdmin(data) });
   }));
 
@@ -1289,6 +1461,59 @@ export function setupLiveSellingAdminRoutes(app: Express): void {
       tls: check.tls,
       landing: landingToAdmin(data),
     });
+  }));
+
+  // ---- Webhooks salientes ----
+  app.get('/api/live-selling/landings/:id/webhooks', route(async (req, res) => {
+    const client = db();
+    const tenant = tenantId(req);
+    if (!UUID_RE.test(req.params.id)) { res.status(404).json({ success: false, error: 'Landing no encontrada' }); return; }
+    const { data, error } = await client.from('live_landings').select('id, config').eq('id', req.params.id).eq('tenant_id', tenant).single();
+    if (error || !data) { res.status(404).json({ success: false, error: 'Landing no encontrada' }); return; }
+    res.json({ success: true, webhooks: publicLiveWebhooks(getLiveWebhooks(data)), events: LIVE_WEBHOOK_EVENTS });
+  }));
+
+  app.put('/api/live-selling/landings/:id/webhooks', route(async (req, res) => {
+    const client = db();
+    const tenant = tenantId(req);
+    if (!UUID_RE.test(req.params.id)) { res.status(404).json({ success: false, error: 'Landing no encontrada' }); return; }
+    const { data: current, error: readError } = await client.from('live_landings').select('id, config').eq('id', req.params.id).eq('tenant_id', tenant).single();
+    if (readError || !current) { res.status(404).json({ success: false, error: 'Landing no encontrada' }); return; }
+    const existing = getLiveWebhooks(current);
+    const cfg: AnyRow = current.config && typeof current.config === 'object' ? { ...current.config } : {};
+    cfg.webhooks = sanitizeLiveWebhooks(req.body?.webhooks, existing);
+    const { error } = await client.from('live_landings').update({ config: cfg }).eq('id', current.id).eq('tenant_id', tenant);
+    if (error) throw new Error(error.message);
+    res.json({ success: true, webhooks: publicLiveWebhooks(cfg.webhooks as LiveWebhook[]) });
+  }));
+
+  app.post('/api/live-selling/landings/:id/webhooks/test', route(async (req, res) => {
+    const client = db();
+    const tenant = tenantId(req);
+    if (!UUID_RE.test(req.params.id)) { res.status(404).json({ success: false, error: 'Landing no encontrada' }); return; }
+    const { data: landing, error: readError } = await client.from('live_landings').select('*').eq('id', req.params.id).eq('tenant_id', tenant).single();
+    if (readError || !landing) { res.status(404).json({ success: false, error: 'Landing no encontrada' }); return; }
+    const url = cleanHttpUrl(req.body?.url);
+    if (!url || !url.startsWith('https://')) { res.status(400).json({ success: false, error: 'URL https válida requerida' }); return; }
+    const payload = JSON.stringify({
+      event: 'test',
+      occurred_at: new Date().toISOString(),
+      live_id: landing.id,
+      live_slug: landing.slug || null,
+      live_title: landing.title || null,
+      data: { message: 'Evento de prueba desde Xorbit 360 · Live Selling' },
+    });
+    const secretRaw = String(req.body?.secret || '').trim();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json', 'User-Agent': 'Xorbit360-LiveSelling/1.0' };
+    if (secretRaw) headers['X-Webhook-Signature'] = crypto.createHmac('sha256', secretRaw).update(payload).digest('hex');
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 10000);
+    try {
+      const r = await fetch(url, { method: 'POST', headers, body: payload, signal: ctrl.signal });
+      res.json({ success: r.ok, status: r.status, detail: r.ok ? 'Entrega de prueba exitosa' : `El servidor respondió HTTP ${r.status}` });
+    } catch (e: any) {
+      res.json({ success: false, detail: e?.name === 'AbortError' ? 'Timeout de 10 segundos: el servidor no respondió' : String(e?.message || 'Error de conexión').slice(0, 160) });
+    } finally { clearTimeout(timer); }
   }));
 }
 

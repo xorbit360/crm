@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Archive, BarChart3, Check, Copy, ExternalLink, Eye, Gauge, Globe, Layers, MessageSquare,
-  Pause, Play, Plus, Radio, RefreshCw, Rocket, Save, ShoppingBag, Trash2, Video, X,
+  Pause, Play, Plus, Radio, RefreshCw, Rocket, Save, ShoppingBag, Trash2, Video, Webhook, X,
 } from 'lucide-react';
 
 // ============================================================================
@@ -34,6 +34,7 @@ interface LiveOrder {
 type PanelTab = 'config' | 'comments' | 'inbox' | 'metrics' | 'domain' | 'diagnostico';
 
 import DiagnosticoView from './DiagnosticoView';
+import LiveWebhooksTab from './LiveWebhooksTab';
 
 interface MetricsTotals {
   pageviews: number; whatsappClicks: number; checkoutClicks: number;
@@ -597,6 +598,7 @@ export default function LiveSellingView() {
                     { id: 'inbox', label: `Visitantes y pedidos (${orders.length})`, icon: <ShoppingBag size={14} /> },
                     { id: 'metrics', label: 'Metricas', icon: <BarChart3 size={14} /> },
                     { id: 'domain', label: 'Dominio propio', icon: <Globe size={14} /> },
+                    { id: 'webhooks', label: 'Webhooks', icon: <Webhook size={14} /> },
                     { id: 'diagnostico', label: 'Diagnóstico de Conversión', icon: <Gauge size={14} /> },
                   ] as const).filter((t) => t.id !== 'diagnostico' || canSeeBeta).map((t) => (
                     <button
@@ -973,6 +975,10 @@ export default function LiveSellingView() {
                 <div className="pt-5">
                   <DiagnosticoView />
                 </div>
+              )}
+
+              {tab === 'webhooks' && selected?.id && (
+                <LiveWebhooksTab landingId={selected.id} />
               )}
 
               {tab === 'domain' && (

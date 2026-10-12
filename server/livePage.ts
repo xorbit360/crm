@@ -415,11 +415,20 @@ window.__LIVE_SLUG__ = ${safeSlug};
     var rotateIdx = 0;
     var timedIdx = null;
     var lastShownAt = Date.now();
+    var pingedShown = {};
     function pushComment(c){
       if (!c) return;
       addComment(c.author, c.content, c.avatarUrl, false);
       if (c.id) shownSeconds[c.id] = 1;
       lastShownAt = Date.now();
+      // Avisa al servidor (una sola vez por comentario) para el webhook saliente.
+      try {
+        var pk = c.id || ('t:' + String(c.content).slice(0, 60));
+        if (!pingedShown[pk]) {
+          pingedShown[pk] = 1;
+          post('/api/public/live/' + landingId + '/comment-shown', { content: c.content, author: c.author }).catch(function(){});
+        }
+      } catch(e){}
     }
     function firstTimedIndexAtOrAfter(t){
       for (var i = 0; i < ordered.length; i++) {
