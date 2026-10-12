@@ -31,6 +31,7 @@ const LiveSellingView = lazy(() => import('./components/LiveSellingView'));
 const HerramientasTarjetasView = lazy(() => import('./components/HerramientasTarjetasView'));
 const DifusionesView = lazy(() => import('./components/DifusionesView'));
 import PushPrompt from './components/PushPrompt';
+import VersionBanner from './components/VersionBanner';
 
 function ModuleLoading() {
   return (
@@ -692,6 +693,7 @@ type ChatMessage = {
   return (
     <div className="flex h-screen bg-black text-gray-100 overflow-hidden font-sans">
       <PushPrompt />
+      <VersionBanner />
 
       {/* Sidebar Mobile Backdrop */}
       {isSidebarOpen && (

@@ -2182,6 +2182,24 @@ process.on('unhandledRejection', (reason: any) => {
   console.error('[Unhandled Rejection]:', reason);
 });
 
+// Versión del build para detección proactiva de actualizaciones en el cliente
+// (hallazgo C1 de la auditoría). Se calcula una vez al arrancar: cada deploy
+// reinicia el contenedor con una imagen nueva, así que el hash cambia siempre.
+let cachedBuildVersion: { version: string; builtAt: string } | null = null;
+function getBuildVersion(): { version: string; builtAt: string } {
+  if (cachedBuildVersion) return cachedBuildVersion;
+  try {
+    const idxPath = path.join(process.cwd(), 'dist', 'index.html');
+    const content = fs.readFileSync(idxPath);
+    const version = crypto.createHash('sha1').update(content).digest('hex').slice(0, 12);
+    const builtAt = fs.statSync(idxPath).mtime.toISOString();
+    cachedBuildVersion = { version, builtAt };
+  } catch {
+    cachedBuildVersion = { version: 'dev', builtAt: new Date().toISOString() };
+  }
+  return cachedBuildVersion;
+}
+
 async function createServer() {
   await initDB().catch(err => console.error('initDB async error:', err));
   const app = express();
@@ -2237,6 +2255,13 @@ async function createServer() {
 
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok" });
+  });
+
+  // Hash del build actual. El frontend lo consulta cada 5 minutos; si cambia,
+  // muestra un banner discreto de "nueva versión disponible" (no recarga sola).
+  app.get("/api/version", (_req, res) => {
+    res.setHeader("Cache-Control", "no-store");
+    res.json(getBuildVersion());
   });
 
   // Canal servidor -> navegador. Los webhooks actualizan currentDB y este
