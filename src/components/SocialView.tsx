@@ -5,7 +5,7 @@ import {
   Check, X, Sparkles, ChevronLeft, Power,
 } from 'lucide-react';
 
-type TabId = 'automatizaciones' | 'contenido';
+type TabId = 'automatizaciones' | 'contenido' | 'embudo';
 
 const ORIGIN_META: Record<string, { label: string; icon: React.ReactNode; cls: string }> = {
   dm: { label: 'DM', icon: <MessageCircle size={12} />, cls: 'bg-blue-500/15 text-blue-300 border-blue-500/30' },
@@ -54,8 +54,8 @@ function Automatizaciones() {
 
   const create = async () => {
     if (!accountId) { alert('Elige cuenta'); return; }
-    if (form.type === 'comment_ai' && !form.aiPrompt.trim()) { alert('Escribe el prompt para la IA'); return; }
-    if (form.type !== 'comment_ai' && !form.dmMessage.trim()) { alert('Escribe el mensaje'); return; }
+    if ((form.type === 'comment_ai' || form.type === 'comment_sentiment') && !form.aiPrompt.trim()) { alert('Escribe el prompt para la IA'); return; }
+    if (form.type !== 'comment_ai' && form.type !== 'comment_sentiment' && !form.dmMessage.trim()) { alert('Escribe el mensaje'); return; }
     setSaving(true);
     try {
       const r = await fetch('/api/social/automations', {
@@ -102,7 +102,7 @@ function Automatizaciones() {
   };
 
   const TYPE_LABEL: Record<string, string> = {
-    comment_to_dm: 'Comment-to-DM', comment_ai: 'Respuesta IA a comentarios', story_mention: 'Mención en historia', story_reply: 'Respuesta a historia', ice_breakers: 'Ice breakers',
+    comment_to_dm: 'Comment-to-DM', comment_ai: 'Respuesta IA a comentarios', comment_sentiment: 'Sentimiento automatico', story_mention: 'Mención en historia', story_reply: 'Respuesta a historia', ice_breakers: 'Ice breakers',
   };
 
   return (
@@ -120,6 +120,7 @@ function Automatizaciones() {
             <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className={inputCls}>
               <option value="comment_to_dm">💬 Comment-to-DM (palabra clave → DM)</option>
               <option value="comment_ai">🤖 Respuesta con IA a comentarios (prompt)</option>
+              <option value="comment_sentiment">Sentimiento automatico (positivo/negativo/neutro)</option>
               <option value="story_mention">📸 Mención en historia → DM</option>
               <option value="story_reply">↩️ Respuesta a historia → DM</option>
             </select>
@@ -129,13 +130,24 @@ function Automatizaciones() {
             <input value={form.keywords} onChange={(e) => setForm({ ...form, keywords: e.target.value })}
               placeholder="Palabras clave separadas por coma (ej. precio, info, quiero)" className={inputCls} />
           )}
-          {form.type === 'comment_ai' && (
+          {(form.type === 'comment_ai' || form.type === 'comment_sentiment') && (
             <textarea value={form.aiPrompt} onChange={(e) => setForm({ ...form, aiPrompt: e.target.value })} rows={3}
               placeholder="Prompt para la IA (ej. Responde amable, ofrece ayuda y si preguntan precio invítalos al DM)" className={inputCls} />
           )}
-          {form.type !== 'comment_ai' && (
+          {(form.type !== 'comment_ai' && form.type !== 'comment_sentiment') && (
           <textarea value={form.dmMessage} onChange={(e) => setForm({ ...form, dmMessage: e.target.value })} rows={2}
             placeholder="Mensaje del DM — puedes usar {{first_name}} (ej. ¡Hola {{first_name}}! Aquí va tu info 👇)" className={inputCls} />
+          )}
+          {form.type === 'comment_sentiment' && (
+            <div className="text-xs text-gray-400 bg-gray-900/60 border border-gray-800 rounded-lg p-3 space-y-1">
+              <p><b className="text-red-300">Negativo:</b> oculta el comentario y crea tarjeta en el embudo Comentarios.</p>
+              <p><b className="text-green-300">Positivo:</b> like + respuesta publica con IA + DM (si escribes mensaje abajo).</p>
+              <p><b className="text-gray-300">Neutro:</b> solo like.</p>
+            </div>
+          )}
+          {form.type === 'comment_sentiment' && (
+            <textarea value={form.dmMessage} onChange={(e) => setForm({ ...form, dmMessage: e.target.value })} rows={2}
+              placeholder="DM para comentarios POSITIVOS (opcional)" className={inputCls} />
           )}
           {form.type === 'comment_to_dm' && (
             <input value={form.commentReply} onChange={(e) => setForm({ ...form, commentReply: e.target.value })}
@@ -169,7 +181,7 @@ function Automatizaciones() {
             </button>
             <div className="flex-1 min-w-0">
               <div className="text-sm font-semibold text-gray-100">{a.name}</div>
-              <div className="text-xs text-gray-500">{TYPE_LABEL[a.type] || a.type}{a.type === 'comment_ai' ? ' · 🤖' : (a.keywords?.length ? ` · "${a.keywords.join(', ')}"` : '')}</div>
+              <div className="text-xs text-gray-500">{TYPE_LABEL[a.type] || a.type}{(a.type === 'comment_ai' || a.type === 'comment_sentiment') ? ' · 🤖' : (a.keywords?.length ? ` · "${a.keywords.join(', ')}"` : '')}</div>
             </div>
             <button onClick={() => remove(a)} className="text-gray-500 hover:text-red-400"><Trash2 size={15} /></button>
           </div>
@@ -310,12 +322,88 @@ function Contenido() {
   );
 }
 
+/* ================= EMBUDO COMENTARIOS (kanban) ================= */
+function EmbudoComentarios() {
+  const [funnel, setFunnel] = useState<{ columns: { id: string; label: string }[]; cards: any[] } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const load = async () => {
+    setLoading(true);
+    try {
+      const r = await fetch('/api/social/comment-funnel');
+      const j = await r.json();
+      if (j.success) setFunnel(j.funnel);
+    } catch { /* noop */ }
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, []);
+  const move = async (cardId: string, columnId: string) => {
+    try {
+      const r = await fetch('/api/social/comment-funnel/move', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cardId, columnId }),
+      });
+      const j = await r.json();
+      if (j.success) await load();
+    } catch { /* noop */ }
+  };
+  if (loading) return <div className="text-gray-400 text-sm p-4">Cargando embudo...</div>;
+  if (!funnel) return <div className="text-gray-400 text-sm p-4">No se pudo cargar el embudo.</div>;
+  const cols = funnel.columns || [];
+  const cards = funnel.cards || [];
+  const sentColor = (s: string) => s === 'negativo' ? 'bg-red-500/15 text-red-300 border-red-500/30' : s === 'positivo' ? 'bg-green-500/15 text-green-300 border-green-500/30' : 'bg-gray-500/15 text-gray-300 border-gray-500/30';
+  const sentIcon = (s: string) => s === 'negativo' ? '😡' : s === 'positivo' ? '😍' : '😐';
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-gray-200">Embudo Comentarios <span className="text-gray-500 font-normal">({cards.length})</span></h3>
+        <button onClick={load} className="text-xs text-gold hover:underline flex items-center gap-1"><RefreshCw size={12} /> Actualizar</button>
+      </div>
+      {cards.length === 0 && (
+        <div className="text-center text-gray-500 text-sm py-8 bg-gray-950 border border-gray-800 rounded-xl">
+          Sin tarjetas. Los comentarios negativos detectados por el modo "Sentimiento automático" aparecerán aquí.
+        </div>
+      )}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+        {cols.map((col, ci) => {
+          const colCards = cards.filter((c: any) => c.columnId === col.id);
+          return (
+            <div key={col.id} className="bg-gray-950 border border-gray-800 rounded-xl p-3">
+              <div className="text-xs font-bold text-gold uppercase tracking-wider mb-2">{col.label} ({colCards.length})</div>
+              <div className="space-y-2">
+                {colCards.map((c: any) => (
+                  <div key={c.id} className="bg-gray-900 border border-gray-800 rounded-lg p-3 space-y-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded border ${sentColor(c.sentiment)}`}>{sentIcon(c.sentiment)} {c.sentiment}</span>
+                      <span className="text-[10px] text-gray-500">{c.platform || ''}</span>
+                    </div>
+                    <p className="text-xs text-gray-200 leading-snug">"{String(c.text || '').slice(0, 160)}"</p>
+                    <div className="text-[10px] text-gray-500">👤 {c.author || '—'} · {c.at ? new Date(c.at).toLocaleString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}</div>
+                    <div className="flex gap-1 pt-1">
+                      {ci > 0 && (
+                        <button onClick={() => move(c.id, cols[ci - 1].id)} className="text-[10px] px-2 py-1 rounded bg-gray-800 text-gray-300 hover:bg-gray-700">◀ {cols[ci - 1].label}</button>
+                      )}
+                      {ci < cols.length - 1 && (
+                        <button onClick={() => move(c.id, cols[ci + 1].id)} className="text-[10px] px-2 py-1 rounded bg-gold/15 text-gold hover:bg-gold/25">{cols[ci + 1].label} ▶</button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 /* ================= VISTA PRINCIPAL ================= */
 export default function SocialView() {
   const [tab, setTab] = useState<TabId>('automatizaciones');
   const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
     { id: 'automatizaciones', label: 'Automatizaciones', icon: <Zap size={15} /> },
     { id: 'contenido', label: 'Contenido', icon: <Calendar size={15} /> },
+    { id: 'embudo', label: 'Embudo Comentarios', icon: <Filter size={15} /> },
   ];
   return (
     <div>
@@ -329,6 +417,7 @@ export default function SocialView() {
       </div>
       {tab === 'automatizaciones' && <Automatizaciones />}
       {tab === 'contenido' && <Contenido />}
+      {tab === 'embudo' && <EmbudoComentarios />}
     </div>
   );
 }

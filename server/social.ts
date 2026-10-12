@@ -236,6 +236,58 @@ async function aiCommentReply(aiPrompt: string, commentText: string, authorName:
   }
 }
 
+/** Clasifica el sentimiento de un comentario: positivo | negativo | neutro. */
+async function classifyCommentSentiment(commentText: string): Promise<'positivo' | 'negativo' | 'neutro'> {
+  const key = await resolveSocialAiKey();
+  if (!key) return 'neutro';
+  const model = String(process.env.OPENROUTER_RESPONSE_MODEL || 'openai/gpt-4o-mini').trim();
+  const prompt = [
+    'Clasifica el sentimiento de este comentario de red social.',
+    'Responde UNICAMENTE con una de estas tres palabras, en minusculas y sin nada mas: positivo, negativo o neutro.',
+    'Considera negativo: quejas, insultos, reclamos, spam agresivo, criticas destructivas.',
+    'Considera positivo: elogios, agradecimientos, interes de compra, recomendaciones.',
+    'Considera neutro: preguntas simples, comentarios informativos sin emocion marcada, emojis sueltos.',
+    '',
+    'Comentario: "' + commentText.slice(0, 500).replace(/"/g, "'") + '"',
+  ].join('\n');
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 20000);
+  try {
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      signal: ctrl.signal,
+      headers: { Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: model, temperature: 0, max_tokens: 10, messages: [{ role: 'user', content: prompt }] }),
+    });
+    clearTimeout(timer);
+    if (!res.ok) return 'neutro';
+    const json = await res.json().catch(() => null);
+    const raw = String((json && json.choices && json.choices[0] && json.choices[0].message && json.choices[0].message.content) || '').trim().toLowerCase();
+    if (raw.indexOf('negativo') >= 0) return 'negativo';
+    if (raw.indexOf('positivo') >= 0) return 'positivo';
+    return 'neutro';
+  } catch (e) {
+    clearTimeout(timer);
+    return 'neutro';
+  }
+}
+
+/** Embudo kanban "Comentarios" para seguimiento de comentarios negativos. */
+function getCommentFunnel(db: any): { columns: { id: string; label: string }[]; cards: any[] } {
+  if (!db.commentFunnel || !Array.isArray(db.commentFunnel.cards)) {
+    db.commentFunnel = {
+      columns: [
+        { id: 'nuevo', label: 'Nuevo' },
+        { id: 'en_revision', label: 'En revisión' },
+        { id: 'gestionado', label: 'Gestionado' },
+        { id: 'cerrado', label: 'Cerrado' },
+      ],
+      cards: [],
+    };
+  }
+  return db.commentFunnel;
+}
+
 /** Procesa un comentario entrante (webhook comment.received) con automatizaciones IA activas. */
 export async function handleIncomingSocialComment(event: any): Promise<void> {
   try {
@@ -270,6 +322,85 @@ export async function handleIncomingSocialComment(event: any): Promise<void> {
       } catch (e: any) {
         console.error('[Social AI] No se pudo responder el comentario:', e?.message || e);
       }
+    }
+
+    // ---- Modo sentimiento automático: clasifica y actúa según positivo/negativo/neutro ----
+    const sentimentActive = list.filter((a: AnyRow) => a.type === 'comment_sentiment' && a.isActive !== false && String(a.accountId) === accountId);
+    for (const auto of sentimentActive) {
+      const sentiment = await classifyCommentSentiment(text);
+      const platform = String(data?.platform || 'instagram').toLowerCase();
+      const actions: string[] = [];
+      const logEntry: any = { at: new Date().toISOString(), comment: text.slice(0, 120), sentiment, ok: true, actions };
+
+      const zHide = async () => {
+        await zernioRequest({
+          method: 'POST',
+          path: '/v1/inbox/comments/' + encodeURIComponent(postId) + '/' + encodeURIComponent(commentId) + '/hide',
+          body: { accountId },
+        });
+      };
+      const zLike = async () => {
+        await zernioRequest({
+          method: 'POST',
+          path: '/v1/inbox/comments/' + encodeURIComponent(postId) + '/' + encodeURIComponent(commentId) + '/like',
+          body: { accountId },
+        });
+      };
+
+      if (sentiment === 'negativo') {
+        // 1) Ocultar el comentario
+        try { await zHide(); actions.push('ocultado'); }
+        catch (e: any) { actions.push('ocultar_fallo'); console.error('[Social Sentiment] No se pudo ocultar:', e?.message || e); }
+        // 2) Tarjeta en el embudo "Comentarios"
+        try {
+          const funnel = getCommentFunnel(db);
+          funnel.cards.unshift({
+            id: 'cf-' + Date.now() + '-' + String(commentId).slice(-6),
+            columnId: 'nuevo',
+            text, author, postId, commentId, sentiment, platform,
+            accountId, at: new Date().toISOString(),
+          });
+          funnel.cards = funnel.cards.slice(0, 500);
+          actions.push('embudo');
+        } catch (e: any) { actions.push('embudo_fallo'); }
+      } else if (sentiment === 'positivo') {
+        // 1) Like (no todas las plataformas lo soportan; degradar con elegancia)
+        try { await zLike(); actions.push('like'); }
+        catch (e: any) { actions.push('like_no_disponible'); }
+        // 2) Respuesta pública con IA (usa el prompt configurable)
+        const reply = await aiCommentReply(String(auto.aiPrompt || ''), text, author);
+        if (reply) {
+          try {
+            await zernioRequest({
+              method: 'POST',
+              path: '/v1/inbox/comments/' + encodeURIComponent(postId),
+              body: { accountId, message: reply, commentId },
+            });
+            actions.push('respuesta_publica');
+            logEntry.reply = reply.slice(0, 120);
+          } catch (e: any) { actions.push('respuesta_fallo'); }
+        }
+        // 3) DM al autor vía private-reply
+        const dmMsg = String((auto as any).dmMessage || '').trim();
+        if (dmMsg) {
+          try {
+            await zernioRequest({
+              method: 'POST',
+              path: '/v1/inbox/comments/' + encodeURIComponent(postId) + '/' + encodeURIComponent(commentId) + '/private-reply',
+              body: { accountId, message: dmMsg.replace(/\{\{name\}\}/g, author) },
+            });
+            actions.push('dm');
+          } catch (e: any) { actions.push('dm_fallo'); console.error('[Social Sentiment] No se pudo enviar DM:', e?.message || e); }
+        }
+      } else {
+        // neutro: solo like
+        try { await zLike(); actions.push('like'); }
+        catch (e: any) { actions.push('like_no_disponible'); }
+      }
+
+      if (!Array.isArray((auto as any).logs)) (auto as any).logs = [];
+      (auto as any).logs.unshift(logEntry);
+      (auto as any).logs = (auto as any).logs.slice(0, 50);
     }
     saveDB(db);
   } catch (e: any) {
@@ -540,6 +671,56 @@ export function setupSocialRoutes(app: express.Express) {
     const r = await zernioRequest({ method: 'GET', path: '/v1/posts?status=scheduled' });
     if ((r as any).success === false) return res.status(502).json({ success: false, error: (r as any).error?.message || 'Error' });
     res.json({ success: true, data: (r as any).data });
+  });
+
+  // ---------- Embudo "Comentarios" (kanban de comentarios negativos) ----------
+  router.get('/comment-funnel', (req, res) => {
+    try {
+      const db = getDB();
+      const funnel = getCommentFunnel(db);
+      res.json({ success: true, funnel });
+    } catch (e: any) {
+      res.status(500).json({ success: false, error: e?.message || 'Error' });
+    }
+  });
+
+  router.post('/comment-funnel/move', (req, res) => {
+    try {
+      const db = getDB();
+      const funnel = getCommentFunnel(db);
+      const cardId = String(req.body?.cardId || '');
+      const columnId = String(req.body?.columnId || '');
+      const validCols = funnel.columns.map((c: any) => c.id);
+      if (!cardId || !validCols.includes(columnId)) {
+        return res.status(400).json({ success: false, error: 'Datos inválidos' });
+      }
+      const card = funnel.cards.find((c: any) => String(c.id) === cardId);
+      if (!card) return res.status(404).json({ success: false, error: 'Tarjeta no encontrada' });
+      card.columnId = columnId;
+      card.movedAt = new Date().toISOString();
+      saveDB(db);
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ success: false, error: e?.message || 'Error' });
+    }
+  });
+
+  router.post('/comment-funnel/note', (req, res) => {
+    try {
+      const db = getDB();
+      const funnel = getCommentFunnel(db);
+      const cardId = String(req.body?.cardId || '');
+      const note = String(req.body?.note || '').trim().slice(0, 500);
+      if (!cardId || !note) return res.status(400).json({ success: false, error: 'Datos inválidos' });
+      const card = funnel.cards.find((c: any) => String(c.id) === cardId);
+      if (!card) return res.status(404).json({ success: false, error: 'Tarjeta no encontrada' });
+      if (!Array.isArray(card.notes)) card.notes = [];
+      card.notes.unshift({ at: new Date().toISOString(), text: note });
+      saveDB(db);
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ success: false, error: e?.message || 'Error' });
+    }
   });
 
   router.get('/analytics', async (req, res) => {
