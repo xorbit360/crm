@@ -47,7 +47,7 @@ export function calculateBoldIntegritySignature(orderId: string, amount: number,
   return crypto.createHash('sha256').update(rawString).digest('hex');
 }
 
-export function setupBoldRoutes(app: express.Express, getCurrentDB?: () => any, saveCurrentDB?: (data: any) => void) {
+export function setupBoldRoutes(app: express.Express, getCurrentDB?: () => any, saveCurrentDB?: (data: any) => void, onPaymentApproved?: (info: { orderId: string; amount: number; status: string; customerEmail?: string }) => void) {
   console.log(`[Bold Gateway] Inicializando servicios de pago Bold con Merchant ID: ${BOLD_PRODUCTION_CONFIG.merchantId} (Modo: ${BOLD_PRODUCTION_CONFIG.environment})`);
 
   // 1. Health & Configuration Status Check
@@ -145,6 +145,15 @@ export function setupBoldRoutes(app: express.Express, getCurrentDB?: () => any, 
         tx.updatedAt = new Date().toISOString();
         tx.metadata = payload;
         inMemoryTransactions.set(orderId, tx);
+      }
+
+      // Notificar aprobaciones (ej: activar usuarios registrados con REG-*)
+      if (isApproved && typeof onPaymentApproved === 'function') {
+        try {
+          onPaymentApproved({ orderId: String(orderId), amount, status, customerEmail: payload.customerEmail || payload.data?.customerEmail });
+        } catch (cbErr) {
+          console.warn('[Bold Webhook] onPaymentApproved notice:', cbErr);
+        }
       }
 
       // Sync with Supabase

@@ -144,6 +144,11 @@ export function requireRole(...roles: string[]) {
 const PUBLIC_API_ROUTES = new Set([
   'GET /api/health',
   'POST /api/auth/login',
+  'GET /api/auth/plans',
+  'POST /api/auth/register',
+  'GET /api/auth/order-status',
+  'POST /api/auth/forgot-password',
+  'POST /api/auth/reset-password',
   'POST /api/auth/logout',
   'GET /api/auth/session',
   'POST /api/auth/google-login',

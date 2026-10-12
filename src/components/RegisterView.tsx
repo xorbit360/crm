@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Bot, User, Mail, ShieldCheck, ArrowRight, CheckCircle, Wallet, Phone, Send, Check } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { User, Mail, ShieldCheck, ArrowRight, ArrowLeft, CheckCircle, Phone, Lock, CreditCard, Loader2, AlertCircle, KeyRound } from 'lucide-react';
 import { getCachedWhiteLabel } from '../lib/whitelabel';
 
 interface RegisterViewProps {
@@ -8,290 +8,418 @@ interface RegisterViewProps {
   onGoToLogin: () => void;
 }
 
+interface Plan {
+  id: string; name: string; priceUsd: number; priceCop: number;
+  conversations: number; aiMessages: number; tagline: string; featured?: boolean;
+}
+
+type Step = 'plan' | 'datos' | 'pago' | 'exito' | 'forgot' | 'reset';
+
+const inputCls = "w-full bg-black border border-gray-800 rounded-lg pl-10 pr-4 py-3 text-sm text-gray-200 focus:border-amber-500 focus:outline-none transition-colors";
+const labelCls = "text-xs font-bold text-gray-500 uppercase tracking-widest";
+
 export default function RegisterView({ initialReferral = '', onRegisterSuccess, onGoToLogin }: RegisterViewProps) {
   const whiteLabel = getCachedWhiteLabel();
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState<Step>('plan');
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
+
   const [name, setName] = useState('');
-  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [password, setPassword] = useState('');
-  const [telegramWallet, setTelegramWallet] = useState('');
   const [referralCode, setReferralCode] = useState(initialReferral);
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [success, setSuccess] = useState(false);
 
-  const [packages, setPackages] = useState<any[]>([]);
-  const [superAdminWallet, setSuperAdminWallet] = useState('');
-  const [selectedPlan, setSelectedPlan] = useState<any>(null);
+  const [orderId, setOrderId] = useState('');
+  const [boldData, setBoldData] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [paying, setPaying] = useState(false);
+  const pollRef = useRef<any>(null);
 
+  // --- Cargar planes + manejar retornos de Bold y reset ---
   useEffect(() => {
-    if (initialReferral) {
-      setReferralCode(initialReferral);
+    if (initialReferral) setReferralCode(initialReferral);
+    fetch('/api/auth/plans').then(r => r.json()).then(d => {
+      if (d?.success && Array.isArray(d.plans)) setPlans(d.plans);
+    }).catch(() => {});
+
+    const params = new URLSearchParams(window.location.search);
+    const resetToken = params.get('reset_token');
+    const resetEmail = params.get('email');
+    if (resetToken && resetEmail) {
+      setEmail(resetEmail);
+      sessionStorage.setItem('xorbit_reset_token', resetToken);
+      setStep('reset');
+      return;
     }
+    if (params.get('mode') === 'forgot') {
+      setStep('forgot');
+      return;
+    }
+    const payStatus = params.get('payment_status');
+    const order = params.get('order');
+    if (payStatus === 'completed' && order) {
+      setOrderId(order);
+      checkOrderStatus(order);
+    }
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-    fetch('/api/packages')
-      .then(res => res.json())
-      .then(data => setPackages(data))
-      .catch(err => console.error(err));
+  // --- Bold SDK ---
+  const ensureBoldScript = (): Promise<boolean> => {
+    if (typeof window !== 'undefined' && (window as any).BoldCheckout) return Promise.resolve(true);
+    return new Promise((resolve) => {
+      const existing = document.querySelector('script[src*="boldPaymentButton.js"]');
+      if (existing) {
+        const onL = () => resolve(Boolean((window as any).BoldCheckout));
+        existing.addEventListener('load', onL, { once: true });
+        setTimeout(() => resolve(Boolean((window as any).BoldCheckout)), 8000);
+        return;
+      }
+      const s = document.createElement('script');
+      s.src = 'https://checkout.bold.co/library/boldPaymentButton.js';
+      s.async = true;
+      s.onload = () => {
+        const t0 = Date.now();
+        const wait = () => {
+          if ((window as any).BoldCheckout) return resolve(true);
+          if (Date.now() - t0 > 8000) return resolve(false);
+          setTimeout(wait, 100);
+        };
+        wait();
+      };
+      s.onerror = () => resolve(false);
+      document.head.appendChild(s);
+    });
+  };
 
-    fetch('/api/telegram-pay/config')
-      .then(res => res.json())
-      .then(data => {
-        if (data.masterWallet) setSuperAdminWallet(data.masterWallet);
-      })
-      .catch(err => console.error(err));
-  }, [initialReferral]);
+  const checkOrderStatus = async (oid: string) => {
+    try {
+      const res = await fetch(`/api/auth/order-status?orderId=${encodeURIComponent(oid)}`);
+      const data = await res.json();
+      if (data?.success && data.approved) {
+        if (pollRef.current) clearInterval(pollRef.current);
+        if (data.activated && data.user) {
+          setStep('exito');
+          setTimeout(() => {
+            onRegisterSuccess({
+              name: data.user.name, email: data.user.email, role: 'user',
+              plan: data.user.plan, phone: '',
+            });
+          }, 2500);
+        } else {
+          setError('El pago fue aprobado. Si tu cuenta no se activa en un minuto, inicia sesión.');
+        }
+        return true;
+      }
+    } catch {}
+    return false;
+  };
 
-  const handleNextStep = (e: React.FormEvent) => {
+  const startPolling = (oid: string) => {
+    if (pollRef.current) clearInterval(pollRef.current);
+    pollRef.current = setInterval(async () => {
+      const done = await checkOrderStatus(oid);
+      if (done && pollRef.current) clearInterval(pollRef.current);
+    }, 5000);
+    setTimeout(() => { if (pollRef.current) clearInterval(pollRef.current); }, 600000);
+  };
+
+  // --- Registro ---
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !email || !whatsapp || !password) return;
-    setStep(2);
-  };
+    setError('');
+    if (!selectedPlan) { setError('Selecciona un plan.'); return; }
+    if (name.trim().length < 2) { setError('Ingresa tu nombre completo.'); return; }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) { setError('Ingresa un correo válido.'); return; }
+    if (password.length < 6) { setError('La contraseña debe tener al menos 6 caracteres.'); return; }
 
-  const handleConfirmPayment = () => {
-    setIsRegistering(true);
-
-    // Guardar el wallet del patrocinador asociado al correo del usuario registrado
-    if (referralCode) {
-      localStorage.setItem(`sponsor_wallet_${email.toLowerCase().trim()}`, referralCode.trim());
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name.trim(), email: email.trim(), whatsapp: whatsapp.trim(),
+          password, planId: selectedPlan.id, referralCode: referralCode.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.success) throw new Error(data?.error || 'No se pudo crear tu cuenta.');
+      setOrderId(data.orderId);
+      setBoldData(data.bold);
+      setStep('pago');
+    } catch (err: any) {
+      setError(err.message || 'Error al registrar. Inténtalo de nuevo.');
+    } finally {
+      setLoading(false);
     }
-
-    // Simulate smart contract interaction and registration
-    setTimeout(() => {
-      setIsRegistering(false);
-      setSuccess(true);
-
-      // After success message, auto login
-      setTimeout(() => {
-        onRegisterSuccess({
-          name,
-          email,
-          role: 'droshipper', // New users are droshippers by default
-          plan: selectedPlan?.title || 'Gratuito',
-          username: username.trim().toLowerCase().replace(/[^a-zA-Z0-9_-]/g, '') || name.trim().toLowerCase().replace(/[^a-zA-Z0-9_-]/g, ''),
-          phone: whatsapp.replace(/\D/g, '') || '573192392853'
-        });
-      }, 2000);
-    }, 2000);
   };
 
-  if (success) {
-    return (
-      <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4">
-        <div className="w-full max-w-md panel p-8 rounded-2xl relative overflow-hidden group text-center space-y-4">
-           <CheckCircle className="mx-auto text-green-500 w-16 h-16 mb-4 animate-bounce" />
-           <h2 className="text-3xl font-display text-white">¡Registro Exitoso!</h2>
-           <p className="text-gray-400">Contrato inteligente vinculado a tu wallet de Telegram con éxito. Redirigiendo a tu dashboard...</p>
-        </div>
-      </div>
-    );
-  }
+  // --- Pago Bold embebido ---
+  const handlePay = async () => {
+    setError('');
+    if (!boldData) { setError('Falta la información del pago. Vuelve atrás e inténtalo de nuevo.'); return; }
+    setPaying(true);
+    try {
+      const ok = await ensureBoldScript();
+      if (!ok || typeof (window as any).BoldCheckout !== 'function') {
+        throw new Error('No se pudo cargar el checkout de Bold. Revisa tu conexión e inténtalo de nuevo.');
+      }
+      const bc = new (window as any).BoldCheckout({
+        orderId: boldData.orderId,
+        currency: boldData.currency || 'COP',
+        amount: String(boldData.amount),
+        apiKey: boldData.apiKey,
+        integritySignature: boldData.integritySignature,
+        description: boldData.description,
+        renderMode: 'embedded',
+        redirectionUrl: boldData.redirectionUrl,
+      });
+      bc.open();
+      startPolling(boldData.orderId);
+    } catch (err: any) {
+      setError(err.message || 'Error al abrir el pago.');
+    } finally {
+      setPaying(false);
+    }
+  };
+
+  // --- Olvidé mi contraseña ---
+  const handleForgot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) { setError('Ingresa un correo válido.'); return; }
+    setLoading(true);
+    try {
+      await fetch('/api/auth/forgot-password', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      setError('');
+      alert('Si el correo está registrado, recibirás un enlace para restablecer tu contraseña.');
+      onGoToLogin();
+    } catch {
+      setError('Error al solicitar. Inténtalo de nuevo.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    if (password.length < 6) { setError('La contraseña debe tener al menos 6 caracteres.'); return; }
+    const token = sessionStorage.getItem('xorbit_reset_token') || '';
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), token, newPassword: password }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.success) throw new Error(data?.error || 'No se pudo restablecer.');
+      sessionStorage.removeItem('xorbit_reset_token');
+      alert('Contraseña actualizada. Ya puedes iniciar sesión.');
+      onGoToLogin();
+    } catch (err: any) {
+      setError(err.message || 'Error al restablecer.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const brandName = whiteLabel.brandName || 'Xorbit 360';
+  const fmtCop = (v: number) => '$' + v.toLocaleString('es-CO');
 
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4 py-12 overflow-y-auto">
-      <div className="w-full max-w-xl panel p-8 rounded-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-gold/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4 py-10 overflow-y-auto">
+      <div className="w-full max-w-2xl bg-zinc-950 border border-amber-500/20 rounded-2xl p-6 sm:p-8 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
 
         <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-2">
+            {whiteLabel.logoUrl ? (
+              <img src={whiteLabel.logoUrl} alt="Logo" className="w-10 h-10 rounded-lg object-contain bg-black/50 border border-amber-500/30 p-1" />
+            ) : (
+              <div className="w-10 h-10 rounded-lg bg-amber-500 flex items-center justify-center font-bold text-black text-lg">{brandName.charAt(0).toUpperCase()}</div>
+            )}
+            <div>
+              <h2 className="text-2xl font-bold text-white leading-tight">{brandName}</h2>
+              <p className="text-[11px] text-amber-500 uppercase tracking-wider">
+                {step === 'forgot' ? 'Recuperar contraseña' : step === 'reset' ? 'Nueva contraseña' : 'Crea tu cuenta y activa tu plan'}
+              </p>
+            </div>
+          </div>
 
-          {step === 1 ? (
-            <>
-              <div className="flex items-center gap-3 mb-4">
-                {whiteLabel.logoUrl ? (
-                  <img
-                    src={whiteLabel.logoUrl}
-                    alt="Logo"
-                    className="w-10 h-10 rounded-lg object-contain bg-black/50 border border-gold/30 p-1 shadow-md shadow-gold/10"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-lg bg-gold flex items-center justify-center font-bold text-black font-display shadow-md shadow-gold/20 text-lg">
-                    {whiteLabel.brandName ? whiteLabel.brandName.charAt(0).toUpperCase() : 'E'}
-                  </div>
-                )}
-                <div>
-                  <h2 className="text-2xl font-display text-white leading-tight">
-                    {whiteLabel.brandName || 'Xorbit 360'}
-                  </h2>
-                  <p className="text-[11px] text-gold uppercase tracking-wider">Unirse a la Red de Afiliados</p>
-                </div>
-              </div>
-              <p className="text-gray-400 text-sm mb-6">Regístrate y comienza a activar tus herramientas y comisiones automáticas.</p>
+          {error && (
+            <div className="mt-4 flex items-start gap-2 bg-red-950/50 border border-red-800 rounded-lg px-4 py-3 text-sm text-red-300">
+              <AlertCircle size={16} className="mt-0.5 shrink-0" /> <span>{error}</span>
+            </div>
+          )}
 
-              <form onSubmit={handleNextStep} className="space-y-4">
-
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block flex justify-between">
-                    <span>Código de Referido (Patrocinador)</span>
-                    {initialReferral && (
-                      <span className="text-[10px] text-yellow-400 font-mono normal-case font-bold animate-pulse">
-                        ¡ENLAZADO EN AUTOMÁTICO!
-                      </span>
-                    )}
-                  </label>
-                  <div className="relative">
-                    <ShieldCheck className={`absolute left-3 top-1/2 -translate-y-1/2 ${initialReferral ? 'text-yellow-400 animate-pulse' : 'text-gray-500'}`} size={18} />
-                    <input
-                      type="text"
-                      value={referralCode}
-                      onChange={(e) => setReferralCode(e.target.value)}
-                      disabled={!!initialReferral}
-                      className={`w-full bg-black border rounded-lg pl-10 pr-4 py-3 text-sm font-mono transition-all ${initialReferral ? 'border-yellow-500/40 text-gold bg-yellow-950/5 cursor-not-allowed' : 'border-gray-800 text-gold focus:border-gold focus:outline-none'}`}
-                      placeholder="Ej. UQCL7H-UGIwxtwON..."
-                    />
-                  </div>
-                  {initialReferral && (
-                    <p className="text-[10px] text-yellow-400/80 leading-tight">
-                      Has sido invitado en automático mediante el enlace de patrocinio de la plataforma. Tu cuenta se registrará bajo el patrocinador indicado y las compras de tu licencia se repartirán en automático on-chain en el Smart Contract.
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Nombre Completo</label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-                    <input
-                      type="text"
-                      required
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="w-full bg-black border border-gray-800 rounded-lg pl-10 pr-4 py-3 text-sm text-gray-200 focus:border-gold focus:outline-none transition-colors"
-                      placeholder="Tu nombre"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Correo Electrónico</label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-                    <input
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full bg-black border border-gray-800 rounded-lg pl-10 pr-4 py-3 text-sm text-gray-200 focus:border-gold focus:outline-none transition-colors"
-                      placeholder="tu@email.com"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Nombre de Usuario (Único)</label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-                    <input
-                      type="text"
-                      required
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s+/g, ''))}
-                      className="w-full bg-black border border-gray-800 rounded-lg pl-10 pr-4 py-3 text-sm text-gray-200 focus:border-gold focus:outline-none transition-colors"
-                      placeholder="tu_usuario_unico"
-                    />
-                  </div>
-                </div>
-
-
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Número de WhatsApp</label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-                    <input
-                      type="tel"
-                      required
-                      value={whatsapp}
-                      onChange={(e) => setWhatsapp(e.target.value)}
-                      className="w-full bg-black border border-gray-800 rounded-lg pl-10 pr-4 py-3 text-sm text-gray-200 focus:border-gold focus:outline-none transition-colors"
-                      placeholder="+573000000000"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2 pt-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Crea una contraseña</label>
-                  <input
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-black border border-gray-800 rounded-lg px-4 py-3 text-sm text-gray-200 focus:border-gold focus:outline-none transition-colors"
-                    placeholder="••••••••"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full bg-gold text-black hover:bg-yellow-400 font-bold py-3 rounded-lg flex items-center justify-center gap-2 mt-4 transition-all"
-                >
-                  Continuar a Selección de Plan <ArrowRight size={18} />
-                </button>
-              </form>
-
-              <div className="mt-8 pt-6 border-t border-gray-800 text-center">
-                <p className="text-sm text-gray-500">
-                  ¿Ya tienes una cuenta? <br/>
-                  <button onClick={onGoToLogin} className="text-gray-400 hover:text-white font-semibold mt-2 underline transition-colors">
-                    Inicia Sesión
-                  </button>
-                </p>
-              </div>
-            </>
-          ) : (
-            <div className="space-y-6 animate-fade-in">
-              <div className="flex items-center gap-4 border-b border-gray-800 pb-4">
-                <button onClick={() => setStep(1)} className="text-gray-400 hover:text-white transition">
-                  Volver
-                </button>
-                <h2 className="text-2xl font-display text-white">Selecciona tu Plan</h2>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {packages.map((pkg, i) => (
-                  <div
-                    key={i}
-                    onClick={() => setSelectedPlan(pkg)}
-                    className={`p-4 rounded-xl border cursor-pointer transition-all ${selectedPlan?.title === pkg.title ? 'border-gold bg-gold/5 shadow-lg shadow-gold/10' : 'border-gray-800 bg-[#0d0d0d] hover:border-gray-600'}`}
+          {/* PASO 1: PLAN */}
+          {step === 'plan' && (
+            <div className="mt-6">
+              <p className="text-gray-400 text-sm mb-4">Selecciona tu plan. El pago se hace aquí mismo, sin salir de la plataforma.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {plans.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setSelectedPlan(p)}
+                    className={`text-left rounded-xl border p-4 transition-all ${selectedPlan?.id === p.id ? 'border-amber-500 bg-amber-500/10 shadow-lg shadow-amber-500/10' : 'border-zinc-800 bg-black hover:border-zinc-600'}`}
                   >
-                    <h3 className="text-lg font-bold text-white mb-1">{pkg.title}</h3>
-                    <p className="text-2xl font-display text-gold mb-3">${pkg.price} <span className="text-sm text-gray-500">USD</span></p>
-                    <ul className="space-y-2 text-xs text-gray-400">
-                      {pkg.features.map((f: string, j: number) => (
-                        <li key={j} className="flex items-start gap-1">
-                          <Check size={14} className="text-green-500 shrink-0 mt-0.5" />
-                          <span>{f}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-white">{p.name}</span>
+                      {p.featured && <span className="text-[10px] bg-amber-500 text-black font-bold px-2 py-0.5 rounded-full uppercase">Popular</span>}
+                    </div>
+                    <div className="mt-1 text-amber-500 font-extrabold text-xl">USD {p.priceUsd}<span className="text-xs text-gray-400 font-normal"> /mes</span></div>
+                    <div className="text-xs text-gray-500">{fmtCop(p.priceCop)} COP aprox.</div>
+                    <div className="mt-2 text-xs text-gray-400">{p.conversations.toLocaleString()} conversaciones · {p.aiMessages} msgs IA</div>
+                    <div className="text-[11px] text-gray-500">{p.tagline}</div>
+                  </button>
                 ))}
               </div>
-
-              {selectedPlan && (
-                <div className="mt-6 p-6 bg-blue-950/20 border border-blue-900/40 rounded-xl space-y-4 animate-fade-in text-center">
-                  <h4 className="text-lg font-bold text-white flex items-center justify-center gap-2">
-                    <ShieldCheck className="text-blue-400" /> Pago de Activación
-                  </h4>
-                  <p className="text-sm text-gray-400">
-                    Para activar la cuenta con el plan <strong>{selectedPlan.title}</strong>, transfiere <strong>${selectedPlan.price} USDT (Red TON)</strong> a la siguiente wallet maestra (SuperAdmin):
-                  </p>
-                  <div className="bg-black border border-gray-800 p-3 rounded-lg flex items-center justify-center break-all">
-                    <code className="text-gold font-mono text-sm select-all">{superAdminWallet || 'Cargando...'}</code>
-                  </div>
-                  <button
-                    onClick={handleConfirmPayment}
-                    disabled={isRegistering}
-                    className={`w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition-all ${isRegistering ? 'opacity-70 cursor-not-allowed' : ''}`}
-                  >
-                    {isRegistering ? 'Procesando...' : <>Confirmar Pago y Activar <Send size={18} /></>}
-                  </button>
-                </div>
-              )}
+              {plans.length === 0 && <p className="text-gray-500 text-sm mt-4 flex items-center gap-2"><Loader2 className="animate-spin" size={16} /> Cargando planes...</p>}
+              <button
+                onClick={() => selectedPlan ? setStep('datos') : setError('Selecciona un plan para continuar.')}
+                className="mt-6 w-full bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-black font-extrabold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 text-sm uppercase tracking-wide"
+              >
+                Continuar <ArrowRight size={16} />
+              </button>
+              <p className="mt-4 text-center text-xs text-gray-500">
+                ¿Ya tienes cuenta? <button onClick={onGoToLogin} className="text-amber-500 font-bold hover:underline">Inicia sesión</button>
+                {' · '}<button onClick={() => setStep('forgot')} className="text-gray-400 hover:underline">Olvidé mi contraseña</button>
+              </p>
             </div>
+          )}
+
+          {/* PASO 2: DATOS */}
+          {step === 'datos' && (
+            <form onSubmit={handleRegister} className="mt-6 space-y-4">
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-3 text-sm text-amber-200 flex items-center justify-between">
+                <span>Plan seleccionado: <b>{selectedPlan?.name}</b></span>
+                <span className="font-extrabold">USD {selectedPlan?.priceUsd}</span>
+              </div>
+
+              <div className="space-y-2">
+                <label className={labelCls}>Nombre completo</label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+                  <input type="text" required value={name} onChange={(e) => setName(e.target.value)} className={inputCls} placeholder="Tu nombre" />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className={labelCls}>Correo electrónico</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+                  <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} placeholder="tu@email.com" />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className={labelCls}>WhatsApp</label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+                  <input type="tel" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} className={inputCls} placeholder="+573000000000" />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className={labelCls}>Contraseña</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+                  <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className={inputCls} placeholder="Mínimo 6 caracteres" />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className={labelCls}>Código de referido <span className="normal-case font-normal">(opcional)</span></label>
+                <div className="relative">
+                  <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+                  <input type="text" value={referralCode} onChange={(e) => setReferralCode(e.target.value)} disabled={!!initialReferral} className={inputCls} placeholder="Si alguien te invitó" />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setStep('plan')} className="px-4 py-3.5 rounded-xl border border-zinc-700 text-gray-300 text-sm font-bold hover:border-zinc-500 flex items-center gap-1">
+                  <ArrowLeft size={16} />
+                </button>
+                <button type="submit" disabled={loading} className="flex-1 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-black font-extrabold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 text-sm uppercase tracking-wide disabled:opacity-50">
+                  {loading ? <><Loader2 className="animate-spin" size={16} /> Creando cuenta...</> : <>Continuar al pago <ArrowRight size={16} /></>}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* PASO 3: PAGO */}
+          {step === 'pago' && (
+            <div className="mt-6 text-center space-y-4">
+              <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-left">
+                <div className="flex justify-between text-sm"><span className="text-gray-400">Plan</span><b className="text-white">{selectedPlan?.name}</b></div>
+                <div className="flex justify-between text-sm mt-1"><span className="text-gray-400">Total a pagar</span><b className="text-amber-500">{fmtCop(selectedPlan?.priceCop || 0)} COP</b></div>
+                <div className="flex justify-between text-xs mt-1"><span className="text-gray-500">Orden</span><span className="text-gray-500 font-mono">{orderId}</span></div>
+              </div>
+              <CreditCard className="mx-auto text-amber-500" size={40} />
+              <p className="text-gray-400 text-sm">Paga con tarjeta, PSE o Nequi sin salir de aquí.<br />Al aprobarse el pago tu cuenta se activa automáticamente.</p>
+              <button onClick={handlePay} disabled={paying} className="w-full bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-black font-extrabold py-4 rounded-xl transition-all flex items-center justify-center gap-2 text-sm uppercase tracking-wide disabled:opacity-50">
+                {paying ? <><Loader2 className="animate-spin" size={16} /> Abriendo pago seguro...</> : <><Lock size={16} /> Pagar {fmtCop(selectedPlan?.priceCop || 0)}</>}
+              </button>
+              <button onClick={() => { if (pollRef.current) clearInterval(pollRef.current); setStep('datos'); }} className="text-xs text-gray-500 hover:underline">Volver atrás</button>
+              <p className="text-[11px] text-gray-600">Pago procesado de forma segura por Bold · No guardamos datos de tu tarjeta</p>
+            </div>
+          )}
+
+          {/* ÉXITO */}
+          {step === 'exito' && (
+            <div className="mt-8 text-center space-y-4">
+              <CheckCircle className="mx-auto text-green-500 w-16 h-16 animate-bounce" />
+              <h2 className="text-2xl font-bold text-white">¡Pago aprobado!</h2>
+              <p className="text-gray-400 text-sm">Tu cuenta está activa. Revisa tu correo: te enviamos la bienvenida desde <b className="text-amber-500">noreply@xorbit360.com</b>.</p>
+              <p className="text-gray-500 text-xs">Entrando a tu panel...</p>
+            </div>
+          )}
+
+          {/* OLVIDÉ CONTRASEÑA */}
+          {step === 'forgot' && (
+            <form onSubmit={handleForgot} className="mt-6 space-y-4">
+              <p className="text-gray-400 text-sm">Ingresa tu correo y te enviaremos un enlace para restablecer tu contraseña desde <b className="text-amber-500">noreply@xorbit360.com</b>.</p>
+              <div className="space-y-2">
+                <label className={labelCls}>Correo electrónico</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+                  <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} placeholder="tu@email.com" />
+                </div>
+              </div>
+              <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-amber-600 to-amber-500 text-black font-extrabold py-3.5 rounded-xl text-sm uppercase tracking-wide disabled:opacity-50 flex items-center justify-center gap-2">
+                {loading ? <Loader2 className="animate-spin" size={16} /> : <KeyRound size={16} />} Enviar enlace
+              </button>
+              <p className="text-center"><button type="button" onClick={onGoToLogin} className="text-xs text-gray-500 hover:underline">Volver al inicio de sesión</button></p>
+            </form>
+          )}
+
+          {/* NUEVA CONTRASEÑA */}
+          {step === 'reset' && (
+            <form onSubmit={handleReset} className="mt-6 space-y-4">
+              <p className="text-gray-400 text-sm">Crea tu nueva contraseña para <b className="text-white">{email}</b>.</p>
+              <div className="space-y-2">
+                <label className={labelCls}>Nueva contraseña</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+                  <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className={inputCls} placeholder="Mínimo 6 caracteres" />
+                </div>
+              </div>
+              <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-amber-600 to-amber-500 text-black font-extrabold py-3.5 rounded-xl text-sm uppercase tracking-wide disabled:opacity-50 flex items-center justify-center gap-2">
+                {loading ? <Loader2 className="animate-spin" size={16} /> : null} Guardar nueva contraseña
+              </button>
+            </form>
           )}
         </div>
       </div>
     </div>
   );
 }
-

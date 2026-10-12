@@ -129,7 +129,7 @@ export default function App() {
   const [currentView, setCurrentView] = useState<'login' | 'register' | 'app'>(() => {
     try {
       const searchParams = new URLSearchParams(window.location.search);
-      if (searchParams.has('ref') || window.location.pathname.includes('/join/')) return 'register';
+      if (searchParams.has('ref') || searchParams.get('view') === 'register' || window.location.pathname.includes('/join/')) return 'register';
     } catch (_) {}
     return 'login';
   });

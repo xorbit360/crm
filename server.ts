@@ -45,6 +45,7 @@ import { handleZernioWebhook } from './server/zernio/webhook.ts';
 import { enviarMensajeZernio } from './server/zernio/messaging.ts';
 import { getZernioAccounts } from './server/zernio/accounts.ts';
 import { setupBoldRoutes } from './server/bold.ts';
+import { setupAuthPublicRoutes, activateUserForBoldOrder } from './server/authPublic.ts';
 import { setupMcpRoutes } from './server/mcp.ts';
 import {
   clearSessionCookie,
@@ -2461,7 +2462,10 @@ async function createServer() {
   });
 
   // Setup Bold Payments Gateway (Merchant ID FFVSR3C7Y1) Routes & Webhook
-  setupBoldRoutes(app, () => currentDB, (db) => saveDBData(db));
+  setupBoldRoutes(app, () => currentDB, (db) => saveDBData(db), (info) => {
+    activateUserForBoldOrder(() => currentDB, (db) => saveDBData(db), info.orderId);
+  });
+  setupAuthPublicRoutes(app, () => currentDB, (db) => saveDBData(db));
 
   // Setup Zernio (Meta Cloud API Oficial) Routes & Webhook handler
   setupZernioRoutes(app, (event) => {

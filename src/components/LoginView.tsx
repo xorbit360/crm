@@ -7,7 +7,7 @@ interface LoginViewProps {
   onGoToRegister: () => void;
 }
 
-export default function LoginView({ onLogin }: LoginViewProps) {
+export default function LoginView({ onLogin, onGoToRegister }: LoginViewProps) {
   const whiteLabel = getCachedWhiteLabel();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -176,6 +176,15 @@ export default function LoginView({ onLogin }: LoginViewProps) {
             >
               <CheckCircle2 size={13} /> Activar paquete de IA en xorbit360.com
             </a>
+            <div>
+              <button
+                type="button"
+                onClick={() => { window.location.href = '/?view=register&mode=forgot'; }}
+                className="text-[11px] text-zinc-500 hover:text-amber-400 transition-colors underline underline-offset-2"
+              >
+                Olvidé mi contraseña
+              </button>
+            </div>
           </div>
 
         </div>
