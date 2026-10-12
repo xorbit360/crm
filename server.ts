@@ -33,7 +33,7 @@ import {
   loadStateFromNormalizedTables,
 } from './server/normalizedDb.ts';
 import { setupLiveSellingAdminRoutes, setupLiveSellingPublicRoutes } from './server/liveSelling.ts';
-import { setupSocialRoutes } from './server/social.ts';
+import { setupSocialRoutes, handleIncomingSocialComment } from './server/social.ts';
 import { setupAdsRoutes } from './server/ads.ts';
 import { setupRadarRoutes } from './server/radar.ts';
 import { setupPushRoutes } from './server/push.ts';
@@ -8468,6 +8468,10 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
     if (isZernioEvent) {
       return handleZernioWebhook(req, res, (event) => {
         try {
+          if (event?.eventType === 'comment.received') {
+            setImmediate(() => { handleIncomingSocialComment(event).catch((e) => console.error('[Social AI] webhook:', e)); });
+            return;
+          }
           const msg = event?.message;
           if (!msg) return;
           const cleanPhone = (msg.senderPhone || msg.senderId || '').replace(/\D/g, '');

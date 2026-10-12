@@ -4,6 +4,8 @@
 
 import express from 'express';
 import { zernioRequest } from './zernio/client.ts';
+import { getSupabase } from './supabase.ts';
+import { decryptSecret, isEncryptedSecret } from './secretBox.ts';
 
 type AnyRow = Record<string, any>;
 
@@ -181,6 +183,100 @@ function pauseSocialBotForThread(db: any, thread: AnyRow, text: string): void {
   } catch { /* noop */ }
 }
 
+// ---------- Respuestas IA a comentarios (modo prompt) ----------
+const SOCIAL_AI_WORKSPACE = 'default';
+
+async function resolveSocialAiKey(): Promise<string> {
+  const envKey = String(process.env.OPENROUTER_API_KEY || '').trim();
+  if (envKey) return envKey;
+  try {
+    const client = getSupabase();
+    if (!client) return '';
+    const { data } = await client
+      .from('app_settings')
+      .select('value')
+      .eq('workspace_id', SOCIAL_AI_WORKSPACE)
+      .eq('key', 'openrouterApiKey')
+      .maybeSingle();
+    const raw = data?.value ? String(data.value) : '';
+    return String(isEncryptedSecret(raw) ? decryptSecret(raw) : raw).trim();
+  } catch {
+    return '';
+  }
+}
+
+async function aiCommentReply(aiPrompt: string, commentText: string, authorName: string): Promise<string | null> {
+  const key = await resolveSocialAiKey();
+  if (!key) return null;
+  const model = String(process.env.OPENROUTER_RESPONSE_MODEL || 'openai/gpt-4o-mini').trim();
+  const prompt = [
+    aiPrompt.trim(),
+    '',
+    `Comentario de ${authorName || 'un seguidor'}: "${commentText}"`,
+    '',
+    'Formato: responde en español, máximo 280 caracteres, tono natural de red social. Devuelve ÚNICAMENTE el texto de la respuesta, sin comillas ni explicaciones.',
+  ].join('\n');
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 25000);
+  try {
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      signal: ctrl.signal,
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model, temperature: 0.7, max_tokens: 150, messages: [{ role: 'user', content: prompt }] }),
+    });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const json: any = await res.json().catch(() => null);
+    const text = String(json?.choices?.[0]?.message?.content || '').trim();
+    return text ? text.slice(0, 300) : null;
+  } catch {
+    clearTimeout(timer);
+    return null;
+  }
+}
+
+/** Procesa un comentario entrante (webhook comment.received) con automatizaciones IA activas. */
+export async function handleIncomingSocialComment(event: any): Promise<void> {
+  try {
+    const raw = event?.raw || event || {};
+    const data = raw?.data || {};
+    const c = data?.comment || data?.payload || data?.message || data || {};
+    const text = String(c?.text || c?.message || c?.body || data?.text || '').trim();
+    if (!text) return;
+    const accountId = String(data?.accountId || c?.accountId || raw?.accountId || '');
+    const postId = String(c?.postId || c?.platformPostId || c?.mediaId || data?.postId || '');
+    const commentId = String(c?.id || c?.commentId || c?.platformCommentId || data?.commentId || '');
+    const author = String(c?.authorName || c?.username || c?.from?.name || c?.senderName || 'un seguidor');
+    if (!accountId || !postId) return;
+
+    const db = getDB();
+    const list = getAutomations(db);
+    const active = list.filter((a: AnyRow) => a.type === 'comment_ai' && a.isActive !== false && String(a.accountId) === accountId);
+    if (!active.length) return;
+
+    for (const auto of active) {
+      const reply = await aiCommentReply(String(auto.aiPrompt || ''), text, author);
+      if (!reply) continue;
+      try {
+        await zernioRequest({
+          method: 'POST',
+          path: `/v1/inbox/comments/${encodeURIComponent(postId)}`,
+          body: { accountId, message: reply, commentId },
+        });
+        if (!Array.isArray((auto as any).logs)) (auto as any).logs = [];
+        (auto as any).logs.unshift({ at: new Date().toISOString(), comment: text.slice(0, 120), reply: reply.slice(0, 120), ok: true });
+        (auto as any).logs = (auto as any).logs.slice(0, 50);
+      } catch (e: any) {
+        console.error('[Social AI] No se pudo responder el comentario:', e?.message || e);
+      }
+    }
+    saveDB(db);
+  } catch (e: any) {
+    console.error('[Social AI] Error procesando comentario:', e?.message || e);
+  }
+}
+
 export function setupSocialRoutes(app: express.Express) {
   const router = express.Router();
 
@@ -311,6 +407,23 @@ export function setupSocialRoutes(app: express.Express) {
         const list = getAutomations(db);
         const idx = list.findIndex((a) => a.id === item.id);
         if (idx >= 0) list[idx] = item; else list.push(item);
+        saveDB(db);
+        return res.json({ success: true, automation: item });
+      }
+
+      if (type === 'comment_ai') {
+        const aiPrompt = String((req.body as any)?.aiPrompt || '').trim();
+        if (!aiPrompt) return res.status(400).json({ success: false, error: 'Escribe el prompt para la IA' });
+        const item: AnyRow = {
+          id: `cai-${accountId}-${Date.now()}`,
+          type, accountId,
+          name: name || 'Respuesta IA a comentarios',
+          aiPrompt,
+          isActive: isActive !== false,
+          updatedAt: new Date().toISOString(),
+        };
+        const list2 = getAutomations(db);
+        list2.push(item);
         saveDB(db);
         return res.json({ success: true, automation: item });
       }

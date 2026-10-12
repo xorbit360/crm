@@ -33,7 +33,7 @@ function Automatizaciones() {
   const [automations, setAutomations] = useState<any[]>([]);
   const [accountId, setAccountId] = useState('');
   const [showNew, setShowNew] = useState(false);
-  const [form, setForm] = useState({ type: 'comment_to_dm', name: '', keywords: '', dmMessage: '', commentReply: '' });
+  const [form, setForm] = useState({ type: 'comment_to_dm', name: '', keywords: '', dmMessage: '', commentReply: '', aiPrompt: '' });
   const [icePrompts, setIcePrompts] = useState<string[]>(['', '', '', '']);
   const [saving, setSaving] = useState(false);
 
@@ -53,7 +53,9 @@ function Automatizaciones() {
   useEffect(() => { load(); }, []);
 
   const create = async () => {
-    if (!accountId || !form.dmMessage.trim()) { alert('Elige cuenta y escribe el mensaje'); return; }
+    if (!accountId) { alert('Elige cuenta'); return; }
+    if (form.type === 'comment_ai' && !form.aiPrompt.trim()) { alert('Escribe el prompt para la IA'); return; }
+    if (form.type !== 'comment_ai' && !form.dmMessage.trim()) { alert('Escribe el mensaje'); return; }
     setSaving(true);
     try {
       const r = await fetch('/api/social/automations', {
@@ -61,7 +63,7 @@ function Automatizaciones() {
         body: JSON.stringify({ ...form, accountId, keywords: form.keywords.split(',').map((s) => s.trim()).filter(Boolean) }),
       });
       const j = await r.json();
-      if (j.success) { setShowNew(false); setForm({ type: 'comment_to_dm', name: '', keywords: '', dmMessage: '', commentReply: '' }); await load(); }
+      if (j.success) { setShowNew(false); setForm({ type: 'comment_to_dm', name: '', keywords: '', dmMessage: '', commentReply: '', aiPrompt: '' }); await load(); }
       else alert(j.error || 'No se pudo crear');
     } catch { alert('Error de red'); }
     setSaving(false);
@@ -100,7 +102,7 @@ function Automatizaciones() {
   };
 
   const TYPE_LABEL: Record<string, string> = {
-    comment_to_dm: 'Comment-to-DM', story_mention: 'Mención en historia', story_reply: 'Respuesta a historia', ice_breakers: 'Ice breakers',
+    comment_to_dm: 'Comment-to-DM', comment_ai: 'Respuesta IA a comentarios', story_mention: 'Mención en historia', story_reply: 'Respuesta a historia', ice_breakers: 'Ice breakers',
   };
 
   return (
@@ -117,6 +119,7 @@ function Automatizaciones() {
           <div className="grid grid-cols-2 gap-3">
             <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className={inputCls}>
               <option value="comment_to_dm">💬 Comment-to-DM (palabra clave → DM)</option>
+              <option value="comment_ai">🤖 Respuesta con IA a comentarios (prompt)</option>
               <option value="story_mention">📸 Mención en historia → DM</option>
               <option value="story_reply">↩️ Respuesta a historia → DM</option>
             </select>
@@ -126,8 +129,14 @@ function Automatizaciones() {
             <input value={form.keywords} onChange={(e) => setForm({ ...form, keywords: e.target.value })}
               placeholder="Palabras clave separadas por coma (ej. precio, info, quiero)" className={inputCls} />
           )}
+          {form.type === 'comment_ai' && (
+            <textarea value={form.aiPrompt} onChange={(e) => setForm({ ...form, aiPrompt: e.target.value })} rows={3}
+              placeholder="Prompt para la IA (ej. Responde amable, ofrece ayuda y si preguntan precio invítalos al DM)" className={inputCls} />
+          )}
+          {form.type !== 'comment_ai' && (
           <textarea value={form.dmMessage} onChange={(e) => setForm({ ...form, dmMessage: e.target.value })} rows={2}
             placeholder="Mensaje del DM — puedes usar {{first_name}} (ej. ¡Hola {{first_name}}! Aquí va tu info 👇)" className={inputCls} />
+          )}
           {form.type === 'comment_to_dm' && (
             <input value={form.commentReply} onChange={(e) => setForm({ ...form, commentReply: e.target.value })}
               placeholder="Respuesta pública opcional (ej. ¡Revisa tus DMs! 📩)" className={inputCls} />
@@ -160,7 +169,7 @@ function Automatizaciones() {
             </button>
             <div className="flex-1 min-w-0">
               <div className="text-sm font-semibold text-gray-100">{a.name}</div>
-              <div className="text-xs text-gray-500">{TYPE_LABEL[a.type] || a.type}{a.keywords?.length ? ` · "${a.keywords.join(', ')}"` : ''}</div>
+              <div className="text-xs text-gray-500">{TYPE_LABEL[a.type] || a.type}{a.type === 'comment_ai' ? ' · 🤖' : (a.keywords?.length ? ` · "${a.keywords.join(', ')}"` : '')}</div>
             </div>
             <button onClick={() => remove(a)} className="text-gray-500 hover:text-red-400"><Trash2 size={15} /></button>
           </div>
