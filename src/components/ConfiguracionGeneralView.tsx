@@ -14,6 +14,7 @@ import McpApiView from './McpApiView';
 import PersonalizacionPlataformaView from './PersonalizacionPlataformaView';
 import ProyectosView from './ProyectosView';
 import ProveedorIaOpenRouter from './ProveedorIaOpenRouter';
+import ProveedorCorreoResend from './ProveedorCorreoResend';
 
 interface ConfiguracionGeneralViewProps {
   currentLanguage: Language;
@@ -291,6 +292,7 @@ export default function ConfiguracionGeneralView({
           {currentUser?.role === 'superadmin' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <ProveedorIaOpenRouter />
+              <ProveedorCorreoResend />
             </div>
           )}
           {savedToast && (
