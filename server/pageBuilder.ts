@@ -1468,6 +1468,66 @@ export function setupPageBuilderPublicRoutes(app: Express) {
     } catch { res.status(404).type('html').send('<h1>Página no encontrada</h1>'); }
   });
 
+  // Ficha pública de producto del catálogo (P1: el bot comparte este enlace)
+  app.get('/producto/:id', async (req: Request, res: Response) => {
+    try {
+      const pid = String(req.params.id || '').trim().toLowerCase();
+      const products = Array.isArray((globalThis as any).currentDB?.products) ? (globalThis as any).currentDB.products : [];
+      const prod = products.find((x: any) =>
+        String(x.id || '').toLowerCase() === pid || String(x.sku || '').toLowerCase() === pid
+      );
+      if (!prod || prod.isActive === false) {
+        res.status(404).type('html').send('<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Producto no encontrado</title></head><body style="background:#0f0f0f;color:#e8e8e8;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><p>Producto no encontrado.</p></body></html>');
+        return;
+      }
+      const price = Number(prod.offerPrice || prod.price || prod.basePrice || 0);
+      const oldPrice = prod.offerPrice && prod.price ? Number(prod.price) : 0;
+      const img = String(prod.image || prod.imageUrl || prod.photo || '');
+      const biz = String((globalThis as any).currentDB?.businessName || 'Nuestra tienda');
+      const esc = (v: any) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      const waNumber = String((globalThis as any).currentDB?.whatsappNumber || (globalThis as any).currentDB?.businessPhone || '').replace(/\D/g, '');
+      const waText = encodeURIComponent(`Hola, me interesa el producto: ${prod.name} ($${price.toLocaleString('es-CO')} COP)`);
+      const waLink = waNumber ? `https://wa.me/${waNumber}?text=${waText}` : '#';
+      res.type('html').send(`<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${esc(prod.name)} — ${esc(biz)}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0f0f0f; color: #e8e8e8; font-family: -apple-system, 'Segoe UI', sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 16px; max-width: 420px; width: 100%; overflow: hidden; }
+  .card img { width: 100%; max-height: 380px; object-fit: cover; display: block; }
+  .body { padding: 24px; }
+  .biz { color: #b8860b; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
+  h1 { font-size: 22px; margin-bottom: 12px; color: #fff; }
+  .price { font-size: 28px; color: #d4a017; font-weight: 700; margin-bottom: 4px; }
+  .old { color: #888; text-decoration: line-through; font-size: 16px; margin-bottom: 12px; }
+  .desc { color: #bbb; font-size: 15px; line-height: 1.6; margin-bottom: 20px; }
+  .cta { display: block; background: #25d366; color: #fff; text-align: center; padding: 15px; border-radius: 10px; font-size: 17px; font-weight: 700; text-decoration: none; }
+  .cta:active { transform: scale(.98); }
+  .stock { margin-top: 12px; font-size: 13px; color: #888; text-align: center; }
+</style>
+</head>
+<body>
+<div class="card">
+  ${img ? `<img src="${esc(img)}" alt="${esc(prod.name)}">` : ''}
+  <div class="body">
+    <div class="biz">${esc(biz)}</div>
+    <h1>${esc(prod.name)}</h1>
+    <div class="price">$${price.toLocaleString('es-CO')} COP</div>
+    ${oldPrice > price ? `<div class="old">$${oldPrice.toLocaleString('es-CO')} COP</div>` : ''}
+    ${prod.description || prod.basicDescription ? `<div class="desc">${esc(prod.basicDescription || prod.description)}</div>` : ''}
+    <a class="cta" href="${waLink}">Pedir por WhatsApp</a>
+    <div class="stock">Compra 100% por chat · Respuesta inmediata</div>
+  </div>
+</div>
+</body>
+</html>`);
+    } catch { res.status(404).type('html').send('<h1>Producto no encontrado</h1>'); }
+  });
+
   // Vista (beacon)
   app.post('/api/public/pages/:id/pageview', async (req: Request, res: Response) => {
     bumpStat(cleanText(req.params.id, 40), 'views');

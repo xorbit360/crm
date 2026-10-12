@@ -1003,6 +1003,36 @@ async function sendWhatsAppBotReplies(
   const evoConfig = getEvolutionConfig();
   if (!clientSock && !evoConfig.isConfigured) return;
 
+  // === P1: procesar códigos de acción del catálogo ([FOTO_PRODUCTO:id], [CREAR_PEDIDO:json]) ===
+  try {
+    const _cleanReplies: string[] = [];
+    const _photoIds: string[] = [];
+    let _order: any = null;
+    for (const _r of (repliesList || [])) {
+      const _parsed = extractBotActionCodes(String(_r || ''));
+      for (const _pid of _parsed.photoProductIds) if (!_photoIds.includes(_pid)) _photoIds.push(_pid);
+      if (_parsed.orderPayload && !_order) _order = createBotOrder(_parsed.orderPayload, 'whatsapp-evolution');
+      if (_parsed.cleanText) _cleanReplies.push(_parsed.cleanText);
+    }
+    if (_order) {
+      const _items = (_order.items || []).map((it: any) => `${it.qty}x ${it.name}`).join(', ') || 'pedido';
+      _cleanReplies.push(`✅ ¡Pedido registrado! N° ${_order.id} — ${_items}. Total: $${Number(_order.amount || 0).toLocaleString('es-CO')} COP (${_order.paymentMethod}). Te contactaremos para coordinar la entrega.`);
+    }
+    repliesList = _cleanReplies;
+    // Enviar fotos de productos solicitadas por la IA
+    for (const _pid of _photoIds) {
+      try {
+        const _prod = findCatalogProduct(_pid);
+        const _img = _prod && (_prod.image || _prod.imageUrl || _prod.photo);
+        if (_img && !clientSock) {
+          const _cap = _prod.name ? `${_prod.name} — $${Number(_prod.offerPrice || _prod.price || 0).toLocaleString('es-CO')} COP` : '';
+          await sendEvolutionMediaMessage(channelId, phone, 'image', String(_img), _cap, 'producto.jpg', undefined, senderJid);
+          console.log(`[Bot Catálogo] Foto enviada: ${_prod.name || _pid}`);
+        }
+      } catch (_e: any) { console.warn('[Bot Catálogo] No se pudo enviar foto:', _e?.message || _e); }
+    }
+  } catch (_e: any) { console.warn('[Bot Catálogo] Error procesando códigos:', _e?.message || _e); }
+
   function cleanQuestionText(q: string): string {
     if (!q) return "";
     return q
@@ -1987,8 +2017,14 @@ function buildSystemPrompt(params: {
         const controlledStock = typeof p.stock === 'number' || /^\d+$/.test(String(p.stock || '').trim());
         const stock = controlledStock ? (Number(p.stock) > 0 ? `${Number(p.stock)} disponibles` : '¡AGOTADO!') : 'Disponible';
         const details = [p.basicDescription || p.description, p.features, p.benefits, p.differentiators].filter(Boolean).join(' | ');
-        return `- ${p.name}: $${p.offerPrice || p.price || p.basePrice || 0} COP (${stock})${details ? ` — ${details}` : ''}`;
-      }).join('\n') + '\nPROHIBIDO agregar información tomada de internet o inferida fuera de este catálogo.\n';
+        const pid = String(p.id || p.sku || p.name || '');
+        const link = `https://crm.xorbit360.com/producto/${encodeURIComponent(pid)}`;
+        return `- [ID:${pid}] ${p.name}: $${p.offerPrice || p.price || p.basePrice || 0} COP (${stock})${details ? ` — ${details}` : ''}\n  Ver producto: ${link}`;
+      }).join('\n') + '\nPROHIBIDO agregar información tomada de internet o inferida fuera de este catálogo.\n' +
+      '\nREGLAS DE ACCIÓN DEL CATÁLOGO (úsalas cuando el cliente lo pida o confirme):\n' +
+      '- Para ENVIAR LA FOTO de un producto, incluye en tu respuesta el código [FOTO_PRODUCTO:<ID>] con el ID exacto del catálogo (ejemplo: [FOTO_PRODUCTO:PROD-abc123]). El sistema enviará la foto automáticamente.\n' +
+      '- Para COMPARTIR un producto, envía su enlace "Ver producto:" tal cual aparece arriba.\n' +
+      '- Cuando el cliente CONFIRME la compra y tengas TODOS estos datos (producto, cantidad, nombre, teléfono, dirección), incluye en tu respuesta el código [CREAR_PEDIDO:{"productoId":"<ID>","cantidad":1,"nombre":"...","telefono":"...","direccion":"...","metodoPago":"Contraentrega"}] con los datos reales del cliente. El sistema creará el pedido automáticamente. NO inventes datos: si falta alguno, pídelo antes.\n';
   }
 
   // 6. Active menu (if configured)
@@ -2041,6 +2077,91 @@ ${colNamesStr}
 `;
 }
 
+
+// === Códigos de acción del catálogo para el bot (P1 sincronización) ===
+// La IA incluye [FOTO_PRODUCTO:<id>] para enviar fotos y [CREAR_PEDIDO:{json}]
+// para registrar pedidos. Se procesan en sendWhatsAppBotReplies (Evolution)
+// y sendSocialBotReply (Zernio: WhatsApp oficial + Instagram).
+function extractBotActionCodes(text: string): { cleanText: string; photoProductIds: string[]; orderPayload: any | null } {
+  let cleanText = String(text || '');
+  const photoProductIds: string[] = [];
+  const photoRe = /\[FOTO_PRODUCTO:([^\]]+)\]/g;
+  let m: RegExpExecArray | null;
+  while ((m = photoRe.exec(cleanText)) !== null) {
+    const pid = (m[1] || '').trim();
+    if (pid) photoProductIds.push(pid);
+  }
+  cleanText = cleanText.replace(photoRe, '').replace(/\n{3,}/g, '\n\n').trim();
+  let orderPayload: any | null = null;
+  const orderRe = /\[CREAR_PEDIDO:(\{[\s\S]*?\})\]/;
+  const om = orderRe.exec(cleanText);
+  if (om) {
+    try {
+      const parsed = JSON.parse(om[1]);
+      if (parsed && typeof parsed === 'object') orderPayload = parsed;
+    } catch { orderPayload = null; }
+    cleanText = cleanText.replace(orderRe, '').replace(/\n{3,}/g, '\n\n').trim();
+  }
+  return { cleanText, photoProductIds, orderPayload };
+}
+
+function findCatalogProduct(idOrName: string): any | null {
+  const products = Array.isArray((globalThis as any).currentDB?.products) ? (globalThis as any).currentDB.products : [];
+  const q = String(idOrName || '').trim().toLowerCase();
+  if (!q) return null;
+  return products.find((p: any) =>
+    String(p.id || '').toLowerCase() === q ||
+    String(p.sku || '').toLowerCase() === q ||
+    String(p.name || '').toLowerCase() === q
+  ) || null;
+}
+
+function createBotOrder(payload: any, channel: string): any | null {
+  try {
+    const db = (globalThis as any).currentDB;
+    if (!payload || typeof payload !== 'object' || !db) return null;
+    const product = payload.productoId ? findCatalogProduct(String(payload.productoId)) : null;
+    const qty = Math.max(1, parseInt(String(payload.cantidad || '1'), 10) || 1);
+    const unitPrice = product ? Number(product.offerPrice || product.price || product.basePrice || 0) : 0;
+    const order = {
+      id: `BOT-${Date.now().toString(36).toUpperCase()}`,
+      customerName: String(payload.nombre || 'Cliente').slice(0, 80),
+      phone: String(payload.telefono || '').slice(0, 30),
+      address: String(payload.direccion || '').slice(0, 200),
+      items: product ? [{ productId: String(product.id || ''), name: String(product.name || ''), qty, price: unitPrice }] : [],
+      amount: unitPrice * qty,
+      paymentMethod: String(payload.metodoPago || 'Contraentrega').slice(0, 40),
+      status: 'NUEVO',
+      channel: channel || 'bot',
+      source: 'bot',
+      createdAt: new Date().toISOString(),
+    };
+    if (!Array.isArray(db.orders)) db.orders = [];
+    db.orders = [order, ...db.orders];
+    const saveFn = (globalThis as any).saveDBData;
+    if (typeof saveFn === 'function') saveFn(db);
+    // Registrar/actualizar cliente
+    try {
+      if (!Array.isArray(db.customers)) db.customers = [];
+      const phoneKey = order.phone.replace(/\D/g, '');
+      const exists = db.customers.some((c: any) => String(c.phone || '').replace(/\D/g, '') === phoneKey && phoneKey);
+      if (!exists && order.customerName) {
+        db.customers = [...db.customers, {
+          id: `C${db.customers.length + 1}`,
+          name: order.customerName, phone: order.phone, address: order.address,
+          registerDate: new Date().toISOString().split('T')[0],
+          recurrence: 'NUEVO', ordersCount: 1,
+        }];
+        if (typeof saveFn === 'function') saveFn(db);
+      }
+    } catch { /* no bloquear el pedido */ }
+    console.log(`[Bot Pedido] Pedido ${order.id} creado desde ${channel}`);
+    return order;
+  } catch (e: any) {
+    console.error('[Bot Pedido] Error creando pedido:', e?.message || e);
+    return null;
+  }
+}
 
 process.on('uncaughtException', (err: any) => {
   const msg = err?.message || String(err);
@@ -3939,6 +4060,10 @@ async function createServer() {
     saveDBData(currentDB);
     res.json({ success: true });
   });
+  app.get("/api/backoffice/orders", (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ orders: Array.isArray(currentDB.orders) ? currentDB.orders : [] });
+  });
   app.get("/api/backoffice/social-comments", (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     res.json({ socialComments: Array.isArray(currentDB.socialComments) ? currentDB.socialComments : [] });
@@ -4884,6 +5009,47 @@ async function createServer() {
     if (parsed && Array.isArray(parsed.replies) && parsed.replies.length > 0) replies = parsed.replies;
     else if (parsed && typeof parsed.reply === 'string' && parsed.reply.trim()) replies = [parsed.reply.trim()];
     else replies = [clean];
+    // === P1: códigos de acción del catálogo ([FOTO_PRODUCTO:id], [CREAR_PEDIDO:json]) ===
+    try {
+      const _cleanSocial: string[] = [];
+      const _photoIds: string[] = [];
+      let _order: any = null;
+      for (const _r of replies) {
+        const _parsed = extractBotActionCodes(String(_r || ''));
+        for (const _pid of _parsed.photoProductIds) if (!_photoIds.includes(_pid)) _photoIds.push(_pid);
+        if (_parsed.orderPayload && !_order) _order = createBotOrder(_parsed.orderPayload, 'zernio-' + String(opts.socialPlatform || 'social'));
+        if (_parsed.cleanText) _cleanSocial.push(_parsed.cleanText);
+      }
+      if (_order) {
+        const _items = (_order.items || []).map((it: any) => `${it.qty}x ${it.name}`).join(', ') || 'pedido';
+        _cleanSocial.push(`✅ ¡Pedido registrado! N° ${_order.id} — ${_items}. Total: $${Number(_order.amount || 0).toLocaleString('es-CO')} COP (${_order.paymentMethod}). Te contactaremos para coordinar la entrega.`);
+      }
+      replies = _cleanSocial.length > 0 ? _cleanSocial : replies;
+      const _plat2 = ['whatsapp', 'instagram', 'messenger', 'facebook'].includes(String(opts.socialPlatform).toLowerCase())
+        ? String(opts.socialPlatform).toLowerCase() : 'instagram';
+      for (const _pid of _photoIds) {
+        try {
+          const _prod = findCatalogProduct(_pid);
+          const _img = _prod && (_prod.image || _prod.imageUrl || _prod.photo);
+          if (_img) {
+            const _cap = _prod.name ? `${_prod.name} — $${Number(_prod.offerPrice || _prod.price || 0).toLocaleString('es-CO')} COP` : '';
+            await enviarMensajeZernio({
+              accountId: opts.socialAccountId || undefined,
+              conversationId: opts.zernioConversationId || undefined,
+              participantId: opts.participantId || undefined,
+              participantUsername: opts.participantUsername || undefined,
+              platform: _plat2 as any,
+              text: _cap,
+              attachmentUrl: String(_img),
+              attachmentType: 'image',
+              idempotencyKey: 'socialbot-foto-' + Date.now() + '-' + Math.random().toString(36).slice(2),
+            });
+            console.log(`[Bot Catálogo] Foto enviada por Zernio: ${_prod.name || _pid}`);
+          }
+        } catch (_e: any) { console.warn('[Bot Catálogo] No se pudo enviar foto por Zernio:', _e?.message || _e); }
+        await new Promise((r2) => setTimeout(r2, 1200));
+      }
+    } catch (_e: any) { console.warn('[Bot Catálogo] Error procesando códigos (social):', _e?.message || _e); }
     const nowStr = new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
     const plat = ['whatsapp', 'instagram', 'messenger', 'facebook'].includes(String(opts.socialPlatform).toLowerCase())
       ? String(opts.socialPlatform).toLowerCase() : 'instagram';

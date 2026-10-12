@@ -107,17 +107,38 @@ export default function PedidosView({ currentUser }: { currentUser?: { role?: st
     }
   };
 
-  // Load orders
+  // Load orders — fusiona pedidos del servidor (bot, live, constructor) con locales
   useEffect(() => {
-    if (isPrincipalAdmin(currentUser)) {
-      const demoOrders = buildAdminDemoOrders();
-      setOrders(demoOrders);
-      localStorage.setItem(ordersStorageKey, JSON.stringify(demoOrders));
-      return;
-    }
-    setOrders([]);
-    localStorage.setItem(ordersStorageKey, JSON.stringify([]));
-    return;
+    let cancelled = false;
+    const mergeServerOrders = async (base: any[]) => {
+      try {
+        const res = await fetch('/api/backoffice/orders', { cache: 'no-store' });
+        const data = await res.json().catch(() => ({}));
+        const serverOrders = Array.isArray(data.orders) ? data.orders : [];
+        if (cancelled) return base;
+        if (serverOrders.length === 0) return base;
+        const seen = new Set(base.map((o: any) => String(o.id || '')));
+        const merged = [...serverOrders.filter((o: any) => !seen.has(String(o.id || ''))), ...base];
+        return merged;
+      } catch { return base; }
+    };
+    (async () => {
+      if (isPrincipalAdmin(currentUser)) {
+        const demoOrders = buildAdminDemoOrders();
+        const merged = await mergeServerOrders(demoOrders);
+        if (!cancelled) {
+          setOrders(merged);
+          localStorage.setItem(ordersStorageKey, JSON.stringify(merged));
+        }
+        return;
+      }
+      const merged = await mergeServerOrders([]);
+      if (!cancelled) {
+        setOrders(merged);
+        localStorage.setItem(ordersStorageKey, JSON.stringify(merged));
+      }
+    })();
+    return () => { cancelled = true; };
     /* Legacy mock data remains below for reference only. */
     const stored = localStorage.getItem('crm_orders');
     if (stored) {
