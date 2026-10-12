@@ -65,7 +65,7 @@ interface Campaign {
   name: string;
   status: 'ACTIVE' | 'PAUSED' | string;
   objective: string;
-  platform?: 'meta' | 'google' | 'instagram' | 'tiktok';
+  platform?: 'meta' | 'google' | 'instagram' | 'tiktok' | 'openai';
   metrics: {
     impressions: number;
     clicks: number;
@@ -182,7 +182,7 @@ export default function AdsView({
 
   // Filters for Métricas KPI
   const [filterSearch, setFilterSearch] = useState('');
-  const [filterPlatform, setFilterPlatform] = useState<'all' | 'meta' | 'google' | 'instagram' | 'tiktok'>('all');
+  const [filterPlatform, setFilterPlatform] = useState<'all' | 'meta' | 'google' | 'instagram' | 'tiktok' | 'openai'>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | 'ACTIVE' | 'PAUSED'>('all');
   const [filterObjective, setFilterObjective] = useState('all');
 
@@ -389,7 +389,7 @@ export default function AdsView({
         }
       }
 
-      // 2. Estado real de Zernio Ads (una integración, 7 plataformas)
+      // 2. Estado real de Zernio Ads (una integración, 8 plataformas)
       try {
         const statusRes = await fetch('/api/ads/status');
         if (statusRes.ok) {
@@ -1022,7 +1022,7 @@ export default function AdsView({
 
               <div>
 
-                {/* Zernio Ads — Conexión real (7 plataformas, una integración) */}
+                {/* Zernio Ads — Conexión real (8 plataformas, una integración) */}
                 <div className="bg-[#090909] border border-gray-800 rounded-2xl p-4 shadow-xl space-y-3">
                   <div className="flex items-center justify-between border-b border-gray-800 pb-3">
                     <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest flex items-center gap-1.5">
@@ -1055,6 +1055,7 @@ export default function AdsView({
                         { id: 'linkedin', name: 'LinkedIn Ads' },
                         { id: 'pinterest', name: 'Pinterest Ads' },
                         { id: 'twitter', name: 'X (Twitter) Ads' },
+                        { id: 'openai', name: 'ChatGPT Ads' },
                       ]).map((p: any) => (
                         <option key={p.id} value={p.id}>{p.name}</option>
                       ))}
@@ -1325,6 +1326,7 @@ export default function AdsView({
                   <option value="google">Google Ads</option>
                   <option value="instagram">Instagram Ads</option>
                   <option value="tiktok">TikTok Ads</option>
+                  <option value="openai">ChatGPT Ads</option>
                 </select>
               </div>
 
@@ -1841,6 +1843,7 @@ export default function AdsView({
                     const isGoogle = c.platform === 'google';
                     const isInstagram = c.platform === 'instagram';
                     const isTiktok = c.platform === 'tiktok';
+                    const isOpenai = c.platform === 'openai';
 
                     return (
                       <tr key={c.id} className="hover:bg-gray-950/40 transition">
@@ -1850,6 +1853,7 @@ export default function AdsView({
                             isGoogle ? 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20' :
                             isInstagram ? 'bg-blue-600/10 text-blue-400 border border-blue-500/20' :
                             isTiktok ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
+                            isOpenai ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
                             'bg-blue-600/10 text-blue-400 border border-blue-500/20'
                           }`}>
                             {c.platform || 'meta'}

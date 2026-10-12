@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import CalculadoraCOD from './CalculadoraCOD';
+const RadarView = lazy(() => import('./RadarView'));
 import MultiRecomendadorView from './MultiRecomendadorView';
 import {
   Target,
@@ -27,14 +28,16 @@ import {
   Facebook,
   MessageSquare,
   CheckCircle2,
-  Sparkle
+  Sparkle,
+  Radar
 } from 'lucide-react';
 
 interface MercadoViewProps {
-  activeTab?: 'publico' | 'tendencias' | 'competidores' | 'ia_ideas' | 'productos_ganadores' | 'calculadora' | 'multi_recomendador';
+  activeTab?: 'publico' | 'tendencias' | 'competidores' | 'ia_ideas' | 'productos_ganadores' | 'calculadora' | 'multi_recomendador' | 'radar';
+  onLaunchTraffiker?: (brief: { text: string; imageUrl?: string; keyword?: string }) => void;
 }
 
-export default function MercadoView({ activeTab = 'publico' }: MercadoViewProps) {
+export default function MercadoView({ activeTab = 'publico', onLaunchTraffiker }: MercadoViewProps) {
   // Competidores State
   const [competitors, setCompetitors] = useState([
     { id: 'comp-1', name: 'FreshAir Co.', url: 'freshair-co.com', price: '$49.99', strength: 'Fuerte presencia en Instagram y TikTok con UGC orgánico.', weakness: 'Envíos lentos (15 días desde China) y soporte deficiente.' },
@@ -1010,6 +1013,11 @@ export default function MercadoView({ activeTab = 'publico' }: MercadoViewProps)
       )}
       {activeTab === "calculadora" && <CalculadoraCOD />}
       {activeTab === "multi_recomendador" && <MultiRecomendadorView />}
+      {activeTab === "radar" && (
+        <Suspense fallback={<div className="text-gray-500 text-sm p-6 text-center">Cargando Radar…</div>}>
+          <RadarView onLaunchTraffiker={onLaunchTraffiker} />
+        </Suspense>
+      )}
     </div>
   );
 }

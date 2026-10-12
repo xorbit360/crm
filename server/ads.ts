@@ -32,6 +32,7 @@ const PLATFORMS = [
   { id: 'linkedin', name: 'LinkedIn Ads', needsConnection: 'linkedin' },
   { id: 'pinterest', name: 'Pinterest Ads', needsConnection: 'pinterest' },
   { id: 'twitter', name: 'X (Twitter) Ads', needsConnection: 'twitterads' },
+  { id: 'openai', name: 'ChatGPT Ads', needsConnection: 'openai' },
 ];
 
 /** Traduce errores de Zernio Ads a español amigable. */

@@ -10,7 +10,6 @@ const BrandingView = lazy(() => import('./components/BrandingView'));
 const MercadoView = lazy(() => import('./components/MercadoView'));
 const ContenidoView = lazy(() => import('./components/ContenidoView'));
 const AdsView = lazy(() => import('./components/AdsView'));
-const RadarView = lazy(() => import('./components/RadarView'));
 const VideoGenView = lazy(() => import('./components/VideoGenView'));
 const WhatsappView = lazy(() => import('./components/WhatsappView'));
 const AutomatizacionesView = lazy(() => import('./components/AutomatizacionesView'));
@@ -139,7 +138,7 @@ export default function App() {
   const [activeEmailTab, setActiveEmailTab] = useState('flujos');
   const [activeContenidoTab, setActiveContenidoTab] = useState<'crear' | 'planificador' | 'clonador' | 'analizar' | 'editor_video'>('crear');
   const [activeBrandingTab, setActiveBrandingTab] = useState<'entrevista' | 'identidad' | 'manual' | 'creativos'>('entrevista');
-  const [activeMercadoTab, setActiveMercadoTab] = useState<'publico' | 'tendencias' | 'competidores' | 'ia_ideas' | 'productos_ganadores' | 'calculadora' | 'multi_recomendador'>('publico');
+  const [activeMercadoTab, setActiveMercadoTab] = useState<'publico' | 'tendencias' | 'competidores' | 'ia_ideas' | 'productos_ganadores' | 'calculadora' | 'multi_recomendador' | 'radar'>('publico');
   const [activeLandingTab, setActiveLandingTab] = useState<'plantillas' | 'rastreador' | 'constructor'>('plantillas');
   const [activeAdsTab, setActiveAdsTab] = useState<'traffiker' | 'metricas'>('traffiker');
   const [radarBrief, setRadarBrief] = useState<{ text: string; imageUrl?: string; keyword?: string; ts: number } | null>(null);
@@ -248,7 +247,7 @@ export default function App() {
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
-  const isInsideTool = ['whatsapp', 'llamadas', 'email', 'contenido', 'branding', 'mercado', 'landing', 'ads', 'live_selling', 'video', 'radar'].includes(activeModule);
+  const isInsideTool = ['whatsapp', 'llamadas', 'email', 'contenido', 'branding', 'mercado', 'landing', 'ads', 'live_selling', 'video'].includes(activeModule);
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['herramientas', 'configuracion']);
 
   const toggleGroup = (groupName: string) => {
@@ -465,7 +464,6 @@ type ChatMessage = {
     { id: 'contenido' as ModuleId, label: t.contenido, icon: <ImageIcon size={18} /> },
     { id: 'landing' as ModuleId, label: t.landing, icon: <Layout size={18} /> },
     { id: 'ads' as ModuleId, label: t.ads, icon: <Megaphone size={18} /> },
-    { id: 'radar' as ModuleId, label: 'Radar', icon: <Radar size={18} /> },
     { id: 'live_selling' as ModuleId, label: t.live_selling || 'Live Selling', icon: <Radio size={18} className="text-red-400" /> },
     { id: 'video' as ModuleId, label: t.video || 'Generación de Video', icon: <Clapperboard size={18} /> },
     { id: 'whatsapp' as ModuleId, label: t.whatsapp, icon: <Smartphone size={18} /> },
@@ -990,6 +988,7 @@ type ChatMessage = {
                         { id: 'competidores', label: 'Análisis Competitivo', icon: <BarChart3 size={16} /> },
                         { id: 'ia_ideas', label: 'Ideas de Negocio IA', icon: <Lightbulb size={16} /> },
                         { id: 'productos_ganadores', label: 'Productos Ganadores', icon: <Flame size={16} /> },
+                        { id: 'radar', label: 'Radar', icon: <Radar size={16} /> },
                         { id: 'multi_recomendador', label: 'Multi-Recomendador IA', icon: <Sparkles size={16} /> },
                         { id: 'calculadora', label: 'Calculadora de Precios', icon: <Calculator size={16} /> }
                       ].map(tab => (
@@ -1388,7 +1387,7 @@ type ChatMessage = {
             )}
 
             {activeModule === 'branding' && <BrandingView activeTab={activeBrandingTab} />}
-            {activeModule === 'mercado' && <MercadoView activeTab={activeMercadoTab} />}
+            {activeModule === 'mercado' && <MercadoView activeTab={activeMercadoTab} onLaunchTraffiker={handleRadarLaunch} />}
             {activeModule === 'contenido' && (
               <ContenidoView
                 activeTab={activeContenidoTab}
@@ -1397,7 +1396,6 @@ type ChatMessage = {
             )}
             {activeModule === 'landing' && <LandingView activeTab={activeLandingTab} />}
             {activeModule === 'ads' && <AdsView activeTab={activeAdsTab} onNavigate={(mId) => navigateToModule(mId as any)} radarBrief={radarBrief} />}
-            {activeModule === 'radar' && <RadarView onLaunchTraffiker={handleRadarLaunch} />}
             {activeModule === 'live_selling' && <LiveSellingView />}
             {activeModule === 'video' && <VideoGenView currentUser={user} />}
             {activeModule === 'whatsapp' && (
