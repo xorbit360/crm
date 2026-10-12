@@ -1,5 +1,5 @@
 import React, { lazy, Suspense, useState, useRef, useEffect } from 'react';
-import { ChevronDown, Bot, Lightbulb, Image as ImageIcon, Layout, Megaphone, Smartphone, Settings as SettingsIcon, Menu, X, ArrowRight, ShieldCheck, ChevronRight, Network, Link, Paperclip, Mic, FileImage, Video, FileAudio, Users, Share2, LogOut, GraduationCap, Package, ShoppingCart, BarChart3, HeartHandshake, Send, Calendar, QrCode, Database, MessageCircle, MessageSquare, FileText, Zap, TrendingUp, Sparkles, Flame, Search, Calculator, MonitorPlay, Eye, Bell, CheckCircle, Sun, Moon, PanelLeft, PanelLeftClose, FolderKanban, Terminal, Globe, Radio, CreditCard, Gift } from 'lucide-react';
+import { ChevronDown, Bot, Lightbulb, Image as ImageIcon, Layout, Megaphone, Smartphone, Settings as SettingsIcon, Menu, X, ArrowRight, ShieldCheck, ChevronRight, Network, Link, Paperclip, Mic, FileImage, Video, FileAudio, Users, Share2, LogOut, GraduationCap, Package, ShoppingCart, BarChart3, HeartHandshake, Send, Calendar, QrCode, Database, MessageCircle, MessageSquare, FileText, Zap, TrendingUp, Sparkles, Flame, Search, Calculator, MonitorPlay, Eye, Bell, CheckCircle, Sun, Moon, PanelLeft, PanelLeftClose, FolderKanban, Terminal, Globe, Radio, CreditCard, Gift, Clapperboard, Radar } from 'lucide-react';
 import type { ModuleId, AppState } from './types';
 import { translations, FlagES, FlagUK, Language, Theme } from './lib/i18n';
 import { getCachedWhiteLabel, fetchWhiteLabelConfig, WhiteLabelConfig } from './lib/whitelabel';
@@ -10,6 +10,8 @@ const BrandingView = lazy(() => import('./components/BrandingView'));
 const MercadoView = lazy(() => import('./components/MercadoView'));
 const ContenidoView = lazy(() => import('./components/ContenidoView'));
 const AdsView = lazy(() => import('./components/AdsView'));
+const RadarView = lazy(() => import('./components/RadarView'));
+const VideoGenView = lazy(() => import('./components/VideoGenView'));
 const WhatsappView = lazy(() => import('./components/WhatsappView'));
 const AutomatizacionesView = lazy(() => import('./components/AutomatizacionesView'));
 const DashboardMetrics = lazy(() => import('./components/DashboardMetrics'));
@@ -140,6 +142,12 @@ export default function App() {
   const [activeMercadoTab, setActiveMercadoTab] = useState<'publico' | 'tendencias' | 'competidores' | 'ia_ideas' | 'productos_ganadores' | 'calculadora' | 'multi_recomendador'>('publico');
   const [activeLandingTab, setActiveLandingTab] = useState<'plantillas' | 'rastreador' | 'constructor'>('plantillas');
   const [activeAdsTab, setActiveAdsTab] = useState<'traffiker' | 'metricas'>('traffiker');
+  const [radarBrief, setRadarBrief] = useState<{ text: string; imageUrl?: string; keyword?: string; ts: number } | null>(null);
+  const handleRadarLaunch = (brief: { text: string; imageUrl?: string; keyword?: string }) => {
+    setRadarBrief({ ...brief, ts: Date.now() });
+    setActiveAdsTab('traffiker');
+    navigateToModule('ads');
+  };
   const [dashboardTab, setDashboardTab] = useState<'metrics' | 'organigrama'>('organigrama');
   const [recommenderChatSession, setRecommenderChatSession] = useState<{
     recommenderId: string;
@@ -240,7 +248,7 @@ export default function App() {
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
-  const isInsideTool = ['whatsapp', 'llamadas', 'email', 'contenido', 'branding', 'mercado', 'landing', 'ads', 'live_selling'].includes(activeModule);
+  const isInsideTool = ['whatsapp', 'llamadas', 'email', 'contenido', 'branding', 'mercado', 'landing', 'ads', 'live_selling', 'video', 'radar'].includes(activeModule);
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['herramientas', 'configuracion']);
 
   const toggleGroup = (groupName: string) => {
@@ -457,7 +465,9 @@ type ChatMessage = {
     { id: 'contenido' as ModuleId, label: t.contenido, icon: <ImageIcon size={18} /> },
     { id: 'landing' as ModuleId, label: t.landing, icon: <Layout size={18} /> },
     { id: 'ads' as ModuleId, label: t.ads, icon: <Megaphone size={18} /> },
+    { id: 'radar' as ModuleId, label: 'Radar', icon: <Radar size={18} /> },
     { id: 'live_selling' as ModuleId, label: t.live_selling || 'Live Selling', icon: <Radio size={18} className="text-red-400" /> },
+    { id: 'video' as ModuleId, label: t.video || 'Generación de Video', icon: <Clapperboard size={18} /> },
     { id: 'whatsapp' as ModuleId, label: t.whatsapp, icon: <Smartphone size={18} /> },
     { id: 'comunidad' as ModuleId, label: t.comunidad, icon: <Share2 size={18} /> },
     { id: 'entrenamiento' as ModuleId, label: t.entrenamiento, icon: <GraduationCap size={18} /> },
@@ -1386,8 +1396,10 @@ type ChatMessage = {
               />
             )}
             {activeModule === 'landing' && <LandingView activeTab={activeLandingTab} />}
-            {activeModule === 'ads' && <AdsView activeTab={activeAdsTab} onNavigate={(mId) => navigateToModule(mId as any)} />}
+            {activeModule === 'ads' && <AdsView activeTab={activeAdsTab} onNavigate={(mId) => navigateToModule(mId as any)} radarBrief={radarBrief} />}
+            {activeModule === 'radar' && <RadarView onLaunchTraffiker={handleRadarLaunch} />}
             {activeModule === 'live_selling' && <LiveSellingView />}
+            {activeModule === 'video' && <VideoGenView currentUser={user} />}
             {activeModule === 'whatsapp' && (
               <WhatsappView
                 activeTab={activeWhatsappTab}

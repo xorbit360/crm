@@ -4,6 +4,7 @@
 
 import { zernioRequest } from './zernio/client.ts';
 import { buildSocialThreads } from './social.ts';
+import { VIDEO_MODEL_CATALOG, estimateVideoCost, createVideoJob, cancelVideoJob, vgListJobs, vgGetJob, vgWalletBalance, salePerSec, costPerSec } from './videoGen.ts';
 
 type McpDeps = { projectRoot: string; getDB: () => any; saveDB: (next: any) => void };
 type AnyRow = Record<string, any>;
@@ -76,6 +77,14 @@ export const xorbitToolDefs = [
   { name: 'social_scheduled', ...S('Lista posts programados.', {}, []) },
   { name: 'social_analytics', ...S('Analítica social por cuenta y rango.', { accountId: { type: 'string' }, fromDate: { type: 'string' }, toDate: { type: 'string' } }) },
   { name: 'social_reflink', ...S('Crea enlace de referido ig.me.', { accountId: { type: 'string' }, code: { type: 'string' } }, ['accountId', 'code']) },
+  // ---------- Video ----------
+  { name: 'video_gen_models', ...S('Modelos de generación de video con precios de venta por segundo.', {}, []) },
+  { name: 'video_gen_estimate', ...S('Estima el costo de un video: devuelve plan de clips, costo y precio. No genera nada.', { modelId: { type: 'string' }, prompt: { type: 'string' }, totalSec: { type: 'number' }, resolution: { type: 'string' }, aspectRatio: { type: 'string' }, withAudio: { type: 'boolean' } }, ['modelId', 'prompt']) },
+  { name: 'video_gen_create', ...S('Crea un trabajo de generación de video (cobra del wallet al terminar). Para videos largos une los clips con ffmpeg.', { modelId: { type: 'string' }, prompt: { type: 'string' }, totalSec: { type: 'number' }, resolution: { type: 'string' }, aspectRatio: { type: 'string' }, withAudio: { type: 'boolean' }, confirmed: { type: 'boolean', description: 'true para confirmar el plan y encolar' } }, ['modelId', 'prompt', 'confirmed']) },
+  { name: 'video_gen_status', ...S('Estado y progreso de un trabajo de video.', { jobId: { type: 'string' } }, ['jobId']) },
+  { name: 'video_gen_list', ...S('Lista trabajos de video del tenant.', { limit: { type: 'number' } }) },
+  { name: 'video_gen_cancel', ...S('Cancela un trabajo de video en cola o en curso.', { jobId: { type: 'string' } }, ['jobId']) },
+  { name: 'video_gen_wallet', ...S('Saldo USD del wallet de video del tenant.', {}, []) },
   // ---------- WhatsApp ----------
   { name: 'whatsapp_providers', ...S('Lista los proveedores WhatsApp por número (evolution, zernio_coexistence, zernio_api).', {}, []) },
   { name: 'whatsapp_provider_set', ...S('Asigna el proveedor a un número.', { phone: { type: 'string' }, provider: { type: 'string', enum: ['evolution', 'zernio_coexistence', 'zernio_api'] } }, ['phone', 'provider']) },
@@ -254,6 +263,53 @@ export async function handleXorbitTool(name: string, args: AnyRow, deps: McpDeps
       const r: any = await zx('/v1/workflows', { method: 'POST', body: { trigger: 'referral', accountId: a.accountId, code: a.code, name: `Referido ${a.code}` } });
       const username = r?.username || r?.account?.username || '';
       return { success: true, url: username ? `https://ig.me/m/${username}?ref=${a.code}` : null, workflow: r };
+    }
+    // ===== Video =====
+    case 'video_gen_models': {
+      return {
+        models: VIDEO_MODEL_CATALOG.map((m: any) => ({
+          id: m.id, name: m.name, vendor: m.vendor, badge: m.badge || null,
+          description: m.description, audio: m.audio,
+          resolutions: m.resolutions, minClipSec: m.minClipSec, maxClipSec: m.maxClipSec,
+          aspects: m.aspects,
+          salePerSec: Object.fromEntries(m.resolutions.map((r: string) => [r, salePerSec(m.id, r, false)])),
+        })),
+      };
+    }
+    case 'video_gen_estimate': {
+      const est = estimateVideoCost({
+        modelId: String(a.modelId || ''), prompt: String(a.prompt || ''),
+        totalSec: Number(a.totalSec || 8), resolution: String(a.resolution || ''),
+        aspectRatio: String(a.aspectRatio || ''), withAudio: !!a.withAudio,
+      });
+      if (!(est as any).ok) throw new Error((est as any).error || 'Parámetros inválidos');
+      return est;
+    }
+    case 'video_gen_create': {
+      const tenant = 'default';
+      const r: any = createVideoJob(tenant, {
+        prompt: String(a.prompt || ''), modelId: String(a.modelId || ''),
+        totalSec: Number(a.totalSec || 8), resolution: String(a.resolution || ''),
+        aspectRatio: String(a.aspectRatio || ''), withAudio: !!a.withAudio, confirmed: !!a.confirmed,
+      });
+      if (!r.ok && !r.needsConfirmation) throw new Error(r.error || 'No se pudo crear el trabajo');
+      return r;
+    }
+    case 'video_gen_status': {
+      const j = vgGetJob(String(a.jobId || ''), 'default');
+      if (!j) throw new Error('Trabajo no encontrado');
+      return j;
+    }
+    case 'video_gen_list': {
+      return { jobs: vgListJobs('default', Number(a.limit) || 20) };
+    }
+    case 'video_gen_cancel': {
+      const j = cancelVideoJob(String(a.jobId || ''), 'default');
+      if (!j) throw new Error('Trabajo no encontrado o ya terminó');
+      return { success: true, job: j };
+    }
+    case 'video_gen_wallet': {
+      return { balanceUsd: vgWalletBalance('default'), currency: 'USD' };
     }
     // ===== WhatsApp =====
     case 'whatsapp_providers': {

@@ -35,9 +35,11 @@ import {
 import { setupLiveSellingAdminRoutes, setupLiveSellingPublicRoutes } from './server/liveSelling.ts';
 import { setupSocialRoutes } from './server/social.ts';
 import { setupAdsRoutes } from './server/ads.ts';
+import { setupRadarRoutes } from './server/radar.ts';
 import { setupPushRoutes } from './server/push.ts';
 import { setupDiagnosticAdminRoutes, setupDiagnosticPublicRoutes } from './server/diagnostic.ts';
 import { setupPageBuilderAdminRoutes, setupPageBuilderPublicRoutes } from './server/pageBuilder.ts';
+import { setupVideoGenAdminRoutes, startVideoWorker } from './server/videoGen.ts';
 import { setupZernioRoutes } from './server/zernio/routes.ts';
 import { handleZernioWebhook } from './server/zernio/webhook.ts';
 import { enviarMensajeZernio } from './server/zernio/messaging.ts';
@@ -2311,9 +2313,12 @@ async function createServer() {
   setupLiveSellingAdminRoutes(app);
   setupSocialRoutes(app);
   setupAdsRoutes(app);
+  setupRadarRoutes(app);
   setupPushRoutes(app);
   setupDiagnosticAdminRoutes(app);
   setupPageBuilderAdminRoutes(app);
+  setupVideoGenAdminRoutes(app);
+  startVideoWorker();
 
   // Receives the real browser exception behind the generic error screen. The
   // payload is truncated and never includes cookies, tokens or request bodies.
