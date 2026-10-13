@@ -39,6 +39,7 @@ import { setupRadarRoutes } from './server/radar.ts';
 import { setupPushRoutes } from './server/push.ts';
 import { setupDiagnosticAdminRoutes, setupDiagnosticPublicRoutes } from './server/diagnostic.ts';
 import { setupVoiceAdminRoutes } from './server/voice.ts';
+import { setupVoiceCallsRoutes, setupVoiceCallsPublicRoutes, initVoiceCallsScheduler, attachVoiceCallsUpgrade } from './server/voiceCalls.ts';
 import { setupPlatformWebhooksRoutes, firePlatformEvent } from './server/platformWebhooks.ts';
 import { setupPageBuilderAdminRoutes, setupPageBuilderPublicRoutes } from './server/pageBuilder.ts';
 import { setupVideoGenAdminRoutes, startVideoWorker } from './server/videoGen.ts';
@@ -2460,6 +2461,7 @@ async function createServer() {
   setupLiveSellingPublicRoutes(app);
   setupDiagnosticPublicRoutes(app);
   setupPageBuilderPublicRoutes(app);
+  setupVoiceCallsPublicRoutes(app); // Twilio (TwiML + callbacks): sin sesión
   app.use('/api', requireApiSession);
   setupLiveSellingAdminRoutes(app);
   setupSocialRoutes(app);
@@ -2468,6 +2470,8 @@ async function createServer() {
   setupPushRoutes(app);
   setupDiagnosticAdminRoutes(app);
   setupVoiceAdminRoutes(app);
+  setupVoiceCallsRoutes(app);
+  initVoiceCallsScheduler();
   setupPlatformWebhooksRoutes(app);
   setupPageBuilderAdminRoutes(app);
   setupVideoGenAdminRoutes(app);
@@ -9298,9 +9302,11 @@ Respuesta de remarketing (sin etiquetas JSON, solo texto plano):`;
     app.use(vite.middlewares);
   }
 
-  app.listen(port, "0.0.0.0", () => {
+  const httpServer = app.listen(port, "0.0.0.0", () => {
     console.log(`Server executing at port ${port}`);
   });
+  // WebSocket de Twilio Media Streams (upgrade manual, sin dependencias)
+  try { attachVoiceCallsUpgrade(httpServer); } catch (e: any) { console.error('[VoiceCalls] no se pudo montar el WebSocket:', e?.message || e); }
 }
 
 createServer();

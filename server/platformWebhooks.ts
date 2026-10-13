@@ -47,6 +47,22 @@ export const INCOMING_ENDPOINTS = [
   { method: 'POST', path: '/api/webhooks/tiktok', label: 'Eventos de TikTok' },
 ];
 
+// ---------------------------------------------------------------------------
+// Bus interno de eventos (suscriptores en memoria dentro del propio CRM).
+// `firePlatformEvent` notifica también a estos suscriptores, además de los
+// webhooks salientes configurados. Cambio aditivo: no altera lo existente.
+// ---------------------------------------------------------------------------
+const internalSubscribers = new Map<string, Array<(data: AnyRow) => void>>();
+
+/** Suscribe un módulo del CRM a un evento de plataforma (bus en memoria). */
+export function subscribePlatformEvent(event: string, cb: (data: AnyRow) => void): void {
+  const key = String(event || '');
+  if (!key || typeof cb !== 'function') return;
+  const list = internalSubscribers.get(key) || [];
+  list.push(cb);
+  internalSubscribers.set(key, list);
+}
+
 interface OutgoingHook {
   id: string;
   url: string;
@@ -133,6 +149,15 @@ async function deliverToHook(hook: OutgoingHook, event: string, payloadObj: AnyR
 
 /** Dispara un evento de plataforma a todos los webhooks salientes suscritos. Nunca bloquea. */
 export function firePlatformEvent(event: string, data: AnyRow): void {
+  // Bus interno en memoria (módulos del propio CRM, ej. Llamadas IA)
+  try {
+    const subs = internalSubscribers.get(event);
+    if (subs) {
+      for (const cb of subs) {
+        try { cb(data); } catch (e: any) { console.error('[PlatformWebhooks] suscriptor interno falló:', e?.message || e); }
+      }
+    }
+  } catch { /* nunca rompe el flujo principal */ }
   (async () => {
     try {
       const settings = await readSettings();
