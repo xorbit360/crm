@@ -169,6 +169,10 @@ function decryptField(v: unknown): string {
 // Configuración de telefonía (app_settings, workspace 'default')
 // ---------------------------------------------------------------------------
 
+export async function readVoiceCallsConfig(): Promise<TelephonyConfig> {
+  return readConfig();
+}
+
 async function readConfig(): Promise<TelephonyConfig> {
   const client = getSupabase();
   if (!client) return { ...DEFAULT_CONFIG };
@@ -985,16 +989,14 @@ function twilioAuth(cfg: TelephonyConfig): { sid: string; auth: string } {
   return { sid, auth: 'Basic ' + Buffer.from(`${sid}:${token}`).toString('base64') };
 }
 
-async function twilioCreateCall(cfg: TelephonyConfig, to: string, voiceUrl: string, statusUrl: string): Promise<string> {
-  const { sid, auth } = twilioAuth(cfg);
-  const from = cleanText(cfg.twilioFromNumber, 30);
-  if (!sid || !auth || !from) throw new Error('Telefonía no configurada.');
+async function twilioCreateCallRaw(sid: string, authHeader: string, from: string, to: string, voiceUrl: string, statusUrl: string): Promise<string> {
+  if (!sid || !authHeader || !from) throw new Error('Telefonía no configurada.');
   const body = new URLSearchParams({
     To: to, From: from, Url: voiceUrl, StatusCallback: statusUrl, Record: 'true',
   });
   const res = await fetch(`${TWILIO_API}/Accounts/${encodeURIComponent(sid)}/Calls.json`, {
     method: 'POST',
-    headers: { Authorization: auth, 'Content-Type': 'application/x-www-form-urlencoded' },
+    headers: { Authorization: authHeader, 'Content-Type': 'application/x-www-form-urlencoded' },
     body: body.toString(),
     signal: AbortSignal.timeout(20000),
   });
@@ -1017,14 +1019,24 @@ async function twilioCreateCall(cfg: TelephonyConfig, to: string, voiceUrl: stri
   }
 }
 
-async function twilioFetchRecording(recordingUrl: string, cfg: TelephonyConfig): Promise<{ status: number; contentType: string; body: ArrayBuffer } | null> {
-  const { auth } = twilioAuth(cfg);
+async function twilioCreateCall(cfg: TelephonyConfig, to: string, voiceUrl: string, statusUrl: string, fromOverride?: string): Promise<string> {
+  const { sid, auth } = twilioAuth(cfg);
+  const from = cleanText(fromOverride || cfg.twilioFromNumber, 30);
+  return twilioCreateCallRaw(sid, auth, from, to, voiceUrl, statusUrl);
+}
+
+async function twilioFetchRecordingAuth(recordingUrl: string, authHeader: string): Promise<{ status: number; contentType: string; body: ArrayBuffer } | null> {
   let url = recordingUrl;
   if (!/^https?:\/\//i.test(url)) url = `https://api.twilio.com${url}`;
-  const res = await fetch(url, { headers: { Authorization: auth }, signal: AbortSignal.timeout(30000) });
+  const res = await fetch(url, { headers: { Authorization: authHeader }, signal: AbortSignal.timeout(30000) });
   if (!res.ok) return null;
   const buf = await res.arrayBuffer();
   return { status: res.status, contentType: res.headers.get('content-type') || 'audio/mpeg', body: buf };
+}
+
+async function twilioFetchRecording(recordingUrl: string, cfg: TelephonyConfig): Promise<{ status: number; contentType: string; body: ArrayBuffer } | null> {
+  const { auth } = twilioAuth(cfg);
+  return twilioFetchRecordingAuth(recordingUrl, auth);
 }
 
 // ---------------------------------------------------------------------------
@@ -1200,23 +1212,26 @@ export async function notifyOrderCreatedDirecto(order: any): Promise<void> {
 
 async function triggerCall(call: VoiceCall, campaign: VoiceCallCampaign): Promise<void> {
   const cfg = await readConfig();
-  const { sid } = twilioAuth(cfg);
-  const googleKey = decryptField(cfg.googleKey) || (await resolveTenantGoogleKey(call.tenantId));
-  if (!sid || !decryptField(cfg.twilioAuthToken) || !cfg.twilioFromNumber) {
-    throw new Error('Configura la telefonía primero (SID, token y número).');
+  // Telefonía efectiva: plataforma integrada (cuenta maestra + número verificado
+  // del tenant + cobro a billetera) o modo clásico (cuenta propia del tenant).
+  const { resolveCallTelephony, assertVoiceBalance } = await import('./voicePlatform.ts');
+  const tel = await resolveCallTelephony(call.tenantId);
+  if (tel.platform) {
+    await assertVoiceBalance(call.tenantId, 2);
   }
+  const googleKey = decryptField(cfg.googleKey) || (await resolveTenantGoogleKey(call.tenantId));
   if (!googleKey) throw new Error('Falta la clave del proveedor de voz.');
   const to = call.phone; // ya viene en E.164
   const host = cleanText(cfg.publicHost, 120) || 'crm.xorbit360.com';
   const voiceUrl = `https://${host}/api/voice-calls/twilio/voice`;
   const statusUrl = `https://${host}/api/voice-calls/twilio/status`;
-  const twilioSid = await twilioCreateCall(cfg, to, voiceUrl, statusUrl);
+  const twilioSid = await twilioCreateCallRaw(tel.sid, tel.auth, tel.from, to, voiceUrl, statusUrl);
   const cur = (await getCall(call.id)) || call;
   await saveCall({
     ...cur, status: 'en_curso', attempts: cur.attempts + 1,
     startedAt: new Date().toISOString(), twilioCallSid: twilioSid, lastError: null,
   });
-  console.log(LOG, `llamada ${call.id} disparada (Twilio ${twilioSid.slice(0, 10)}…)`);
+  console.log(LOG, `llamada ${call.id} disparada (${tel.platform ? 'plataforma' : 'cuenta propia'} ${twilioSid.slice(0, 10)}…)`);
 }
 
 // ---------------------------------------------------------------------------
@@ -1429,6 +1444,16 @@ export function setupVoiceCallsPublicRoutes(app: Express): void {
         recordingUrl: recordingUrl || call.recordingUrl,
         costUsd,
       });
+      // Modo plataforma: descontar el costo real (+margen) de la billetera del tenant
+      if (['completed', 'no-answer', 'busy', 'failed', 'canceled'].includes(twilioStatus)) {
+        try {
+          const { platformActive, chargeVoiceCall } = await import('./voicePlatform.ts');
+          if (await platformActive()) {
+            const dur = duration != null && !Number.isNaN(duration) ? duration : call.durationSec;
+            await chargeVoiceCall(call.tenantId, call.id, price, dur);
+          }
+        } catch (e: any) { console.warn(LOG, 'cobrando llamada:', e?.message || e); }
+      }
       // Reintento si no contestó y quedan intentos
       if (status === 'no_contesto') {
         const updated = (await getCall(call.id)) || call;
@@ -1454,12 +1479,19 @@ export function setupVoiceCallsRoutes(app: Express): void {
   // ---- Configuración de telefonía y voz (etiquetas genéricas, sin marcas) ----
   app.get('/api/voice-calls/config', route(async (_req, res) => {
     const cfg = await readConfig();
+    const { platformActive, readMasterConfig } = await import('./voicePlatform.ts');
+    const master = await readMasterConfig();
+    const platActive = await platformActive();
     res.json({
       success: true,
       telefonia: {
         accountSidMasked: maskSecret(cfg.twilioAccountSid),
         fromNumber: cfg.twilioFromNumber || null,
         configured: Boolean(decryptField(cfg.twilioAccountSid) && decryptField(cfg.twilioAuthToken) && cfg.twilioFromNumber),
+      },
+      platform: {
+        active: platActive,
+        masterConfigured: Boolean(String(master.accountSid || '').length > 0 && String(master.authToken || '').length > 0),
       },
       googleKeySet: Boolean(decryptField(cfg.googleKey)),
       googleKeyMasked: maskSecret(cfg.googleKey),
@@ -1589,8 +1621,9 @@ export function setupVoiceCallsRoutes(app: Express): void {
   app.get('/api/voice-calls/calls/:id/recording', route(async (req, res) => {
     const c = await getCall(String(req.params.id || ''));
     if (!c || !c.recordingUrl) { res.status(404).json({ success: false, error: 'Esta llamada aún no tiene grabación disponible.' }); return; }
-    const cfg = await readConfig();
-    const rec = await twilioFetchRecording(c.recordingUrl, cfg);
+    const { resolveCallTelephony } = await import('./voicePlatform.ts');
+    const tel = await resolveCallTelephony(c.tenantId);
+    const rec = await twilioFetchRecordingAuth(c.recordingUrl, tel.auth);
     if (!rec) { res.status(404).json({ success: false, error: 'No se pudo descargar la grabación de la telefonía.' }); return; }
     res.setHeader('Content-Type', rec.contentType);
     res.send(Buffer.from(rec.body));
@@ -1601,12 +1634,11 @@ export function setupVoiceCallsRoutes(app: Express): void {
     const body = req.body || {};
     const to = normalizePhoneE164(String(body.to || ''));
     if (!to) { res.status(400).json({ success: false, error: 'Indica un número válido para la prueba.' }); return; }
-    const cfg = await readConfig();
-    if (!decryptField(cfg.twilioAccountSid) || !decryptField(cfg.twilioAuthToken) || !cfg.twilioFromNumber) {
-      res.status(400).json({ success: false, error: 'Configura la telefonía primero (SID, token y número).' });
-      return;
-    }
     const t = tenantId(req);
+    // Valida telefonía efectiva (plataforma o cuenta propia) antes de crear el registro
+    const { resolveCallTelephony, assertVoiceBalance } = await import('./voicePlatform.ts');
+    const tel = await resolveCallTelephony(t);
+    if (tel.platform) await assertVoiceBalance(t, 2);
     let campaign: VoiceCallCampaign | null = null;
     if (body.campaignId) campaign = (await listCampaigns(t)).find((c) => c.id === String(body.campaignId)) || null;
     campaign = campaign || (await getActiveCampaign(t));

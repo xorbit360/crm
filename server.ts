@@ -40,6 +40,7 @@ import { setupPushRoutes } from './server/push.ts';
 import { setupDiagnosticAdminRoutes, setupDiagnosticPublicRoutes } from './server/diagnostic.ts';
 import { setupVoiceAdminRoutes } from './server/voice.ts';
 import { setupVoiceCallsRoutes, setupVoiceCallsPublicRoutes, initVoiceCallsScheduler, attachVoiceCallsUpgrade } from './server/voiceCalls.ts';
+import { setupVoicePlatformRoutes, creditVoiceWalletForBoldOrder } from './server/voicePlatform.ts';
 import { setupPlatformWebhooksRoutes, firePlatformEvent } from './server/platformWebhooks.ts';
 import { setupPageBuilderAdminRoutes, setupPageBuilderPublicRoutes } from './server/pageBuilder.ts';
 import { setupVideoGenAdminRoutes, startVideoWorker } from './server/videoGen.ts';
@@ -2471,6 +2472,7 @@ async function createServer() {
   setupDiagnosticAdminRoutes(app);
   setupVoiceAdminRoutes(app);
   setupVoiceCallsRoutes(app);
+  setupVoicePlatformRoutes(app);
   initVoiceCallsScheduler();
   setupPlatformWebhooksRoutes(app);
   setupPageBuilderAdminRoutes(app);
@@ -2499,6 +2501,8 @@ async function createServer() {
   // Setup Bold Payments Gateway (Merchant ID FFVSR3C7Y1) Routes & Webhook
   setupBoldRoutes(app, () => currentDB, (db) => saveDBData(db), (info) => {
     activateUserForBoldOrder(() => currentDB, (db) => saveDBData(db), info.orderId);
+    // Acredita minutos de voz si la orden es una recarga VOICE-*
+    creditVoiceWalletForBoldOrder(info.orderId).catch((e: any) => console.warn('[VoicePlatform] crédito Bold:', e?.message || e));
   });
   setupAuthPublicRoutes(app, () => currentDB, (db) => saveDBData(db));
 

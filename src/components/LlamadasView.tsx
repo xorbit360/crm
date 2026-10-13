@@ -50,9 +50,23 @@ interface VoiceCfg {
 
 interface TelConfig {
   telefonia: { accountSidMasked: string | null; fromNumber: string | null; configured: boolean };
+  platform?: { active: boolean; masterConfigured: boolean };
   googleKeySet: boolean;
   delayDefaultMin: number;
 }
+
+/* ============ Telefonía integrada (plataforma) ============ */
+interface TenantNumberInfo {
+  id: string; phone: string; label: string; verified: boolean; isPrimary: boolean; createdAt: string;
+}
+interface VoicePackageInfo { id: string; minutes: number; priceCop: number; label: string; }
+interface WalletInfo { balanceUsd: number; minutesApprox: number; pricePerMinUsd: number; currency: string; }
+interface LedgerEntryInfo {
+  id: string; kind: string; amountUsd: number; costUsd: number; marginUsd: number;
+  minutes: number | null; reference: string; detail: string; createdAt: string;
+}
+interface MasterInfo { accountSidMasked: string | null; configured: boolean; enabled: boolean; }
+interface PricingInfo { costPerMinUsd: number; markupPct: number; packages: VoicePackageInfo[]; pricePerMinUsd: number; }
 
 /* ============ Utilidades ============ */
 const STATUS_LABEL: Record<CallStatus, string> = {
@@ -366,6 +380,37 @@ export default function LlamadasView() {
   const [testingCall, setTestingCall] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; text: string } | null>(null);
 
+  /* --- Telefonía integrada: plataforma --- */
+  const platformActive = Boolean(telCfg?.platform?.active);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [myNumbers, setMyNumbers] = useState<TenantNumberInfo[]>([]);
+  const [loadingNumbers, setLoadingNumbers] = useState(false);
+  const [newPhone, setNewPhone] = useState('');
+  const [newPhoneLabel, setNewPhoneLabel] = useState('');
+  const [requestingCode, setRequestingCode] = useState(false);
+  const [verifyInfo, setVerifyInfo] = useState<{ phone: string; code: string; message: string } | null>(null);
+  const [confirmingCode, setConfirmingCode] = useState(false);
+  const [numbersMsg, setNumbersMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [wallet, setWallet] = useState<WalletInfo | null>(null);
+  const [packages, setPackages] = useState<VoicePackageInfo[]>([]);
+  const [ledger, setLedger] = useState<LedgerEntryInfo[]>([]);
+  const [loadingWallet, setLoadingWallet] = useState(false);
+  const [buyingPkg, setBuyingPkg] = useState('');
+  const [walletMsg, setWalletMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [master, setMaster] = useState<MasterInfo | null>(null);
+  const [mSid, setMSid] = useState('');
+  const [mToken, setMToken] = useState('');
+  const [savingMaster, setSavingMaster] = useState(false);
+  const [masterMsg, setMasterMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [pricing, setPricing] = useState<PricingInfo | null>(null);
+  const [pMarkup, setPMarkup] = useState('');
+  const [pCost, setPCost] = useState('');
+  const [savingPricing, setSavingPricing] = useState(false);
+  const [pricingMsg, setPricingMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [manualTenant, setManualTenant] = useState('default');
+  const [manualMinutes, setManualMinutes] = useState('');
+  const [manualBusy, setManualBusy] = useState(false);
+
   /* --- Proveedor de Voz (panel existente, sin cambios funcionales) --- */
   const [voiceCfg, setVoiceCfg] = useState<VoiceCfg>(
     { provider: 'google', voice: 'Kore', voices: [], googleKeySet: false, googleKeyMasked: null }
@@ -410,6 +455,65 @@ export default function LlamadasView() {
     setLoadingTel(false);
   }, []);
 
+  /* ============ Telefonía integrada: cargas ============ */
+  const loadSessionRole = useCallback(async () => {
+    try {
+      const r = await fetch('/api/auth/session');
+      const j = await r.json().catch(() => null);
+      setIsSuperAdmin(Boolean(j?.authenticated && String(j?.user?.role || '').toLowerCase() === 'superadmin'));
+    } catch { /* silencioso */ }
+  }, []);
+
+  const loadNumbers = useCallback(async () => {
+    setLoadingNumbers(true);
+    try {
+      const r = await fetch('/api/voice-platform/numbers');
+      const j = await r.json().catch(() => null);
+      if (r.ok && j?.success) setMyNumbers(j.numbers || []);
+    } catch { /* silencioso */ }
+    setLoadingNumbers(false);
+  }, []);
+
+  const loadWallet = useCallback(async () => {
+    setLoadingWallet(true);
+    try {
+      const r = await fetch('/api/voice-platform/wallet');
+      const j = await r.json().catch(() => null);
+      if (r.ok && j?.success) {
+        setWallet(j.wallet || null);
+        setPackages(j.packages || []);
+      }
+      const rl = await fetch('/api/voice-platform/wallet/ledger?limit=30');
+      const jl = await rl.json().catch(() => null);
+      if (rl.ok && jl?.success) setLedger(jl.ledger || []);
+    } catch { /* silencioso */ }
+    setLoadingWallet(false);
+  }, []);
+
+  const loadMaster = useCallback(async () => {
+    try {
+      const r = await fetch('/api/voice-platform/master');
+      const j = await r.json().catch(() => null);
+      if (r.ok && j?.success) setMaster(j.master || null);
+    } catch { /* silencioso */ }
+  }, []);
+
+  const loadPricing = useCallback(async () => {
+    try {
+      const r = await fetch('/api/voice-platform/pricing');
+      const j = await r.json().catch(() => null);
+      if (r.ok && j?.success) {
+        setPricing(j.pricing || null);
+        setPMarkup(String(j.pricing?.markupPct ?? ''));
+        setPCost(String(j.pricing?.costPerMinUsd ?? ''));
+      }
+    } catch { /* silencioso */ }
+  }, []);
+
+  const loadPlatform = useCallback(() => {
+    loadNumbers(); loadWallet(); loadMaster(); loadPricing();
+  }, [loadNumbers, loadWallet, loadMaster, loadPricing]);
+
   const loadVoiceConfig = useCallback(async () => {
     try {
       const r = await fetch('/api/voice/config');
@@ -423,7 +527,12 @@ export default function LlamadasView() {
     loadCalls();
     loadTelConfig();
     loadVoiceConfig();
-  }, [loadCampaigns, loadCalls, loadTelConfig, loadVoiceConfig]);
+    loadSessionRole();
+  }, [loadCampaigns, loadCalls, loadTelConfig, loadVoiceConfig, loadSessionRole]);
+
+  useEffect(() => {
+    if (platformActive) loadPlatform();
+  }, [platformActive, loadPlatform]);
 
   const refreshAll = () => { loadCalls(); loadCampaigns(); };
 
@@ -500,6 +609,179 @@ export default function LlamadasView() {
       loadCalls();
     } catch (e: any) { setTestResult({ ok: false, text: e?.message || 'Error en la llamada de prueba.' }); }
     setTestingCall(false);
+  };
+
+  /* ============ Telefonía integrada: acciones ============ */
+  const requestNumberVerification = async () => {
+    const phone = newPhone.trim();
+    if (!phone) { setNumbersMsg({ ok: false, text: 'Escribe tu número celular.' }); return; }
+    setRequestingCode(true); setNumbersMsg(null); setVerifyInfo(null);
+    try {
+      const r = await fetch('/api/voice-platform/numbers', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, label: newPhoneLabel.trim() || 'Mi número' }),
+      });
+      const j = await r.json().catch(() => null);
+      if (!r.ok || !j?.success) throw new Error(j?.error || 'No se pudo iniciar la verificación.');
+      setVerifyInfo({ phone: phone, code: j.code, message: j.message });
+      setNewPhone(''); setNewPhoneLabel('');
+      loadNumbers();
+    } catch (e: any) { setNumbersMsg({ ok: false, text: e?.message || 'Error al solicitar verificación.' }); }
+    setRequestingCode(false);
+  };
+
+  const confirmNumberVerification = async () => {
+    if (!verifyInfo) return;
+    setConfirmingCode(true); setNumbersMsg(null);
+    try {
+      const r = await fetch('/api/voice-platform/numbers/confirm', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: verifyInfo.phone }),
+      });
+      const j = await r.json().catch(() => null);
+      if (!r.ok || !j?.success) throw new Error(j?.error || 'Aún no aparece verificado.');
+      setNumbersMsg({ ok: true, text: j.message || 'Número verificado.' });
+      setVerifyInfo(null);
+      loadNumbers();
+    } catch (e: any) { setNumbersMsg({ ok: false, text: e?.message || 'Error al confirmar.' }); }
+    setConfirmingCode(false);
+  };
+
+  const setPrimaryNumber = async (id: string) => {
+    try {
+      const r = await fetch(`/api/voice-platform/numbers/${encodeURIComponent(id)}/primary`, { method: 'PUT' });
+      const j = await r.json().catch(() => null);
+      if (!r.ok || !j?.success) throw new Error(j?.error || 'No se pudo marcar como principal.');
+      loadNumbers();
+    } catch (e: any) { setNumbersMsg({ ok: false, text: e?.message || 'Error.' }); }
+  };
+
+  const deleteNumber = async (id: string, phone: string) => {
+    if (!window.confirm(`¿Eliminar el número ${phone}?`)) return;
+    try {
+      const r = await fetch(`/api/voice-platform/numbers/${encodeURIComponent(id)}`, { method: 'DELETE' });
+      const j = await r.json().catch(() => null);
+      if (!r.ok || !j?.success) throw new Error(j?.error || 'No se pudo eliminar.');
+      loadNumbers();
+    } catch (e: any) { setNumbersMsg({ ok: false, text: e?.message || 'Error.' }); }
+  };
+
+  const ensureBoldCheckoutScript = (): Promise<boolean> => {
+    if (typeof window !== 'undefined' && (window as any).BoldCheckout) return Promise.resolve(true);
+    return new Promise((resolve) => {
+      const existing = document.querySelector('script[src*="boldPaymentButton.js"]');
+      if (existing) {
+        if ((window as any).BoldCheckout) return resolve(true);
+        const onLoad = () => resolve(Boolean((window as any).BoldCheckout));
+        existing.addEventListener('load', onLoad, { once: true });
+        existing.addEventListener('error', () => resolve(false), { once: true });
+        setTimeout(() => resolve(Boolean((window as any).BoldCheckout)), 8000);
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://checkout.bold.co/library/boldPaymentButton.js';
+      script.async = true;
+      script.onload = () => resolve(Boolean((window as any).BoldCheckout));
+      script.onerror = () => resolve(false);
+      document.head.appendChild(script);
+      setTimeout(() => resolve(Boolean((window as any).BoldCheckout)), 8000);
+    });
+  };
+
+  const buyPackage = async (pkg: VoicePackageInfo) => {
+    setBuyingPkg(pkg.id); setWalletMsg(null);
+    try {
+      const rt = await fetch('/api/voice-platform/wallet/topup', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ packageId: pkg.id }),
+      });
+      const jt = await rt.json().catch(() => null);
+      if (!rt.ok || !jt?.success) throw new Error(jt?.error || 'No se pudo crear la orden.');
+      const okScript = await ensureBoldCheckoutScript();
+      if (!okScript) throw new Error('No se pudo cargar la pasarela de pago. Recarga la página e inténtalo nuevamente.');
+      const rp = await fetch('/api/integrations/bold/create-payment', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amountCop: jt.amountCop, amount: jt.amountCop, currency: 'COP',
+          description: jt.description, orderId: jt.orderId,
+        }),
+      });
+      const dp = await rp.json().catch(() => null);
+      if (!rp.ok || !dp?.success) throw new Error(dp?.error || 'La pasarela no pudo generar el pago.');
+      const apiKey = dp.apiKey || dp.boldConfig?.apiKey;
+      const signature = dp.integritySignature || dp.signature;
+      if (typeof (window as any).BoldCheckout === 'function' && apiKey && signature) {
+        const checkout = new (window as any).BoldCheckout({
+          orderId: dp.orderId || jt.orderId,
+          currency: 'COP',
+          amount: String(jt.amountCop),
+          apiKey,
+          integritySignature: signature,
+          description: jt.description,
+          renderMode: 'embedded',
+          redirectionUrl: `${window.location.origin}/#/llamadas?payment_status=completed&order=${dp.orderId || jt.orderId}`,
+        });
+        checkout.open();
+        setWalletMsg({ ok: true, text: 'Completa el pago en la ventana de Bold. Tus minutos se acreditan automáticamente al aprobarse.' });
+      } else {
+        throw new Error('No se pudo abrir la pasarela de pago.');
+      }
+    } catch (e: any) { setWalletMsg({ ok: false, text: e?.message || 'Error al comprar.' }); }
+    setBuyingPkg('');
+  };
+
+  const saveMaster = async () => {
+    setSavingMaster(true); setMasterMsg(null);
+    try {
+      const payload: any = {};
+      if (mSid.trim()) payload.accountSid = mSid.trim();
+      if (mToken.trim()) payload.authToken = mToken.trim();
+      if (Object.keys(payload).length === 0) throw new Error('Pega la cuenta y el token maestros.');
+      const r = await fetch('/api/voice-platform/master', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+      });
+      const j = await r.json().catch(() => null);
+      if (!r.ok || !j?.success) throw new Error(j?.error || 'No se pudo guardar.');
+      setMaster(j.master); setMSid(''); setMToken('');
+      setMasterMsg({ ok: true, text: 'Cuenta maestra guardada. La telefonía integrada quedó activa.' });
+      loadTelConfig();
+    } catch (e: any) { setMasterMsg({ ok: false, text: e?.message || 'Error al guardar.' }); }
+    setSavingMaster(false);
+  };
+
+  const savePricing = async () => {
+    setSavingPricing(true); setPricingMsg(null);
+    try {
+      const payload: any = {};
+      if (pMarkup.trim() !== '') payload.markupPct = Number(pMarkup);
+      if (pCost.trim() !== '') payload.costPerMinUsd = Number(pCost);
+      const r = await fetch('/api/voice-platform/pricing', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+      });
+      const j = await r.json().catch(() => null);
+      if (!r.ok || !j?.success) throw new Error(j?.error || 'No se pudo guardar.');
+      setPricing(j.pricing);
+      setPricingMsg({ ok: true, text: 'Precios actualizados.' });
+      loadWallet();
+    } catch (e: any) { setPricingMsg({ ok: false, text: e?.message || 'Error al guardar.' }); }
+    setSavingPricing(false);
+  };
+
+  const manualTopup = async () => {
+    const minutes = Math.round(Number(manualMinutes || 0));
+    if (!minutes || minutes <= 0) { setPricingMsg({ ok: false, text: 'Indica los minutos a recargar.' }); return; }
+    setManualBusy(true);
+    try {
+      const r = await fetch('/api/voice-platform/wallet/topup-manual', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenantId: manualTenant.trim() || 'default', minutes }),
+      });
+      const j = await r.json().catch(() => null);
+      if (!r.ok || !j?.success) throw new Error(j?.error || 'No se pudo recargar.');
+      setPricingMsg({ ok: true, text: `Recargados ${minutes} min al tenant ${j.tenantId}.` });
+      setManualMinutes('');
+    } catch (e: any) { setPricingMsg({ ok: false, text: e?.message || 'Error.' }); }
+    setManualBusy(false);
   };
 
   /* ============ Proveedor de Voz (lógica existente, sin cambios) ============ */
@@ -950,8 +1232,42 @@ export default function LlamadasView() {
       )}
 
       {/* ============ TAB 5: TELEFONÍA ============ */}
-      {activeTab === 'telefonia' && (
+      {activeTab === 'telefonia' && !platformActive && (
         <div className="space-y-4">
+          {isSuperAdmin && (
+            <div className="bg-[#121215] border border-amber-500/30 rounded-2xl p-6 space-y-4">
+              <h3 className="font-bold text-white text-base flex items-center gap-2">
+                <Settings size={18} className="text-amber-400" /> Proveedor maestro Xorbit
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">Super Admin</span>
+              </h3>
+              <p className="text-xs text-gray-400">
+                Activa la telefonía integrada: los usuarios conectan su propio número y compran minutos dentro del CRM, sin cuentas externas.
+              </p>
+              {masterMsg && (
+                <div className={`flex items-center gap-2 text-sm rounded-xl px-3 py-2 border ${masterMsg.ok ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-red-500/10 border-red-500/30 text-red-300'}`}>
+                  {masterMsg.ok ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />} {masterMsg.text}
+                </div>
+              )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-300 mb-1">Cuenta maestra</label>
+                  <input type="text" value={mSid} onChange={(e) => setMSid(e.target.value)}
+                    placeholder="Identificador de la cuenta maestra"
+                    className="w-full bg-[#18181c] border border-gray-700 rounded-xl px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-amber-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-300 mb-1">Token maestro</label>
+                  <input type="password" value={mToken} onChange={(e) => setMToken(e.target.value)}
+                    placeholder="Token secreto de la cuenta maestra"
+                    className="w-full bg-[#18181c] border border-gray-700 rounded-xl px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-amber-500" />
+                </div>
+              </div>
+              <button onClick={saveMaster} disabled={savingMaster}
+                className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-black rounded-xl text-sm font-bold flex items-center gap-2">
+                <Save size={14} /> {savingMaster ? 'Guardando…' : 'Activar telefonía integrada'}
+              </button>
+            </div>
+          )}
           <div className="bg-[#121215] border border-gray-800 rounded-2xl p-6 space-y-5">
             <h3 className="font-bold text-white text-base flex items-center gap-2">
               <Settings size={18} className="text-amber-400" /> Conexión de telefonía
@@ -1046,6 +1362,253 @@ export default function LlamadasView() {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ============ Telefonía integrada (plataforma) ============ */}
+      {activeTab === 'telefonia' && platformActive && (
+        <div className="space-y-4">
+          {/* Mis números */}
+          <div className="bg-[#121215] border border-gray-800 rounded-2xl p-6 space-y-4">
+            <h3 className="font-bold text-white text-base flex items-center gap-2">
+              <Phone size={18} className="text-amber-400" /> Mis números
+            </h3>
+            <p className="text-xs text-gray-400">
+              Conecta tu número celular como identificador de las llamadas. Te llamaremos para verificarlo con un código.
+            </p>
+            {numbersMsg && (
+              <div className={`flex items-center gap-2 text-sm rounded-xl px-3 py-2 border ${numbersMsg.ok ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-red-500/10 border-red-500/30 text-red-300'}`}>
+                {numbersMsg.ok ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />} {numbersMsg.text}
+              </div>
+            )}
+            {loadingNumbers ? (
+              <p className="text-xs text-gray-500">Cargando números…</p>
+            ) : myNumbers.length === 0 ? (
+              <p className="text-xs text-gray-500">Aún no tienes números conectados.</p>
+            ) : (
+              <div className="space-y-2">
+                {myNumbers.map((n) => (
+                  <div key={n.id} className="flex items-center justify-between bg-[#18181c] border border-gray-800 rounded-xl px-4 py-3">
+                    <div>
+                      <p className="text-sm text-white font-mono font-semibold flex items-center gap-2">
+                        {n.phone}
+                        {n.isPrimary && n.verified && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">Principal</span>
+                        )}
+                      </p>
+                      <p className="text-[11px] text-gray-500">
+                        {n.label} · {n.verified ? <span className="text-emerald-400 font-bold">Verificado</span> : <span className="text-amber-300 font-bold">Pendiente de verificación</span>}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {n.verified && !n.isPrimary && (
+                        <button onClick={() => setPrimaryNumber(n.id)} className="text-[11px] font-bold text-amber-300 hover:text-amber-200 px-2 py-1">
+                          Hacer principal
+                        </button>
+                      )}
+                      <button onClick={() => deleteNumber(n.id, n.phone)} className="text-gray-500 hover:text-rose-400 p-1">
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {verifyInfo ? (
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 space-y-3">
+                <p className="text-sm text-amber-200 font-bold">Te estamos llamando al {verifyInfo.phone}</p>
+                <p className="text-xs text-gray-300">{verifyInfo.message}</p>
+                <p className="text-2xl font-mono font-bold text-white tracking-widest text-center py-2">{verifyInfo.code}</p>
+                <div className="flex gap-2">
+                  <button onClick={confirmNumberVerification} disabled={confirmingCode}
+                    className="flex-1 px-4 py-2 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-black rounded-xl text-sm font-bold">
+                    {confirmingCode ? 'Verificando…' : 'Ya ingresé el código'}
+                  </button>
+                  <button onClick={() => setVerifyInfo(null)} className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-xl text-sm font-bold">
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex gap-2 flex-col sm:flex-row">
+                <input type="tel" value={newPhone} onChange={(e) => setNewPhone(e.target.value)}
+                  placeholder="+57 300 123 4567"
+                  className="flex-1 bg-[#18181c] border border-gray-700 rounded-xl px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-amber-500" />
+                <input type="text" value={newPhoneLabel} onChange={(e) => setNewPhoneLabel(e.target.value)}
+                  placeholder="Etiqueta (ej: Mi celular)"
+                  className="flex-1 bg-[#18181c] border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500" />
+                <button onClick={requestNumberVerification} disabled={requestingCode}
+                  className="px-4 py-2 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-black rounded-xl text-sm font-bold">
+                  {requestingCode ? 'Llamando…' : 'Verificar número'}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Minutos */}
+          <div className="bg-[#121215] border border-gray-800 rounded-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-white text-base flex items-center gap-2">
+                <Clock size={18} className="text-amber-400" /> Minutos
+              </h3>
+              <button onClick={loadWallet} className="text-gray-500 hover:text-white p-1"><RefreshCw size={15} /></button>
+            </div>
+            {walletMsg && (
+              <div className={`flex items-center gap-2 text-sm rounded-xl px-3 py-2 border ${walletMsg.ok ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-red-500/10 border-red-500/30 text-red-300'}`}>
+                {walletMsg.ok ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />} {walletMsg.text}
+              </div>
+            )}
+            <div className="bg-[#18181c] border border-gray-800 rounded-xl p-4 flex items-center justify-between">
+              <div>
+                <p className="text-[11px] text-gray-500 uppercase font-bold">Saldo disponible</p>
+                <p className="text-2xl font-bold text-white">
+                  {loadingWallet ? '…' : `≈ ${wallet?.minutesApprox ?? 0} min`}
+                </p>
+                <p className="text-[11px] text-gray-500">${(wallet?.balanceUsd ?? 0).toFixed(2)} USD · ${(wallet?.pricePerMinUsd ?? 0).toFixed(3)} USD/min</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {packages.map((pkg) => (
+                <div key={pkg.id} className="bg-[#18181c] border border-gray-800 rounded-xl p-4 space-y-2 text-center">
+                  <p className="font-bold text-white text-lg">{pkg.label}</p>
+                  <p className="text-amber-300 font-bold">${pkg.priceCop.toLocaleString('es-CO')} COP</p>
+                  <button onClick={() => buyPackage(pkg)} disabled={buyingPkg !== ''}
+                    className="w-full px-3 py-2 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-black rounded-xl text-sm font-bold">
+                    {buyingPkg === pkg.id ? 'Abriendo pago…' : 'Comprar'}
+                  </button>
+                </div>
+              ))}
+            </div>
+            {ledger.length > 0 && (
+              <div>
+                <p className="text-xs text-gray-400 font-bold uppercase mb-2">Movimientos recientes</p>
+                <div className="space-y-1 max-h-48 overflow-y-auto">
+                  {ledger.map((l) => (
+                    <div key={l.id} className="flex items-center justify-between text-xs bg-[#18181c] border border-gray-800/60 rounded-lg px-3 py-2">
+                      <span className="text-gray-300 truncate flex-1">{l.detail || l.kind}</span>
+                      <span className={`font-mono font-bold ml-2 ${l.amountUsd >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        {l.amountUsd >= 0 ? '+' : ''}{l.amountUsd.toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Llamada de prueba */}
+          <div className="bg-[#121215] border border-gray-800 rounded-2xl p-6 space-y-4">
+            <h3 className="font-bold text-white text-base flex items-center gap-2">
+              <PhoneCall size={18} className="text-amber-400" /> Llamada de prueba
+            </h3>
+            <p className="text-xs text-gray-400">El agente llamará a este número desde tu número principal verificado.</p>
+            <div className="flex gap-2 flex-col sm:flex-row">
+              <input type="tel" value={testTo} onChange={(e) => setTestTo(e.target.value)}
+                placeholder="+57 300 123 4567"
+                className="flex-1 bg-[#18181c] border border-gray-700 rounded-xl px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-amber-500" />
+              <button onClick={runTestCall} disabled={testingCall || !myNumbers.some((n) => n.verified)}
+                className="px-4 py-2 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-black rounded-xl text-sm font-bold flex items-center justify-center gap-1.5">
+                <PhoneCall size={14} /> {testingCall ? 'Llamando…' : 'Hacer llamada de prueba'}
+              </button>
+            </div>
+            {!myNumbers.some((n) => n.verified) && (
+              <p className="text-[11px] text-gray-500">Primero verifica un número en “Mis números”.</p>
+            )}
+            {testResult && (
+              <div className={`flex items-center gap-2 text-sm rounded-xl px-3 py-2 border ${testResult.ok ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-red-500/10 border-red-500/30 text-red-300'}`}>
+                {testResult.ok ? <CheckCircle2 size={16} /> : <XCircle size={16} />} {testResult.text}
+              </div>
+            )}
+          </div>
+
+          {/* Proveedor maestro + precios (solo Super Admin) */}
+          {isSuperAdmin && (
+            <>
+              <div className="bg-[#121215] border border-amber-500/30 rounded-2xl p-6 space-y-4">
+                <h3 className="font-bold text-white text-base flex items-center gap-2">
+                  <Settings size={18} className="text-amber-400" /> Proveedor maestro Xorbit
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">Super Admin</span>
+                </h3>
+                {masterMsg && (
+                  <div className={`flex items-center gap-2 text-sm rounded-xl px-3 py-2 border ${masterMsg.ok ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-red-500/10 border-red-500/30 text-red-300'}`}>
+                    {masterMsg.ok ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />} {masterMsg.text}
+                  </div>
+                )}
+                <div className="text-sm space-y-1">
+                  <p className="text-gray-400">Estado: {master?.configured
+                    ? <span className="text-emerald-400 font-bold">Configurado ({master.accountSidMasked})</span>
+                    : <span className="text-amber-300 font-bold">Sin configurar — la telefonía integrada está inactiva</span>}</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-300 mb-1">Cuenta maestra</label>
+                    <input type="text" value={mSid} onChange={(e) => setMSid(e.target.value)}
+                      placeholder="Identificador de la cuenta maestra"
+                      className="w-full bg-[#18181c] border border-gray-700 rounded-xl px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-amber-500" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-300 mb-1">Token maestro</label>
+                    <input type="password" value={mToken} onChange={(e) => setMToken(e.target.value)}
+                      placeholder="Token secreto de la cuenta maestra"
+                      className="w-full bg-[#18181c] border border-gray-700 rounded-xl px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-amber-500" />
+                  </div>
+                </div>
+                <button onClick={saveMaster} disabled={savingMaster}
+                  className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-black rounded-xl text-sm font-bold flex items-center gap-2">
+                  <Save size={14} /> {savingMaster ? 'Guardando…' : 'Guardar cuenta maestra'}
+                </button>
+              </div>
+
+              <div className="bg-[#121215] border border-gray-800 rounded-2xl p-6 space-y-4">
+                <h3 className="font-bold text-white text-base flex items-center gap-2">
+                  <Bot size={18} className="text-amber-400" /> Precios y paquetes
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">Super Admin</span>
+                </h3>
+                {pricingMsg && (
+                  <div className={`flex items-center gap-2 text-sm rounded-xl px-3 py-2 border ${pricingMsg.ok ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-red-500/10 border-red-500/30 text-red-300'}`}>
+                    {pricingMsg.ok ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />} {pricingMsg.text}
+                  </div>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-300 mb-1">Margen sobre costo (%)</label>
+                    <input type="number" value={pMarkup} onChange={(e) => setPMarkup(e.target.value)}
+                      placeholder="30"
+                      className="w-full bg-[#18181c] border border-gray-700 rounded-xl px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-amber-500" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-300 mb-1">Costo base por minuto (USD)</label>
+                    <input type="number" step="0.001" value={pCost} onChange={(e) => setPCost(e.target.value)}
+                      placeholder="0.073"
+                      className="w-full bg-[#18181c] border border-gray-700 rounded-xl px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-amber-500" />
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500">
+                  Precio actual por minuto: <span className="text-white font-bold">${(pricing?.pricePerMinUsd ?? 0).toFixed(4)} USD</span>
+                  {' '}· Paquetes: {pricing?.packages.map((p) => `${p.label} ($${p.priceCop.toLocaleString('es-CO')})`).join(' · ')}
+                </p>
+                <button onClick={savePricing} disabled={savingPricing}
+                  className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-black rounded-xl text-sm font-bold flex items-center gap-2">
+                  <Save size={14} /> {savingPricing ? 'Guardando…' : 'Guardar precios'}
+                </button>
+                <div className="border-t border-gray-800 pt-4">
+                  <p className="text-xs font-bold text-gray-300 mb-2">Recarga manual de minutos</p>
+                  <div className="flex gap-2 flex-col sm:flex-row">
+                    <input type="text" value={manualTenant} onChange={(e) => setManualTenant(e.target.value)}
+                      placeholder="Tenant (default)"
+                      className="flex-1 bg-[#18181c] border border-gray-700 rounded-xl px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-amber-500" />
+                    <input type="number" value={manualMinutes} onChange={(e) => setManualMinutes(e.target.value)}
+                      placeholder="Minutos"
+                      className="w-32 bg-[#18181c] border border-gray-700 rounded-xl px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-amber-500" />
+                    <button onClick={manualTopup} disabled={manualBusy}
+                      className="px-4 py-2 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 text-white rounded-xl text-sm font-bold">
+                      {manualBusy ? '…' : 'Recargar'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
 
