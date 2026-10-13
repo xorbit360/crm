@@ -406,7 +406,9 @@ export async function startNumberVerification(phoneE164: string, label: string):
   const cfg = await readMasterConfig();
   const { sid, auth } = masterAuth(cfg);
   if (!sid) throw new Error('La telefonía integrada no está configurada.');
-  const j = await twilioPost(sid, auth, `/Accounts/${encodeURIComponent(sid)}/ValidationRequests.json`, {
+  // NOTA: el SDK oficial de Twilio crea la solicitud de validación con
+  // POST /Accounts/{sid}/OutgoingCallerIds.json (no existe /ValidationRequests.json).
+  const j = await twilioPost(sid, auth, `/Accounts/${encodeURIComponent(sid)}/OutgoingCallerIds.json`, {
     PhoneNumber: phoneE164,
     FriendlyName: cleanText(label || 'Mi número', 60) || 'Mi número',
   });
