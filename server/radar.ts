@@ -872,7 +872,7 @@ const VIRAL_L10N: Record<string, Record<string, { keyword: string; match: string
     herramientas: { keyword: 'furadeira', match: ['furadeira', 'fita veda rosca', 'parafusadeira', 'ferramentas'] },
   },
   fr: {
-    fajas: { keyword: 'gaine minceur', match: ['gaine', 'minceur', 'correcteur de posture', 'corset'] },
+    fajas: { keyword: 'corset minceur', match: ['corset', 'minceur', 'gaine minceur', 'ventre plat', 'correcteur de posture'] },
     belleza: { keyword: 'creme solaire', match: ['creme solaire', 'protection solaire', 'skincare', 'serum'] },
     hogar: { keyword: 'friteuse sans huile', match: ['friteuse', 'air fryer', 'organisateur', 'aspirateur robot'] },
     tecnologia: { keyword: 'mini projecteur', match: ['projecteur', 'ecouteurs', 'montre connectee', 'enceinte bluetooth'] },
