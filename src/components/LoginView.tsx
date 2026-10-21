@@ -168,14 +168,13 @@ export default function LoginView({ onLogin, onGoToRegister }: LoginViewProps) {
 
           <div className="mt-6 pt-5 border-t border-zinc-800/80 text-center space-y-2">
             <p className="text-[11px] text-zinc-400">¿Aún no tienes acceso a la plataforma?</p>
-            <a
-              href="https://xorbit360.com"
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              type="button"
+              onClick={onGoToRegister}
               className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-colors"
             >
-              <CheckCircle2 size={13} /> Activar paquete de IA en xorbit360.com
-            </a>
+              <CheckCircle2 size={13} /> Regístrate gratis
+            </button>
             <div>
               <button
                 type="button"

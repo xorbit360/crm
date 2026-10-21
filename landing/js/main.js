@@ -173,25 +173,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 6. Calculadora de Canales Adicionales ($10 USD / canal)
-  const addonCheckboxes = document.querySelectorAll('.addon-channel-check');
-  const totalChannelsDisplay = document.getElementById('totalChannelsAddonPrice');
-
-  function calculateAddon() {
-    let checkedCount = 0;
-    addonCheckboxes.forEach(cb => {
-      if (cb.checked) checkedCount++;
-    });
-    const extraTotal = checkedCount * 10;
-    if (totalChannelsDisplay) {
-      totalChannelsDisplay.textContent = extraTotal === 0 ? '+$0 USD' : `+$${extraTotal} USD / mes (${checkedCount} canales)`;
-    }
-  }
-
-  addonCheckboxes.forEach(cb => {
-    cb.addEventListener('change', calculateAddon);
-  });
-
   // 7. Lead Modal ("Prueba Gratis" / "Habla con Ventas")
   const leadModal = document.getElementById('leadCaptureModal');
   const modalOpeners = document.querySelectorAll('.open-lead-modal');
@@ -247,3 +228,75 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
+// 9. Pestañas de pilares del ecosistema
+(function() {
+  const tabs = document.querySelectorAll(".pillar-tab");
+  if (!tabs.length) return;
+  tabs.forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".pillar-tab").forEach(b => {
+        b.classList.remove("active");
+        b.setAttribute("aria-selected", "false");
+      });
+      document.querySelectorAll(".pillar-panel").forEach(p => p.classList.remove("active"));
+      btn.classList.add("active");
+      btn.setAttribute("aria-selected", "true");
+      const panel = document.querySelector(`.pillar-panel[data-pillar="${btn.dataset.pillar}"]`);
+      if (panel) panel.classList.add("active");
+    });
+  });
+})();
+
+// 10. Demos colapsables en móvil (página más rápida, el usuario elige ver)
+(function() {
+  if (window.innerWidth > 640) return;
+  var demos = [
+    { sel: '.crm-showcase-wrapper', label: 'Ver demo del CRM en vivo' },
+    { sel: '.voice-simulator-card', label: 'Ver demo de llamada con IA' },
+    { sel: '.live-selling-preview', label: 'Ver demo de Live Selling' },
+    { sel: '.niche-detail-grid', label: 'Probar simulador de mi nicho' }
+  ];
+  demos.forEach(function(d) {
+    var el = document.querySelector(d.sel);
+    if (!el || el.dataset.mobileToggle) return;
+    el.dataset.mobileToggle = '1';
+    var btn = document.createElement('button');
+    btn.className = 'mobile-demo-toggle';
+    btn.type = 'button';
+    var update = function(open) {
+      el.style.display = open ? '' : 'none';
+      btn.innerHTML = (open ? '&#9660; ' : '&#9654; ') + d.label;
+      btn.classList.toggle('open', open);
+    };
+    btn.addEventListener('click', function() {
+      update(el.style.display === 'none');
+    });
+    el.parentNode.insertBefore(btn, el);
+    update(false);
+  });
+})();
+
+// --- Registro: la ruta /register de la web pública lleva al formulario real
+// del CRM conservando referido/plan, y el ?ref= de cualquier landing se
+// propaga a los botones de registro (p. ej. enlaces de ferias/aliados).
+(function () {
+  try {
+    var params = new URLSearchParams(window.location.search);
+    var path = window.location.pathname.replace(/\/+$/, '');
+    if (path === '/register' || path === '/registro') {
+      var qs = params.toString();
+      window.location.replace('https://crm.xorbit360.com/?view=register' + (qs ? '&' + qs : ''));
+      return;
+    }
+    var ref = params.get('ref');
+    if (ref) {
+      document.querySelectorAll('a[href*="crm.xorbit360.com/?view=register"]').forEach(function (a) {
+        try {
+          var u = new URL(a.href);
+          if (!u.searchParams.get('ref')) { u.searchParams.set('ref', ref); a.href = u.toString(); }
+        } catch (e) {}
+      });
+    }
+  } catch (e) {}
+})();

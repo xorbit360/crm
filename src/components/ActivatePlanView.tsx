@@ -36,6 +36,16 @@ export default function ActivatePlanView({ onClose, onActivated }: ActivatePlanV
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, []);
 
+  // Plan elegido en la web pública (botón del paquete): queda preseleccionado.
+  useEffect(() => {
+    if (!plans.length || selectedPlan) return;
+    let intended = '';
+    try { intended = sessionStorage.getItem('xorbit:intendedPlan') || ''; } catch (_) {}
+    if (!intended) return;
+    const match = plans.find((p) => p.id === intended);
+    if (match) setSelectedPlan(match);
+  }, [plans, selectedPlan]);
+
   const fmtCop = (v: number) => '$' + v.toLocaleString('es-CO');
 
   const ensureBoldScript = (): Promise<boolean> => {

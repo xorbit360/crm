@@ -649,25 +649,11 @@ type ChatMessage = {
 
   if (authChecking) return <ModuleLoading />;
 
-  if (!user || currentView === 'login') {
-    return (
-      <Suspense fallback={<ModuleLoading />}>
-        <LoginView
-          onLogin={(loggedInUser) => {
-            setUser(loggedInUser);
-            setCurrentView('app');
-          }}
-          onGoToRegister={() => {
-            window.open('https://xorbit360.com', '_blank');
-          }}
-        />
-      </Suspense>
-    );
-  }
-
   if (currentView === 'register') {
     const searchParams = new URLSearchParams(window.location.search);
     const initialRef = searchParams.get('ref') || '';
+    const intendedPlan = searchParams.get('plan') || '';
+    if (intendedPlan) { try { sessionStorage.setItem('xorbit:intendedPlan', intendedPlan); } catch (_) {} }
     return (
       <Suspense fallback={<ModuleLoading />}>
         <RegisterView
@@ -678,6 +664,20 @@ type ChatMessage = {
             navigateToModule('dashboard'); if (window.innerWidth < 768) setIsSidebarOpen(false);
           }}
           onGoToLogin={() => setCurrentView('login')}
+        />
+      </Suspense>
+    );
+  }
+
+  if (!user || currentView === 'login') {
+    return (
+      <Suspense fallback={<ModuleLoading />}>
+        <LoginView
+          onLogin={(loggedInUser) => {
+            setUser(loggedInUser);
+            setCurrentView('app');
+          }}
+          onGoToRegister={() => setCurrentView('register')}
         />
       </Suspense>
     );
