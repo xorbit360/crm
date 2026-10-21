@@ -88,25 +88,11 @@ export default function ChatbotIntegracionesView() {
   };
 
   useEffect(() => {
+    // Seguridad: tokens solo desde el backend cifrado, nunca desde localStorage.
+    // Se limpian cachés viejos si existen.
     try {
-      const cached = localStorage.getItem('XORBIT 360_CHATBOT_TOKENS_SIMPLE');
-      if (cached) {
-        setTokens(JSON.parse(cached));
-      } else {
-        const oldCached = localStorage.getItem('XORBIT 360_CHATBOT_TOKENS');
-        if (oldCached) {
-          const old = JSON.parse(oldCached);
-          setTokens({
-            dropi: old.dropi?.token || '',
-            shopify: old.shopify?.token || '',
-            meta: old.metaConversions?.token || '',
-            google: old.google?.conversionId || old.google?.developerToken || '',
-            tiktok: old.tiktok?.token || '',
-            chateapro: old.chateapro?.token || '',
-            openrouter: old.openrouter?.token || old.openrouter || ''
-          });
-        }
-      }
+      localStorage.removeItem('XORBIT 360_CHATBOT_TOKENS_SIMPLE');
+      localStorage.removeItem('XORBIT 360_CHATBOT_TOKENS');
     } catch (_) {}
 
     // Fetch from backend
@@ -125,9 +111,6 @@ export default function ChatbotIntegracionesView() {
               chateapro: t.chateapro?.token || prev.chateapro || '',
               openrouter: t.openrouter?.token || t.openrouter || prev.openrouter || ''
             };
-            try {
-              localStorage.setItem('XORBIT 360_CHATBOT_TOKENS_SIMPLE', JSON.stringify(next));
-            } catch (_) {}
             return next;
           });
         }
@@ -136,19 +119,14 @@ export default function ChatbotIntegracionesView() {
   }, []);
 
   const handleChange = (key: keyof TokensState, val: string) => {
-    setTokens(prev => {
-      const next = { ...prev, [key]: val };
-      try {
-        localStorage.setItem('XORBIT 360_CHATBOT_TOKENS_SIMPLE', JSON.stringify(next));
-      } catch (_) {}
-      return next;
-    });
+    // Tokens solo en memoria y backend cifrado - nunca en localStorage (seguridad)
+    setTokens(prev => ({ ...prev, [key]: val }));
   };
 
   const handleSaveSingle = async (key: keyof TokensState) => {
     setSavingKey(key);
     try {
-      localStorage.setItem('XORBIT 360_CHATBOT_TOKENS_SIMPLE', JSON.stringify(tokens));
+      // Seguridad: tokens solo en memoria y backend cifrado, nunca en localStorage.
 
       const payload = {
         platform: key === 'meta' ? 'metaConversions' : key,
@@ -158,15 +136,20 @@ export default function ChatbotIntegracionesView() {
         }
       };
 
-      await fetch('/api/integrations/chatbot-tokens', {
+      const res = await fetch('/api/integrations/chatbot-tokens', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        showNotification(`Error al guardar: ${errData.message || res.statusText}`, true);
+        return;
+      }
       showNotification(`Token de ${key.toUpperCase()} guardado`);
     } catch (_) {
-      showNotification(`Token guardado localmente`);
+      showNotification(`Sin conexión al servidor. Token guardado solo localmente`, true);
     } finally {
       setSavingKey(null);
     }
@@ -175,9 +158,7 @@ export default function ChatbotIntegracionesView() {
   const handleSaveAll = async () => {
     setSavingKey('all');
     try {
-      localStorage.setItem('XORBIT 360_CHATBOT_TOKENS_SIMPLE', JSON.stringify(tokens));
-
-      const calls = Object.keys(tokens).map(k => {
+      const calls = Object.keys(tokens).map(async k => {
         const key = k as keyof TokensState;
         const payload = {
           platform: key === 'meta' ? 'metaConversions' : key,
@@ -186,17 +167,27 @@ export default function ChatbotIntegracionesView() {
             conversionId: key === 'google' ? tokens[key] : undefined
           }
         };
-        return fetch('/api/integrations/chatbot-tokens', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        }).catch(() => {});
+        try {
+          const res = await fetch('/api/integrations/chatbot-tokens', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          return { key, ok: res.ok };
+        } catch {
+          return { key, ok: false };
+        }
       });
 
-      await Promise.all(calls);
-      showNotification('Todos los tokens se han guardado con éxito');
+      const results = await Promise.all(calls);
+      const failed = results.filter(r => !r.ok);
+      if (failed.length === 0) {
+        showNotification('Todos los tokens se han guardado con éxito');
+      } else {
+        showNotification(`Guardados localmente. Falló el servidor para: ${failed.map(f => f.key.toUpperCase()).join(', ')}`, true);
+      }
     } catch (_) {
-      showNotification('Tokens guardados localmente');
+      showNotification('Tokens guardados solo localmente (sin conexión al servidor)', true);
     } finally {
       setSavingKey(null);
     }

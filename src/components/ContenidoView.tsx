@@ -1,16 +1,17 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Bot, Send, Paperclip, Mic, Image as ImageIcon, FileText, X, Plus,
   Calendar, Clock, ChevronDown, ChevronRight, Sparkles, Smartphone, Tv,
   Globe, Layers, Activity, Upload, Play, Film, Check, Trash2, Filter,
   MoreVertical, MessageSquare, User, ArrowRight, RefreshCw, Volume2,
   FolderClosed, File as FileIcon, Share2, Eye, Sliders, Search, Video, MonitorPlay,
-  Wand2, Scissors, Type, Download, BarChart2, ShieldCheck, Cpu, PlayCircle
+  Wand2, Scissors, Type, Download, BarChart2, ShieldCheck, Cpu, PlayCircle, Menu
 } from 'lucide-react';
 
 interface ContenidoViewProps {
   activeTab?: string;
   setActiveTab?: (tab: string) => void;
+  onBack?: () => void;
 }
 
 interface ChatMessage {
@@ -46,9 +47,32 @@ interface KanbanCard {
   column: 'ideas' | 'haciendo' | 'grabar' | 'grabado' | 'programado';
 }
 
-export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: propSetActiveTab }: ContenidoViewProps = {}) {
+export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: propSetActiveTab, onBack }: ContenidoViewProps = {}) {
   // Navigation & Menu State
   const [internalActiveMenu, setInternalActiveMenu] = useState<string>('crear');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [walletBalance, setWalletBalance] = useState<number>(0);
+  const [videoDuration, setVideoDuration] = useState<'1min' | '3min'>('1min');
+  const [videoModel, setVideoModel] = useState<string>('bytedance/seedance-2.0-fast');
+  const [videoPrompt, setVideoPrompt] = useState('');
+  const [videoGenerating, setVideoGenerating] = useState(false);
+
+  const VIDEO_MODELS = [
+    { id: 'bytedance/seedance-2.5', name: 'Seedance 2.5', vendor: 'ByteDance' },
+    { id: 'bytedance/seedance-2.0', name: 'Seedance 2.0 Pro', vendor: 'ByteDance' },
+    { id: 'bytedance/seedance-2.0-fast', name: 'Seedance 2.0 Fast', vendor: 'ByteDance' },
+    { id: 'google/veo-3.1-fast', name: 'Veo 3.1 Fast', vendor: 'Google' },
+    { id: 'kwaivgi/kling-v3.0-std', name: 'Kling 3.0', vendor: 'Kuaishou' },
+    { id: 'minimax/hailuo-3', name: 'Hailuo 3', vendor: 'MiniMax' },
+  ];
+
+  useEffect(() => {
+    fetch('/api/video-gen/wallet', { credentials: 'include' })
+      .then(r => r.json())
+      .then(w => setWalletBalance(w.balanceUsd ?? 0))
+      .catch(() => {});
+  }, []);
+
   const activeMenu = propActiveTab || internalActiveMenu;
   const setActiveMenu = (menu: string) => {
     setInternalActiveMenu(menu);
@@ -337,21 +361,31 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
 
       {/* TOP HEADER NAVIGATION BAR */}
       <header className="bg-[#12131a] border-b border-gray-800/80 px-4 py-2.5 flex items-center justify-between gap-4 shrink-0 shadow-md">
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-gold-600 via-gold-600 to-gold-500 flex items-center justify-center font-black text-white text-base shadow-md">
-              E
-            </div>
-            <span className="font-extrabold text-lg text-white tracking-tight">Expert<span className="text-gold-400"> 360</span></span>
-          </div>
+        <div className="flex items-center gap-3">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="p-2 rounded-lg hover:bg-gray-800 text-gray-300"
+              aria-label="Atrás"
+            >
+              <ArrowRight size={20} className="rotate-180" />
+            </button>
+          )}
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="md:hidden p-2 rounded-lg hover:bg-gray-800 text-gray-300"
+            aria-label="Menú"
+          >
+            <Menu size={20} />
+          </button>
 
           <nav className="hidden md:flex items-center gap-1 bg-[#181922] p-1 rounded-xl border border-gray-800">
             {[
-              { id: 'mission', label: 'Mission Control', icon: Activity },
-              { id: 'content', label: 'Content', icon: Layers },
+              { id: 'mission', label: 'Panel principal', icon: Activity },
+              { id: 'content', label: 'Contenido', icon: Layers },
               { id: 'seo', label: 'SEO', icon: Globe },
-              { id: 'sales', label: 'Sales', icon: Sparkles },
-              { id: 'operations', label: 'Operations', icon: Sliders }
+              { id: 'sales', label: 'Ventas', icon: Sparkles },
+              { id: 'operations', label: 'Operaciones', icon: Sliders }
             ].map(tab => {
               const Icon = tab.icon;
               const isActive = topHeaderTab === tab.id;
@@ -373,66 +407,41 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
         </div>
 
         <div className="flex items-center gap-3">
-          <span className="text-[11px] font-semibold text-gray-400 bg-[#181922] px-3 py-1 rounded-full border border-gray-800">
+          <div className="flex items-center gap-2 bg-[#181922] px-3 py-1.5 rounded-full border border-gray-800">
+            <span className="text-[11px] text-gray-400">Saldo:</span>
+            <span className="text-sm font-bold text-amber-300">${walletBalance.toFixed(2)}</span>
+            <button
+              onClick={() => window.location.hash = '#recargas'}
+              className="text-[10px] bg-gold text-black px-2 py-0.5 rounded-full font-bold hover:bg-gold/90"
+            >
+              Recargar
+            </button>
+          </div>
+          <span className="hidden sm:inline text-[11px] font-semibold text-gray-400 bg-[#181922] px-3 py-1 rounded-full border border-gray-800">
             Workspace: <strong className="text-amber-300">Xorbit 360 AI</strong>
           </span>
         </div>
       </header>
 
       {/* MAIN LAYOUT WITH SIDEBAR + WORKSPACE */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative">
 
-        {/* LEFT SIDEBAR */}
-        <aside className="w-64 bg-[#111218] border-r border-gray-800/80 flex flex-col justify-between shrink-0 overflow-y-auto">
+        {/* LEFT SIDEBAR - collapsible on mobile */}
+        <aside className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 fixed md:static z-40 w-64 bg-[#111218] border-r border-gray-800/80 flex flex-col justify-between shrink-0 overflow-y-auto h-full transition-transform duration-300`}>
           <div className="p-3 space-y-4">
 
-            {/* VaultAI Conversaciones */}
+            {/* CONTENT MODULES MENU SECTION */}
             <div className="space-y-1">
-              <button
-                onClick={() => setActiveMenu('crear')}
-                className={`w-full p-3 rounded-2xl border text-left transition-all flex items-center justify-between group ${
-                  isChatView
-                    ? 'bg-gradient-to-r from-blue-950/80 to-blue-950/80 border-gold-600 text-white shadow-lg shadow-blue-950/40'
-                    : 'bg-[#181924] border-blue-900/40 hover:border-gold-600/70 text-gray-300'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-gold-600/30 border border-gold-500/50 flex items-center justify-center text-amber-300 group-hover:scale-105 transition-transform">
-                    <Bot size={20} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-xs text-white">VaultAI</h3>
-                    <p className="text-[10px] text-amber-300 font-medium">Conversaciones & Chat</p>
-                  </div>
-                </div>
-                <ChevronRight size={16} className="text-gold-400 group-hover:translate-x-0.5 transition-transform" />
-              </button>
-            </div>
-
-            {/* CONTENT TOOLS MENU SECTION */}
-            <div className="space-y-1">
-              <div className="px-2 py-1 flex items-center justify-between text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-                <span>HERRAMIENTAS IA</span>
-                <ChevronDown size={12} />
-              </div>
-
               {[
-                { id: 'crear', label: 'Creación & VaultAI', icon: MessageSquare },
-                { id: 'analizar', label: 'Creativos Pro (Analizador)', icon: Search },
-                { id: 'clonador', label: 'Clonador Vídeo UGC', icon: Video },
-                { id: 'planificador', label: 'Planificador Automático', icon: Calendar },
-                { id: 'editor_video', label: 'Editor de Video IA', icon: MonitorPlay },
-                { id: 'linkedin', label: 'LinkedIn Grid', icon: Globe },
-                { id: 'instagram', label: 'Instagram Reels', icon: Smartphone },
-                { id: 'youtube', label: 'YouTube Studio', icon: Tv },
-                { id: 'content_lab', label: 'Content Lab', icon: Layers }
+                { id: 'crear', label: 'Chat', icon: MessageSquare },
+                { id: 'multimedia', label: 'Multimedia Generada', icon: FolderClosed }
               ].map(item => {
                 const Icon = item.icon;
                 const isCur = activeMenu === item.id;
                 return (
                   <button
                     key={item.id}
-                    onClick={() => setActiveMenu(item.id)}
+                    onClick={() => { setActiveMenu(item.id); setSidebarOpen(false); }}
                     className={`w-full px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2.5 transition-all ${
                       isCur
                         ? 'bg-gold-600/20 text-amber-300 border border-gold-500/40 font-bold'
@@ -446,43 +455,6 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
               })}
             </div>
 
-            {/* PINNED AGENTS SECTION */}
-            <div className="space-y-1.5 pt-2 border-t border-gray-800/80">
-              <div className="px-2 py-1 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-                AGENTES DE CONTENIDO
-              </div>
-
-              <div className="space-y-1">
-                {agents.map(agent => {
-                  const isSelected = selectedAgentId === agent.id;
-                  return (
-                    <button
-                      key={agent.id}
-                      onClick={() => {
-                        setSelectedAgentId(agent.id);
-                        if (!isChatView) {
-                          setActiveMenu('crear');
-                        }
-                      }}
-                      className={`w-full p-2 rounded-xl text-left flex items-start gap-2.5 transition-all ${
-                        isSelected
-                          ? 'bg-[#1e1f2b] border border-blue-800/60 text-white'
-                          : 'hover:bg-[#181922] text-gray-400'
-                      }`}
-                    >
-                      <div className={`w-6 h-6 rounded-lg ${agent.color} text-white font-black text-[11px] flex items-center justify-center shrink-0 mt-0.5 shadow-sm`}>
-                        {agent.badge}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <h4 className="font-bold text-xs text-white leading-tight truncate">{agent.name}</h4>
-                        <p className="text-[10px] text-gray-500 truncate leading-tight">{agent.title}</p>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
           </div>
 
           {/* SIDEBAR FOOTER */}
@@ -490,6 +462,14 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
             Xorbit 360 v0.1
           </div>
         </aside>
+
+        {/* Mobile overlay to close sidebar */}
+        {sidebarOpen && (
+          <div
+            className="md:hidden fixed inset-0 bg-black/60 z-30"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
 
         {/* MAIN WORKSPACE CONTENT AREA */}
         <main className="flex-1 bg-[#0b0c10] overflow-y-auto flex flex-col">
@@ -596,6 +576,11 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
 
               {/* Chat Input Toolbar Bar */}
               <div className="p-4 bg-[#12131b] border-t border-gray-800/80 shrink-0">
+                {walletBalance <= 0 && (
+                  <div className="mb-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-center">
+                    <p className="text-xs text-amber-300">⚠️ Necesitas recargar saldo para generar imágenes y videos con IA.</p>
+                  </div>
+                )}
                 <form onSubmit={handleSendMessage} className="space-y-3">
                   <div className="relative bg-[#181924] border border-gray-700/80 rounded-2xl p-2.5 shadow-inner focus-within:border-gold-500 transition-colors">
                     <textarea
@@ -1102,7 +1087,107 @@ export default function ContenidoView({ activeTab: propActiveTab, setActiveTab: 
           )}
 
           {/* OTHER SOCIAL NETWORKS VIEWS */}
-          {!isChatView && !isAnalizarView && !isClonadorView && !isPlanificadorView && !isEditorVideoView && (
+          {activeMenu === 'multimedia' && (
+            <div className="p-6 space-y-6">
+              <div>
+                <h1 className="text-2xl font-black text-white">Multimedia Generada</h1>
+                <p className="text-xs text-gray-400">Tus imágenes y videos creados con IA, organizados en carpetas.</p>
+              </div>
+
+              {/* Generador de Video */}
+              <div className="bg-[#12131a] border border-gray-800 rounded-2xl p-6 space-y-4">
+                <h2 className="font-bold text-white flex items-center gap-2">
+                  <Video size={18} className="text-gold-400" /> Generar Video con IA
+                </h2>
+                <textarea
+                  value={videoPrompt}
+                  onChange={(e) => setVideoPrompt(e.target.value)}
+                  placeholder="Describe el video que quieres crear..."
+                  rows={3}
+                  className="w-full bg-[#181924] border border-gray-700 rounded-xl p-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-gold"
+                />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs text-gray-400 font-bold">Duración</label>
+                    <div className="flex gap-2 mt-1">
+                      {[
+                        { id: '1min' as const, label: '1 minuto' },
+                        { id: '3min' as const, label: '3 minutos' },
+                      ].map(d => (
+                        <button
+                          key={d.id}
+                          onClick={() => setVideoDuration(d.id)}
+                          className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all ${
+                            videoDuration === d.id
+                              ? 'bg-gold text-black'
+                              : 'bg-[#181924] text-gray-300 border border-gray-700 hover:border-gold/50'
+                          }`}
+                        >
+                          {d.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-400 font-bold">Modelo de Video</label>
+                    <select
+                      value={videoModel}
+                      onChange={(e) => setVideoModel(e.target.value)}
+                      className="w-full mt-1 bg-[#181924] border border-gray-700 rounded-xl p-2.5 text-sm text-white focus:outline-none focus:border-gold"
+                    >
+                      {VIDEO_MODELS.map(m => (
+                        <option key={m.id} value={m.id}>{m.name} ({m.vendor})</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    if (walletBalance <= 0) { alert('Recarga saldo para generar videos.'); return; }
+                    if (!videoPrompt.trim()) { alert('Describe el video primero.'); return; }
+                    setVideoGenerating(true);
+                    setTimeout(() => {
+                      setVideoGenerating(false);
+                      alert(`Video de ${videoDuration === '1min' ? '1 minuto' : '3 minutos'} en proceso con ${VIDEO_MODELS.find(m => m.id === videoModel)?.name}. Te avisaremos cuando esté listo.`);
+                    }, 1500);
+                  }}
+                  disabled={videoGenerating || walletBalance <= 0}
+                  className="w-full py-3 bg-gold text-black rounded-xl font-bold text-sm hover:bg-gold/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {videoGenerating ? 'Generando...' : `Generar Video (${videoDuration === '1min' ? '1 min' : '3 min'})`}
+                </button>
+                {walletBalance <= 0 && (
+                  <p className="text-xs text-amber-300 text-center">⚠️ Necesitas saldo para generar videos.</p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {[
+                  { name: 'Imágenes', icon: ImageIcon, count: 0 },
+                  { name: 'Videos', icon: Video, count: 0 },
+                ].map(folder => {
+                  const FIcon = folder.icon;
+                  return (
+                    <div key={folder.name} className="bg-[#12131a] border border-gray-800 rounded-2xl p-6 text-center space-y-3 hover:border-gold/30 transition-all cursor-pointer">
+                      <FIcon size={32} className="text-gold-400 mx-auto" />
+                      <h3 className="font-bold text-white">{folder.name}</h3>
+                      <p className="text-xs text-gray-500">{folder.count} archivos</p>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="bg-[#12131a] border border-gray-800 rounded-2xl p-8 text-center">
+                <p className="text-sm text-gray-400">Genera contenido desde el Chat y aparecerá aquí automáticamente.</p>
+                <button
+                  onClick={() => setActiveMenu('crear')}
+                  className="mt-4 px-6 py-2 bg-gold text-black rounded-xl font-bold text-sm hover:bg-gold/90"
+                >
+                  Ir al Chat
+                </button>
+              </div>
+            </div>
+          )}
+          {!isChatView && activeMenu !== 'multimedia' && !isAnalizarView && !isClonadorView && !isPlanificadorView && !isEditorVideoView && (
             <div className="p-6 space-y-6">
               <div>
                 <h1 className="text-2xl font-black text-white capitalize">{activeMenu.replace('_', ' ')}</h1>

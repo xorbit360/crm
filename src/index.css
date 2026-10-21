@@ -26,6 +26,18 @@
   --text-secondary: #a1a1aa;
 }
 
+/* Modo claro: variables completas para que NADA quede con franjas oscuras */
+html.light {
+  color-scheme: light;
+  --surface-0: #f1f5f9;
+  --surface-1: #ffffff;
+  --surface-2: #f8fafc;
+  --surface-3: #e2e8f0;
+  --border-subtle: #e2e8f0;
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+}
+
 /* Custom subtle animations */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
@@ -153,7 +165,10 @@ html.light .text-gray-300, body.light .text-gray-300 {
 }
 
 html.light .text-gray-400, body.light .text-gray-400,
-html.light .text-gray-500, body.light .text-gray-500 {
+html.light .text-gray-500, body.light .text-gray-500,
+html.light .text-zinc-300, body.light .text-zinc-300,
+html.light .text-zinc-400, body.light .text-zinc-400,
+html.light .text-zinc-500, body.light .text-zinc-500 {
   color: #64748b !important;
 }
 
@@ -176,6 +191,77 @@ html.light .bg-gray-800\/60, body.light .bg-gray-800\/60 {
 html.light .hover\:bg-gray-800:hover, body.light .hover\:bg-gray-800:hover,
 html.light .hover\:bg-gray-900:hover, body.light .hover\:bg-gray-900:hover {
   background-color: #e2e8f0 !important;
+}
+
+/* Parches negros: todos los fondos oscuros hardcodeados -> blanco en modo claro */
+html.light .bg-\[\#18181c\], html.light .bg-\[\#121215\],
+html.light .bg-\[\#0d0d0d\], html.light .bg-\[\#161616\],
+html.light .bg-\[\#090909\],
+html.light .bg-\[\#1a1a1a\], html.light .bg-\[\#181922\],
+html.light .bg-\[\#0a0a0a\], html.light .bg-\[\#121212\],
+html.light .bg-\[\#111b21\], html.light .bg-\[\#12131a\],
+html.light .bg-\[\#0c0c0c\], html.light .bg-\[\#0f131a\],
+html.light .bg-\[\#0e0e0e\],
+html.light .bg-\[\#141414\], html.light .bg-\[\#0e0c07\],
+html.light .bg-\[\#0b141a\], html.light .bg-\[\#1e1e1e\] {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+}
+/* Burbujas de chat entrantes: gris claro visible (no blanco sobre blanco) */
+html.light .bg-\[\#202c33\], html.light .bg-\[\#2a3942\] {
+  background-color: #eef1f4 !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Gradientes oscuros -> claros en modo light */
+html.light .from-gray-900, html.light .from-zinc-950, html.light .from-zinc-900,
+html.light .from-slate-900, html.light .from-neutral-900 {
+  --tw-gradient-from: #ffffff var(--tw-gradient-from-position);
+  --tw-gradient-to: rgb(255 255 255 / 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+html.light .via-gray-900\/90, html.light .via-zinc-900,
+html.light .via-slate-900, html.light .via-neutral-900 {
+  --tw-gradient-to: rgb(255 255 255 / 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), #f8fafc var(--tw-gradient-via-position), var(--tw-gradient-to);
+}
+html.light .to-amber-950\/25, html.light .to-zinc-950,
+html.light .to-slate-950, html.light .to-neutral-950 {
+  --tw-gradient-to: #fef3c7 var(--tw-gradient-to-position);
+}
+/* Bordes oscuros en gradientes -> claros */
+html.light .border-zinc-800 {
+  border-color: #e2e8f0 !important;
+}
+/* Colores de texto hardcodeados estilo WhatsApp -> legibles en modo claro */
+html.light .text-\[\#e9edef\] {
+  color: #0f172a !important;
+}
+html.light .text-\[\#d1d7db\] {
+  color: #1e293b !important;
+}
+html.light .text-\[\#8696a0\] {
+  color: #64748b !important;
+}
+html.light .text-\[\#aebac1\] {
+  color: #475569 !important;
+}
+html.light .bg-zinc-900\/60, html.light .bg-zinc-900,
+html.light .bg-zinc-900\/90, html.light .bg-zinc-900\/80,
+html.light .bg-zinc-900\/50 {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: #e2e8f0 !important;
+}
+html.light .bg-zinc-800\/80, html.light .bg-zinc-800 {
+  background-color: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+}
+html.light .bg-zinc-950\/80, html.light .bg-zinc-950 {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  color: #64748b !important;
 }
 
 /* Custom utility classes */

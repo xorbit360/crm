@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   Bot, Mic, Send, Video, Sparkles, Lightbulb, Layout, Megaphone, Radio,
-  CheckCircle2, ChevronRight, Zap
+  CheckCircle2, ChevronRight, Zap, Radar
 } from 'lucide-react';
 import type { ModuleId } from '../types';
 
@@ -37,53 +37,18 @@ export default function HerramientasTarjetasView({ onSelectTool, hiddenItems = [
       icon: <Mic size={26} />,
       tags: ['Confirmación Pedidos', 'Novedades', 'Oficina', 'Campañas de Voz']
     },
-    {
-      id: 'email' as ModuleId,
-      title: 'Email Marketing AI',
-      category: 'Secuencias & Nutrición',
-      description: 'Flujos automáticos de correos electrónicos persuasivos para recuperar carritos abandonados, bienvenida y ventas secundarias.',
-      icon: <Send size={26} />,
-      tags: ['Gestión Flujos Email', 'Retargeting', 'Nutrición de Leads']
-    },
-    {
-      id: 'contenido' as ModuleId,
-      title: 'Creación & Contenido UGC',
-      category: 'Multimedia & Creativos Pro',
-      description: 'Generador automático de creativos, clasificadores de contenido de conversión, clonador de vídeo UGC y editor de vídeo IA.',
-      icon: <Video size={26} />,
-      tags: ['UGC Creator', 'Analizador Creativos', 'Clonador Vídeo', 'Editor IA']
-    },
-    {
-      id: 'branding' as ModuleId,
-      title: 'Branding & Identidad Visual',
-      category: 'Diseño Corporativo',
-      description: 'Manuales de marca automáticos, entrevista de identidad visual, generación de paletas de color, tipografía y recursos gráficos.',
-      icon: <Sparkles size={26} />,
-      tags: ['Entrevista Marca', 'Identidad Visual', 'Manual de Marca', 'Recursos']
-    },
-    {
-      id: 'mercado' as ModuleId,
-      title: 'Estudio de Mercado & Nichos',
-      category: 'Inteligencia de Negocio',
-      description: 'Definición de público objetivo, análisis de competidores, tendencias de mercado, recomendador multi-IA y calculadora de precios.',
-      icon: <Lightbulb size={26} />,
-      tags: ['Público Objetivo', 'Nichos', 'Competidores', 'Calculadora Precios']
-    },
-    {
-      id: 'landing' as ModuleId,
-      title: 'Landing Pages & Funnels',
-      category: 'Páginas de Aterrizaje',
-      description: 'Plantillas de alta conversión para ofertas de comercio electrónico, editor interactivo y rastreador de visitas con mapa de calor.',
-      icon: <Layout size={26} />,
-      tags: ['Plantillas Conversión', 'Editor Visual', 'Rastreador Visitas']
-    },
+
+
+
+
+
     {
       id: 'ads' as ModuleId,
       title: 'Gestión de Ads (Meta & TikTok)',
       category: 'Pauta Publicitaria IA',
       description: 'Traffiker virtual automatizado para creación y escalado de campañas publicitarias en Facebook, Instagram y TikTok Ads con alertas KPI.',
       icon: <Megaphone size={26} />,
-      tags: ['Traffiker IA', 'Facebook/TikTok Ads', 'Métricas KPI', 'Alertas']
+      tags: ['Traffiker IA', 'Métricas KPI', 'Alertas']
     },
     {
       id: 'live_selling' as ModuleId,
@@ -92,6 +57,22 @@ export default function HerramientasTarjetasView({ onSelectTool, hiddenItems = [
       description: 'Transmisiones en vivo multi-canal con producto fijado relámpago, carrito interactivo y escaneo de palabras clave en comentarios.',
       icon: <Radio size={26} />,
       tags: ['Transmisión Vivo', 'Checkout Interactivo', 'Comentarios IA']
+    },
+    {
+      id: 'contenido' as ModuleId,
+      title: 'Creación de Contenido',
+      category: 'Contenido IA',
+      description: 'Genera imágenes y videos con IA usando OpenRouter. Recarga saldo para crear contenido profesional.',
+      icon: <Sparkles size={26} />,
+      tags: ['Imágenes IA', 'Videos IA', 'OpenRouter']
+    },
+    {
+      id: 'radar' as ModuleId,
+      title: 'Radar de Mercado',
+      category: 'Inteligencia de Mercado',
+      description: 'Monitorea tendencias, competidores y oportunidades de mercado en tiempo real.',
+      icon: <Radar size={26} />,
+      tags: ['Tendencias', 'Competidores', 'Oportunidades']
     }
   ];
 

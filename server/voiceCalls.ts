@@ -1,4 +1,4 @@
-import type { Express, Request, Response } from 'express';
+import type { Express, Request, Response, RequestHandler } from 'express';
 import type { Server as HttpServer } from 'http';
 import type { Socket } from 'net';
 import crypto from 'crypto';
@@ -9,9 +9,11 @@ import { enviarMensajeZernio } from './zernio/messaging.ts';
 import { zernioRequest } from './zernio/client.ts';
 
 // ============================================================================
-// Llamadas IA de confirmación contra entrega — Xorbit 360
-// Flujo: pedido COD del bot -> WhatsApp de confirmación -> si el cliente no
-// responde en N minutos -> llamada de voz (Telefonía + voz IA de Google Live).
+// Llamadas IA de confirmación y devoluciones — Xorbit 360
+// Flujo: pedido (contraentrega o pago anticipado) -> WhatsApp -> si el cliente
+// no responde en N minutos -> llamada de voz (plataforma + voz IA de Gemini
+// Live). El resultado se aplica al pedido. Las devoluciones tienen su propia
+// campaña y guion (acordar reenvío, cambio o reembolso).
 // Sin SDKs: Twilio por REST (fetch + Basic Auth), Gemini Live por WebSocket,
 // transcodificación mulaw/PCM en JS puro. El WebSocket de Twilio Media Streams
 // se sirve con un manejador 'upgrade' mínimo (sin dependencias nuevas).
@@ -44,10 +46,18 @@ const WA_FAILED_GRACE_MS = 2 * 60 * 1000; // si falló el WhatsApp, llamar a los
 
 export type VoiceCallStatus = 'programada' | 'en_curso' | 'confirmada' | 'cancelada' | 'no_contesto' | 'fallida';
 
+// Resultado fino de una llamada (lo que el cliente decidió). La BD solo admite
+// los 6 estados de VoiceCallStatus, así que el resultado fino viaja en la
+// transcripción (línea de sistema "RESULTADO: <outcome>") y el estado guardado
+// es el equivalente grueso: acuerdos y novedades -> 'confirmada'; cancelación
+// del pedido y "sin acuerdo" -> 'cancelada'. El write-back al pedido y la UI
+// trabajan con el resultado fino, no con el estado grueso.
+export type VoiceCallOutcome = 'confirmada' | 'cancelada' | 'novedad' | 'reenvio' | 'cambio' | 'reembolso' | 'sin_acuerdo';
+export type FineOutcome = VoiceCallOutcome | 'no_contesto';
+export type CallPurpose = 'confirmacion' | 'devolucion';
+export type CallPaymentType = 'cod' | 'anticipado' | 'otro';
+
 interface TelephonyConfig {
-  twilioAccountSid: string; // cifrado con secretBox
-  twilioAuthToken: string; // cifrado con secretBox
-  twilioFromNumber: string;
   googleKey: string; // cifrado con secretBox (override por tenant de la clave de voz)
   delayDefaultMin: number;
   publicHost: string; // dominio público para las URLs que Twilio debe alcanzar
@@ -58,6 +68,7 @@ export interface VoiceCallCampaign {
   id: string;
   tenantId: string;
   name: string;
+  purpose: CallPurpose;
   active: boolean;
   delayMin: number;
   scheduleStart: string; // 'HH:MM'
@@ -81,6 +92,8 @@ export interface VoiceCall {
   tenantId: string;
   campaignId: string;
   orderId: string;
+  purpose?: CallPurpose;
+  paymentType?: CallPaymentType;
   customerName: string;
   phone: string;
   orderSummary: string;
@@ -105,9 +118,6 @@ export interface VoiceCall {
 }
 
 const DEFAULT_CONFIG: TelephonyConfig = {
-  twilioAccountSid: '',
-  twilioAuthToken: '',
-  twilioFromNumber: '',
   googleKey: '',
   delayDefaultMin: 15,
   publicHost: 'crm.xorbit360.com',
@@ -168,10 +178,6 @@ function decryptField(v: unknown): string {
 // ---------------------------------------------------------------------------
 // Configuración de telefonía (app_settings, workspace 'default')
 // ---------------------------------------------------------------------------
-
-export async function readVoiceCallsConfig(): Promise<TelephonyConfig> {
-  return readConfig();
-}
 
 async function readConfig(): Promise<TelephonyConfig> {
   const client = getSupabase();
@@ -276,6 +282,62 @@ async function writeFallback(d: FallbackData): Promise<void> {
   ) as any);
 }
 
+// ---------------------------------------------------------------------------
+// Meta de llamadas y campañas sin columnas nuevas en la BD:
+// - El propósito de cada campaña vive en app_settings ('voice.calls.campaignMeta').
+// - El propósito/tipo de pago de cada llamada viaja como primera línea de su
+//   transcripción ("META: proposito=...; pago=...") y el resultado fino como
+//   línea final ("RESULTADO: <outcome>"). La UI oculta la línea META y muestra
+//   la de RESULTADO como nota del sistema.
+// ---------------------------------------------------------------------------
+
+const CAMPAIGN_META_KEY = 'voice.calls.campaignMeta';
+
+async function readCampaignMeta(): Promise<Record<string, { purpose?: string }>> {
+  try {
+    const client = getSupabase();
+    if (!client) return {};
+    const { data } = await (client.from('app_settings').select('value')
+      .eq('workspace_id', CONFIG_WORKSPACE).eq('key', CAMPAIGN_META_KEY).maybeSingle() as any);
+    const raw = data?.value;
+    const parsed = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : {};
+    return (parsed && typeof parsed === 'object') ? parsed : {};
+  } catch { return {}; }
+}
+
+async function writeCampaignMeta(m: Record<string, { purpose?: string }>): Promise<void> {
+  const client = getSupabase();
+  if (!client) return;
+  await (client.from('app_settings').upsert(
+    { workspace_id: CONFIG_WORKSPACE, key: CAMPAIGN_META_KEY, value: JSON.stringify(m), updated_at: new Date().toISOString() },
+    { onConflict: 'workspace_id,key' },
+  ) as any);
+}
+
+function metaEntry(purpose: CallPurpose, paymentType: CallPaymentType): TranscriptEntry {
+  return { role: 'sistema', text: `META: proposito=${purpose}; pago=${paymentType}`, at: new Date().toISOString() };
+}
+
+export function parseCallMeta(call: VoiceCall): { purpose: CallPurpose; paymentType: CallPaymentType } {
+  if (call.purpose) return { purpose: call.purpose, paymentType: call.paymentType || 'cod' };
+  const line = (call.transcript || []).find((t) => typeof t?.text === 'string' && t.text.startsWith('META:'));
+  const m = /proposito=(confirmacion|devolucion)/.exec(line?.text || '');
+  const p = /pago=(cod|anticipado|otro)/.exec(line?.text || '');
+  return {
+    purpose: (m?.[1] as CallPurpose) || 'confirmacion',
+    paymentType: (p?.[1] as CallPaymentType) || 'cod',
+  };
+}
+
+export function parseCallOutcome(call: VoiceCall): VoiceCallOutcome | null {
+  const lines = call.transcript || [];
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const m = /^RESULTADO: (confirmada|cancelada|novedad|reenvio|cambio|reembolso|sin_acuerdo)/.exec(String(lines[i]?.text || ''));
+    if (m) return m[1] as VoiceCallOutcome;
+  }
+  return null;
+}
+
 function rowToCampaign(r: any): VoiceCallCampaign {
   return {
     id: String(r.id), tenantId: String(r.tenant_id || 'default'), name: String(r.name || ''),
@@ -283,6 +345,7 @@ function rowToCampaign(r: any): VoiceCallCampaign {
     delayMin: Number(r.delay_min ?? 15), scheduleStart: String(r.schedule_start || '09:00'),
     scheduleEnd: String(r.schedule_end || '20:00'), maxAttempts: Number(r.max_attempts ?? 2),
     whatsappFirst: r.whatsapp_first !== false,
+    purpose: 'confirmacion',
     systemPrompt: String(r.system_prompt || ''), voice: String(r.voice || 'Kore'),
     createdAt: String(r.created_at || new Date().toISOString()),
     updatedAt: String(r.updated_at || new Date().toISOString()),
@@ -343,15 +406,19 @@ function callToRow(c: VoiceCall): Record<string, any> {
 }
 
 async function listCampaigns(tenant: string): Promise<VoiceCallCampaign[]> {
+  let list: VoiceCallCampaign[];
   if (await tablesAvailable()) {
     const client = getSupabase()!;
     const { data, error } = await (client.from('voice_call_campaigns').select('*')
       .eq('tenant_id', tenant).order('created_at', { ascending: true }) as any);
     if (error) throw new Error(error.message);
-    return (data || []).map(rowToCampaign);
+    list = (data || []).map(rowToCampaign);
+  } else {
+    const fb = await readFallback();
+    list = fb.campaigns.filter((c) => c.tenantId === tenant);
   }
-  const fb = await readFallback();
-  return fb.campaigns.filter((c) => c.tenantId === tenant);
+  const meta = await readCampaignMeta();
+  return list.map((c) => ({ ...c, purpose: (meta[c.id]?.purpose === 'devolucion' ? 'devolucion' : (c.purpose === 'devolucion' ? 'devolucion' : 'confirmacion')) as CallPurpose }));
 }
 
 async function saveCampaign(c: VoiceCallCampaign): Promise<void> {
@@ -360,12 +427,15 @@ async function saveCampaign(c: VoiceCallCampaign): Promise<void> {
     const client = getSupabase()!;
     const { error } = await (client.from('voice_call_campaigns').upsert(campaignToRow(c), { onConflict: 'id' }) as any);
     if (error) throw new Error(error.message);
-    return;
+  } else {
+    const fb = await readFallback();
+    const i = fb.campaigns.findIndex((x) => x.id === c.id);
+    if (i >= 0) fb.campaigns[i] = c; else fb.campaigns.push(c);
+    await writeFallback(fb);
   }
-  const fb = await readFallback();
-  const i = fb.campaigns.findIndex((x) => x.id === c.id);
-  if (i >= 0) fb.campaigns[i] = c; else fb.campaigns.push(c);
-  await writeFallback(fb);
+  const meta = await readCampaignMeta();
+  meta[c.id] = { purpose: c.purpose === 'devolucion' ? 'devolucion' : 'confirmacion' };
+  await writeCampaignMeta(meta);
 }
 
 async function deleteCampaign(id: string): Promise<void> {
@@ -373,11 +443,13 @@ async function deleteCampaign(id: string): Promise<void> {
     const client = getSupabase()!;
     const { error } = await (client.from('voice_call_campaigns').delete().eq('id', id) as any);
     if (error) throw new Error(error.message);
-    return;
+  } else {
+    const fb = await readFallback();
+    fb.campaigns = fb.campaigns.filter((x) => x.id !== id);
+    await writeFallback(fb);
   }
-  const fb = await readFallback();
-  fb.campaigns = fb.campaigns.filter((x) => x.id !== id);
-  await writeFallback(fb);
+  const meta = await readCampaignMeta();
+  if (meta[id]) { delete meta[id]; await writeCampaignMeta(meta); }
 }
 
 async function listCalls(tenant: string, status: string | undefined, limit: number): Promise<VoiceCall[]> {
@@ -418,17 +490,21 @@ async function findCallByTwilioSid(sid: string): Promise<VoiceCall | null> {
   return fb.calls.find((c) => c.twilioCallSid === sid) || null;
 }
 
-async function findActiveCallByOrder(orderId: string, tenant: string): Promise<VoiceCall | null> {
+async function findActiveCallByOrder(orderId: string, tenant: string, purpose?: CallPurpose): Promise<VoiceCall | null> {
   if (!orderId) return null;
+  let actives: VoiceCall[] = [];
   if (await tablesAvailable()) {
     const client = getSupabase()!;
     const { data, error } = await (client.from('voice_calls').select('*')
-      .eq('tenant_id', tenant).eq('order_id', orderId).in('status', ['programada', 'en_curso']).limit(1) as any);
+      .eq('tenant_id', tenant).eq('order_id', orderId).in('status', ['programada', 'en_curso']).limit(5) as any);
     if (error) throw new Error(error.message);
-    return data && data[0] ? rowToCall(data[0]) : null;
+    actives = (data || []).map(rowToCall);
+  } else {
+    const fb = await readFallback();
+    actives = fb.calls.filter((c) => c.tenantId === tenant && c.orderId === orderId && (c.status === 'programada' || c.status === 'en_curso'));
   }
-  const fb = await readFallback();
-  return fb.calls.find((c) => c.tenantId === tenant && c.orderId === orderId && (c.status === 'programada' || c.status === 'en_curso')) || null;
+  if (!purpose) return actives[0] || null;
+  return actives.find((c) => parseCallMeta(c).purpose === purpose) || null;
 }
 
 async function saveCall(c: VoiceCall): Promise<void> {
@@ -464,6 +540,35 @@ export function defaultSystemPrompt(): string {
   ].join(' ');
 }
 
+export function defaultPrepaidSystemPrompt(): string {
+  return [
+    'Eres Valeria, la asistente de confirmación de pedidos de la tienda.',
+    'Estás llamando por teléfono a un cliente que hizo un pedido con PAGO ANTICIPADO.',
+    'Datos del pedido: cliente {nombre}, dirección {direccion}, total {total} COP, productos: {resumen}.',
+    'Tiempo estimado de entrega: 2 a 4 días hábiles desde la confirmación del pago.',
+    'Tu guion: 1) Saluda en español y confirma que hablas con {nombre}.',
+    '2) Confirma que la dirección de entrega {direccion} es correcta; si el cliente la corrige, toma nota y repítesela para validar.',
+    '3) Pregunta si ya realizó el pago anticipado; si aún no, recuérdale con amabilidad que el envío sale apenas se confirme el pago.',
+    '4) Pregunta directamente si confirma el pedido y los datos de entrega.',
+    'Si confirma: dile que el pedido queda confirmado. Si cancela: agradece con amabilidad y despídete.',
+    'Habla en español, tono cálido y profesional, frases cortas. No menciones que eres una IA salvo que te lo pregunten.',
+  ].join(' ');
+}
+
+export function defaultReturnsSystemPrompt(): string {
+  return [
+    'Eres Valeria, la asistente de la tienda encargada de resolver devoluciones.',
+    'Estás llamando a {nombre} porque su pedido ({resumen}) tuvo una devolución o una novedad en la entrega.',
+    'Tu objetivo es acordar UNA solución con el cliente, en este orden de preferencia: 1) reenvío del pedido sin costo, 2) cambio por otro producto o referencia, 3) reembolso del dinero.',
+    'Guion: 1) Saluda en español, preséntate y di que llamas para resolver lo de su pedido.',
+    '2) Pregunta con empatía qué pasó (no llegó, llegó mal, no era lo esperado) y escucha sin interrumpir.',
+    '3) Ofrece las opciones: "Podemos reenviarlo sin costo, cambiarlo por otro producto o devolverle el dinero. ¿Qué prefiere?"',
+    '4) Cuando el cliente elija, repite el acuerdo en voz alta para dejarlo claro ("Entonces quedamos en que le reenviamos el pedido sin costo") y despídete con amabilidad.',
+    'Si el cliente no quiere ninguna opción, agradécele y dile que un asesor lo contactará. Nunca discutas ni prometas plazos exactos de reembolso: di que el equipo lo gestiona en los próximos días hábiles.',
+    'Habla en español, tono cálido y profesional, frases cortas. No menciones que eres una IA salvo que te lo pregunten.',
+  ].join(' ');
+}
+
 function buildCampaign(tenant: string, partial: Partial<VoiceCallCampaign> & { name: string }): VoiceCallCampaign {
   const now = new Date().toISOString();
   return {
@@ -476,7 +581,8 @@ function buildCampaign(tenant: string, partial: Partial<VoiceCallCampaign> & { n
     scheduleEnd: String(partial.scheduleEnd || '20:00'),
     maxAttempts: Math.max(1, Math.min(5, Number(partial.maxAttempts ?? 2) || 2)),
     whatsappFirst: partial.whatsappFirst !== false,
-    systemPrompt: String(partial.systemPrompt || defaultSystemPrompt()),
+    purpose: partial.purpose === 'devolucion' ? 'devolucion' : 'confirmacion',
+    systemPrompt: String(partial.systemPrompt || (partial.purpose === 'devolucion' ? defaultReturnsSystemPrompt() : defaultSystemPrompt())),
     voice: String(partial.voice || 'Kore'),
     createdAt: partial.createdAt || now,
     updatedAt: now,
@@ -492,12 +598,22 @@ async function ensureDefaultCampaign(tenant = 'default'): Promise<VoiceCallCampa
   return c;
 }
 
-async function getActiveCampaign(tenant = 'default'): Promise<VoiceCallCampaign | null> {
+async function getActiveCampaign(tenant = 'default', purpose: CallPurpose = 'confirmacion'): Promise<VoiceCallCampaign | null> {
   const all = await listCampaigns(tenant);
-  const active = all.find((c) => c.active);
+  const ofPurpose = all.filter((c) => (c.purpose || 'confirmacion') === purpose);
+  const active = ofPurpose.find((c) => c.active);
   if (active) return active;
-  if (all.length === 0) return ensureDefaultCampaign(tenant);
+  if (purpose === 'confirmacion' && all.length === 0) return ensureDefaultCampaign(tenant);
   return null;
+}
+
+async function ensureDefaultReturnsCampaign(tenant = 'default'): Promise<VoiceCallCampaign> {
+  const existing = (await listCampaigns(tenant)).find((c) => c.purpose === 'devolucion');
+  if (existing) return existing;
+  const c = buildCampaign(tenant, { name: 'Devoluciones y novedades', purpose: 'devolucion', active: true });
+  await saveCampaign(c);
+  console.log(LOG, 'Campaña de devoluciones por defecto creada:', c.name);
+  return c;
 }
 
 // ---------------------------------------------------------------------------
@@ -865,12 +981,18 @@ function bridgeSession(session: TwilioStreamSession): void {
       return;
     }
     const campaign = (await listCampaigns(call.tenantId)).find((c) => c.id === call.campaignId) || null;
-    const systemPrompt = renderPrompt(campaign?.systemPrompt || defaultSystemPrompt(), call);
+    const callMeta = parseCallMeta(call);
+    let promptTemplate = campaign?.systemPrompt || defaultSystemPrompt();
+    // Pedido con pago anticipado + prompt por defecto de contraentrega -> guion de anticipado.
+    if (callMeta.purpose === 'confirmacion' && callMeta.paymentType === 'anticipado' && promptTemplate === defaultSystemPrompt()) {
+      promptTemplate = defaultPrepaidSystemPrompt();
+    }
+    const systemPrompt = renderPrompt(promptTemplate, call);
 
     let bridge: GeminiBridge | null = null;
     let finalized = false;
 
-    const finalize = async (outcome: VoiceCallStatus | null, note: string | null) => {
+    const finalize = async (outcome: FineOutcome | null, note: string | null) => {
       if (finalized) return;
       finalized = true;
       try { bridge?.close(); } catch { /* noop */ }
@@ -878,13 +1000,19 @@ function bridgeSession(session: TwilioStreamSession): void {
       if (!cur || (cur.status !== 'en_curso' && cur.status !== 'programada')) return;
       const endedAt = new Date().toISOString();
       const durationSec = cur.startedAt ? Math.max(0, Math.round((Date.parse(endedAt) - Date.parse(cur.startedAt)) / 1000)) : 0;
-      const finalStatus = outcome || inferOutcome(cur);
+      const fineOutcome: FineOutcome = outcome || inferOutcome(cur);
+      const finalStatus = coarseStatus(fineOutcome);
+      const transcript = fineOutcome !== 'no_contesto'
+        ? [...cur.transcript, { role: 'sistema' as const, text: `RESULTADO: ${fineOutcome}`, at: endedAt }]
+        : cur.transcript;
       await saveCall({
-        ...cur, status: finalStatus, endedAt, durationSec,
+        ...cur, status: finalStatus, endedAt, durationSec, transcript,
         lastError: note || cur.lastError,
         costUsd: estimateCost(cur.costUsd, durationSec),
       });
-      console.log(LOG, `llamada ${call.id} finalizada: ${finalStatus} (${durationSec}s)`);
+      console.log(LOG, `llamada ${call.id} finalizada: ${finalStatus} (resultado: ${fineOutcome}, ${durationSec}s)`);
+      // El resultado se aplica al pedido (confirmado/cancelado/novedad/acuerdo).
+      await applyCallOutcomeToOrder(cur, fineOutcome).catch(() => {});
       // Reintento si no contestó y quedan intentos
       if (finalStatus === 'no_contesto') {
         const camp = campaign || (await getActiveCampaign(cur.tenantId));
@@ -946,10 +1074,12 @@ function bridgeSession(session: TwilioStreamSession): void {
 
 function renderPrompt(template: string, call: VoiceCall): string {
   const total = call.orderTotal > 0 ? `$${Math.round(call.orderTotal).toLocaleString('es-CO')}` : 'el total del pedido';
+  const pago = parseCallMeta(call).paymentType === 'anticipado' ? 'pago anticipado' : 'pago contra entrega';
   return String(template || defaultSystemPrompt())
     .replaceAll('{nombre}', call.customerName || 'cliente')
     .replaceAll('{direccion}', orderAddressOf(call) || 'la dirección registrada')
     .replaceAll('{total}', total)
+    .replaceAll('{pago}', pago)
     .replaceAll('{resumen}', call.orderSummary || 'su pedido');
 }
 
@@ -964,13 +1094,105 @@ function orderAddressOf(call: VoiceCall): string {
 }
 
 /** Heurística sobre la transcripción para inferir el resultado. */
-function inferOutcome(call: VoiceCall): VoiceCallStatus {
-  const texts = call.transcript.map((t) => `${t.role}:${t.text}`).join('\n').toLowerCase();
+function transcriptText(call: VoiceCall): string {
+  return call.transcript.map((t) => `${t.role}:${t.text}`).join('\n').toLowerCase();
+}
+
+/** El cliente reporta una novedad: dirección distinta, no estará, reprogramar… */
+export function detectNews(texts: string): boolean {
+  return /(otra direcci|direcci[oó]n es otra|cambi[eé] de direcci|nueva direcci|no voy a estar|no estar[eé]|no me encuentran|reprogram|otro d[ií]a|otra ciudad|estoy de viaje|sal[ií] de la ciudad|me mud[eé])/.test(texts);
+}
+
+function inferOutcome(call: VoiceCall): FineOutcome {
+  const texts = transcriptText(call);
   const clientSaid = call.transcript.some((t) => t.role === 'cliente' && t.text.trim().length > 1);
   if (!clientSaid) return 'no_contesto';
-  if (/(cancel|anula|no lo quiero|no quiero|mejor no|no me interesa)/.test(texts)) return 'cancelada';
+  const { purpose } = parseCallMeta(call);
+  if (purpose === 'devolucion') {
+    if (/(reembols|devuelvan el dinero|devuelva el dinero|regresen el dinero|devoluci[oó]n del dinero)/.test(texts)) return 'reembolso';
+    if (/(cambio por|lo cambien|cambiarlo|otra talla|otro color|otro producto|un cambio)/.test(texts)) return 'cambio';
+    if (/(reenv|volver a enviar|env[ií]enlo de nuevo|nueva gu[ií]a|manden de nuevo|lo env[ií]en otra vez)/.test(texts)) return 'reenvio';
+    return 'sin_acuerdo';
+  }
+  if (/(cancel|anula|no lo quiero|no quiero el pedido|mejor no|no me interesa)/.test(texts)) return 'cancelada';
+  if (detectNews(texts)) return 'novedad';
   if (/(confirmo|s[ií] confirmo|acepto|de acuerdo|dale|listo|vale|perfecto|sí\b)/.test(texts)) return 'confirmada';
   return 'no_contesto';
+}
+
+/** Estado grueso (los 6 que admite la BD) para un resultado fino. */
+function coarseStatus(o: FineOutcome): VoiceCallStatus {
+  if (o === 'no_contesto') return 'no_contesto';
+  if (o === 'cancelada' || o === 'sin_acuerdo') return 'cancelada';
+  return 'confirmada';
+}
+
+function persistOrdersDb(): void {
+  try {
+    const db = (globalThis as any).currentDB;
+    const saveFn = (globalThis as any).saveDBData;
+    if (typeof saveFn === 'function' && db) { saveFn(db); return; }
+    const fn = (globalThis as any).saveDB || (globalThis as any).persistDB;
+    if (typeof fn === 'function') fn();
+  } catch { /* noop */ }
+}
+
+/** Busca un pedido en el almacén global y en los almacenes aislados por usuario. */
+export function findOrderAnywhere(orderId: string): any | null {
+  try {
+    const db = (globalThis as any).currentDB;
+    if (!db || !orderId) return null;
+    const inList = (arr: any) => (Array.isArray(arr) ? arr.find((o: any) => String(o?.id) === String(orderId)) : null);
+    const globalHit = inList(db.orders);
+    if (globalHit) return globalHit;
+    if (db.userData && typeof db.userData === 'object') {
+      for (const k of Object.keys(db.userData)) {
+        const hit = inList(db.userData[k]?.orders);
+        if (hit) return hit;
+      }
+    }
+    return null;
+  } catch { return null; }
+}
+
+/**
+ * Aplica el resultado de la llamada al pedido (decisión de Oscar, 2026-10-21):
+ * confirmada -> pedido Confirmado; cancelada -> envío Cancelado; novedad ->
+ * marca de novedad sin confirmar; devoluciones -> acuerdo registrado
+ * (reenvío/cambio/reembolso/sin acuerdo). Solo se invoca desde finalize
+ * (conversación real), nunca desde la cancelación por respuesta en WhatsApp.
+ */
+async function applyCallOutcomeToOrder(call: VoiceCall, outcome: FineOutcome): Promise<void> {
+  try {
+    if (!call.orderId || call.orderId === 'TEST') return;
+    if (outcome === 'no_contesto') return;
+    const o = findOrderAnywhere(call.orderId);
+    if (!o) return;
+    const now = new Date().toISOString();
+    const stamp = { outcome, callId: call.id, at: now };
+    if (outcome === 'confirmada') {
+      o.confirmationStatus = 'Confirmado';
+      if (typeof o.status === 'string' && o.status) o.status = 'CONFIRMADO';
+      o.callConfirmation = stamp;
+      if (detectNews(transcriptText(call))) {
+        o.callNews = { ...stamp, note: 'El cliente confirmó pero reportó una novedad; ver la transcripción de la llamada.' };
+      }
+    } else if (outcome === 'cancelada') {
+      o.shippingStatus = 'Cancelado';
+      if (typeof o.status === 'string' && o.status) o.status = 'CANCELADO';
+      o.callConfirmation = stamp;
+    } else if (outcome === 'novedad') {
+      o.callConfirmation = stamp;
+      o.callNews = { ...stamp, note: 'El cliente reportó una novedad en la llamada; ver la transcripción.' };
+    } else {
+      o.returnAgreement = { acuerdo: outcome, ...stamp };
+    }
+    o.updatedAt = now;
+    persistOrdersDb();
+    console.log(LOG, `pedido ${call.orderId} actualizado por la llamada ${call.id}: ${outcome}`);
+  } catch (e: any) {
+    console.error(LOG, 'applyCallOutcomeToOrder:', e?.message || e);
+  }
 }
 
 function estimateCost(current: number | null, durationSec: number): number {
@@ -982,12 +1204,6 @@ function estimateCost(current: number | null, durationSec: number): number {
 // ---------------------------------------------------------------------------
 // Telefonía: crear llamada por REST (sin SDK)
 // ---------------------------------------------------------------------------
-
-function twilioAuth(cfg: TelephonyConfig): { sid: string; auth: string } {
-  const sid = decryptField(cfg.twilioAccountSid);
-  const token = decryptField(cfg.twilioAuthToken);
-  return { sid, auth: 'Basic ' + Buffer.from(`${sid}:${token}`).toString('base64') };
-}
 
 async function twilioCreateCallRaw(sid: string, authHeader: string, from: string, to: string, voiceUrl: string, statusUrl: string): Promise<string> {
   if (!sid || !authHeader || !from) throw new Error('Telefonía no configurada.');
@@ -1019,12 +1235,6 @@ async function twilioCreateCallRaw(sid: string, authHeader: string, from: string
   }
 }
 
-async function twilioCreateCall(cfg: TelephonyConfig, to: string, voiceUrl: string, statusUrl: string, fromOverride?: string): Promise<string> {
-  const { sid, auth } = twilioAuth(cfg);
-  const from = cleanText(fromOverride || cfg.twilioFromNumber, 30);
-  return twilioCreateCallRaw(sid, auth, from, to, voiceUrl, statusUrl);
-}
-
 async function twilioFetchRecordingAuth(recordingUrl: string, authHeader: string): Promise<{ status: number; contentType: string; body: ArrayBuffer } | null> {
   let url = recordingUrl;
   if (!/^https?:\/\//i.test(url)) url = `https://api.twilio.com${url}`;
@@ -1032,11 +1242,6 @@ async function twilioFetchRecordingAuth(recordingUrl: string, authHeader: string
   if (!res.ok) return null;
   const buf = await res.arrayBuffer();
   return { status: res.status, contentType: res.headers.get('content-type') || 'audio/mpeg', body: buf };
-}
-
-async function twilioFetchRecording(recordingUrl: string, cfg: TelephonyConfig): Promise<{ status: number; contentType: string; body: ArrayBuffer } | null> {
-  const { auth } = twilioAuth(cfg);
-  return twilioFetchRecordingAuth(recordingUrl, auth);
 }
 
 // ---------------------------------------------------------------------------
@@ -1079,7 +1284,12 @@ async function sendConfirmationWhatsApp(call: VoiceCall): Promise<boolean> {
       return false;
     }
     const total = call.orderTotal > 0 ? ` por $${Math.round(call.orderTotal).toLocaleString('es-CO')} COP` : '';
-    const text = `Hola ${call.customerName || 'cliente'}, soy Valeria de Xorbit 360. Tu pedido (${call.orderSummary || 'registrado'})${total} quedó registrado con pago contra entrega. Responde SÍ para confirmar la entrega. Si no respondes, te llamaremos en unos minutos para confirmar. ¡Gracias!`;
+    const meta = parseCallMeta(call);
+    const text = meta.purpose === 'devolucion'
+      ? `Hola ${call.customerName || 'cliente'}, soy Valeria de Xorbit 360. Vimos que tu pedido (${call.orderSummary || 'registrado'}) tuvo una devolución y queremos resolverlo hoy mismo: podemos reenviártelo sin costo, cambiarlo o devolverte el dinero. Te llamaremos en unos minutos para acordar la mejor opción. Si prefieres, respóndenos por aquí.`
+      : meta.paymentType === 'anticipado'
+        ? `Hola ${call.customerName || 'cliente'}, soy Valeria de Xorbit 360. Tu pedido (${call.orderSummary || 'registrado'})${total} quedó registrado con pago anticipado. Responde SÍ para confirmar los datos de entrega. Si no respondes, te llamaremos en unos minutos para confirmar. ¡Gracias!`
+        : `Hola ${call.customerName || 'cliente'}, soy Valeria de Xorbit 360. Tu pedido (${call.orderSummary || 'registrado'})${total} quedó registrado con pago contra entrega. Responde SÍ para confirmar la entrega. Si no respondes, te llamaremos en unos minutos para confirmar. ¡Gracias!`;
     const r = await enviarMensajeZernio({
       accountId: conv.accountId,
       conversationId: conv.conversationId,
@@ -1133,6 +1343,17 @@ function isCodPayment(pm: string): boolean {
   return /contra[\s_-]?entrega|\bcod\b|efectivo/i.test(String(pm || ''));
 }
 
+function isPrepaidPayment(pm: string): boolean {
+  return /anticipado|prepag|transferencia|tarjeta|pse|nequi|daviplata|bold|\bpagado\b/i.test(String(pm || ''));
+}
+
+/** La herramienta cubre contraentrega Y pago anticipado (corrección de Oscar). */
+function paymentKindOf(pm: string): CallPaymentType {
+  if (isCodPayment(pm)) return 'cod';
+  if (isPrepaidPayment(pm)) return 'anticipado';
+  return 'otro';
+}
+
 function findFullOrder(orderId: string): any | null {
   try {
     const db = (globalThis as any).currentDB;
@@ -1159,11 +1380,12 @@ async function handleOrderCreated(data: any): Promise<void> {
   try {
     const orderId = String(data?.id || '');
     const paymentMethod = String(data?.paymentMethod || data?.metodoPago || '');
-    if (!orderId || !isCodPayment(paymentMethod)) return;
+    if (!orderId) return;
+    const paymentType = paymentKindOf(paymentMethod);
     const tenant = String(data?.tenantId || data?.workspaceId || 'default').slice(0, 80);
-    const existing = await findActiveCallByOrder(orderId, tenant);
-    if (existing) return; // ya hay una llamada programada/en curso para este pedido
-    const campaign = await getActiveCampaign(tenant);
+    const existing = await findActiveCallByOrder(orderId, tenant, 'confirmacion');
+    if (existing) return; // ya hay una llamada de confirmación programada/en curso para este pedido
+    const campaign = await getActiveCampaign(tenant, 'confirmacion');
     if (!campaign) { console.log(LOG, 'sin campaña activa; se omite pedido', orderId); return; }
 
     const full = findFullOrder(orderId);
@@ -1174,13 +1396,14 @@ async function handleOrderCreated(data: any): Promise<void> {
     const now = new Date().toISOString();
     const call: VoiceCall = {
       id: uid('vc'), tenantId: tenant, campaignId: campaign.id, orderId,
+      purpose: 'confirmacion', paymentType,
       customerName: info.name, phone: e164,
       orderSummary: info.summary, orderTotal: info.total,
       status: 'programada', attempts: 0,
       whatsappSentAt: null, whatsappFailed: false, whatsappReplied: false, customerReplied: false,
       scheduledFor: null, startedAt: null, endedAt: null, durationSec: null,
       twilioCallSid: null, recordingUrl: null, costUsd: null,
-      transcript: [], lastError: null, createdAt: now, updatedAt: now,
+      transcript: [metaEntry('confirmacion', paymentType)], lastError: null, createdAt: now, updatedAt: now,
     };
     await saveCall(call);
     console.log(LOG, `pedido COD ${orderId} -> llamada ${call.id} programada`);
@@ -1206,19 +1429,72 @@ export async function notifyOrderCreatedDirecto(order: any): Promise<void> {
   await handleOrderCreated(order || {});
 }
 
+/**
+ * Crea la llamada de devolución de un pedido (WhatsApp previo según campaña y
+ * llamada automática si no hay respuesta). Devuelve el id de la llamada.
+ */
+export async function createReturnsCall(tenant: string, orderId: string, seed: any = {}): Promise<{ callId: string }> {
+  const existing = await findActiveCallByOrder(orderId, tenant, 'devolucion');
+  if (existing) throw Object.assign(new Error('Ya hay una llamada de devolución programada o en curso para este pedido.'), { status: 409 });
+  const campaign = (await getActiveCampaign(tenant, 'devolucion')) || (await ensureDefaultReturnsCampaign(tenant));
+  const full = findOrderAnywhere(orderId) || findFullOrder(orderId);
+  const info = summarizeOrder(full, seed || {});
+  const e164 = normalizePhoneE164(info.phone || String(seed?.phone || ''));
+  if (!e164) throw Object.assign(new Error('El pedido no tiene un teléfono válido para llamar.'), { status: 400 });
+  const paymentType = paymentKindOf(String(full?.paymentMethod || full?.paymentStatus || seed?.paymentMethod || ''));
+  const now = new Date().toISOString();
+  const call: VoiceCall = {
+    id: uid('vc'), tenantId: tenant, campaignId: campaign.id, orderId,
+    purpose: 'devolucion', paymentType,
+    customerName: info.name, phone: e164,
+    orderSummary: info.summary, orderTotal: info.total,
+    status: 'programada', attempts: 0,
+    whatsappSentAt: null, whatsappFailed: false, whatsappReplied: false, customerReplied: false,
+    scheduledFor: null, startedAt: null, endedAt: null, durationSec: null,
+    twilioCallSid: null, recordingUrl: null, costUsd: null,
+    transcript: [metaEntry('devolucion', paymentType)], lastError: null, createdAt: now, updatedAt: now,
+  };
+  await saveCall(call);
+  console.log(LOG, `pedido ${orderId} -> llamada de devolución ${call.id} programada`);
+  if (campaign.whatsappFirst) {
+    const ok = await sendConfirmationWhatsApp(call);
+    const cur = await getCall(call.id);
+    if (cur) {
+      await saveCall({
+        ...cur,
+        whatsappSentAt: ok ? new Date().toISOString() : cur.whatsappSentAt,
+        whatsappFailed: !ok,
+      });
+    }
+  }
+  return { callId: call.id };
+}
+
+/** Si un pedido pasa a devolución (evento order.updated), se agenda su llamada. */
+async function handleOrderUpdatedForReturns(data: any): Promise<void> {
+  try {
+    const orderId = String(data?.id || data?.orderId || '');
+    if (!orderId) return;
+    const statusText = String(data?.shippingStatus || data?.status || '').toLowerCase();
+    if (!/devuel|devoluci|retorn/.test(statusText) && data?.returned !== true) return;
+    const tenant = String(data?.tenantId || data?.workspaceId || 'default').slice(0, 80);
+    await createReturnsCall(tenant, orderId, data);
+  } catch (e: any) {
+    if (Number(e?.status) !== 409) console.error(LOG, 'handleOrderUpdatedForReturns:', e?.message || e);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Disparo de la llamada
 // ---------------------------------------------------------------------------
 
 async function triggerCall(call: VoiceCall, campaign: VoiceCallCampaign): Promise<void> {
   const cfg = await readConfig();
-  // Telefonía efectiva: plataforma integrada (cuenta maestra + número verificado
-  // del tenant + cobro a billetera) o modo clásico (cuenta propia del tenant).
+  // Telefonía: solo plataforma integrada (cuenta maestra + número verificado
+  // del tenant + cobro a billetera). El modo clásico por tienda se eliminó.
   const { resolveCallTelephony, assertVoiceBalance } = await import('./voicePlatform.ts');
   const tel = await resolveCallTelephony(call.tenantId);
-  if (tel.platform) {
-    await assertVoiceBalance(call.tenantId, 2);
-  }
+  await assertVoiceBalance(call.tenantId, 2);
   const googleKey = decryptField(cfg.googleKey) || (await resolveTenantGoogleKey(call.tenantId));
   if (!googleKey) throw new Error('Falta la clave del proveedor de voz.');
   const to = call.phone; // ya viene en E.164
@@ -1231,7 +1507,7 @@ async function triggerCall(call: VoiceCall, campaign: VoiceCallCampaign): Promis
     ...cur, status: 'en_curso', attempts: cur.attempts + 1,
     startedAt: new Date().toISOString(), twilioCallSid: twilioSid, lastError: null,
   });
-  console.log(LOG, `llamada ${call.id} disparada (${tel.platform ? 'plataforma' : 'cuenta propia'} ${twilioSid.slice(0, 10)}…)`);
+  console.log(LOG, `llamada ${call.id} disparada (plataforma ${twilioSid.slice(0, 10)}…)`);
 }
 
 // ---------------------------------------------------------------------------
@@ -1334,6 +1610,7 @@ export function initVoiceCallsScheduler(): void {
   if (!subscribed) {
     subscribed = true;
     subscribePlatformEvent('order.created', (data) => { handleOrderCreated(data).catch(() => {}); });
+    subscribePlatformEvent('order.updated', (data) => { handleOrderUpdatedForReturns(data).catch(() => {}); });
   }
   ensureDefaultCampaign('default').catch((e: any) => console.error(LOG, 'campaña por defecto:', e?.message || e));
   healStaleCalls().catch(() => {});
@@ -1381,6 +1658,8 @@ function summarizeCall(c: VoiceCall, campaignName: string) {
     id: c.id, campaignId: c.campaignId, campaignName, orderId: c.orderId,
     customerName: c.customerName, phone: c.phone,
     orderSummary: c.orderSummary, orderTotal: c.orderTotal,
+    purpose: parseCallMeta(c).purpose, paymentType: parseCallMeta(c).paymentType,
+    outcome: parseCallOutcome(c),
     status: c.status, attempts: c.attempts,
     whatsappSentAt: c.whatsappSentAt, whatsappReplied: c.whatsappReplied,
     startedAt: c.startedAt, endedAt: c.endedAt, durationSec: c.durationSec,
@@ -1475,7 +1754,7 @@ export function setupVoiceCallsPublicRoutes(app: Express): void {
 }
 
 /** Rutas de administración (detrás de la sesión del CRM). */
-export function setupVoiceCallsRoutes(app: Express): void {
+export function setupVoiceCallsRoutes(app: Express, paywall?: RequestHandler): void {
   // ---- Configuración de telefonía y voz (etiquetas genéricas, sin marcas) ----
   app.get('/api/voice-calls/config', route(async (_req, res) => {
     const cfg = await readConfig();
@@ -1484,11 +1763,6 @@ export function setupVoiceCallsRoutes(app: Express): void {
     const platActive = await platformActive();
     res.json({
       success: true,
-      telefonia: {
-        accountSidMasked: maskSecret(cfg.twilioAccountSid),
-        fromNumber: cfg.twilioFromNumber || null,
-        configured: Boolean(decryptField(cfg.twilioAccountSid) && decryptField(cfg.twilioAuthToken) && cfg.twilioFromNumber),
-      },
       platform: {
         active: platActive,
         masterConfigured: Boolean(String(master.accountSid || '').length > 0 && String(master.authToken || '').length > 0),
@@ -1504,16 +1778,9 @@ export function setupVoiceCallsRoutes(app: Express): void {
   app.put('/api/voice-calls/config', route(async (req, res) => {
     const body = req.body || {};
     const cfg = await readConfig();
-    const sid = cleanText(body.twilioAccountSid, 80);
-    const token = cleanText(body.twilioAuthToken, 120);
-    const from = cleanText(body.twilioFromNumber, 30);
     const gkey = cleanText(body.googleKey, 200);
-    if (sid) cfg.twilioAccountSid = encryptSecret(sid);
-    if (token) cfg.twilioAuthToken = encryptSecret(token);
-    if (body.twilioFromNumber !== undefined) cfg.twilioFromNumber = from;
     if (gkey) cfg.googleKey = encryptSecret(gkey);
     if (body.clearGoogleKey === true) cfg.googleKey = '';
-    if (body.clearTelefonia === true) { cfg.twilioAccountSid = ''; cfg.twilioAuthToken = ''; cfg.twilioFromNumber = ''; }
     if (body.delayDefaultMin !== undefined) {
       const d = Number(body.delayDefaultMin);
       if (Number.isFinite(d) && d >= 1 && d <= 120) cfg.delayDefaultMin = Math.round(d);
@@ -1526,11 +1793,6 @@ export function setupVoiceCallsRoutes(app: Express): void {
     await writeConfig(cfg);
     res.json({
       success: true,
-      telefonia: {
-        accountSidMasked: maskSecret(cfg.twilioAccountSid),
-        fromNumber: cfg.twilioFromNumber || null,
-        configured: Boolean(decryptField(cfg.twilioAccountSid) && decryptField(cfg.twilioAuthToken) && cfg.twilioFromNumber),
-      },
       googleKeySet: Boolean(decryptField(cfg.googleKey)),
       googleKeyMasked: maskSecret(cfg.googleKey),
       delayDefaultMin: cfg.delayDefaultMin,
@@ -1545,11 +1807,13 @@ export function setupVoiceCallsRoutes(app: Express): void {
     res.json({ success: true, campaigns: list.map(sanitizeCampaign) });
   }));
 
-  app.post('/api/voice-calls/campaigns', route(async (req, res) => {
+  // Sin paywall de plan (regla freemium de Oscar): las llamadas se cobran por saldo de la billetera de voz.
+  app.post('/api/voice-calls/campaigns', paywall ?? ((_req, _res, next) => next()), route(async (req, res) => {
     const body = req.body || {};
     if (!cleanText(body.name, 120)) { res.status(400).json({ success: false, error: 'La campaña necesita un nombre.' }); return; }
     const c = buildCampaign(tenantId(req), {
       name: cleanText(body.name, 120),
+      purpose: body.purpose === 'devolucion' ? 'devolucion' : 'confirmacion',
       active: body.active !== false,
       delayMin: Number(body.delayMin),
       scheduleStart: cleanText(body.scheduleStart, 5),
@@ -1575,6 +1839,7 @@ export function setupVoiceCallsRoutes(app: Express): void {
     const body = req.body || {};
     const next = buildCampaign(tenantId(req), {
       ...c,
+      purpose: body.purpose !== undefined ? (body.purpose === 'devolucion' ? 'devolucion' : 'confirmacion') : c.purpose,
       name: body.name !== undefined ? cleanText(body.name, 120) || c.name : c.name,
       active: body.active !== undefined ? body.active !== false : c.active,
       delayMin: body.delayMin !== undefined ? Number(body.delayMin) : c.delayMin,
@@ -1629,29 +1894,45 @@ export function setupVoiceCallsRoutes(app: Express): void {
     res.send(Buffer.from(rec.body));
   }));
 
-  // Llamada de prueba inmediata
-  app.post('/api/voice-calls/test', route(async (req, res) => {
+  // Llamada de devolución de un pedido: agenda WhatsApp + llamada con la
+  // campaña de devoluciones (el acuerdo queda registrado en el pedido).
+  app.post('/api/voice-calls/returns', route(async (req, res) => {
+    const t = tenantId(req);
+    const orderId = cleanText(req.body?.orderId, 80);
+    if (!orderId) { res.status(400).json({ success: false, error: 'Indica el pedido para la llamada de devolución.' }); return; }
+    try {
+      const r = await createReturnsCall(t, orderId, req.body || {});
+      res.json({ success: true, callId: r.callId, message: 'Llamada de devolución programada.' });
+    } catch (e: any) {
+      res.status(Number(e?.status || 400)).json({ success: false, error: e?.message || 'No se pudo programar la llamada de devolución.' });
+    }
+  }));
+
+  // Llamada de prueba inmediata. Sin paywall de plan: se cobra por saldo.
+  app.post('/api/voice-calls/test', paywall ?? ((_req, _res, next) => next()), route(async (req, res) => {
     const body = req.body || {};
     const to = normalizePhoneE164(String(body.to || ''));
     if (!to) { res.status(400).json({ success: false, error: 'Indica un número válido para la prueba.' }); return; }
     const t = tenantId(req);
-    // Valida telefonía efectiva (plataforma o cuenta propia) antes de crear el registro
+    // Valida la telefonía de plataforma y el saldo antes de crear el registro
     const { resolveCallTelephony, assertVoiceBalance } = await import('./voicePlatform.ts');
-    const tel = await resolveCallTelephony(t);
-    if (tel.platform) await assertVoiceBalance(t, 2);
+    await resolveCallTelephony(t);
+    await assertVoiceBalance(t, 2);
     let campaign: VoiceCallCampaign | null = null;
     if (body.campaignId) campaign = (await listCampaigns(t)).find((c) => c.id === String(body.campaignId)) || null;
-    campaign = campaign || (await getActiveCampaign(t));
+    campaign = campaign || (await getActiveCampaign(t, campaign?.purpose || 'confirmacion'));
     if (!campaign) { res.status(400).json({ success: false, error: 'No hay campaña activa.' }); return; }
     const now = new Date().toISOString();
+    const callPurpose: CallPurpose = campaign.purpose === 'devolucion' ? 'devolucion' : 'confirmacion';
     const call: VoiceCall = {
       id: uid('vc'), tenantId: t, campaignId: campaign.id, orderId: 'TEST',
+      purpose: callPurpose, paymentType: 'otro',
       customerName: 'Prueba', phone: to, orderSummary: 'Llamada de prueba', orderTotal: 0,
       status: 'programada', attempts: 0,
       whatsappSentAt: null, whatsappFailed: false, whatsappReplied: false, customerReplied: false,
       scheduledFor: null, startedAt: null, endedAt: null, durationSec: null,
       twilioCallSid: null, recordingUrl: null, costUsd: null,
-      transcript: [], lastError: null, createdAt: now, updatedAt: now,
+      transcript: [metaEntry(callPurpose, 'otro')], lastError: null, createdAt: now, updatedAt: now,
     };
     await saveCall(call);
     try {

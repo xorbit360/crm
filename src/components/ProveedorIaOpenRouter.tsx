@@ -96,7 +96,7 @@ export default function ProveedorIaOpenRouter() {
         <div>
           <h3 className="font-bold text-white text-base">Proveedor IA · OpenRouter</h3>
           <p className="text-xs text-gray-400">
-            Ruta economica de IA del CRM (solo super admin). La clave se guarda cifrada con AES-256-GCM y nunca se muestra ni se devuelve.
+            Ruta económica de IA del CRM (solo super admin). La clave se guarda cifrada con AES-256-GCM y nunca se muestra ni se devuelve.
           </p>
         </div>
         <button
@@ -150,7 +150,7 @@ export default function ProveedorIaOpenRouter() {
                 Modelo clasificador (filtro)
               </div>
               <p className="text-gray-400 font-mono text-[11px] break-all">{info.classifierModel}</p>
-              <p className="text-gray-500 mt-1">Salida maxima: {info.classifierMaxTokens} tokens · se ajusta por entorno del servidor</p>
+              <p className="text-gray-500 mt-1">Salida máxima: {info.classifierMaxTokens} tokens · se ajusta por entorno del servidor</p>
             </div>
             <div className="rounded-xl border border-gray-800 bg-gray-900/40 p-3.5">
               <div className="flex items-center gap-2 text-gray-300 font-semibold mb-1">
@@ -158,7 +158,7 @@ export default function ProveedorIaOpenRouter() {
                 Modelo de respuesta
               </div>
               <p className="text-gray-400 font-mono text-[11px] break-all">{info.responseModel}</p>
-              <p className="text-gray-500 mt-1">Salida maxima: {info.responseMaxTokens} tokens · se ajusta por entorno del servidor</p>
+              <p className="text-gray-500 mt-1">Salida máxima: {info.responseMaxTokens} tokens · se ajusta por entorno del servidor</p>
             </div>
           </div>
 

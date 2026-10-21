@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { Calendar, Plus, Trash2, Bot, Play, Settings2, Link } from 'lucide-react';
 
 export default function ProgramacionesBotView() {
+  const showComingSoon = () => {
+    alert('Esta función está en desarrollo. Estará disponible próximamente.');
+  };
   const [tasks, setTasks] = useState([
     { id: 1, title: 'Reporte de ventas diario', time: '18:00', api: 'GET /api/v1/sales/today', description: 'Envia el resumen de ventas a las 6pm' },
     { id: 2, title: 'Prompt Orquestador Principal', time: 'Sistema', api: 'INTERNAL/Orchestrator', description: 'Define la intención del usuario y la enruta a funciones específicas sin llamar IA repetidamente' },
@@ -57,6 +60,10 @@ export default function ProgramacionesBotView() {
         </div>
       </div>
 
+      <div className="mb-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center gap-2">
+        <span>🚧</span>
+        <span><strong>Módulo en desarrollo:</strong> las programaciones automáticas y el asistente de configuración estarán disponibles próximamente. Las tareas mostradas son ejemplos.</span>
+      </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Chatbot Interface */}
         <div className="bg-black/40 border border-gray-800 rounded-2xl flex flex-col h-[500px]">
@@ -100,7 +107,7 @@ export default function ProgramacionesBotView() {
             <h3 className="font-bold text-white flex items-center gap-2">
               <Calendar className="text-gray-400" size={18} /> Tareas Programadas
             </h3>
-            <button className="text-sm bg-gray-800 text-white px-3 py-1.5 rounded-lg border border-gray-700 flex items-center gap-1 hover:bg-gray-700">
+            <button onClick={showComingSoon} title="Próximamente" className="text-sm bg-gray-800 text-white px-3 py-1.5 rounded-lg border border-gray-700 flex items-center gap-1 hover:bg-gray-700 opacity-60 cursor-not-allowed">
               <Plus size={14} /> Crear Manual
             </button>
           </div>
@@ -108,7 +115,7 @@ export default function ProgramacionesBotView() {
           {tasks.map(task => (
             <div key={task.id} className="bg-black/40 border border-gray-800 p-4 rounded-xl space-y-3 relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button className="text-red-400 hover:text-red-300 p-1 bg-red-400/10 rounded-md">
+                <button onClick={showComingSoon} title="Próximamente" className="text-red-400 hover:text-red-300 p-1 bg-red-400/10 rounded-md opacity-60 cursor-not-allowed">
                   <Trash2 size={14} />
                 </button>
               </div>
@@ -130,7 +137,7 @@ export default function ProgramacionesBotView() {
                 <span className="text-[10px] uppercase font-bold text-green-500 tracking-wider flex items-center gap-1">
                   <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div> Activo
                 </span>
-                <button className="ml-auto text-xs text-gray-400 hover:text-white flex items-center gap-1">
+                <button onClick={showComingSoon} title="Próximamente" className="ml-auto text-xs text-gray-400 hover:text-white flex items-center gap-1 opacity-60 cursor-not-allowed">
                   <Settings2 size={12} /> Ajustes
                 </button>
               </div>

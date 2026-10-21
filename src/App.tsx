@@ -6,10 +6,9 @@ import { getCachedWhiteLabel, fetchWhiteLabelConfig, WhiteLabelConfig } from './
 
 // Las vistas de cada módulo se cargan solo al abrirse. Esto evita descargar
 // charts, editores y módulos de configuración en el primer render del CRM.
-const BrandingView = lazy(() => import('./components/BrandingView'));
-const MercadoView = lazy(() => import('./components/MercadoView'));
-const ContenidoView = lazy(() => import('./components/ContenidoView'));
 const AdsView = lazy(() => import('./components/AdsView'));
+const ContenidoView = lazy(() => import('./components/ContenidoView'));
+const RadarView = lazy(() => import('./components/RadarView'));
 const VideoGenView = lazy(() => import('./components/VideoGenView'));
 const WhatsappView = lazy(() => import('./components/WhatsappView'));
 const AutomatizacionesView = lazy(() => import('./components/AutomatizacionesView'));
@@ -19,12 +18,10 @@ const LoginView = lazy(() => import('./components/LoginView'));
 const RegisterView = lazy(() => import('./components/RegisterView'));
 const EntrenamientoView = lazy(() => import('./components/EntrenamientoView'));
 const ProveedoresView = lazy(() => import('./components/ProveedoresView'));
-const LandingView = lazy(() => import('./components/LandingView'));
 const IntegracionesView = lazy(() => import('./components/IntegracionesView'));
 const OrganigramaView = lazy(() => import('./components/OrganigramaView'));
 const EditorVideo = lazy(() => import('./components/EditorVideo'));
 const LlamadasView = lazy(() => import('./components/LlamadasView'));
-const EmailMarketingView = lazy(() => import('./components/EmailMarketingView'));
 const ConfiguracionGeneralView = lazy(() => import('./components/ConfiguracionGeneralView'));
 const ProyectosView = lazy(() => import('./components/ProyectosView'));
 const LiveSellingView = lazy(() => import('./components/LiveSellingView'));
@@ -135,7 +132,6 @@ export default function App() {
     return 'login';
   });
   const [activeWhatsappTab, setActiveWhatsappTab] = useState('conversaciones');
-  const [activeLlamadasTab, setActiveLlamadasTab] = useState('campanas');
   const [activeEmailTab, setActiveEmailTab] = useState('flujos');
   const [activeContenidoTab, setActiveContenidoTab] = useState<'crear' | 'planificador' | 'clonador' | 'analizar' | 'editor_video'>('crear');
   const [activeBrandingTab, setActiveBrandingTab] = useState<'entrevista' | 'identidad' | 'manual' | 'creativos'>('entrevista');
@@ -248,7 +244,7 @@ export default function App() {
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
-  const isInsideTool = ['whatsapp', 'llamadas', 'email', 'contenido', 'branding', 'mercado', 'landing', 'ads', 'live_selling', 'video'].includes(activeModule);
+  const isInsideTool = ['whatsapp', 'llamadas', 'ads', 'live_selling', 'video'].includes(activeModule);
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['herramientas', 'configuracion']);
 
   const toggleGroup = (groupName: string) => {
@@ -460,19 +456,16 @@ type ChatMessage = {
   ];
 
   const mainModules = [
-    { id: 'branding' as ModuleId, label: t.branding, icon: <Bot size={18} /> },
-    { id: 'mercado' as ModuleId, label: t.mercado, icon: <Lightbulb size={18} /> },
-    { id: 'contenido' as ModuleId, label: t.contenido, icon: <ImageIcon size={18} /> },
-    { id: 'landing' as ModuleId, label: t.landing, icon: <Layout size={18} /> },
     { id: 'ads' as ModuleId, label: t.ads, icon: <Megaphone size={18} /> },
     { id: 'live_selling' as ModuleId, label: t.live_selling || 'Live Selling', icon: <Radio size={18} className="text-red-400" /> },
     { id: 'video' as ModuleId, label: t.video || 'Generación de Video', icon: <Clapperboard size={18} /> },
+    { id: 'contenido' as ModuleId, label: 'Creación de Contenido', icon: <Sparkles size={18} /> },
+    { id: 'radar' as ModuleId, label: 'Radar de Anuncios', icon: <Radar size={18} /> },
     { id: 'whatsapp' as ModuleId, label: t.whatsapp, icon: <Smartphone size={18} /> },
     { id: 'comunidad' as ModuleId, label: t.comunidad, icon: <Share2 size={18} /> },
     { id: 'entrenamiento' as ModuleId, label: t.entrenamiento, icon: <GraduationCap size={18} /> },
     { id: 'proveedores' as ModuleId, label: t.proveedores, icon: <Package size={18} /> },
     { id: 'llamadas' as ModuleId, label: t.llamadas, icon: <Mic size={18} /> },
-    { id: 'email' as ModuleId, label: t.email, icon: <Send size={18} /> },
   ];
 
   const allModules = [...mainModules, ...configModules];
@@ -844,51 +837,12 @@ type ChatMessage = {
                   </div>
                 </div>
               )}
-              {activeModule === 'llamadas' && !hiddenItems.includes('llamadas') && (
-                <div className="pt-2 animate-fade-in">
-                  <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 px-4">Llamadas IA</div>
-                  <div className="space-y-1">
-                    {[
-                      { id: 'campanas', label: 'Campaign calls', icon: <Megaphone size={16} /> },
-                      { id: 'confirmacion', label: 'Confirmation calls', icon: <CheckCircle size={16} /> },
-                      { id: 'novedades', label: 'Novelty calls', icon: <Bell size={16} /> },
-                      { id: 'oficina', label: 'Office pickup calls', icon: <Package size={16} /> },
-                    ].filter(tab => !hiddenItems.includes(tab.id)).map(tab => (
-                      <div key={tab.id} className="relative flex items-center">
-                        <button
-                          onClick={() => { if (!isEditingSidebar) { setActiveLlamadasTab(tab.id); if (window.innerWidth < 768) setIsSidebarOpen(false); }}}
-                          className={`w-full flex items-center justify-between gap-3 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                            activeLlamadasTab === tab.id
-                              ? 'bg-gold/10 text-gold border border-gold/30 font-semibold'
-                              : 'text-gray-400 hover:text-gray-200 hover:bg-gray-900/60 border border-transparent'
-                          }`}
-                        >
-                          <span className="flex items-center gap-3 truncate">{tab.icon} {tab.label}</span>
-                        </button>
-                        {isEditingSidebar && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleVisibility(tab.id);
-                            }}
-                            className="absolute right-2 p-1 text-red-500 hover:text-red-400 cursor-pointer z-10"
-                            title="Ocultar"
-                          >
-                            <X size={14} />
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
               {activeModule === 'email' && !hiddenItems.includes('email') && (
                 <div className="pt-2 animate-fade-in">
                   <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 px-4">Email Marketing</div>
                   <div className="space-y-1">
                     {[
-                      { id: 'flujos', label: 'Manage email flows', icon: <Send size={16} /> },
+                      { id: 'flujos', label: 'Gestionar flujos de email', icon: <Send size={16} /> },
                     ].filter(tab => !hiddenItems.includes(tab.id)).map(tab => (
                       <div key={tab.id} className="relative flex items-center">
                         <button
@@ -990,7 +944,7 @@ type ChatMessage = {
                         { id: 'competidores', label: 'Análisis Competitivo', icon: <BarChart3 size={16} /> },
                         { id: 'ia_ideas', label: 'Ideas de Negocio IA', icon: <Lightbulb size={16} /> },
                         { id: 'productos_ganadores', label: 'Productos Ganadores', icon: <Flame size={16} /> },
-                        { id: 'radar', label: 'Radar', icon: <Radar size={16} /> },
+                        { id: 'radar', label: 'Radar de Anuncios', icon: <Radar size={16} /> },
                         { id: 'multi_recomendador', label: 'Multi-Recomendador IA', icon: <Sparkles size={16} /> },
                         { id: 'calculadora', label: 'Calculadora de Precios', icon: <Calculator size={16} /> }
                       ].map(tab => (
@@ -1201,12 +1155,15 @@ type ChatMessage = {
                     type="text"
                     placeholder={t.searchPlaceholder}
                     className="w-full bg-gray-900/50 border border-gray-800 text-white rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all"
-                    onChange={(e) => {
-                      const query = e.target.value.toLowerCase();
-                      if (query) {
-                        const found = modules.find(m => m.label.toLowerCase().includes(query));
-                        if (found) {
-                          navigateToModule(found.id as any);
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        const query = (e.target as HTMLInputElement).value.toLowerCase().trim();
+                        if (query) {
+                          const found = allModules.find(m => m.label.toLowerCase().includes(query));
+                          if (found) {
+                            navigateToModule(found.id as any);
+                            (e.target as HTMLInputElement).value = '';
+                          }
                         }
                       }
                     }}
@@ -1318,7 +1275,7 @@ type ChatMessage = {
                           <FolderKanban size={18} className="text-amber-400 group-hover:scale-110 transition-transform" />
                           <span className="text-[9px] font-bold uppercase bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded">Carpetas</span>
                         </div>
-                        <span className="text-xs font-bold text-white group-hover:text-amber-300">Mis Embudos</span>
+                        <span className="text-xs font-bold text-white group-hover:text-amber-300">Mis Funnels de Venta</span>
                       </button>
 
                       <button
@@ -1388,18 +1345,11 @@ type ChatMessage = {
               </div>
             )}
 
-            {activeModule === 'branding' && <BrandingView activeTab={activeBrandingTab} />}
-            {activeModule === 'mercado' && <MercadoView activeTab={activeMercadoTab} onLaunchTraffiker={handleRadarLaunch} />}
-            {activeModule === 'contenido' && (
-              <ContenidoView
-                activeTab={activeContenidoTab}
-                setActiveTab={(tab: string) => setActiveContenidoTab(tab as any)}
-              />
-            )}
-            {activeModule === 'landing' && <LandingView activeTab={activeLandingTab} />}
             {activeModule === 'ads' && <AdsView activeTab={activeAdsTab} onNavigate={(mId) => navigateToModule(mId as any)} radarBrief={radarBrief} />}
             {activeModule === 'live_selling' && <LiveSellingView />}
             {activeModule === 'video' && <VideoGenView currentUser={user} />}
+            {activeModule === 'contenido' && <ContenidoView activeTab={activeContenidoTab} setActiveTab={setActiveContenidoTab as any} onBack={() => navigateToModule('herramientas')} />}
+            {activeModule === 'radar' && <RadarView />}
             {activeModule === 'whatsapp' && (
               <WhatsappView
                 activeTab={activeWhatsappTab}
@@ -1407,10 +1357,10 @@ type ChatMessage = {
                 currentUser={user}
                 isSidebarOpen={isSidebarOpen}
                 onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+                onBack={() => navigateToModule('herramientas' as any)}
               />
             )}
             {activeModule === 'llamadas' && <LlamadasView />}
-            {activeModule === 'email' && <EmailMarketingView />}
             {activeModule === 'comunidad' && <ComunidadView currentUser={user} onUpdateUser={setUser} />}
             {activeModule === 'entrenamiento' && <EntrenamientoView onOpenSidebar={() => setIsSidebarOpen(true)} />}
             {activeModule === 'proveedores' && <ProveedoresView />}

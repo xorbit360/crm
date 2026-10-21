@@ -303,12 +303,51 @@ export async function handleIncomingSocialComment(event: any): Promise<void> {
     if (!accountId || !postId) return;
 
     const db = getDB();
+
+    // Auto-guardado de contacto de red social en clientes
+    try {
+      const platform = String(data?.platform || c?.platform || 'instagram').toLowerCase();
+      const username = String(c?.username || c?.authorUsername || author || '').trim();
+      const authorId = String(c?.authorId || c?.from?.id || c?.userId || commentId || '').trim();
+      if (!db.clients) db.clients = [];
+      // Busca por username+plataforma o por authorId
+      const socialKey = `${platform}:${username || authorId}`.toLowerCase();
+      const existingSocial = db.clients.find((cl: any) => {
+        const ck = String(cl.socialKey || '').toLowerCase();
+        if (ck && ck === socialKey) return true;
+        if (username && String(cl.socialUsername || '').toLowerCase() === username.toLowerCase()
+            && String(cl.socialPlatform || '').toLowerCase() === platform) return true;
+        return false;
+      });
+      if (!existingSocial && (username || authorId)) {
+        db.clients.push({
+          id: 'cli-soc-' + Date.now() + '-' + String(commentId).slice(-4),
+          name: author || username || 'Seguidor ' + platform,
+          socialUsername: username || author,
+          socialPlatform: platform,
+          socialKey,
+          procedencia: 'organico',
+          source: platform,
+          createdAt: new Date().toISOString(),
+          tags: ['Lead Red Social', platform.charAt(0).toUpperCase() + platform.slice(1)]
+        });
+      } else if (existingSocial) {
+        // Actualiza última interacción
+        existingSocial.lastInteraction = new Date().toISOString();
+        existingSocial.lastComment = text.slice(0, 200);
+      }
+    } catch (socialClientErr) {
+      console.error('[Social] Error auto-guardando contacto:', socialClientErr);
+    }
+
     const list = getAutomations(db);
     const active = list.filter((a: AnyRow) => a.type === 'comment_ai' && a.isActive !== false && String(a.accountId) === accountId);
     if (!active.length) return;
 
     for (const auto of active) {
-      const reply = await aiCommentReply(String(auto.aiPrompt || ''), text, author);
+      // Usa el prompt de la automatización, o el prompt global del entrenamiento como fallback
+      const sharedPrompt = String(auto.aiPrompt || '').trim() || String(db.botPrompt || '').trim();
+      const reply = await aiCommentReply(sharedPrompt, text, author);
       if (!reply) continue;
       try {
         await zernioRequest({
@@ -367,8 +406,9 @@ export async function handleIncomingSocialComment(event: any): Promise<void> {
         // 1) Like (no todas las plataformas lo soportan; degradar con elegancia)
         try { await zLike(); actions.push('like'); }
         catch (e: any) { actions.push('like_no_disponible'); }
-        // 2) Respuesta pública con IA (usa el prompt configurable)
-        const reply = await aiCommentReply(String(auto.aiPrompt || ''), text, author);
+        // 2) Respuesta pública con IA (usa el prompt configurable o el global del entrenamiento)
+        const sharedPrompt2 = String(auto.aiPrompt || '').trim() || String(db.botPrompt || '').trim();
+        const reply = await aiCommentReply(sharedPrompt2, text, author);
         if (reply) {
           try {
             await zernioRequest({

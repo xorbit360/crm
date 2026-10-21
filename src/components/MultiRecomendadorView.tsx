@@ -234,8 +234,8 @@ export default function MultiRecomendadorView() {
         description: "Pregunta al cliente sus hábitos de uso diario para sugerir audífonos o smartwatches ideales de AliExpress/Shopify.",
         queryType: "external_api",
         externalPlatform: "shopify",
-        apiToken: "shpat_98a76bc3d1209ef4c89281aef0a9911",
-        apiEndpoint: "https://mi-tienda-shopify.myshopify.com/admin/api/2026-04/products.json",
+        apiToken: "",
+        apiEndpoint: "",
         questions: [
           {
             id: "Q-T1",
@@ -516,59 +516,56 @@ export default function MultiRecomendadorView() {
     });
   };
 
-  // Test API Token / Connection Simulation
-  const handleTestAPIConnection = () => {
+  // Test API Token / Connection - prueba REAL contra el backend
+  const handleTestAPIConnection = async () => {
     if (!activeRecommender) return;
     setApiTesting(true);
     setApiSuccess(null);
 
     const platform = activeRecommender.externalPlatform || 'mastershop';
-    const endpoint = activeRecommender.apiEndpoint || `https://api.${platform}.com/v1/catalog`;
-    const token = activeRecommender.apiToken || 'N/A';
+    const token = activeRecommender.apiToken || '';
+
+    if (!token || token.length < 5) {
+      setApiTestLogs([
+        { type: 'info', text: 'Configura primero el token de la plataforma para probar la conexión.' }
+      ]);
+      setApiSuccess(false);
+      setApiTesting(false);
+      return;
+    }
 
     setApiTestLogs([
-      { type: 'info', text: `Iniciando consulta de diagnóstico a través del túnel MCP...` },
-      { type: 'sent', text: `GET ${endpoint}` },
-      { type: 'sent', text: `Headers: {\n  "Authorization": "Bearer ${token.substring(0, 10)}...",\n  "Content-Type": "application/json",\n  "X-Integration-Source": "Xorbit 360-MCP-Hub"\n}` }
+      { type: 'info', text: `Probando conexión real con ${platform.toUpperCase()}…` }
     ]);
 
-    setTimeout(() => {
-      setApiTestLogs(prev => [
-        ...prev,
-        { type: 'info', text: `Enrutando solicitud mediante pasarela de tokens externa...` },
-        { type: 'info', text: `Conectando con el servidor de ${platform.toUpperCase()}...` }
-      ]);
-    }, 600);
-
-    setTimeout(() => {
-      if (!activeRecommender.apiToken || activeRecommender.apiToken.length < 5) {
+    try {
+      const res = await fetch('/api/integrations/test-connection', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ platform, token })
+      });
+      const data = await res.json();
+      if (data.success) {
         setApiTestLogs(prev => [
           ...prev,
-          { type: 'received', text: `HTTP/1.1 401 Unauthorized\nContent-Type: application/json\n\n{\n  "error": "invalid_token",\n  "message": "El Token de acceso MCP / API ingresado es inválido o ha expirado."\n}` }
-        ]);
-        setApiSuccess(false);
-        setApiTesting(false);
-      } else {
-        // Success payload matching the selected platform
-        const mockProducts = platform === 'shopify'
-          ? [
-              { title: "Shampoo Anticaída Cafeína Orgánica", price: "48000", inventory: 240 },
-              { title: "Suero Revitalizador Capilar Pro", price: "55000", inventory: 110 }
-            ]
-          : [
-              { name: "Shampoo Efecto Liso Perfecto (Mastershop)", price: "46000", stock: 150 },
-              { name: "Tratamiento Reparación Extrema", price: "49000", stock: 80 }
-            ];
-
-        setApiTestLogs(prev => [
-          ...prev,
-          { type: 'received', text: `HTTP/1.1 200 OK\nContent-Type: application/json\n\n{\n  "status": "success",\n  "integration": "${platform}",\n  "synchronized_at": "${new Date().toISOString()}",\n  "products_count": ${mockProducts.length},\n  "items": ${JSON.stringify(mockProducts, null, 2)}\n}` },
-          { type: 'info', text: `✅ ¡Conectado con éxito! El bot de WhatsApp tiene acceso inmediato a consultar el stock en tiempo real.` }
+          { type: 'received', text: `Conexión exitosa con ${platform.toUpperCase()}. ${data.message || ''}` }
         ]);
         setApiSuccess(true);
-        setApiTesting(false);
+      } else {
+        setApiTestLogs(prev => [
+          ...prev,
+          { type: 'received', text: `Error: ${data.error || 'No se pudo conectar.'}` }
+        ]);
+        setApiSuccess(false);
       }
-    }, 1500);
+    } catch (e: any) {
+      setApiTestLogs(prev => [
+        ...prev,
+        { type: 'received', text: `Error de red: ${e.message || 'desconocido'}` }
+      ]);
+      setApiSuccess(false);
+    }
+    setApiTesting(false);
   };
 
   return (

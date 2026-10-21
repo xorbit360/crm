@@ -408,90 +408,65 @@ export default function CatalogoView() {
     setFormEntryQuestion(`Te hablo no solo como asesora, sino como usuaria feliz del producto. ¿Lo usarás para uso personal o para un regalo especial? 😊`);
   };
 
-  // Import Dropi Product by ID (Image 1)
-  const handleImportDropi = () => {
-    const idToUse = dropiProductId.trim() || '64917';
+  // Import Dropi Product by ID - usa la API real de Dropi vía backend
+  const handleImportDropi = async () => {
+    const idToUse = dropiProductId.trim();
+    if (!idToUse) {
+      alert('Ingresa el ID del producto Dropi para importar.');
+      return;
+    }
     setIsImportingDropi(true);
-    setTimeout(() => {
-      const dropiMock: CatalogProduct = {
-        id: `DROPI-${idToUse}`,
-        name: `Producto Dropi #${idToUse} - Smartwatch Ultra X8`,
-        basicDescription: 'Reloj inteligente resistente al agua con monitor de salud, llamadas Bluetooth y pantalla HD importado desde Dropi.',
-        features: 'Pantalla AMOLED 1.9", Batería 7 días, Resistencia IP68, Medidor de presión arterial, Notificaciones de WhatsApp.',
-        problemsSolved: 'Monitorea tu salud 24/7 y atiende llamadas sin sacar tu celular del bolsillo.',
-        benefits: 'Comodidad total al entrenar, estilo elegante y batería de larga duración.',
-        differentiators: 'Incluye 2 correas de regalo y garantía de 1 año en Colombia con despacho Dropi.',
-        price: 150000,
-        offerPrice: 119900,
-        stock: '35 unidades en bodega Dropi',
-        isActive: true,
-        isAvailableForBot: true,
-        showInBotList: true,
-        productType: 'simple',
-        isPack: false,
-        shippingProvider: 'Dropi (Despacho Automático)',
-        shippingType: 'gratis',
-        quantityOffers: [
-          { id: '1', qty: 1, price: 119900, label: '1 Unidad x $119.900' },
-          { id: '2', qty: 2, price: 199900, label: '2 Unidades x $199.900 (Ahorra $40.000)' }
-        ],
-        image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=400&q=80',
-        gallery: [
-          'https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?auto=format&fit=crop&w=400&q=80',
-          'https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=400&q=80'
-        ],
-        welcomeMessage: '¡Hola! ⌚ Te habla el asesor de ventas. Tenemos disponible el producto de Dropi con despacho inmediato y pago contra entrega en toda Colombia.',
-        welcomeMedia: [],
-        entryQuestion: '¿En qué ciudad te encuentras para confirmar cobertura de flete gratis?',
-        dataCollectionMode: 'step_by_step',
-        botPersonality: 'Asesor amable y profesional con enfoque en pago contra entrega y logística Dropi.',
-        rules: [
-          { id: 'r1', title: 'Objeción de precio', trigger: 'Cuando el cliente dice que está caro o pide descuento', response: 'Resalta el valor, la garantía oficial de 1 año y ofrece la promoción de 2 unidades con envío gratis.', icon: '💰' },
-          { id: 'r2', title: 'Objeción de duda / desconfianza', trigger: 'Cuando desconfía de la calidad o pide garantía', response: 'Explica que tenemos pago contra entrega en toda Colombia: paga en efectivo solo cuando reciba el producto en su casa.', icon: '🧐' }
-        ],
-        creationMode: dropiWorkMode,
-        customPrompt: `PRODUCTO: Smartwatch Ultra X8 Pro (ID Dropi: ${idToUse})
-PRECIO: $119.900 COP con ENVÍO GRATIS y PAGO CONTRA ENTREGA en toda Colombia.
-PROMO 2 UNIDADES: $199.900 COP (Ahorro de $40.000 COP).
-CARACTERÍSTICAS: Pantalla AMOLED 1.9", Batería 7 días, Resistencia IP68, Medidor de presión arterial, Notificaciones de WhatsApp.
-LOGÍSTICA: Despacho automático Dropi con Servientrega, Coordinadora, Envía o Interrapidísimo.
-OBJETIVO: Pedir Ciudad, Nombre, Dirección y Teléfono para generar la guía Dropi contra entrega inmediatamente.`,
-        createdAt: new Date().toISOString()
-      };
-
-      setProducts(prev => [dropiMock, ...prev]);
-      setIsImportingDropi(false);
-      setShowDropiModal(false);
-
-      // Populate form and open appropriate mode
-      setEditingProductId(dropiMock.id);
-      setFormName(dropiMock.name);
-      setFormBasicDesc(dropiMock.basicDescription);
-      setFormFeatures(dropiMock.features);
-      setFormProblemsSolved(dropiMock.problemsSolved || '');
-      setFormBenefits(dropiMock.benefits);
-      setFormDifferentiators(dropiMock.differentiators || '');
-      setFormPrice(dropiMock.price);
-      setFormOfferPrice(dropiMock.offerPrice);
-      setFormStock(String(dropiMock.stock));
-      setFormShippingProvider(dropiMock.shippingProvider);
-      setFormShippingType(dropiMock.shippingType);
-      setFormQuantityOffers(dropiMock.quantityOffers);
-      setFormImage(dropiMock.image || '');
-      setFormGallery(dropiMock.gallery || []);
-      setFormWelcomeMessage(dropiMock.welcomeMessage);
-      setFormEntryQuestion(dropiMock.entryQuestion);
-      setFormDataCollectionMode(dropiMock.dataCollectionMode);
-      setFormBotPersonality(dropiMock.botPersonality);
-      setFormRules(dropiMock.rules);
-      setFormCustomPrompt(dropiMock.customPrompt || '');
-
-      if (dropiWorkMode === 'prompt') {
-        setViewState('prompt_mode');
+    try {
+      const res = await fetch('/api/integrations/dropi/import-product', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId: idToUse })
+      });
+      const data = await res.json();
+      if (data.success && data.product) {
+        const p = data.product;
+        const imported: CatalogProduct = {
+          id: `DROPI-${idToUse}`,
+          name: p.name || `Producto Dropi #${idToUse}`,
+          basicDescription: p.description || '',
+          features: p.features || '',
+          problemsSolved: '',
+          benefits: '',
+          differentiators: '',
+          price: p.price || 0,
+          offerPrice: p.offerPrice || p.price || 0,
+          stock: p.stock || '',
+          isActive: true,
+          isAvailableForBot: true,
+          showInBotList: true,
+          productType: 'simple',
+          isPack: false,
+          shippingProvider: 'Dropi (Despacho Automático)',
+          shippingType: 'gratis',
+          quantityOffers: [],
+          image: p.image || '',
+          gallery: p.gallery || [],
+          welcomeMessage: '',
+          welcomeMedia: [],
+          entryQuestion: '',
+          dataCollectionMode: 'step_by_step',
+          botPersonality: '',
+          rules: [],
+          creationMode: dropiWorkMode,
+          customPrompt: '',
+          createdAt: new Date().toISOString()
+        };
+        setProducts(prev => [imported, ...prev]);
+        setShowDropiModal(false);
+        setEditingProductId(imported.id);
+        setFormName(imported.name);
       } else {
-        setViewState('wizard_step1');
+        alert(data.error || 'No se pudo importar el producto. Verifica tu conexión con Dropi en Integraciones.');
       }
-    }, 800);
+    } catch (e: any) {
+      alert('Error conectando con Dropi: ' + (e.message || 'desconocido'));
+    }
+    setIsImportingDropi(false);
   };
 
   // Metrics

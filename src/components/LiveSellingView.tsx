@@ -588,6 +588,18 @@ export default function LiveSellingView() {
         <div className="panel rounded-2xl border border-gray-800 bg-gray-900/80 p-5 sm:p-6">
           {!form ? (
             <p className="text-sm text-gray-500">Selecciona o crea una landing para configurarla.</p>
+          ) : selected && isTemplateLanding(selected) ? (
+            <div className="text-center py-8">
+              <p className="text-amber-300 font-bold mb-2">Esta es una plantilla de ejemplo</p>
+              <p className="text-sm text-gray-400 mb-4">Las plantillas no se pueden editar directamente. Duplícala para crear tu propia versión.</p>
+              <button
+                className="inline-flex items-center gap-2 rounded-lg bg-gold px-4 py-2 text-sm font-bold text-black hover:bg-amber-400"
+                onClick={() => handleUseTemplate(selected)}
+                disabled={saving}
+              >
+                Usar esta plantilla
+              </button>
+            </div>
           ) : (
             <>
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-800 pb-4">
@@ -655,6 +667,23 @@ export default function LiveSellingView() {
                         <input type="checkbox" checked={form.allowLoop} onChange={(e) => set('allowLoop', e.target.checked)} /> Repetir video (loop)
                       </label>
                     </div>
+                    {detected && (
+                      <div className="mt-3 rounded-xl overflow-hidden border border-zinc-800 bg-black">
+                        <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                          <iframe
+                            className="absolute inset-0 w-full h-full"
+                            src={detected.provider === 'YouTube'
+                              ? `https://www.youtube.com/embed/${detected.id}?autoplay=1&mute=1&rel=0&playsinline=1${form.allowLoop ? '&loop=1&playlist=' + detected.id : ''}`
+                              : `https://player.vimeo.com/video/${detected.id}?autoplay=1&muted=1&playsinline=1${form.allowLoop ? '&loop=1' : ''}`}
+                            title="Vista previa del video"
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          />
+                        </div>
+                        <p className="px-3 py-2 text-[11px] text-zinc-500">Vista previa — se reproduce automáticamente (silenciado por política del navegador, toca para activar sonido)</p>
+                      </div>
+                    )}
                     <p className="mt-2 text-xs text-gray-500">El video intenta arrancar solo y con sonido; si el navegador lo bloquea sin interacción, la página pide un toque para activar el audio.</p>
                   </div>
 
@@ -1084,6 +1113,23 @@ export default function LiveSellingView() {
                       ? <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-1 font-bold text-emerald-300"><Check size={12} /> Detectado: {wizVideo.provider} · ID {wizVideo.id}</span>
                       : <span>Pega el link completo; el sistema extrae proveedor e ID solo.</span>}
                   </div>
+                  {wizVideo && (
+                    <div className="mt-3 rounded-xl overflow-hidden border border-zinc-800 bg-black">
+                      <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                        <iframe
+                          className="absolute inset-0 w-full h-full"
+                          src={wizVideo.provider === 'YouTube'
+                            ? `https://www.youtube.com/embed/${wizVideo.id}?autoplay=1&mute=1&rel=0&playsinline=1`
+                            : `https://player.vimeo.com/video/${wizVideo.id}?autoplay=1&muted=1&playsinline=1`}
+                          title="Vista previa del video"
+                          frameBorder="0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      </div>
+                      <p className="px-3 py-2 text-[11px] text-zinc-500">Vista previa — se reproduce automáticamente (silenciado por política del navegador, toca para activar sonido)</p>
+                    </div>
+                  )}
                 </div>
                 <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-gray-300">
                   <input type="checkbox" checked={wiz.allowLoop} onChange={(e) => setw('allowLoop', e.target.checked)} /> Repetir el video en bucle (loop)

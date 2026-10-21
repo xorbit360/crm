@@ -162,20 +162,15 @@ class ErrorBoundary extends React.Component<{children: ReactNode}, {hasError: bo
             padding: '32px',
             boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)'
           }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚡</div>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔄</div>
             <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '12px', color: '#ffffff' }}>
-              {isDomError ? 'Conflicto de Traducción Automática' : 'Ocurrió un inconveniente temporal'}
+              {isDomError ? 'Conflicto de Traducción Automática' : 'Nueva actualización disponible'}
             </h2>
             <p style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '24px', lineHeight: '1.6' }}>
               {isDomError
                 ? 'El traductor automático de tu navegador modificó la estructura visual de la página. Te recomendamos desactivar la traducción automática en este sitio.'
-                : 'La aplicación ha detectado un evento inesperado. Puedes recargar para continuar sin perder tu información.'}
+                : 'Hay una nueva versión de la aplicación. Actualiza la página para continuar con las últimas mejoras.'}
             </p>
-            {state.error?.message && !isDomError && (
-              <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '16px', lineHeight: '1.5', overflowWrap: 'anywhere' }}>
-                {String(state.error.message).slice(0, 240)}
-              </p>
-            )}
             <button
               onClick={() => window.location.reload()}
               style={{
@@ -190,7 +185,7 @@ class ErrorBoundary extends React.Component<{children: ReactNode}, {hasError: bo
                 transition: 'all 0.2s'
               }}
             >
-              🔄 Reintentar / Cargar aplicación
+              🔄 Actualizar página
             </button>
           </div>
         </div>

@@ -173,7 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 6. Calculadora de Canales Adicionales ($3 USD / canal)
+  // 6. Calculadora de Canales Adicionales ($10 USD / canal)
   const addonCheckboxes = document.querySelectorAll('.addon-channel-check');
   const totalChannelsDisplay = document.getElementById('totalChannelsAddonPrice');
 
@@ -182,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
     addonCheckboxes.forEach(cb => {
       if (cb.checked) checkedCount++;
     });
-    const extraTotal = checkedCount * 3;
+    const extraTotal = checkedCount * 10;
     if (totalChannelsDisplay) {
       totalChannelsDisplay.textContent = extraTotal === 0 ? '+$0 USD' : `+$${extraTotal} USD / mes (${checkedCount} canales)`;
     }

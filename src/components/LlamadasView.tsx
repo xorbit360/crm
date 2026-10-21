@@ -6,10 +6,12 @@ import {
 
 /* ============ Tipos (contrato /api/voice-calls) ============ */
 type CallStatus = 'programada' | 'en_curso' | 'confirmada' | 'no_contesto' | 'cancelada' | 'fallida';
+type CallOutcome = 'confirmada' | 'cancelada' | 'novedad' | 'reenvio' | 'cambio' | 'reembolso' | 'sin_acuerdo';
 
 interface Campaign {
   id: string;
   name: string;
+  purpose?: 'confirmacion' | 'devolucion';
   active: boolean;
   delayMin: number;
   scheduleStart: string;
@@ -26,6 +28,9 @@ interface CallSummary {
   phone: string;
   campaignName: string;
   status: CallStatus;
+  outcome?: CallOutcome | null;
+  purpose?: 'confirmacion' | 'devolucion';
+  paymentType?: 'cod' | 'anticipado' | 'otro';
   durationSec: number;
   costUsd: number;
   createdAt: string;
@@ -49,7 +54,6 @@ interface VoiceCfg {
 }
 
 interface TelConfig {
-  telefonia: { accountSidMasked: string | null; fromNumber: string | null; configured: boolean };
   platform?: { active: boolean; masterConfigured: boolean };
   googleKeySet: boolean;
   delayDefaultMin: number;
@@ -69,23 +73,38 @@ interface MasterInfo { accountSidMasked: string | null; configured: boolean; ena
 interface PricingInfo { costPerMinUsd: number; markupPct: number; packages: VoicePackageInfo[]; pricePerMinUsd: number; }
 
 /* ============ Utilidades ============ */
-const STATUS_LABEL: Record<CallStatus, string> = {
+const STATUS_LABEL: Record<string, string> = {
   programada: 'Programada',
   en_curso: 'En curso',
   confirmada: 'Confirmada',
   no_contesto: 'No contestó',
   cancelada: 'Cancelada',
   fallida: 'Fallida',
+  novedad: 'Con novedad',
+  reenvio: 'Reenvío acordado',
+  cambio: 'Cambio acordado',
+  reembolso: 'Reembolso acordado',
+  sin_acuerdo: 'Sin acuerdo',
 };
 
-const STATUS_BADGE: Record<CallStatus, string> = {
-  programada: 'bg-amber-500/20 text-amber-300 border border-amber-500/30',
-  en_curso: 'bg-blue-500/20 text-blue-300 border border-blue-500/30',
-  confirmada: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30',
-  no_contesto: 'bg-orange-500/20 text-orange-300 border border-orange-500/30',
-  cancelada: 'bg-rose-500/20 text-rose-300 border border-rose-500/30',
-  fallida: 'bg-rose-500/20 text-rose-300 border border-rose-500/30',
+const STATUS_BADGE: Record<string, string> = {
+  programada: 'bg-zinc-500/20 text-zinc-300 border border-zinc-500/30',
+  en_curso: 'bg-amber-500/20 text-amber-300 border border-amber-500/30',
+  confirmada: 'bg-amber-500 text-black border border-amber-400',
+  no_contesto: 'bg-zinc-500/20 text-zinc-400 border border-zinc-500/30',
+  cancelada: 'bg-zinc-700/40 text-zinc-300 border border-zinc-600/40',
+  fallida: 'bg-red-500/20 text-red-300 border border-red-500/30',
+  novedad: 'bg-amber-500/20 text-amber-200 border border-amber-400/50',
+  reenvio: 'bg-amber-500/20 text-amber-300 border border-amber-500/30',
+  cambio: 'bg-amber-500/20 text-amber-300 border border-amber-500/30',
+  reembolso: 'bg-amber-500/20 text-amber-300 border border-amber-500/30',
+  sin_acuerdo: 'bg-zinc-700/40 text-zinc-300 border border-zinc-600/40',
 };
+
+/** Clave visible de una llamada: manda el resultado fino; si no hay, el estado. */
+function displayKey(c: CallSummary): string {
+  return c.outcome || c.status;
+}
 
 function fmtDuration(sec: number): string {
   if (!sec || sec <= 0) return '—';
@@ -164,9 +183,15 @@ function CallDetailModal({ callId, onClose }: { callId: string; onClose: () => v
               <p className="font-bold text-white">{call.customerName}</p>
               <p className="text-xs text-gray-400 font-mono">{call.phone}</p>
             </div>
-            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${STATUS_BADGE[call.status]}`}>
-              {STATUS_LABEL[call.status]}
+            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${STATUS_BADGE[displayKey(call)] || STATUS_BADGE[call.status]}`}>
+              {STATUS_LABEL[displayKey(call)] || STATUS_LABEL[call.status]}
             </span>
+            {call.purpose === 'devolucion' && (
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">Devolución</span>
+            )}
+            {call.paymentType === 'anticipado' && (
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-zinc-500/20 text-zinc-300 border border-zinc-500/30">Pago anticipado</span>
+            )}
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
@@ -203,16 +228,24 @@ function CallDetailModal({ callId, onClose }: { callId: string; onClose: () => v
             <p className="text-xs font-bold text-gray-300 mb-2 uppercase">Transcripción</p>
             {call.transcript && call.transcript.length > 0 ? (
               <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
-                {call.transcript.map((line, i) => (
-                  <div key={i} className={`flex items-start gap-2.5 ${line.role === 'cliente' ? 'flex-row-reverse' : ''}`}>
-                    <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${line.role === 'agente' ? 'bg-gold-600 text-white' : 'bg-gray-700 text-gray-200'}`}>
-                      {line.role === 'agente' ? <Bot size={14} /> : <span className="text-[10px] font-bold">C</span>}
-                    </div>
-                    <div className={`max-w-[80%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed ${line.role === 'agente' ? 'bg-[#18181d] text-gray-200 border border-gray-800' : 'bg-gold-600 text-white'}`}>
-                      <p>{line.text}</p>
-                      {line.at && <span className="text-[10px] opacity-60 block text-right mt-1 font-mono">{fmtTime(line.at)}</span>}
-                    </div>
-                  </div>
+                {call.transcript.filter((line) => !String(line.text || '').startsWith('META:')).map((line, i) => (
+                  String(line.text || '').startsWith('RESULTADO:')
+                    ? (
+                      <p key={i} className="text-center text-[11px] font-bold text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-full px-3 py-1.5 mx-auto w-fit">
+                        {String(line.text).replace('RESULTADO: ', 'Resultado: ')}
+                      </p>
+                    )
+                    : (
+                      <div key={i} className={`flex items-start gap-2.5 ${line.role === 'cliente' ? 'flex-row-reverse' : ''}`}>
+                        <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${line.role === 'agente' ? 'bg-gold-600 text-white' : 'bg-gray-700 text-gray-200'}`}>
+                          {line.role === 'agente' ? <Bot size={14} /> : <span className="text-[10px] font-bold">C</span>}
+                        </div>
+                        <div className={`max-w-[80%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed ${line.role === 'agente' ? 'bg-[#18181d] text-gray-200 border border-gray-800' : 'bg-gold-600 text-white'}`}>
+                          <p>{line.text}</p>
+                          {line.at && <span className="text-[10px] opacity-60 block text-right mt-1 font-mono">{fmtTime(line.at)}</span>}
+                        </div>
+                      </div>
+                    )
                 ))}
               </div>
             ) : (
@@ -236,6 +269,7 @@ function CampaignModal({
   onSaved: (c: Campaign) => void;
 }) {
   const [name, setName] = useState(campaign?.name || '');
+  const [purpose, setPurpose] = useState<'confirmacion' | 'devolucion'>(campaign?.purpose === 'devolucion' ? 'devolucion' : 'confirmacion');
   const [active, setActive] = useState(campaign?.active ?? true);
   const [delayMin, setDelayMin] = useState<number>(campaign?.delayMin ?? delayDefaultMin ?? 15);
   const [scheduleStart, setScheduleStart] = useState(campaign?.scheduleStart || '09:00');
@@ -251,7 +285,7 @@ function CampaignModal({
     if (!name.trim()) { setError('La campaña necesita un nombre.'); return; }
     setSaving(true); setError('');
     const payload = {
-      name: name.trim(), active, delayMin: Number(delayMin) || 15,
+      name: name.trim(), purpose, active, delayMin: Number(delayMin) || 15,
       scheduleStart, scheduleEnd, maxAttempts: Number(maxAttempts) || 1,
       whatsappFirst, systemPrompt: systemPrompt.trim(), voice: voice.trim(),
     };
@@ -285,6 +319,18 @@ function CampaignModal({
           <div className="sm:col-span-2">
             <label className={labelCls}>Nombre de la campaña</label>
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej: Confirmación COD inmediata" className={inputCls} />
+          </div>
+          <div className="sm:col-span-2">
+            <label className={labelCls}>Propósito de la campaña</label>
+            <select value={purpose} onChange={(e) => setPurpose(e.target.value as 'confirmacion' | 'devolucion')} className={inputCls}>
+              <option value="confirmacion">Confirmación de pedidos (contraentrega y pago anticipado)</option>
+              <option value="devolucion">Devoluciones (acordar reenvío, cambio o reembolso)</option>
+            </select>
+            <p className="text-[11px] text-gray-500 mt-1">
+              {purpose === 'devolucion'
+                ? 'El agente llama para resolver una devolución y el acuerdo queda registrado en el pedido.'
+                : 'El agente confirma el pedido y el resultado se aplica al pedido (confirmado / cancelado / novedad).'}
+            </p>
           </div>
           <div>
             <label className={labelCls}>Esperar antes de llamar (minutos)</label>
@@ -341,8 +387,86 @@ function CampaignModal({
   );
 }
 
+/* ============ Modal: nueva llamada de devolución ============ */
+function ReturnsCallModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [orderId, setOrderId] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch('/api/backoffice/orders', { cache: 'no-store' });
+        const j = await r.json().catch(() => ({}));
+        setOrders(Array.isArray(j.orders) ? j.orders : []);
+      } catch { setOrders([]); }
+      setLoading(false);
+    })();
+  }, []);
+
+  const orderLabel = (o: any) => {
+    const name = o.customerName || o.clientName || 'Cliente';
+    const phone = o.phone || '';
+    const desc = o.products || (Array.isArray(o.items) ? o.items.map((i: any) => `${i.qty || 1}x ${i.name || 'producto'}`).join(', ') : '') || 'pedido';
+    const total = Number(o.total ?? o.amount ?? 0);
+    return `${name} · ${phone} · ${desc}${total ? ` · $${Math.round(total).toLocaleString('es-CO')}` : ''}`;
+  };
+
+  const create = async () => {
+    if (!orderId) { setMsg({ ok: false, text: 'Elige el pedido de la devolución.' }); return; }
+    setBusy(true); setMsg(null);
+    try {
+      const r = await fetch('/api/voice-calls/returns', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId }),
+      });
+      const j = await r.json().catch(() => null);
+      if (!r.ok || !j?.success) throw new Error(j?.error || 'No se pudo programar la llamada.');
+      setMsg({ ok: true, text: 'Llamada de devolución programada: primero WhatsApp y luego la llamada del agente.' });
+      onCreated();
+      setTimeout(onClose, 1200);
+    } catch (e: any) { setMsg({ ok: false, text: e?.message || 'Error al programar.' }); }
+    setBusy(false);
+  };
+
+  return (
+    <Modal title="Nueva llamada de devolución" onClose={onClose}>
+      <div className="space-y-4">
+        <p className="text-xs text-gray-400">
+          El agente llamará al cliente para resolver la devolución: acordar un <strong className="text-amber-300">reenvío</strong>, un <strong className="text-amber-300">cambio</strong> o un <strong className="text-amber-300">reembolso</strong>. El acuerdo queda registrado en el pedido.
+        </p>
+        {loading ? (
+          <p className="text-sm text-gray-500 text-center py-4">Cargando pedidos…</p>
+        ) : orders.length === 0 ? (
+          <p className="text-sm text-gray-500 text-center py-4">No hay pedidos del servidor para elegir. Los pedidos del bot y de la tienda aparecen aquí.</p>
+        ) : (
+          <select value={orderId} onChange={(e) => setOrderId(e.target.value)}
+            className="w-full bg-[#18181c] border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
+            <option value="">Elige el pedido…</option>
+            {orders.map((o: any) => (<option key={String(o.id)} value={String(o.id)}>{orderLabel(o)}</option>))}
+          </select>
+        )}
+        {msg && (
+          <div className={`flex items-center gap-2 text-sm rounded-xl px-3 py-2 border ${msg.ok ? 'bg-amber-500/10 border-amber-500/30 text-amber-200' : 'bg-red-500/10 border-red-500/30 text-red-300'}`}>
+            <AlertCircle size={16} /> {msg.text}
+          </div>
+        )}
+        <div className="flex justify-end gap-2">
+          <button onClick={onClose} className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-xl text-sm font-bold">Cancelar</button>
+          <button onClick={create} disabled={busy || !orderId}
+            className="px-4 py-2 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-black rounded-xl text-sm font-bold">
+            {busy ? 'Programando…' : 'Programar llamada'}
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 /* ============ Componente principal ============ */
-type TabId = 'panel' | 'campanas' | 'agentes' | 'historial' | 'telefonia';
+type TabId = 'panel' | 'campanas' | 'agentes' | 'telefonia';
 
 export default function LlamadasView() {
   const [activeTab, setActiveTab] = useState<TabId>('panel');
@@ -366,16 +490,11 @@ export default function LlamadasView() {
 
   /* --- Modal de campaña --- */
   const [showCampaignModal, setShowCampaignModal] = useState(false);
+  const [showReturnsModal, setShowReturnsModal] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
   const [campaignBusy, setCampaignBusy] = useState(false);
 
-  /* --- Telefonía: formulario --- */
-  const [fAccountSid, setFAccountSid] = useState('');
-  const [fAuthToken, setFAuthToken] = useState('');
-  const [fFromNumber, setFFromNumber] = useState('');
-  const [fGoogleKey, setFGoogleKey] = useState('');
-  const [savingTel, setSavingTel] = useState(false);
-  const [telMsg, setTelMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  /* --- Llamada de prueba (telefonía de plataforma) --- */
   const [testTo, setTestTo] = useState('');
   const [testingCall, setTestingCall] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; text: string } | null>(null);
@@ -572,28 +691,6 @@ export default function LlamadasView() {
   };
 
   /* ============ Telefonía: guardar + prueba ============ */
-  const saveTelConfig = async () => {
-    setSavingTel(true); setTelMsg(null);
-    try {
-      const payload: any = {};
-      if (fAccountSid.trim()) payload.twilioAccountSid = fAccountSid.trim();
-      if (fAuthToken.trim()) payload.twilioAuthToken = fAuthToken.trim();
-      if (fFromNumber.trim()) payload.twilioFromNumber = fFromNumber.trim();
-      if (fGoogleKey.trim()) payload.googleKey = fGoogleKey.trim();
-      if (Object.keys(payload).length === 0) throw new Error('Completa al menos un campo para guardar.');
-      const r = await fetch('/api/voice-calls/config', {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const j = await r.json().catch(() => null);
-      if (!r.ok || !j?.success) throw new Error(j?.error || 'No se pudo guardar la configuración.');
-      setTelMsg({ ok: true, text: 'Configuración guardada.' });
-      setFAccountSid(''); setFAuthToken(''); setFFromNumber(''); setFGoogleKey('');
-      loadTelConfig();
-    } catch (e: any) { setTelMsg({ ok: false, text: e?.message || 'Error al guardar.' }); }
-    setSavingTel(false);
-  };
-
   const runTestCall = async () => {
     const to = testTo.trim();
     if (!to) { setTestResult({ ok: false, text: 'Ingresa el número de destino para la llamada de prueba.' }); return; }
@@ -818,11 +915,11 @@ export default function LlamadasView() {
     return matchQ && matchC;
   });
 
-  const kanbanCols: Array<{ id: string; title: string; statuses: CallStatus[]; accent: string }> = [
-    { id: 'programada', title: 'Programada', statuses: ['programada'], accent: 'text-amber-300' },
-    { id: 'en_curso', title: 'En curso', statuses: ['en_curso'], accent: 'text-blue-300' },
-    { id: 'confirmada', title: 'Confirmada', statuses: ['confirmada'], accent: 'text-emerald-300' },
-    { id: 'terminal', title: 'No contestó · Cancelada · Fallida', statuses: ['no_contesto', 'cancelada', 'fallida'], accent: 'text-rose-300' },
+  const kanbanCols: Array<{ id: string; title: string; keys: string[]; accent: string }> = [
+    { id: 'programada', title: 'Programadas', keys: ['programada'], accent: 'text-zinc-300' },
+    { id: 'en_curso', title: 'En curso', keys: ['en_curso'], accent: 'text-amber-300' },
+    { id: 'resueltas', title: 'Resueltas', keys: ['confirmada', 'reenvio', 'cambio', 'reembolso'], accent: 'text-amber-300' },
+    { id: 'atencion', title: 'Novedad · Sin acuerdo · Cerradas', keys: ['novedad', 'sin_acuerdo', 'no_contesto', 'cancelada', 'fallida'], accent: 'text-zinc-400' },
   ];
 
   const campaignNames = Array.from(new Set(calls.map((c) => c.campaignName).filter(Boolean)));
@@ -863,7 +960,6 @@ export default function LlamadasView() {
           { id: 'panel', label: 'Panel de llamadas', icon: PhoneCall },
           { id: 'campanas', label: 'Campañas', icon: Plus },
           { id: 'agentes', label: 'Agentes', icon: Bot },
-          { id: 'historial', label: 'Historial', icon: FileText },
           { id: 'telefonia', label: 'Telefonía', icon: Settings },
         ] as Array<{ id: TabId; label: string; icon: any }>).map((tab) => {
           const Icon = tab.icon;
@@ -906,6 +1002,12 @@ export default function LlamadasView() {
               <option value="all">Todas las campañas</option>
               {campaignNames.map((n) => (<option key={n} value={n}>{n}</option>))}
             </select>
+            <button
+              onClick={() => setShowReturnsModal(true)}
+              className="px-3 py-2 bg-amber-500 hover:bg-amber-400 text-black rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shrink-0"
+            >
+              <PhoneCall size={14} /> Llamada de devolución
+            </button>
           </div>
 
           {callsError && (
@@ -928,7 +1030,7 @@ export default function LlamadasView() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
               {kanbanCols.map((col) => {
-                const items = filteredCalls.filter((c) => col.statuses.includes(c.status));
+                const items = filteredCalls.filter((c) => col.keys.includes(displayKey(c)));
                 return (
                   <div key={col.id} className="bg-[#121215] border border-gray-800 rounded-2xl p-3 space-y-3">
                     <div className="flex items-center justify-between px-1">
@@ -946,10 +1048,16 @@ export default function LlamadasView() {
                         >
                           <div className="flex items-center justify-between gap-2">
                             <p className="font-bold text-white text-sm truncate">{c.customerName}</p>
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${STATUS_BADGE[c.status]}`}>
-                              {STATUS_LABEL[c.status]}
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${STATUS_BADGE[displayKey(c)] || STATUS_BADGE[c.status]}`}>
+                              {STATUS_LABEL[displayKey(c)] || STATUS_LABEL[c.status]}
                             </span>
                           </div>
+                          {(c.purpose === 'devolucion' || c.paymentType === 'anticipado') && (
+                            <div className="flex gap-1">
+                              {c.purpose === 'devolucion' && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">DEVOLUCIÓN</span>}
+                              {c.paymentType === 'anticipado' && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-zinc-500/20 text-zinc-300 border border-zinc-500/30">PAGO ANTICIPADO</span>}
+                            </div>
+                          )}
                           <p className="text-[11px] text-gray-400 font-mono">{c.phone}</p>
                           <div className="flex items-center justify-between text-[11px] text-gray-500 pt-1">
                             <span className="truncate text-amber-300/90">{c.campaignName || 'Sin campaña'}</span>
@@ -1007,7 +1115,7 @@ export default function LlamadasView() {
                     <div className="flex items-center justify-between">
                       <span className={`text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-md border ${
                         c.active
-                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
                           : 'bg-gray-700/40 text-gray-400 border-gray-700'
                       }`}>
                         {c.active ? 'Activa' : 'Pausada'}
@@ -1021,11 +1129,16 @@ export default function LlamadasView() {
                         <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-all ${c.active ? 'left-[22px]' : 'left-0.5'}`} />
                       </button>
                     </div>
-                    <h4 className="font-bold text-white text-base">{c.name}</h4>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="font-bold text-white text-base">{c.name}</h4>
+                      {c.purpose === 'devolucion'
+                        ? <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">DEVOLUCIONES</span>
+                        : <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-zinc-500/20 text-zinc-300 border border-zinc-500/30">CONFIRMACIÓN</span>}
+                    </div>
                     <div className="text-xs text-gray-400 space-y-1">
                       <p>Espera <strong className="text-gray-200">{c.delayMin} min</strong> · Horario <strong className="text-gray-200">{c.scheduleStart}–{c.scheduleEnd}</strong></p>
                       <p>Máx. <strong className="text-gray-200">{c.maxAttempts}</strong> intentos · Voz <strong className="text-gray-200">{c.voice || '—'}</strong></p>
-                      <p>{c.whatsappFirst ? <span className="text-emerald-400">✓ Confirma primero por WhatsApp</span> : <span className="text-gray-500">Llama directo (sin WhatsApp previo)</span>}</p>
+                      <p>{c.whatsappFirst ? <span className="text-amber-400">✓ Confirma primero por WhatsApp</span> : <span className="text-gray-500">Llama directo (sin WhatsApp previo)</span>}</p>
                     </div>
                     {c.systemPrompt && (
                       <p className="text-[11px] text-gray-500 line-clamp-2 border-t border-gray-800 pt-2">{c.systemPrompt}</p>
@@ -1062,7 +1175,7 @@ export default function LlamadasView() {
                 <Volume2 size={18} className="text-amber-400" /> Proveedor de Voz
               </h3>
               {voiceCfg.googleKeySet ? (
-                <span className="text-[10px] bg-emerald-500/20 text-emerald-400 font-bold px-2 py-0.5 rounded-full">
+                <span className="text-[10px] bg-amber-500/20 text-amber-400 font-bold px-2 py-0.5 rounded-full">
                   <Check size={12} className="inline mr-1" />Clave guardada {voiceCfg.googleKeyMasked || ''}
                 </span>
               ) : (
@@ -1077,10 +1190,7 @@ export default function LlamadasView() {
                 <label className="text-xs text-gray-400 font-semibold">Proveedor</label>
                 <select value={voiceCfg.provider} onChange={(e) => setVoiceCfg({ ...voiceCfg, provider: e.target.value })}
                   className="mt-1 w-full bg-[#18181c] border border-gray-700 rounded-xl px-3 py-2 text-sm text-white">
-                  <option value="google">Proveedor de voz — recomendado</option>
-                  <option value="elevenlabs">Proveedor alternativo 1</option>
-                  <option value="vapi">Proveedor alternativo 2</option>
-                  <option value="retell">Proveedor alternativo 3</option>
+                  <option value="google">Proveedor de voz (en vivo, para llamadas)</option>
                 </select>
               </div>
               <div>
@@ -1125,21 +1235,12 @@ export default function LlamadasView() {
         </div>
       )}
 
-      {/* ============ TAB 4: HISTORIAL ============ */}
-      {activeTab === 'historial' && (
+      {/* ============ Historial (fusionado en el Panel) ============ */}
+      {activeTab === 'panel' && (
         <div className="bg-[#121215] border border-gray-800 rounded-2xl p-5 space-y-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <h3 className="font-bold text-white text-base">Historial de llamadas</h3>
-            <div className="relative w-full sm:w-64">
-              <Search size={16} className="absolute left-3 top-2.5 text-gray-500" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar por cliente o teléfono…"
-                className="w-full pl-9 pr-3 py-1.5 bg-[#18181c] border border-gray-700/80 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-amber-500"
-              />
-            </div>
+            <span className="text-[11px] text-gray-500">{filteredCalls.length} llamada{filteredCalls.length === 1 ? '' : 's'} · duración, costo, transcripción y grabación</span>
           </div>
 
           {callsError && (
@@ -1181,8 +1282,8 @@ export default function LlamadasView() {
                         </td>
                         <td className="py-3 px-4 font-semibold text-amber-300">{c.campaignName || '—'}</td>
                         <td className="py-3 px-4">
-                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${STATUS_BADGE[c.status]}`}>
-                            {STATUS_LABEL[c.status]}
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${STATUS_BADGE[displayKey(c)] || STATUS_BADGE[c.status]}`}>
+                            {STATUS_LABEL[displayKey(c)] || STATUS_LABEL[c.status]}
                           </span>
                         </td>
                         <td className="py-3 px-4 font-mono text-gray-400">{fmtDuration(c.durationSec)}</td>
@@ -1244,7 +1345,7 @@ export default function LlamadasView() {
                 Activa la telefonía integrada: los usuarios conectan su propio número y compran minutos dentro del CRM, sin cuentas externas.
               </p>
               {masterMsg && (
-                <div className={`flex items-center gap-2 text-sm rounded-xl px-3 py-2 border ${masterMsg.ok ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-red-500/10 border-red-500/30 text-red-300'}`}>
+                <div className={`flex items-center gap-2 text-sm rounded-xl px-3 py-2 border ${masterMsg.ok ? 'bg-amber-500/10 border-amber-500/30 text-amber-300' : 'bg-red-500/10 border-red-500/30 text-red-300'}`}>
                   {masterMsg.ok ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />} {masterMsg.text}
                 </div>
               )}
@@ -1268,100 +1369,11 @@ export default function LlamadasView() {
               </button>
             </div>
           )}
-          <div className="bg-[#121215] border border-gray-800 rounded-2xl p-6 space-y-5">
-            <h3 className="font-bold text-white text-base flex items-center gap-2">
-              <Settings size={18} className="text-amber-400" /> Conexión de telefonía
-            </h3>
-
-            {/* Estado real */}
-            <div className="bg-[#18181c] border border-gray-800 rounded-2xl p-5 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-400 font-bold uppercase">Estado de la conexión</span>
-                {loadingTel ? (
-                  <span className="text-[10px] text-gray-500">Cargando…</span>
-                ) : telCfg?.telefonia?.configured ? (
-                  <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                    <CheckCircle2 size={12} /> Configurado
-                  </span>
-                ) : (
-                  <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                    <AlertCircle size={12} /> Sin configurar
-                  </span>
-                )}
-              </div>
-              {telCfg?.telefonia?.configured ? (
-                <div className="text-sm space-y-1">
-                  <p className="text-gray-400">Cuenta de telefonía: <span className="text-white font-mono font-semibold">{telCfg.telefonia.accountSidMasked || '—'}</span></p>
-                  <p className="text-gray-400">Número de origen: <span className="text-white font-mono font-semibold">{telCfg.telefonia.fromNumber || '—'}</span></p>
-                </div>
-              ) : (
-                <p className="text-xs text-gray-500">Pega tus credenciales del proveedor de telefonía abajo para activar las llamadas salientes.</p>
-              )}
+          {!isSuperAdmin && (
+            <div className="bg-[#121215] border border-gray-800 rounded-2xl p-6 text-sm text-gray-400">
+              La telefonía integrada aún no está activa. El Super Admin debe activarla con la cuenta maestra para que puedas conectar tu número y comprar minutos.
             </div>
-
-            {/* Formulario de credenciales */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-300 mb-1">Cuenta de telefonía</label>
-                <input type="text" value={fAccountSid} onChange={(e) => setFAccountSid(e.target.value)}
-                  placeholder="Identificador de tu cuenta"
-                  className="w-full bg-[#18181c] border border-gray-700 rounded-xl px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-amber-500" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-300 mb-1">Token</label>
-                <input type="password" value={fAuthToken} onChange={(e) => setFAuthToken(e.target.value)}
-                  placeholder="Token secreto de la cuenta"
-                  className="w-full bg-[#18181c] border border-gray-700 rounded-xl px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-amber-500" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-300 mb-1">Número de origen</label>
-                <input type="tel" value={fFromNumber} onChange={(e) => setFFromNumber(e.target.value)}
-                  placeholder="+57 601 234 5678"
-                  className="w-full bg-[#18181c] border border-gray-700 rounded-xl px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-amber-500" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-300 mb-1">Clave de voz (opcional)</label>
-                <input type="password" value={fGoogleKey} onChange={(e) => setFGoogleKey(e.target.value)}
-                  placeholder={telCfg?.googleKeySet ? 'Clave guardada: pega otra solo si la vas a reemplazar' : 'Clave del proveedor de voz'}
-                  className="w-full bg-[#18181c] border border-gray-700 rounded-xl px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-amber-500" />
-              </div>
-            </div>
-            {telMsg && (
-              <div className={`flex items-center gap-2 text-sm rounded-xl px-3 py-2 border ${telMsg.ok ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-red-500/10 border-red-500/30 text-red-300'}`}>
-                {telMsg.ok ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />} {telMsg.text}
-              </div>
-            )}
-            <button onClick={saveTelConfig} disabled={savingTel}
-              className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-black rounded-xl text-sm font-bold flex items-center gap-2">
-              <Save size={14} /> {savingTel ? 'Guardando…' : 'Guardar configuración'}
-            </button>
-
-            {/* Llamada de prueba */}
-            <div className="border-t border-gray-800 pt-5">
-              <h4 className="font-bold text-white text-sm flex items-center gap-2 mb-1">
-                <Phone size={15} className="text-amber-400" /> Llamada de prueba
-              </h4>
-              <p className="text-xs text-gray-400 mb-3">El agente llamará a este número con la voz y el prompt configurados.</p>
-              <div className="flex gap-2 flex-col sm:flex-row">
-                <input type="tel" value={testTo} onChange={(e) => setTestTo(e.target.value)}
-                  placeholder="+57 300 123 4567"
-                  className="flex-1 bg-[#18181c] border border-gray-700 rounded-xl px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-amber-500" />
-                <button onClick={runTestCall} disabled={testingCall || !telCfg?.telefonia?.configured}
-                  className="px-4 py-2 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-black rounded-xl text-sm font-bold flex items-center justify-center gap-1.5"
-                >
-                  <PhoneCall size={14} /> {testingCall ? 'Llamando…' : 'Hacer llamada de prueba'}
-                </button>
-              </div>
-              {!telCfg?.telefonia?.configured && !loadingTel && (
-                <p className="text-[11px] text-gray-500 mt-2">Primero guarda la configuración de telefonía para habilitar la prueba.</p>
-              )}
-              {testResult && (
-                <div className={`mt-3 flex items-center gap-2 text-sm rounded-xl px-3 py-2 border ${testResult.ok ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-red-500/10 border-red-500/30 text-red-300'}`}>
-                  {testResult.ok ? <CheckCircle2 size={16} /> : <XCircle size={16} />} {testResult.text}
-                </div>
-              )}
-            </div>
-          </div>
+          )}
         </div>
       )}
 
@@ -1377,7 +1389,7 @@ export default function LlamadasView() {
               Conecta tu número celular como identificador de las llamadas. Te llamaremos para verificarlo con un código.
             </p>
             {numbersMsg && (
-              <div className={`flex items-center gap-2 text-sm rounded-xl px-3 py-2 border ${numbersMsg.ok ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-red-500/10 border-red-500/30 text-red-300'}`}>
+              <div className={`flex items-center gap-2 text-sm rounded-xl px-3 py-2 border ${numbersMsg.ok ? 'bg-amber-500/10 border-amber-500/30 text-amber-300' : 'bg-red-500/10 border-red-500/30 text-red-300'}`}>
                 {numbersMsg.ok ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />} {numbersMsg.text}
               </div>
             )}
@@ -1397,7 +1409,7 @@ export default function LlamadasView() {
                         )}
                       </p>
                       <p className="text-[11px] text-gray-500">
-                        {n.label} · {n.verified ? <span className="text-emerald-400 font-bold">Verificado</span> : <span className="text-amber-300 font-bold">Pendiente de verificación</span>}
+                        {n.label} · {n.verified ? <span className="text-amber-400 font-bold">Verificado</span> : <span className="text-amber-300 font-bold">Pendiente de verificación</span>}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -1406,7 +1418,7 @@ export default function LlamadasView() {
                           Hacer principal
                         </button>
                       )}
-                      <button onClick={() => deleteNumber(n.id, n.phone)} className="text-gray-500 hover:text-rose-400 p-1">
+                      <button onClick={() => deleteNumber(n.id, n.phone)} className="text-gray-500 hover:text-red-400 p-1">
                         <Trash2 size={15} />
                       </button>
                     </div>
@@ -1454,7 +1466,7 @@ export default function LlamadasView() {
               <button onClick={loadWallet} className="text-gray-500 hover:text-white p-1"><RefreshCw size={15} /></button>
             </div>
             {walletMsg && (
-              <div className={`flex items-center gap-2 text-sm rounded-xl px-3 py-2 border ${walletMsg.ok ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-red-500/10 border-red-500/30 text-red-300'}`}>
+              <div className={`flex items-center gap-2 text-sm rounded-xl px-3 py-2 border ${walletMsg.ok ? 'bg-amber-500/10 border-amber-500/30 text-amber-300' : 'bg-red-500/10 border-red-500/30 text-red-300'}`}>
                 {walletMsg.ok ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />} {walletMsg.text}
               </div>
             )}
@@ -1486,7 +1498,7 @@ export default function LlamadasView() {
                   {ledger.map((l) => (
                     <div key={l.id} className="flex items-center justify-between text-xs bg-[#18181c] border border-gray-800/60 rounded-lg px-3 py-2">
                       <span className="text-gray-300 truncate flex-1">{l.detail || l.kind}</span>
-                      <span className={`font-mono font-bold ml-2 ${l.amountUsd >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      <span className={`font-mono font-bold ml-2 ${l.amountUsd >= 0 ? 'text-amber-400' : 'text-red-400'}`}>
                         {l.amountUsd >= 0 ? '+' : ''}{l.amountUsd.toFixed(2)}
                       </span>
                     </div>
@@ -1515,7 +1527,7 @@ export default function LlamadasView() {
               <p className="text-[11px] text-gray-500">Primero verifica un número en “Mis números”.</p>
             )}
             {testResult && (
-              <div className={`flex items-center gap-2 text-sm rounded-xl px-3 py-2 border ${testResult.ok ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-red-500/10 border-red-500/30 text-red-300'}`}>
+              <div className={`flex items-center gap-2 text-sm rounded-xl px-3 py-2 border ${testResult.ok ? 'bg-amber-500/10 border-amber-500/30 text-amber-300' : 'bg-red-500/10 border-red-500/30 text-red-300'}`}>
                 {testResult.ok ? <CheckCircle2 size={16} /> : <XCircle size={16} />} {testResult.text}
               </div>
             )}
@@ -1530,13 +1542,13 @@ export default function LlamadasView() {
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">Super Admin</span>
                 </h3>
                 {masterMsg && (
-                  <div className={`flex items-center gap-2 text-sm rounded-xl px-3 py-2 border ${masterMsg.ok ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-red-500/10 border-red-500/30 text-red-300'}`}>
+                  <div className={`flex items-center gap-2 text-sm rounded-xl px-3 py-2 border ${masterMsg.ok ? 'bg-amber-500/10 border-amber-500/30 text-amber-300' : 'bg-red-500/10 border-red-500/30 text-red-300'}`}>
                     {masterMsg.ok ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />} {masterMsg.text}
                   </div>
                 )}
                 <div className="text-sm space-y-1">
                   <p className="text-gray-400">Estado: {master?.configured
-                    ? <span className="text-emerald-400 font-bold">Configurado ({master.accountSidMasked})</span>
+                    ? <span className="text-amber-400 font-bold">Configurado ({master.accountSidMasked})</span>
                     : <span className="text-amber-300 font-bold">Sin configurar — la telefonía integrada está inactiva</span>}</p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1565,7 +1577,7 @@ export default function LlamadasView() {
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">Super Admin</span>
                 </h3>
                 {pricingMsg && (
-                  <div className={`flex items-center gap-2 text-sm rounded-xl px-3 py-2 border ${pricingMsg.ok ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-red-500/10 border-red-500/30 text-red-300'}`}>
+                  <div className={`flex items-center gap-2 text-sm rounded-xl px-3 py-2 border ${pricingMsg.ok ? 'bg-amber-500/10 border-amber-500/30 text-amber-300' : 'bg-red-500/10 border-red-500/30 text-red-300'}`}>
                     {pricingMsg.ok ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />} {pricingMsg.text}
                   </div>
                 )}
@@ -1614,6 +1626,7 @@ export default function LlamadasView() {
 
       {/* Modales */}
       {detailCallId && <CallDetailModal callId={detailCallId} onClose={() => setDetailCallId(null)} />}
+      {showReturnsModal && <ReturnsCallModal onClose={() => setShowReturnsModal(false)} onCreated={() => { loadCalls(); }} />}
       {showCampaignModal && (
         <CampaignModal
           campaign={editingCampaign}

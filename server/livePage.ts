@@ -331,10 +331,10 @@ window.__LIVE_SLUG__ = ${safeSlug};
     window.onYouTubeIframeAPIReady = function(){
       player = new YT.Player('player-slot', {
         videoId: id,
-        playerVars: { playsinline:1, controls:0, rel:0, disablekb:1, modestbranding:1, iv_load_policy:3, fs:0, autoplay:1 },
+        playerVars: { playsinline:1, controls:0, rel:0, disablekb:1, modestbranding:1, iv_load_policy:3, fs:0, autoplay:1, mute:1 },
         events: {
           onReady: function(e){
-            try { e.target.setVolume(85); } catch(_){}
+            try { e.target.mute(); e.target.setVolume(85); } catch(_){}
             resumePosition();
             try { e.target.playVideo(); } catch(_){}
             verifySoundPlayback();
@@ -348,11 +348,11 @@ window.__LIVE_SLUG__ = ${safeSlug};
     playerKind = 'vimeo';
     var tag = document.createElement('script'); tag.src = 'https://player.vimeo.com/api/player.js';
     tag.onload = function(){
-      player = new Vimeo.Player('player-slot', { id: isNaN(Number(id)) ? id : Number(id), muted:false, controls:false, playsinline:true, loop:false, autoplay:true, responsive:false });
+      player = new Vimeo.Player('player-slot', { id: isNaN(Number(id)) ? id : Number(id), muted:true, controls:false, playsinline:true, loop:false, autoplay:true, responsive:false });
       player.ready().then(function(){
         resumePosition();
-        return player.setMuted(false).then(function(){ return player.setVolume(0.85); }).then(function(){ return player.play(); });
-      }).then(function(){ hideTapToSound(); }).catch(function(){ showTapToSound(); });
+        return player.play();
+      }).then(function(){ showTapToSound(); }).catch(function(){ showTapToSound(); });
       player.on('timeupdate', function(d){ currentTimeSec = d.seconds || 0; durationSec = d.duration || 0; });
       player.on('ended', onEnded);
     };

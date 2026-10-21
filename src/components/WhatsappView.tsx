@@ -3,7 +3,8 @@ import { Terminal, Activity, Cpu, Smartphone, Search, MoreVertical, Smile, Paper
 
 import { VoiceNotePlayer } from './VoiceNotePlayer';
 import { LiveAudioRecorder } from './LiveAudioRecorder';
-import { formatLocalTime, formatLocalDateTime, formatColombiaTime, getTimezone } from '../utils/timezone';
+import { formatLocalTime, formatLocalDateTime, formatColombiaTime, formatChatListDate, getTimezone } from '../utils/timezone';
+import { usePaywall } from './PaywallGate';
 import { buildAdminDemoClients, buildAdminDemoOrders, isPrincipalAdmin, scopedStorageKey } from '../lib/demoSales';
 
 // Secondary tabs are loaded only when opened. Keeping them out of the first
@@ -130,6 +131,8 @@ type InboxAttachment = {
   type: 'imagen' | 'image' | 'video' | 'audio' | 'archivo' | 'document' | 'pdf';
   url: string;
   size?: string;
+  // Referencia liviana: el adjunto completo (base64) se carga al abrir el chat.
+  deferred?: boolean;
 };
 
 type InboxMessage = {
@@ -243,17 +246,129 @@ const mergeInboxChat = <T extends Record<string, any>>(current: T, incoming: T, 
   } as T;
 };
 
+// Índice de candidatos para areSameInboxChat. La comparación exacta es
+// costosa (construye alias, Sets y aplica regex por par) y el barrido O(n²)
+// congelaba la bandeja demo del admin (~1.500 chats ⇒ más de un millón de
+// comparaciones por fusión). areSameInboxChat solo puede dar verdadero si
+// ambos chats comparten una clave barata: un alias idéntico (la misma cadena,
+// ya prefijada con el canal de cada chat) o un conversationId / participantId
+// / externalId normalizado igual (la vía social). El índice agrupa posiciones
+// por esas claves y areSameInboxChat queda como verificador exacto sobre los
+// candidatos, recorridos en orden ascendente de posición: el resultado es
+// idéntico al del barrido completo, incluida la posición de primera aparición.
+const getInboxChatMatchKeys = (chat: any): string[] => {
+  const keys = new Set<string>();
+  for (const alias of getInboxChatAliases(chat)) keys.add(`a:${alias}`);
+  for (const value of [chat?.conversationId, chat?.participantId, chat?.externalId]) {
+    const id = normalizeInboxIdentifier(value);
+    if (id) keys.add(`s:${id}`);
+  }
+  return Array.from(keys);
+};
+
+type InboxChatIndex = {
+  byKey: Map<string, number[]>;
+  noIdPositions: number[];
+};
+
+const createInboxChatIndex = (): InboxChatIndex => ({ byKey: new Map(), noIdPositions: [] });
+
+const indexInboxChat = (index: InboxChatIndex, chat: any, position: number): void => {
+  const addKey = (key: string) => {
+    const positions = index.byKey.get(key);
+    if (positions) positions.push(position);
+    else index.byKey.set(key, [position]);
+  };
+  for (const key of getInboxChatMatchKeys(chat)) addKey(key);
+  if (chat?.id !== undefined && chat?.id !== null) addKey(`i:${String(chat.id)}`);
+  else if (chat?.id === undefined && !index.noIdPositions.includes(position)) index.noIdPositions.push(position);
+};
+
+const findInboxChatPosition = (
+  index: InboxChatIndex,
+  chats: any[],
+  chat: any,
+  verify: (current: any, incoming: any) => boolean
+): number => {
+  const matchKeys = getInboxChatMatchKeys(chat);
+  let candidates: number[];
+  if (matchKeys.length === 0 && chat?.id === undefined) {
+    // Sin claves baratas ni id: respaldo con el barrido completo de antes.
+    candidates = chats.map((_, position) => position);
+  } else {
+    const found = new Set<number>();
+    for (const key of matchKeys) {
+      for (const position of index.byKey.get(key) || []) found.add(position);
+    }
+    if (chat?.id !== undefined && chat?.id !== null) {
+      for (const position of index.byKey.get(`i:${String(chat.id)}`) || []) found.add(position);
+    } else if (chat?.id === undefined) {
+      for (const position of index.noIdPositions) found.add(position);
+    }
+    candidates = Array.from(found).sort((a, b) => a - b);
+  }
+  for (const position of candidates) {
+    if (verify(chats[position], chat)) return position;
+  }
+  return -1;
+};
+
 const dedupeInboxChats = <T extends Record<string, any>>(items: T[], preferredId?: string): T[] => {
   const result: T[] = [];
+  const index = createInboxChatIndex();
   for (const chat of items) {
-    const existingPosition = result.findIndex(current => areSameInboxChat(current, chat));
+    const existingPosition = findInboxChatPosition(index, result, chat, areSameInboxChat);
     if (existingPosition < 0) {
+      indexInboxChat(index, chat, result.length);
       result.push(chat);
       continue;
     }
-    result[existingPosition] = mergeInboxChat(result[existingPosition], chat, preferredId);
+    const merged = mergeInboxChat(result[existingPosition], chat, preferredId);
+    result[existingPosition] = merged;
+    // Los alias del resultado fusionado (y los del entrante absorbido) quedan
+    // indexados hacia esta posición para las comparaciones siguientes de la
+    // misma pasada, igual que el barrido comparaba contra el contenido ya
+    // fusionado.
+    indexInboxChat(index, merged, existingPosition);
+    indexInboxChat(index, chat, existingPosition);
   }
   return result;
+};
+
+// Copia persistida en localStorage: los adjuntos con el archivo embebido en
+// base64 se guardan como referencia liviana (los mismos campos pequeños que
+// conserva el bootstrap del servidor + deferred: true, sin la URL gigante),
+// para no re-serializar megabytes en cada guardado. El estado en memoria no
+// se toca; al abrir la conversación, la referencia se resuelve con el mismo
+// mecanismo que las diferidas del servidor.
+const STORAGE_HEAVY_ATTACHMENT_BYTES = 30 * 1024;
+const STORAGE_LIGHT_FIELD_BYTES = 1024;
+
+const compactAttachmentForStorage = (attachment: any): any => {
+  if (!attachment || typeof attachment !== 'object' || Array.isArray(attachment)) return attachment;
+  let serialized = '';
+  try { serialized = JSON.stringify(attachment); } catch { return attachment; }
+  if (serialized.length <= STORAGE_HEAVY_ATTACHMENT_BYTES) return attachment;
+  const light: Record<string, any> = {};
+  for (const [field, value] of Object.entries(attachment)) {
+    let fieldSize = STORAGE_LIGHT_FIELD_BYTES + 1;
+    try { fieldSize = JSON.stringify(value ?? null).length; } catch { /* campo no serializable: se descarta */ }
+    if (fieldSize <= STORAGE_LIGHT_FIELD_BYTES) light[field] = value;
+  }
+  light.deferred = true;
+  return light;
+};
+
+const compactMessageForStorage = (message: InboxMessage): InboxMessage => {
+  if (!message || typeof message !== 'object' || !message.attachment) return message;
+  const compacted = compactAttachmentForStorage(message.attachment);
+  return compacted === message.attachment ? message : { ...message, attachment: compacted };
+};
+
+const compactChatForStorage = <T extends Record<string, any>>(chat: T): T => {
+  if (!chat || typeof chat !== 'object' || !(chat as any).attachment) return chat;
+  const compacted = compactAttachmentForStorage((chat as any).attachment);
+  return compacted === (chat as any).attachment ? chat : { ...chat, attachment: compacted };
 };
 
 const messageContentKey = (message: InboxMessage): string => [
@@ -331,13 +446,15 @@ export default function WhatsappView({
   onNicheChange,
   currentUser,
   isSidebarOpen,
-  onToggleSidebar
+  onToggleSidebar,
+  onBack
 }: {
   activeTab?: string,
   onNicheChange?: (niche: string) => void,
   currentUser?: any,
   isSidebarOpen?: boolean,
-  onToggleSidebar?: () => void
+  onToggleSidebar?: () => void,
+  onBack?: () => void
 }) {
   const isAdminDemo = isPrincipalAdmin(currentUser);
   const clientsStorageKey = scopedStorageKey('crm_clients', currentUser);
@@ -440,6 +557,10 @@ export default function WhatsappView({
   const [connectedPhone, setConnectedPhone] = useState<string | null>(null);
   const [whatsappError, setWhatsappError] = useState<string | null>(null);
   const currentViewTab = activeTab === 'entrenamiento_chatbot' ? internalTab : activeTab;
+
+  // Freemium: intercepta la conexión de canal si el usuario es gratuito
+  const paywall = usePaywall();
+  const guardedRefreshQr = (e: React.MouseEvent) => paywall.guard(e, handleRefreshRealQr);
 
   // Multi-tenant Evolution API Instance nomenclature: +{phone}_{username} (e.g. +573192392853_admin)
   const userChannelId = React.useMemo(() => {
@@ -601,11 +722,15 @@ export default function WhatsappView({
   const handleRefreshRealQr = async () => {
     setLiveQr(null);
     try {
-      await fetch('/api/whatsapp/reconnect', {
+      const res = await fetch('/api/whatsapp/reconnect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ channelId: userChannelId, force: true })
       });
+      if (res.status === 402) {
+        paywall.openActivate();
+        return;
+      }
     } catch (e) {
       console.error("Error reconectando WhatsApp real:", e);
     }
@@ -873,6 +998,7 @@ export default function WhatsappView({
               // Buscar ID de chat que coincida con este número
               const matchingDbChat = dbData.chats?.find((c: any) => c.phone && c.phone.replace(/\D/g, '') === cleanPhone);
               const chatId = matchingDbChat ? matchingDbChat.id : `chat-${cleanPhone}`;
+              historyKeyByChatRef.current[chatId] = phoneKey;
 
               const formattedHistory: InboxMessage[] = history.map((m: any) => ({
                 id: m.id || m.messageId || m.eventId,
@@ -939,6 +1065,8 @@ export default function WhatsappView({
   const [isSyncingChats, setIsSyncingChats] = useState(false);
   const syncStartedRef = useRef(false);
   const realtimeRefreshInFlightRef = useRef(false);
+  const deferredHistoryRequestedRef = useRef<Set<string>>(new Set());
+  const historyKeyByChatRef = useRef<Record<string, string>>({});
   const lastWhatsappReconnectRef = useRef(0);
   const [activeGuideStep, setActiveGuideStep] = useState(1);
   const [guideToken, setGuideToken] = useState('');
@@ -1413,6 +1541,8 @@ export default function WhatsappView({
     if (Array.isArray(dbState.chats)) {
       setChats(previous => {
         const next = [...previous];
+        const chatIndex = createInboxChatIndex();
+        next.forEach((chat, position) => indexInboxChat(chatIndex, chat, position));
         dbState.chats.forEach((rawChat: any) => {
           if (!rawChat?.phone) return;
           const incoming = {
@@ -1423,9 +1553,16 @@ export default function WhatsappView({
             unread: Number(rawChat.unread) || 0,
             tags: Array.isArray(rawChat.tags) ? rawChat.tags : ['WhatsApp']
           };
-          const index = next.findIndex(current => current.id === incoming.id || areSameInboxChat(current, incoming));
-          if (index >= 0) next[index] = mergeInboxChat(next[index], incoming, activeChatId);
-          else next.push(incoming);
+          const position = findInboxChatPosition(chatIndex, next, incoming, (current, candidate) => current.id === candidate.id || areSameInboxChat(current, candidate));
+          if (position >= 0) {
+            const merged = mergeInboxChat(next[position], incoming, activeChatId);
+            next[position] = merged;
+            indexInboxChat(chatIndex, merged, position);
+            indexInboxChat(chatIndex, incoming, position);
+          } else {
+            indexInboxChat(chatIndex, incoming, next.length);
+            next.push(incoming);
+          }
         });
         return dedupeInboxChats(next, activeChatId)
           .sort((a: any, b: any) => (Number(b.timestamp) || 0) - (Number(a.timestamp) || 0));
@@ -1736,36 +1873,34 @@ export default function WhatsappView({
       const saved = localStorage.getItem('whatsapp_bot_prompt_v1');
       if (saved) return saved;
     } catch (e) {}
-    return `Eres el Asistente Virtual Oficial del Restaurante. Tu objetivo principal es brindar una atención cordial, rápida y apetitosa por WhatsApp para mostrar el menú, tomar pedidos a domicilio y gestionar reservas de mesa.
+    return `Eres el Asistente Virtual Oficial del negocio. Tu objetivo es brindar atención cordial, rápida y profesional por WhatsApp: responder preguntas, mostrar productos o servicios, tomar pedidos y ayudar al cliente en lo que necesite.
 
 1. TONO Y COMUNICACIÓN:
-- Sé amable, educado y entusiasta. Usa emojis gastronómicos acordes (🍕, 🍔, 🥩, 🍷, 🛵).
-- Saluda con calidez ofreciendo las promociones o sugerencias del chef del día.
+- Sé amable, educado y directo. Usa emojis con moderación.
+- Saluda con calidez y pregunta en qué puedes ayudar.
+- Responde en español, con mensajes cortos y claros.
 
-2. MENÚ Y ESPECIALIDADES:
-- Platos Fuertes: Hamburguesas Artesanales, Pizzas a la Leña, Cortes de Carne, Pastas y Opciones Vegetarianas.
-- Entradas: Papas Rústicas con Cheddar, Nachos Supremos, Alitas BBQ/Búfalo.
-- Bebidas y Postres: Limonadas Naturales, Cervezas Artesanales, Malteadas, Cheesecake.
-- Combos: Combo Pareja (2 Platos + 2 Bebidas + Postre con 15% Off) y Combo Familiar.
+2. PRODUCTOS Y SERVICIOS:
+- Cuando el cliente pregunte por productos, presenta las opciones disponibles con sus precios.
+- Si manejas catálogo, comparte los productos relevantes con foto y precio.
+- Destaca promociones vigentes cuando apliquen.
 
-3. FLUJO DE TOMA DE PEDIDOS (DOMICILIOS):
-Cuando el cliente solicite un domicilio, solicita en orden:
-a) Platos y especificaciones (término de carne, sin cebolla, adiciones).
+3. TOMA DE PEDIDOS:
+Cuando el cliente quiera comprar o pedir, solicita en orden:
+a) Producto o servicio de interés y cantidad.
 b) Nombre completo del cliente.
-c) Dirección exacta de entrega (Barrio + Ciudad + Punto de referencia).
-d) Método de pago (Efectivo, Nequi, Daviplata, Tarjeta o Pago contra entrega).
-e) Confirma el resumen del pedido y el tiempo estimado de entrega (30 a 45 minutos).
+c) Datos de entrega o contacto según aplique (dirección, ciudad, teléfono).
+d) Método de pago (efectivo, transferencia, Nequi, Daviplata, tarjeta o pago contra entrega).
+e) Confirma el resumen del pedido antes de finalizarlo.
 
-4. RESERVAS DE MESAS:
-Si el cliente desea reservar una mesa, solicita:
-a) Fecha y Hora exacta.
-b) Número de personas.
-c) Ocasión especial (Cumpleaños, Aniversario, Cita o Reunión).
-d) Nombre y teléfono de contacto.
+4. DUDAS Y SOPORTE:
+- Responde preguntas sobre precios, disponibilidad, tiempos de entrega y garantías.
+- Si no sabes algo, dilo con honestidad y ofrece ayuda alternativa.
+- Para temas complejos, ofrece conectar con un asesor humano.
 
-5. HORARIOS Y COBERTURA:
-- Horario de Atención: Lunes a Domingo de 11:30 AM a 10:30 PM.
-- Zona de cobertura de domicilios: Hasta 8 km sin recargo.`;
+5. INFORMACIÓN DEL NEGOCIO:
+- Comparte horarios de atención, ubicación y medios de contacto cuando te lo pidan.
+- Mantén un tono profesional que represente bien la marca.`;
   });
 
   const botPromptSaveRef = useRef(botPrompt);
@@ -2488,7 +2623,7 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
   const [bufferTimeouts, setBufferTimeouts] = useState<{ [chatId: string]: any }>({});
 
   // EL FLUJO sales strategy states
-  const [isFlujoStrategyEnabled, setIsFlujoStrategyEnabled] = useState(true);
+  const [isFlujoStrategyEnabled, setIsFlujoStrategyEnabled] = useState(false);
   const [chatStages, setChatStages] = useState<{ [chatId: string]: number }>({
     '1': 1, // Just asked "Info smartwatch X8" -> Stage 1: Diagnostica
     '2': 2, // Asked "Tienen contra entrega?" -> Stage 2: Presenta solución
@@ -2741,7 +2876,10 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
     { id: 'envios', name: 'Envíos', isNestLogistics: true },
     { id: 'carritos_recuperados', name: 'Carritos Recuperados', automation: '2 mensajes automáticos a los 30 minutos, 4 horas y 8 horas' },
     { id: 'llamadas_ia', name: 'Llamadas IA', automation: 'Confirmación de pedidos, reintento de llamadas y novedades' },
-    { id: 'post_venta', name: 'Clientes' }
+    { id: 'post_venta', name: 'Clientes' },
+    { id: 'ventas_polo', name: 'Ventas Camisas Polo' },
+    { id: 'mayoristas', name: 'Clientes Mayoristas' },
+    { id: 'remarketing', name: 'Remarketing' }
   ]);
   const [activePipelineId, setActivePipelineId] = useState<string>('ventas');
 
@@ -2824,6 +2962,92 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
     (activeChatObj?.phone && messages[activeChatObj.phone]) ||
     []
   );
+  // Los adjuntos pesados llegan del bootstrap como referencia liviana
+  // (attachment.deferred, sin el base64). Al abrir la conversación se pide
+  // una sola vez por sesión y por chat el historial completo y se fusiona
+  // para restaurar el adjunto real; mientras tanto, el adjunto se sigue
+  // renderizando como uno sin URL (nombre, tipo y tamaño).
+  React.useEffect(() => {
+    if (!activeChatId || !activeChatMessages.length) return;
+    if (!activeChatMessages.some(message => message.attachment?.deferred)) return;
+    // La clave de historial del servidor quedó registrada como alias del
+    // mismo arreglo en el mapa de mensajes durante la sincronización.
+    const aliasKeys = Object.keys(messages).filter(key => messages[key] === activeChatMessages);
+    const historyKey =
+      historyKeyByChatRef.current[activeChatId] ||
+      aliasKeys.find(key => key !== activeChatId && key !== activeCleanPhone && key !== `chat-${activeCleanPhone}`) ||
+      activeCleanPhone;
+    if (!historyKey || deferredHistoryRequestedRef.current.has(historyKey)) return;
+    deferredHistoryRequestedRef.current.add(historyKey);
+    const targetChatId = activeChatId;
+    const targetCleanPhone = activeCleanPhone;
+    const targetPhone = activeChatObj?.phone;
+    (async () => {
+      try {
+        const res = await fetch(`/api/backoffice/whatsapp/history?key=${encodeURIComponent(historyKey)}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const rawHistory = Array.isArray(data?.messages) ? data.messages : [];
+        if (!rawHistory.length) return;
+        const formatted: InboxMessage[] = rawHistory.map((m: any) => ({
+          id: m.id || m.messageId || m.eventId,
+          sender: (m.role === 'client' ? 'client' : (m.role === 'agent' ? 'agent' : 'bot')) as 'client' | 'agent' | 'bot',
+          text: m.text,
+          attachment: m.attachment,
+          fromMobile: !!m.fromMobile || m.source === 'mobile',
+          source: m.source,
+          time: m.time || 'Ahora',
+          timestamp: m.timestamp || m.createdAt
+        }));
+        setMessages(prev => {
+          const current =
+            (targetChatId && prev[targetChatId]) ||
+            (targetCleanPhone && prev[targetCleanPhone]) ||
+            (targetCleanPhone && prev[`chat-${targetCleanPhone}`]) ||
+            (targetPhone && prev[targetPhone]) ||
+            [];
+          if (!current.some(message => message.attachment?.deferred)) return prev;
+          // mergeMessageHistory conserva el adjunto ya renderizado y su clave
+          // de contenido incluye la URL, así que la referencia diferida se
+          // empareja primero por firma (remitente, texto, hora y nombre del
+          // adjunto) y se le restaura el adjunto completo; la fusión con
+          // mergeMessageHistory solo toca mensajes ya presentes (ni duplica
+          // ni reordena la línea de tiempo).
+          const signatureOf = (message: InboxMessage): string => [
+            message.sender,
+            String(message.text || '').trim(),
+            String(message.timestamp || message.time || ''),
+            message.attachment?.name || ''
+          ].join('|');
+          const fullBySignature = new Map<string, InboxMessage>();
+          formatted.forEach(message => {
+            const signature = signatureOf(message);
+            if (!fullBySignature.has(signature)) fullBySignature.set(signature, message);
+          });
+          let replacedAny = false;
+          const prepared = current.map(message => {
+            if (!message.attachment?.deferred) return message;
+            const full = fullBySignature.get(signatureOf(message));
+            if (!full?.attachment) return message;
+            replacedAny = true;
+            return { ...message, attachment: full.attachment };
+          });
+          const counterpartSignatures = new Set(prepared.map(signatureOf));
+          const counterparts = formatted.filter(message => counterpartSignatures.has(signatureOf(message)));
+          const merged = mergeMessageHistory(prepared, counterparts);
+          if (!replacedAny && merged === prepared) return prev;
+          const next = { ...prev };
+          new Set([targetChatId, targetCleanPhone, `chat-${targetCleanPhone}`, historyKey, targetPhone].filter(Boolean)).forEach(key => {
+            next[String(key)] = merged;
+          });
+          return next;
+        });
+      } catch {
+        // Silencioso: la referencia liviana sigue visible con nombre/tipo/tamaño.
+      }
+    })();
+  }, [activeChatId, activeChatMessages]);
+
   const visibleChatMessages = activeChatMessages.slice(-visibleMessageCount);
   const messageIndexOffset = Math.max(0, activeChatMessages.length - visibleChatMessages.length);
 
@@ -2834,7 +3058,7 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
     const timer = window.setTimeout(() => {
       try {
         const compactMessages = Object.fromEntries(
-          Object.entries(messages).map(([key, history]) => [key, Array.isArray(history) ? history.slice(-50) : history])
+          Object.entries(messages).map(([key, history]) => [key, Array.isArray(history) ? history.slice(-50).map(compactMessageForStorage) : history])
         );
         localStorage.setItem(messagesStorageKey, JSON.stringify(compactMessages));
       } catch (e) {
@@ -2847,7 +3071,7 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
   React.useEffect(() => {
     const timer = window.setTimeout(() => {
       try {
-        localStorage.setItem(chatsStorageKey, JSON.stringify(chats));
+        localStorage.setItem(chatsStorageKey, JSON.stringify(chats.map(compactChatForStorage)));
       } catch (e) {
         console.warn('Error guardando chats en localStorage:', e);
       }
@@ -3179,6 +3403,30 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
     { id: 'objecion', name: 'Objeción', color: '#ef4444', pipelineId: 'ventas' },
     { id: 'modificacion', name: 'Modificación', color: '#f59e0b', pipelineId: 'ventas' },
     { id: 'anulacion', name: 'Anulación', color: '#7f1d1d', pipelineId: 'ventas' },
+
+    // Ventas Camisas Polo Pipeline
+    { id: 'polo_nuevo', name: 'Nuevo', color: '#3b82f6', pipelineId: 'ventas_polo' },
+    { id: 'polo_contactado', name: 'Contactado', color: '#ca8a04', pipelineId: 'ventas_polo' },
+    { id: 'polo_interesado', name: 'Interesado', color: '#a855f7', pipelineId: 'ventas_polo' },
+    { id: 'polo_negociacion', name: 'Negociación', color: '#f97316', pipelineId: 'ventas_polo' },
+    { id: 'polo_ganado', name: 'Ganado', color: '#10b981', pipelineId: 'ventas_polo' },
+    { id: 'polo_perdido', name: 'Perdido', color: '#ef4444', pipelineId: 'ventas_polo' },
+
+    // Clientes Mayoristas Pipeline
+    { id: 'may_nuevo', name: 'Nuevo', color: '#3b82f6', pipelineId: 'mayoristas' },
+    { id: 'may_contactado', name: 'Contactado', color: '#ca8a04', pipelineId: 'mayoristas' },
+    { id: 'may_interesado', name: 'Interesado', color: '#a855f7', pipelineId: 'mayoristas' },
+    { id: 'may_negociacion', name: 'Negociación', color: '#f97316', pipelineId: 'mayoristas' },
+    { id: 'may_ganado', name: 'Ganado', color: '#10b981', pipelineId: 'mayoristas' },
+    { id: 'may_perdido', name: 'Perdido', color: '#ef4444', pipelineId: 'mayoristas' },
+
+    // Remarketing Pipeline
+    { id: 'rmk_nuevo', name: 'Nuevo', color: '#3b82f6', pipelineId: 'remarketing' },
+    { id: 'rmk_contactado', name: 'Contactado', color: '#ca8a04', pipelineId: 'remarketing' },
+    { id: 'rmk_interesado', name: 'Interesado', color: '#a855f7', pipelineId: 'remarketing' },
+    { id: 'rmk_negociacion', name: 'Negociación', color: '#f97316', pipelineId: 'remarketing' },
+    { id: 'rmk_ganado', name: 'Ganado', color: '#10b981', pipelineId: 'remarketing' },
+    { id: 'rmk_perdido', name: 'Perdido', color: '#ef4444', pipelineId: 'remarketing' },
 
     // Envíos Pipeline
     { id: 'por_subir', name: 'Por subir / Sin Dropi', color: '#6b7280', pipelineId: 'envios' },
@@ -4057,10 +4305,12 @@ Toda esta información le da un contexto completo y humano a la IA. El chatbot d
       defaultObjective = 'Tomar Pedidos a Domicilio y Reservas de Mesa';
     } else if (type === 'Hotel / Hospedaje') {
       defaultObjective = 'Reservas de Habitaciones y Hospitalidad';
-    } else if (type === 'Servicios / Consultoría' || type === 'Salud / Estética') {
+    } else if (type === 'Servicios / Consultoría' || type === 'Salud / Estética' || type === 'Clínica') {
       defaultObjective = 'Agendar Citas y Asesoría Especializada';
     } else if (type === 'Networkers / Afiliados') {
       defaultObjective = 'Presentación de Oportunidad y Seguimiento';
+    } else if (type === 'Inmobiliaria') {
+      defaultObjective = 'Calificar Leads y Agendar Visitas a Propiedades';
     }
     setBusinessObjective(defaultObjective);
 
@@ -4122,7 +4372,41 @@ d) Nombre y teléfono de contacto.
           { id: 'r_hot_2', phrase: 'disponibilidad', action: 'kanban', value: 'nuevas_consultas', active: true },
           { id: 'r_hot_3', phrase: 'cancelar', action: 'alerta', value: 'Cliente desea cancelar reserva', active: true }
         ],
-        promptBase: `Eres el Asistente Virtual Oficial del Hotel. Tu objetivo principal es: ${defaultObjective}. Brinda información sobre disponibilidad de habitaciones, precios por noche, check-in, servicios (piscina, wifi, desayuno) con un tono muy hospitalario y profesional.`
+        promptBase: `Eres el Asistente Virtual Oficial del Hotel. Tu objetivo principal es: ${defaultObjective}. Atiendes por WhatsApp con un tono muy hospitalario, cálido y profesional.
+
+1. TONO Y COMUNICACIÓN:
+- Sé acogedor y servicial desde el primer mensaje. El huésped debe sentirse bienvenido.
+- Usa emojis acordes (🏨, 🛎️, 🌊, ☕, 🗝️) con moderación.
+- Responde rápido: quien pregunta por hospedaje suele estar comparando opciones.
+
+2. HABITACIONES Y TARIFAS:
+- Tipos: Habitación Sencilla, Doble, Suite, Suite Familiar, Suite Vista al Mar.
+- Para cada tipo conoce: capacidad máxima, camas, precio por noche en temporada baja y alta, y servicios incluidos.
+- Informa claramente qué incluye la tarifa: desayuno, wifi, parqueadero, piscina, impuestos.
+
+3. FLUJO DE RESERVA:
+Cuando el huésped quiera reservar, solicita en orden:
+a) Fechas de llegada (check-in) y salida (check-out).
+b) Número de huéspedes (adultos y niños).
+c) Tipo de habitación preferida.
+d) Nombre completo y documento de identidad.
+e) Teléfono y correo de contacto.
+f) Método de pago y política de cancelación aplicable.
+g) Confirma con código de reserva, fechas, tarifa total y hora de check-in (3:00 PM) / check-out (12:00 M).
+
+4. SERVICIOS DEL HOTEL:
+- Restaurante (horarios), piscina, gimnasio, spa, wifi en todas las áreas, parqueadero, room service 24/7, lavandería.
+- Informa sobre early check-in / late check-out según disponibilidad.
+
+5. MANEJO DE OBJECIONES:
+- Si el precio parece alto, destaca el valor: ubicación, desayuno incluido, experiencias.
+- Si pregunta por cancelación, explica la política con claridad y ofrece reprogramar antes que cancelar.
+- Si hay queja en curso, escala de inmediato a recepción con un resumen del caso.
+
+6. REGLAS IMPORTANTES:
+- No confirmes disponibilidad sin verificar el sistema de reservas.
+- Para grupos de más de 10 personas o eventos, deriva al área comercial.
+- Después del check-out, agradece la visita e invita a dejar una reseña.`
       },
       'Servicios / Consultoría': {
         funnelName: 'Embudo Servicios',
@@ -4137,7 +4421,42 @@ d) Nombre y teléfono de contacto.
           { id: 'r_serv_2', phrase: 'informacion', action: 'etiqueta', value: 'Lead Interesado', active: true },
           { id: 'r_serv_3', phrase: 'urgente', action: 'alerta', value: 'Solicitud urgente de servicio', active: true }
         ],
-        promptBase: `Eres el Asistente Virtual Oficial de Servicios & Consultoría. Tu objetivo principal es: ${defaultObjective}. Agenda citas, aclara dudas sobre los planes de servicio y realiza seguimiento amigable.`
+        promptBase: `Eres el Asistente Virtual Oficial de Servicios & Consultoría. Tu objetivo principal es: ${defaultObjective}. Atiendes por WhatsApp con tono profesional, claro y orientado a resultados.
+
+1. TONO Y COMUNICACIÓN:
+- Sé profesional pero cercano. El cliente busca un experto que le genere confianza.
+- Haz preguntas inteligentes para entender su necesidad antes de ofrecer.
+- Emojis moderados y sobrios (💼, 📊, 📅, ✅).
+
+2. PORTAFOLIO DE SERVICIOS:
+- Conoce cada servicio: alcance, entregables, duración, precio o rango de precio, y casos de éxito.
+- Diferencia entre diagnóstico/asesoría inicial (puede ser gratuita) y servicio contratado.
+
+3. FLUJO DE CALIFICACIÓN DEL LEAD:
+Antes de agendar, califica con:
+a) ¿Qué problema o necesidad tiene? (escucha activa).
+b) ¿Ha intentado resolverlo antes? ¿cómo?
+c) Presupuesto aproximado o rango de inversión.
+d) Urgencia: ¿para cuándo lo necesita?
+e) Quién toma la decisión (¿es el decisor?).
+f) Nombre, empresa (si aplica), teléfono y correo.
+
+4. AGENDAMIENTO DE CITAS:
+a) Ofrece 2-3 opciones de fecha y hora.
+b) Confirma modalidad: presencial, virtual (envía el enlace) o telefónica.
+c) Indica duración y qué debe preparar el cliente.
+d) Envía recordatorio un día antes.
+
+5. PROPUESTAS Y SEGUIMIENTO:
+- Después de la cita diagnóstica, resume lo conversado y envía la propuesta en máximo 24 horas.
+- Haz seguimiento a los 2-3 días: "¿pudiste revisar la propuesta? ¿tienes alguna duda?".
+- Si hay objeción de precio, presenta el retorno de inversión, no solo el costo.
+- Si el cliente no responde, haz hasta 3 seguimientos espaciados y luego déjalo en nutrición.
+
+6. REGLAS IMPORTANTES:
+- No prometas resultados garantizados que dependan de variables externas.
+- Documenta cada interacción relevante en el CRM.
+- Deriva a un consultor senior cuando el caso supere tu alcance.`
       },
       'Salud / Estética': {
         funnelName: 'Embudo Salud y Estética',
@@ -4152,7 +4471,40 @@ d) Nombre y teléfono de contacto.
           { id: 'r_sal_2', phrase: 'tratamiento', action: 'etiqueta', value: 'Consulta Tratamiento', active: true },
           { id: 'r_sal_3', phrase: 'dolor', action: 'alerta', value: 'Paciente reporta dolor/molestia', active: true }
         ],
-        promptBase: `Eres el Asistente Virtual Oficial del Centro de Salud y Estética. Tu objetivo es: ${defaultObjective}. Agenda valoraciones, explica los tratamientos disponibles y recuerda amablemente las citas.`
+        promptBase: `Eres el Asistente Virtual Oficial del Centro de Salud y Estética. Tu objetivo es: ${defaultObjective}. Atiendes por WhatsApp con tono cálido, empático y profesional.
+
+1. TONO Y COMUNICACIÓN:
+- Sé amable y tranquilizadora. Muchos pacientes llegan con dudas o inseguridades sobre su imagen o su salud.
+- Usa emojis suaves y acordes (🌸, ✨, 💆, 🩺).
+- Nunca hagas comentarios sobre el cuerpo del paciente que puedan resultar ofensivos.
+
+2. TRATAMIENTOS Y SERVICIOS:
+- Faciales: limpieza facial, peeling, hidratación, rejuvenecimiento, tratamiento anti-manchas.
+- Corporales: masajes reductores, drenaje linfático, reafirmante.
+- Para cada tratamiento conoce: descripción, duración de la sesión, número de sesiones recomendadas, precio por sesión y por paquete, y resultados esperados.
+
+3. FLUJO DE AGENDAMIENTO:
+a) Tratamiento o necesidad del paciente.
+b) Si es primera vez, agenda primero una valoración gratuita con el especialista.
+c) Fecha y hora preferida (ofrece 2-3 opciones).
+d) Nombre completo, documento y teléfono.
+e) Confirma con recomendaciones previas (llegar 10 min antes, sin maquillaje para faciales, etc.).
+
+4. CONTRAINDICACIONES Y CUIDADO:
+- Pregunta siempre: ¿está en embarazo? ¿tiene alguna condición médica? ¿toma algún medicamento? ¿tiene alergias?
+- Si hay contraindicación, NO agendes el tratamiento y deriva al especialista para valoración.
+- PROHIBIDO diagnosticar o recetar. Solo el profesional de la salud puede hacerlo.
+
+5. POST-TRATAMIENTO Y SEGUIMIENTO:
+- Envía los cuidados posteriores el mismo día del tratamiento.
+- Haz seguimiento a las 48-72 horas: ¿cómo se siente? ¿alguna molestia?
+- Recuerda las citas de control y las sesiones pendientes del paquete.
+- Pide testimonio o reseña solo cuando el paciente esté satisfecho.
+
+6. REGLAS IMPORTANTES:
+- La información del paciente es confidencial.
+- Si el paciente reporta dolor fuerte o reacción adversa, deriva de inmediato al especialista.
+- No garantices resultados específicos; habla de resultados típicos y factores que influyen.`
       },
       'Networkers / Afiliados': {
         funnelName: 'Embudo Networkers',
@@ -4167,7 +4519,44 @@ d) Nombre y teléfono de contacto.
           { id: 'r_net_2', phrase: 'afiliar', action: 'etiqueta', value: 'Listo para Cierre', active: true },
           { id: 'r_net_3', phrase: 'informacion', action: 'alerta', value: 'Solicita más información del negocio', active: true }
         ],
-        promptBase: `Eres el Asistente Virtual para Networkers y Afiliados. Tu objetivo principal es: ${defaultObjective}. Invita a presentaciones Zoom, evalúa la intención de los prospectos y comparte la visión con entusiasmo.`
+        promptBase: `Eres el Asistente Virtual para Networkers y Afiliados. Tu objetivo principal es: ${defaultObjective}. Atiendes por WhatsApp con energía, visión y profesionalismo.
+
+1. TONO Y COMUNICACIÓN:
+- Sé entusiasta pero creíble. La gente se une a personas, no solo a planes.
+- Usa emojis de crecimiento (🚀, 💎, 📈, 🔥) con moderación.
+- Nunca prometas ingresos garantizados ni hables de "dinero fácil".
+
+2. PRESENTACIÓN DEL NEGOCIO:
+- Conoce el plan de compensación: niveles, bonos, requisitos y cómo se gana en cada nivel.
+- Ten claras las historias de éxito reales (sin inventar).
+- Diferencia entre cliente (consume) y afiliado (construye red).
+
+3. FLUJO DE CALIFICACIÓN DEL PROSPECTO:
+a) ¿Qué busca? ¿ingreso extra o cambio de estilo de vida?
+b) ¿Cuánto tiempo puede dedicarle por semana?
+c) ¿Tiene experiencia en ventas o redes de mercadeo?
+d) ¿Está dispuesto a aprender y seguir un sistema?
+e) Nombre y teléfono para invitarlo a la presentación.
+
+4. INVITACIÓN A LA PRESENTACIÓN:
+- Invita a la presentación (Zoom o presencial) con fecha y hora concretas.
+- Genera curiosidad sin revelar todo: "te voy a mostrar cómo personas comunes están generando un ingreso extra con un sistema probado".
+- Confirma asistencia el mismo día y envía el enlace 30 min antes.
+
+5. SEGUIMIENTO POST-PRESENTACIÓN:
+- Pregunta al día siguiente: ¿qué fue lo que más te llamó la atención?
+- Resuelve objeciones comunes: "no tengo tiempo" (el sistema es flexible), "no sé vender" (hay entrenamiento), "es pirámide" (explica la diferencia con el producto real).
+- Si está listo, guía el registro paso a paso y da la bienvenida oficial.
+
+6. DUPLICACIÓN:
+- Al nuevo afiliado, preséntale el plan de arranque de 7 días.
+- Enséñale a hacer su lista de contactos y sus primeras invitaciones.
+- El éxito del equipo es tu éxito: acompaña, no abandones.
+
+7. REGLAS IMPORTANTES:
+- Cumple la normativa: no hagas afirmaciones de ingresos sin evidencia.
+- Si el prospecto dice NO, respeta y déjalo en seguimiento amable.
+- Deriva a un líder cuando el prospecto pida hablar con alguien de mayor rango.`
       },
       'E-Commerce (Venta de Productos)': {
         funnelName: 'Ventas',
@@ -4189,7 +4578,153 @@ d) Nombre y teléfono de contacto.
           { id: 'r_eco_2', phrase: 'comprar', action: 'etiqueta', value: 'Listo para Compra', active: true },
           { id: 'r_eco_3', phrase: 'garantia', action: 'alerta', value: 'Revisión técnica solicitada (Garantía)', active: true }
         ],
-        promptBase: `Eres un Asistente de Ventas experto en E-commerce. Tu objetivo principal es: ${defaultObjective}. Ofrece pago contra entrega (Dropi/MasterShop), aclara características de productos y aplica gatillos de urgencia.`
+        promptBase: `Eres un Asistente de Ventas experto en E-commerce. Tu objetivo principal es: ${defaultObjective}. Atiendes por WhatsApp con tono persuasivo, ágil y orientado al cierre.
+
+1. TONO Y COMUNICACIÓN:
+- Sé rápido y directo: en e-commerce la velocidad cierra ventas.
+- Usa emojis comerciales (🛒, 📦, 💰, ⚡, 🎁) y gatillos de urgencia reales.
+- Personaliza: usa el nombre del cliente cuando lo sepas.
+
+2. CATÁLOGO Y PRODUCTOS:
+- Conoce cada producto: nombre, precio, características, variantes (talla/color), stock e imágenes.
+- Cuando el cliente pregunte, envía foto + precio + beneficio principal en un solo mensaje.
+- Si no hay stock, ofrece alternativa inmediata o fecha de reposición.
+
+3. FLUJO DE VENTA:
+a) Saluda y pregunta qué busca o presenta la oferta del día.
+b) Recomienda según necesidad y presupuesto.
+c) Maneja objeciones: precio (muestra valor y compara), desconfianza (garantía y pago contra entrega), demora (tiempos claros).
+d) Cierra: "¿Te lo separo? Solo necesito tu nombre, dirección y ciudad".
+
+4. TOMA DEL PEDIDO (PAGO CONTRA ENTREGA):
+a) Nombre completo.
+b) Dirección exacta (barrio + ciudad + referencia).
+c) Teléfono de contacto.
+d) Producto, cantidad y variantes.
+e) Confirma el total con envío y el tiempo estimado de entrega.
+f) Crea el pedido en el sistema y envía el resumen al cliente.
+
+5. PAGO ANTICIPADO:
+- Si el cliente prefiere pagar antes, ofrece Nequi, Daviplata, PSE o tarjeta.
+- Valida el comprobante antes de confirmar el despacho.
+
+6. POST-VENTA:
+- Envía la guía de rastreo cuando el pedido se despache.
+- A los 2-3 días de entregado, pregunta si llegó bien y pide una reseña o foto.
+- Ofrece productos complementarios (cross-selling) en el seguimiento.
+- Si hay reclamo de garantía, registra el caso y escala según la política.
+
+7. RECUPERACIÓN DE CARRITOS:
+- Si el cliente dejó la conversación sin comprar, haz seguimiento a las 4-6 horas con un incentivo (descuento o envío gratis).
+- Máximo 2 seguimientos para no saturar.
+
+8. REGLAS IMPORTANTES:
+- Nunca inventes precios, stock o tiempos de entrega.
+- No presiones con urgencia falsa ("solo queda 1" si no es verdad).
+- Todo pedido debe quedar registrado en el CRM antes de confirmar al cliente.`
+      },
+      'Inmobiliaria': {
+        funnelName: 'Embudo Inmobiliaria',
+        columns: [
+          { id: 'inmo_nuevos_leads', name: 'Nuevos Leads', color: '#3b82f6', pipelineId: 'ventas' },
+          { id: 'inmo_visita_agendada', name: 'Visita Agendada', color: '#eab308', pipelineId: 'ventas' },
+          { id: 'inmo_propuesta_enviada', name: 'Propuesta Enviada', color: '#f59e0b', pipelineId: 'ventas' },
+          { id: 'inmo_cierre', name: 'Cierre / Escrituración', color: '#10b981', pipelineId: 'ventas' }
+        ],
+        rules: [
+          { id: 'r_inmo_1', phrase: 'casa', action: 'etiqueta', value: 'Interesado Propiedad', active: true },
+          { id: 'r_inmo_2', phrase: 'apartamento', action: 'etiqueta', value: 'Interesado Propiedad', active: true },
+          { id: 'r_inmo_3', phrase: 'visita', action: 'kanban', value: 'inmo_visita_agendada', active: true },
+          { id: 'r_inmo_4', phrase: 'precio', action: 'alerta', value: 'Cliente pregunta precio de propiedad', active: true }
+        ],
+        promptBase: `Eres el Asesor Inmobiliario Virtual Oficial de la Inmobiliaria. Tu objetivo principal es calificar leads, agendar visitas a propiedades y acompañar al cliente hasta el cierre de la negociación.
+
+1. TONO Y COMUNICACIÓN:
+- Sé profesional, cordial y confiable. Usa un lenguaje claro, sin tecnicismos innecesarios.
+- Transmite seguridad: el cliente está tomando una de las decisiones más importantes de su vida.
+- Emojis moderados y acordes (🏠, 🔑, 📍, 💰).
+
+2. PORTAFOLIO DE PROPIEDADES:
+- Tipos: Casas, Apartamentos, Lotes, Locales Comerciales, Fincas.
+- Para cada propiedad conoce: ubicación exacta (barrio/ciudad), área construida y privada, número de habitaciones y baños, estrato, precio de venta o canon de arriendo, y estado (nueva/usada/sobre planos).
+
+3. FLUJO DE CALIFICACIÓN DEL LEAD:
+Cuando un cliente muestre interés, califica en orden:
+a) Tipo de propiedad que busca (casa, apartamento, lote, local).
+b) Presupuesto disponible o rango de precio.
+c) Ubicación preferida (barrios o zonas de la ciudad).
+d) Número de habitaciones y baños requeridos.
+e) Propósito: vivienda propia o inversión.
+f) Nombre completo y teléfono de contacto.
+
+4. AGENDAMIENTO DE VISITAS:
+Si el cliente desea visitar una propiedad, solicita:
+a) Propiedad de interés (código o dirección).
+b) Fecha y hora preferida para la visita.
+c) Número de personas que asistirán.
+d) Confirma el punto de encuentro y envía la ubicación.
+
+5. SEGUIMIENTO POST-VISITA:
+- Pregunta al día siguiente qué le pareció la propiedad.
+- Si hay interés, presenta la propuesta formal con precio, forma de pago y tiempos.
+- Ofrece alternativas similares si la primera opción no convenció.
+- Nunca presiones; asesora con datos y comparables del sector.
+
+6. REGLAS IMPORTANTES:
+- No inventes precios ni características de propiedades que no estén en el catálogo.
+- Si el cliente pregunta por financiación, orienta sobre crédito hipotecario y leasing sin dar asesoría financiera definitiva.
+- Deriva a un asesor humano cuando la negociación entre en etapa de oferta formal.`
+      },
+      'Clínica': {
+        funnelName: 'Embudo Clínica',
+        columns: [
+          { id: 'cli_citas_solicitadas', name: 'Citas Solicitadas', color: '#3b82f6', pipelineId: 'ventas' },
+          { id: 'cli_cita_confirmada', name: 'Cita Confirmada', color: '#eab308', pipelineId: 'ventas' },
+          { id: 'cli_en_consulta', name: 'En Consulta', color: '#f59e0b', pipelineId: 'ventas' },
+          { id: 'cli_tratamiento_activo', name: 'Tratamiento Activo', color: '#10b981', pipelineId: 'ventas' }
+        ],
+        rules: [
+          { id: 'r_cli_1', phrase: 'cita', action: 'kanban', value: 'cli_citas_solicitadas', active: true },
+          { id: 'r_cli_2', phrase: 'urgencia', action: 'alerta', value: 'Posible urgencia médica - derivar', active: true },
+          { id: 'r_cli_3', phrase: 'dolor', action: 'alerta', value: 'Posible urgencia médica - derivar', active: true },
+          { id: 'r_cli_4', phrase: 'precio', action: 'etiqueta', value: 'Consulta Precios', active: true },
+          { id: 'r_cli_5', phrase: 'costo', action: 'etiqueta', value: 'Consulta Precios', active: true }
+        ],
+        promptBase: `Eres el Asistente Virtual Oficial de la Clínica. Tu objetivo principal es agendar citas médicas, orientar sobre especialidades y servicios, y hacer seguimiento a los pacientes con un tono empático y profesional.
+
+1. TONO Y COMUNICACIÓN:
+- Sé empático, cálido y profesional. La salud es un tema sensible.
+- Usa un lenguaje claro y tranquilizador. Evita tecnicismos médicos complejos.
+- Emojis moderados (🏥, 🩺, 💙, 📅).
+- Nunca minimices los síntomas del paciente ni generes alarma innecesaria.
+
+2. ESPECIALIDADES Y SERVICIOS:
+- Medicina General, Pediatría, Odontología, Dermatología, Ginecología, Fisioterapia.
+- Para cada especialidad conoce: médicos disponibles, horarios de atención, duración aproximada de la cita y si requiere ayuno o preparación previa.
+
+3. FLUJO DE AGENDAMIENTO DE CITAS:
+Cuando un paciente solicite una cita:
+a) Especialidad o motivo de la consulta.
+b) Médico de preferencia (si tiene).
+c) Fecha y hora preferida (ofrece 2-3 opciones disponibles).
+d) Nombre completo, documento de identidad y teléfono.
+e) EPS o medicina prepagada (si aplica) o particular.
+f) Confirma la cita con fecha, hora, sede y recomendaciones previas.
+
+4. TRIAJE BÁSICO (SIN DIAGNÓSTICO):
+- Puedes hacer preguntas orientadoras: ¿desde cuándo presenta los síntomas? ¿ha tomado algún medicamento?
+- Si detectas palabras como "dolor fuerte", "urgencia", "emergencia", "sangrado", deriva INMEDIATAMENTE a un profesional y sugiere acudir a urgencias.
+- PROHIBIDO: dar diagnósticos, recetar medicamentos o interpretar resultados de exámenes.
+
+5. RECORDATORIOS Y SEGUIMIENTO:
+- Recuerda la cita un día antes con fecha, hora y sede.
+- Después de la consulta, pregunta por la evolución solo si el médico lo indicó.
+- Para tratamientos en curso, recuerda las citas de control.
+
+6. REGLAS IMPORTANTES:
+- La información de salud del paciente es confidencial: no la compartas ni la repitas innecesariamente.
+- Si no sabes algo médico, dilo claramente y deriva al profesional.
+- En caso de urgencia real, indica llamar a la línea de emergencias local.`
       }
     };
 
@@ -4270,6 +4805,26 @@ d) Nombre y teléfono de contacto.
       defaultCaptureProduct = 'Membresía Anual de Negocios';
       defaultCaptureCampaign = 'Retargeting Masterclass FB';
       defaultCaptureTicket = 590000;
+    } else if (type === 'Inmobiliaria') {
+      customTemplates = [
+        { id: '1', name: 'confirmacion_visita', category: 'UTILITY', language: 'es', status: 'APPROVED', body: '¡Hola {{1}}! Tu visita a la propiedad {{2}} quedó agendada para el {{3}}. Nos vemos en el punto de encuentro acordado. ¡Será un gusto atenderte! 🏠🔑', headerType: 'IMAGE', headerUrl: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=400&q=80' },
+        { id: '2', name: 'seguimiento_propiedad', category: 'MARKETING', language: 'es', status: 'APPROVED', body: '¡Hola {{1}}! ¿Qué te pareció la propiedad {{2}} que visitaste? Tenemos opciones similares en la zona que podrían interesarte. ¿Agendamos otra visita? 📍', headerType: 'VIDEO', headerUrl: 'https://assets.mixkit.co/videos/preview/mixkit-card-payment-in-a-shop-40243-large.mp4' },
+        { id: '3', name: 'soporte_inmobiliaria', category: 'UTILITY', language: 'es', status: 'APPROVED', body: 'Hola {{1}}, un asesor inmobiliario se comunicará contigo pronto para resolver tu consulta sobre {{2}}. Estamos para ayudarte a encontrar tu propiedad ideal. 💰', headerType: 'DOCUMENT', headerUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf' }
+      ];
+      customTestVariables = 'Laura, Apartamento en El Poblado, 16 de Octubre 4 PM';
+      defaultCaptureProduct = 'Apartamento 3 Hab El Poblado';
+      defaultCaptureCampaign = 'Portales Inmobiliarios - Zona Sur';
+      defaultCaptureTicket = 450000000;
+    } else if (type === 'Clínica') {
+      customTemplates = [
+        { id: '1', name: 'confirmacion_cita', category: 'UTILITY', language: 'es', status: 'APPROVED', body: '¡Hola {{1}}! Tu cita de {{2}} quedó confirmada para el {{3}}. Recuerda llegar 10 minutos antes con tu documento de identidad. ¡Te esperamos! 🏥📅', headerType: 'IMAGE', headerUrl: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=400&q=80' },
+        { id: '2', name: 'recordatorio_cita', category: 'UTILITY', language: 'es', status: 'APPROVED', body: '¡Hola {{1}}! Te recordamos tu cita de {{2}} programada para {{3}}. Si necesitas reprogramar, responde a este mensaje. ¡Tu salud es lo primero! 💙', headerType: 'VIDEO', headerUrl: 'https://assets.mixkit.co/videos/preview/mixkit-card-payment-in-a-shop-40243-large.mp4' },
+        { id: '3', name: 'soporte_clinica', category: 'UTILITY', language: 'es', status: 'APPROVED', body: 'Hola {{1}}, nuestro equipo médico se comunicará contigo pronto para orientarte sobre {{2}}. Estamos para cuidar de ti. 🩺', headerType: 'DOCUMENT', headerUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf' }
+      ];
+      customTestVariables = 'María, Medicina General, 15 de Octubre 9 AM';
+      defaultCaptureProduct = 'Consulta Medicina General';
+      defaultCaptureCampaign = 'Google Ads Clínica Local';
+      defaultCaptureTicket = 80000;
     }
 
     setTemplates(customTemplates);
@@ -4283,8 +4838,38 @@ d) Nombre y teléfono de contacto.
       onNicheChange(type);
     }
 
+    // Persist applied niche template so it survives page reloads
+    try {
+      localStorage.setItem('whatsapp_niche_applied', type);
+      localStorage.setItem('whatsapp_niche_data', JSON.stringify({
+        funnelName: template.funnelName,
+        columns: template.columns,
+        rules: template.rules
+      }));
+    } catch {}
+
     return template.promptBase;
   };
+
+  // Restore previously applied niche template on mount
+  React.useEffect(() => {
+    try {
+      const savedType = localStorage.getItem('whatsapp_niche_applied');
+      const savedData = localStorage.getItem('whatsapp_niche_data');
+      if (savedType && savedData) {
+        const data = JSON.parse(savedData);
+        setBusinessType(savedType);
+        setPipelines((prev: any) => prev.map((p: any) => p.id === 'ventas' ? { ...p, name: data.funnelName } : p));
+        setKanbanColumns((prev: any) => [...data.columns, ...prev.filter((c: any) => c.pipelineId !== 'ventas')]);
+        setAiAutomationRules((prev: any) => {
+          const savedIds = data.rules.map((r: any) => r.id);
+          const filteredPrev = prev.filter((r: any) => !savedIds.includes(r.id));
+          return [...data.rules, ...filteredPrev];
+        });
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleGenerateAI = () => {
     setIsGenerating(true);
@@ -4371,6 +4956,16 @@ ${parametersString}
       {currentViewTab !== 'conversaciones' && (
         <div className="flex items-center justify-between border-b border-zinc-800/80 pb-4 flex-wrap gap-4">
           <div className="flex items-center gap-3">
+            {onToggleSidebar && (
+              <button
+                type="button"
+                onClick={onToggleSidebar}
+                className="w-9 h-9 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 hover:border-zinc-700 transition cursor-pointer shrink-0 flex items-center justify-center"
+                title="Atrás"
+              >
+                <ArrowLeft size={18} />
+              </button>
+            )}
             <div className="w-9 h-9 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-300 shrink-0">
               <Smartphone size={18} />
             </div>
@@ -5068,12 +5663,13 @@ ${parametersString}
                           </div>
                           <button
                             type="button"
-                            onClick={handleRefreshRealQr}
+                            onClick={guardedRefreshQr}
                             className="text-xs text-emerald-400 hover:underline font-medium inline-flex items-center gap-1.5"
                           >
                             <RefreshCw size={13} />
                             Regenerar Código QR
                           </button>
+                          {paywall.modal}
                         </div>
                       ) : (
                         <div className="py-4 space-y-4 text-left">
@@ -5124,6 +5720,17 @@ ${parametersString}
              <div className={`p-3 border-b border-zinc-800 bg-zinc-950 flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0 ${mobileView === 'chat' ? 'hidden md:flex' : 'flex'}`}>
                 <div className="flex flex-wrap items-center justify-between gap-3 w-full sm:w-auto">
                    <div className="flex items-center gap-2.5">
+                      {onBack && (
+                        <button
+                          type="button"
+                          onClick={onBack}
+                          className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-gold hover:text-amber-300 border border-gold/30 hover:border-gold/60 transition cursor-pointer shrink-0 flex items-center justify-center shadow-sm"
+                          title="Volver"
+                          aria-label="Volver"
+                        >
+                          <ArrowLeft size={16} />
+                        </button>
+                      )}
                       {onToggleSidebar && (
                         <button
                           type="button"
@@ -5191,7 +5798,7 @@ ${parametersString}
              {/* Sidebar / Chat List */}
              <div className={`w-full md:w-[320px] lg:w-[340px] border-r border-zinc-800 flex-col bg-zinc-950 shrink-0 ${mobileView === 'list' ? 'flex' : 'hidden md:flex'}`}>
                {/* Header */}
-               <div className="h-14 bg-zinc-900/90 border-b border-zinc-800 flex items-center justify-between px-3 shrink-0">
+               <div className="min-h-14 bg-zinc-900/90 border-b border-zinc-800 flex items-center justify-between px-2 sm:px-3 py-2 gap-2 flex-wrap shrink-0">
                  <div className="flex items-center gap-2">
                    <span className="text-zinc-200 font-semibold text-xs">Chats (IA & Humanos)</span>
                  </div>
@@ -5282,11 +5889,11 @@ ${parametersString}
                       </div>
 
                      {/* Dropdowns for Column & Tag filters */}
-                     <div className="grid grid-cols-2 gap-1.5 pt-0.5 text-[9px]">
+                     <div className="flex gap-1.5 pt-0.5 overflow-x-auto no-scrollbar">
                         <select
                           value={filterTag}
                           onChange={(e) => setFilterTag(e.target.value)}
-                          className="bg-[#202c33] border border-gray-800 text-gray-300 rounded px-1.5 py-1 focus:outline-none cursor-pointer"
+                          className="shrink-0 w-auto max-w-full bg-[#202c33] border border-gray-800 text-gray-300 rounded px-1.5 py-1 text-[10px] focus:outline-none cursor-pointer"
                         >
                            <option value="all">🏷️ Etiquetas: Todas</option>
                            {Array.from(new Set([
@@ -5300,7 +5907,7 @@ ${parametersString}
                         <select
                           value={filterColumn}
                           onChange={(e) => setFilterColumn(e.target.value)}
-                          className="bg-[#202c33] border border-gray-800 text-gray-300 rounded px-1.5 py-1 focus:outline-none cursor-pointer"
+                          className="shrink-0 w-auto max-w-full bg-[#202c33] border border-gray-800 text-gray-300 rounded px-1.5 py-1 text-[10px] focus:outline-none cursor-pointer"
                         >
                            <option value="all">📊 Columnas: Todas</option>
                            {kanbanColumns.map(col => (
@@ -5371,14 +5978,14 @@ ${parametersString}
                                {chat.name}
                                {(chat as any).isSocialThread && ((chat as any).origins || []).map((o: string) => <SocialOriginBadge key={o} origin={o} />)}
                              </h4>
-                             <span className={`text-xs ${chat.unread ? 'text-[#00a884]' : 'text-[#8696a0]'}`}>{formatColombiaTime(chat.time)}</span>
+                             <span className={`text-xs shrink-0 ml-2 ${chat.unread ? 'text-[#00a884]' : 'text-[#8696a0]'}`}>{formatChatListDate(chat.time)}</span>
                           </div>
                           <div className="flex justify-between items-center">
                              <div className="min-w-0">
                                <p className="text-[#8696a0] text-sm truncate">{chat.msg}</p>
                                {(chat.platform === 'instagram' || chat.externalId) && <span className="text-[9px] text-amber-300/80 font-mono truncate block">ID: {chat.externalId || chat.phone}</span>}
                              </div>
-                             {chat.unread > 0 && <span className="bg-[#00a884] text-[#111b21] text-[10px] font-bold px-1.5 py-0.5 rounded-full">{chat.unread}</span>}
+                             {chat.unread > 0 && <span className="bg-[#00a884] text-[#111b21] text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ml-2">{chat.unread}</span>}
                           </div>
                        </div>
                     </div>
@@ -6213,9 +6820,6 @@ ${parametersString}
                             {pip.isNestComplaints && (
                               <span className="bg-red-500/20 text-red-400 text-[9px] px-1.5 py-0.2 rounded-full border border-red-500/30 animate-pulse">Anidación</span>
                             )}
-                            {pip.isNestLogistics && (
-                              <span className="bg-gold-500/20 text-gold-400 text-[9px] px-1.5 py-0.2 rounded-full border border-gold-500/30 animate-pulse">Logística</span>
-                            )}
                           </button>
                           {/* Only allow deleting custom pipelines */}
                           {pip.id !== 'ventas' && pip.id !== 'envios' && (
@@ -6289,21 +6893,6 @@ ${parametersString}
                         </div>
                       </div>
                       <span className="text-[9px] bg-red-500/10 text-red-300 font-mono px-2 py-0.5 rounded border border-red-500/20 shrink-0 font-bold">Nivel 1 Filtro Automático</span>
-                    </div>
-                  )}
-
-                  {pipelines.find(p => p.id === activePipelineId)?.isNestLogistics && (
-                    <div className="bg-gradient-to-r from-blue-950/40 via-black to-blue-950/20 border-b border-blue-900/30 px-4 py-2 flex items-center justify-between text-left shrink-0">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-5 h-5 rounded bg-gold-500/15 border border-gold-500/30 flex items-center justify-center text-gold-400 animate-pulse">
-                          <Package size={12} />
-                        </div>
-                        <div>
-                          <div className="text-xs font-bold text-gray-200">Seguimiento de Estados Logísticos Activo</div>
-                          <div className="text-[10px] text-gray-400">Este Canva captura y enruta automáticamente según el estado del pedido detectado por la IA (Pendiente, En Ruta, Entregado, Novedades).</div>
-                        </div>
-                      </div>
-                      <span className="text-[9px] bg-gold-500/10 text-amber-300 font-mono px-2 py-0.5 rounded border border-gold-500/20 shrink-0 font-bold">Ruta Logística IA</span>
                     </div>
                   )}
 
@@ -7278,6 +7867,8 @@ ${parametersString}
                     <option value="Hotel / Hospedaje">🏨 Hotel / Hospedaje (Habitaciones y Reservas)</option>
                     <option value="Servicios / Consultoría">💼 Servicios / Consultoría (Citas y Asesorías)</option>
                     <option value="Salud / Estética">💅 Salud / Estética (Tratamientos y Citas)</option>
+                    <option value="Clínica">🏥 Clínica (Citas Médicas y Especialidades)</option>
+                    <option value="Inmobiliaria">🏠 Inmobiliaria (Propiedades y Visitas)</option>
                     <option value="Networkers / Afiliados">🚀 Networkers / Afiliados (Presentación y Cierre)</option>
                     <option value="Otro">🎯 Otro Tipo de Negocio</option>
                   </select>

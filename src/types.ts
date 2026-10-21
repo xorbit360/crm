@@ -1,4 +1,4 @@
-export type ModuleId = 'dashboard' | 'branding' | 'mercado' | 'contenido' | 'landing' | 'ads' | 'whatsapp' | 'automatizaciones' | 'integraciones' | 'comunidad' | 'usuarios' | 'entrenamiento' | 'proveedores' | 'llamadas' | 'email' | 'configuracion_general' | 'recargas' | 'referidos' | 'dominio' | 'proyectos' | 'mcp_api' | 'live_selling' | 'difusiones' | 'video' | 'radar';
+export type ModuleId = 'dashboard' | 'ads' | 'whatsapp' | 'automatizaciones' | 'integraciones' | 'comunidad' | 'usuarios' | 'entrenamiento' | 'proveedores' | 'llamadas' | 'configuracion_general' | 'recargas' | 'referidos' | 'dominio' | 'proyectos' | 'mcp_api' | 'live_selling' | 'difusiones' | 'video' | 'radar' | 'contenido';
 
 export interface AIResponse {
   content: string;

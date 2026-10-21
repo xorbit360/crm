@@ -27,6 +27,27 @@ const WORKSPACE = 'default';
 const SETTINGS_KEY = 'platform.webhooks';
 const MAX_LOGS = 50;
 
+// Aislamiento por usuario: cada usuario tiene sus propios webhooks
+function getUserKeyFromReq(req: Request): string {
+  try {
+    const cookie = String((req as any).headers?.cookie || '');
+    const match = cookie.match(/xorbit_session=([^;]+)/);
+    if (!match) return 'anonymous';
+    const token = decodeURIComponent(match[1]);
+    const [encoded] = token.split('.');
+    if (!encoded) return 'anonymous';
+    const payload = JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8'));
+    // Si es miembro de equipo, usar la key del admin
+    const userKey = String(payload.sub || payload.username || payload.email || 'anonymous');
+    return userKey;
+  } catch { return 'anonymous'; }
+}
+
+function settingsKeyForUser(userKey: string): string {
+  // Superadmin usa la key global; otros usan key por usuario
+  return userKey === 'anonymous' ? SETTINGS_KEY : `${SETTINGS_KEY}.${userKey}`;
+}
+
 export const PLATFORM_WEBHOOK_EVENTS = [
   { id: 'order.created', label: 'Pedido creado' },
   { id: 'order.updated', label: 'Pedido actualizado' },
@@ -86,12 +107,13 @@ function cleanUrl(v: unknown): string {
   return s.slice(0, 500);
 }
 
-async function readSettings(): Promise<PlatformWebhookSettings> {
+async function readSettings(userKey?: string): Promise<PlatformWebhookSettings> {
   try {
     const client = db();
     if (!client) return { ...DEFAULT_SETTINGS };
+    const key = userKey ? settingsKeyForUser(userKey) : SETTINGS_KEY;
     const { data } = await client.from('app_settings').select('value')
-      .eq('workspace_id', WORKSPACE).eq('key', SETTINGS_KEY).maybeSingle() as any;
+      .eq('workspace_id', WORKSPACE).eq('key', key).maybeSingle() as any;
     const raw = data?.value;
     const stored = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : {};
     return {
@@ -101,12 +123,13 @@ async function readSettings(): Promise<PlatformWebhookSettings> {
   } catch { return { ...DEFAULT_SETTINGS }; }
 }
 
-async function writeSettings(s: PlatformWebhookSettings): Promise<void> {
+async function writeSettings(s: PlatformWebhookSettings, userKey?: string): Promise<void> {
   const client = db();
   if (!client) throw new Error('Supabase no disponible');
+  const key = userKey ? settingsKeyForUser(userKey) : SETTINGS_KEY;
   const payload = { value: s, updated_at: new Date().toISOString() };
   const { data: existing } = await client.from('app_settings').select('id')
-    .eq('workspace_id', WORKSPACE).eq('key', SETTINGS_KEY).maybeSingle() as any;
+    .eq('workspace_id', WORKSPACE).eq('key', key).maybeSingle() as any;
   if (existing?.id) {
     await client.from('app_settings').update(payload).eq('id', existing.id);
   } else {
@@ -183,8 +206,10 @@ async function findHook(settings: PlatformWebhookSettings, id: string): Promise<
 
 export function setupPlatformWebhooksRoutes(app: Express): void {
   // ---- API principal (nueva sección Configuración → Webhooks) ----
-  app.get('/api/platform-webhooks', route(async (_req, res) => {
-    const s = await readSettings();
+  // Aislados por usuario: cada usuario tiene sus propios webhooks
+  app.get('/api/platform-webhooks', route(async (req, res) => {
+    const userKey = getUserKeyFromReq(req);
+    const s = await readSettings(userKey);
     res.json({
       success: true,
       outgoing: s.outgoing.map(sanitizeHook),
@@ -197,7 +222,8 @@ export function setupPlatformWebhooksRoutes(app: Express): void {
   app.put('/api/platform-webhooks', route(async (req, res) => {
     const body = req.body || {};
     if (!Array.isArray(body.outgoing)) { res.status(400).json({ success: false, error: 'Formato inválido' }); return; }
-    const current = await readSettings();
+    const userKey = getUserKeyFromReq(req);
+    const current = await readSettings(userKey);
     const next: OutgoingHook[] = [];
     for (const item of body.outgoing.slice(0, 20)) {
       const url = cleanUrl(item.url);
@@ -213,12 +239,13 @@ export function setupPlatformWebhooksRoutes(app: Express): void {
       } else if (item.clearSecret === true) { secret = ''; }
       next.push({ id, url, events, active: item.active !== false, secret, lastDelivery: prev?.lastDelivery || null });
     }
-    await writeSettings({ outgoing: next, logs: current.logs });
+    await writeSettings({ outgoing: next, logs: current.logs }, userKey);
     res.json({ success: true, outgoing: next.map(sanitizeHook) });
   }));
 
   app.post('/api/platform-webhooks/test', route(async (req, res) => {
-    const s = await readSettings();
+    const userKey = getUserKeyFromReq(req);
+    const s = await readSettings(userKey);
     const hook = await findHook(s, String(req.body?.id || ''));
     if (!hook) { res.status(404).json({ success: false, error: 'Webhook no encontrado' }); return; }
     const r = await deliverToHook(hook, 'test', {
@@ -228,7 +255,7 @@ export function setupPlatformWebhooksRoutes(app: Express): void {
     hook.lastDelivery = { ok: r.ok, at: new Date().toISOString(), status: r.status, detail: r.detail };
     s.logs.unshift({ at: new Date().toISOString(), url: hook.url, event: 'test', status: r.status, ok: r.ok, ms: r.ms });
     s.logs = s.logs.slice(0, MAX_LOGS);
-    try { await writeSettings(s); } catch { /* best-effort */ }
+    try { await writeSettings(s, userKey); } catch { /* best-effort */ }
     res.json({ success: r.ok, statusCode: r.status, latencyMs: r.ms, detail: r.detail });
   }));
 

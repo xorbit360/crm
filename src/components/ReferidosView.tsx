@@ -37,8 +37,12 @@ interface WithdrawalRequest {
 }
 
 export default function ReferidosView({ currentUser }: { currentUser?: any }) {
+  // Comisión personalizada por usuario (caso específico: Feria Effix = 40%)
+  const customRate = currentUser?.customCommissionRate;
+  const n1Rate = customRate || 20;
   // Generate or retrieve persistent referral code
   const [referralCode] = useState<string>(() => {
+    if (currentUser?.referralCode) return currentUser.referralCode;
     const saved = localStorage.getItem('xorbit_referral_code');
     if (saved) return saved;
     const base = currentUser?.email ? currentUser.email.split('@')[0].toUpperCase().slice(0, 4) : '8650';
@@ -108,7 +112,7 @@ export default function ReferidosView({ currentUser }: { currentUser?: any }) {
     setTimeout(() => setCopiedCode(false), 2500);
   };
 
-  const handleRequestWithdraw = (e: React.FormEvent) => {
+  const handleRequestWithdraw = async (e: React.FormEvent) => {
     e.preventDefault();
     const amountNum = parseFloat(withdrawAmount);
     if (!amountNum || amountNum <= 0) {
@@ -132,6 +136,23 @@ export default function ReferidosView({ currentUser }: { currentUser?: any }) {
       accountDetails: withdrawMethod === 'saldo_crm' ? 'Acreditación en Saldo CRM' : accountDetails,
       status: 'Pendiente'
     };
+
+    // Enviar al backend para que el admin lo vea y procese
+    try {
+      const res = await fetch('/api/referrals/withdrawals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newRequest)
+      });
+      const data = await res.json();
+      if (!data.success) {
+        showNotification(data.error || 'No se pudo enviar la solicitud.', true);
+        return;
+      }
+    } catch (err: any) {
+      showNotification('Error de conexión. Intenta de nuevo.', true);
+      return;
+    }
 
     const newWithdrawals = [newRequest, ...withdrawals];
     const newBalance = {
@@ -283,7 +304,7 @@ export default function ReferidosView({ currentUser }: { currentUser?: any }) {
             </div>
           </div>
           <p className="text-[11px] text-gray-500 mt-3 leading-snug">
-            Comparte este código o enlace y gana un 20% de comisión por cada referido directo.
+            Comparte este código o enlace y gana un {n1Rate}% de comisión por cada referido directo.
           </p>
         </div>
 
@@ -309,7 +330,7 @@ export default function ReferidosView({ currentUser }: { currentUser?: any }) {
           {/* Level 1 */}
           <div className="bg-black/50 border border-emerald-500/40 rounded-xl p-3.5 text-center space-y-1">
             <div className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Nivel 1 (Directos)</div>
-            <div className="text-2xl font-black text-emerald-400">20%</div>
+            <div className="text-2xl font-black text-emerald-400">{n1Rate}%</div>
             <p className="text-[10px] text-gray-400">{countByLevel[1]} referidos</p>
           </div>
 

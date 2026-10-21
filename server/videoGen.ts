@@ -16,7 +16,7 @@
 // Sin menciones a terceros en la UI: todo es marca Xorbit 360.
 // ============================================================================
 
-import type { Express, Request, Response } from 'express';
+import type { Express, Request, Response, RequestHandler } from 'express';
 import { decryptSecret } from './secretBox.ts';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -538,7 +538,7 @@ export function cancelVideoJob(id: string, tenant: string): AnyRow | null {
 // ---------------------------------------------------------------------------
 // Rutas admin
 // ---------------------------------------------------------------------------
-export function setupVideoGenAdminRoutes(app: Express) {
+export function setupVideoGenAdminRoutes(app: Express, paywall?: RequestHandler) {
   // Catálogo de modelos + precios de venta vigentes
   app.get('/api/video-gen/models', (req: Request, res: Response) => {
     try {
@@ -583,7 +583,9 @@ export function setupVideoGenAdminRoutes(app: Express) {
 
 
   // Crear trabajo (valida saldo contra el estimado; NO genera en la estimación)
-  app.post('/api/video-gen/jobs', async (req: Request, res: Response) => {
+  // Crear trabajo de video (genera costo) → requiere plan pago (freemium).
+  // La recarga de saldo (/wallet/topup) NO se bloquea: se compra suelta sin plan.
+  app.post('/api/video-gen/jobs', paywall ?? ((_req, _res, next) => next()), async (req: Request, res: Response) => {
     try {
       const tenant = tenantId(req);
       const b = req.body || {};

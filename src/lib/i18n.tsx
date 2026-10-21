@@ -42,7 +42,7 @@ export const translations = {
     mercado: 'Estudio de Mercado',
     contenido: 'Generador de Contenido',
     landing: 'Landing Pages',
-    ads: 'Ads & Traficker',
+    ads: 'Ads & Trafficker',
     whatsapp: 'WhatsApp Bot',
     automatizaciones: 'Automatizaciones',
     integraciones: 'Integraciones',

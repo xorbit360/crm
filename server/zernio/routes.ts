@@ -3,10 +3,12 @@
 
 import express from 'express';
 import { getZernioAccounts, getZernioConnectUrl, connectZernioHeadlessWaba, deleteZernioAccount } from './accounts.ts';
+import { getSession } from '../auth.ts';
 import { ZERNIO_DEFAULT_KEY } from './client.ts';
 import { zernioRequest } from './client.ts';
 import { handleZernioWebhook, registerOrUpdateZernioWebhook, getZernioWebhookStatus, runZernioSweeper } from './webhook.ts';
 import { enviarMensajeZernio } from './messaging.ts';
+import { invalidateWhatsappBootstrapCache } from '../whatsappBootstrapCache.ts';
 import { importZernioConversations } from './history.ts';
 import {
   notificarConfirmacionPedidoLogistica,
@@ -18,6 +20,38 @@ import type { LogisticsOrderPayload } from './logistics.ts';
 
 export function setupZernioRoutes(app: express.Express, onIncomingMessage?: (msg: any) => void) {
   const router = express.Router();
+
+  // Helpers para aislamiento por usuario (un solo Zernio, cuentas por usuario)
+  function getReqUserKey(req: express.Request): string {
+    try {
+      const session = getSession(req);
+      if (!session) return 'anonymous';
+      return String((session as any).sub || (session as any).username || (session as any).email || 'anonymous');
+    } catch { return 'anonymous'; }
+  }
+  function isReqAdmin(req: express.Request): boolean {
+    try {
+      const session = getSession(req);
+      if (!session) return false;
+      const role = String((session as any).role || '').toLowerCase();
+      return role === 'superadmin' || role === 'admin';
+    } catch { return false; }
+  }
+  function getAccountOwners(): Record<string, string> {
+    const db = (globalThis as any).currentDB;
+    if (!db) return {};
+    if (!db.zernioAccountOwners || typeof db.zernioAccountOwners !== 'object') {
+      db.zernioAccountOwners = {};
+    }
+    return db.zernioAccountOwners;
+  }
+  function saveDB() {
+    try {
+      const db = (globalThis as any).currentDB;
+      const saveFn = (globalThis as any).saveDBData;
+      if (db && typeof saveFn === 'function') saveFn(db);
+    } catch {}
+  }
 
   // 1. Estado y configuración de variables
   router.get('/config-status', (req, res) => {
@@ -33,14 +67,45 @@ export function setupZernioRoutes(app: express.Express, onIncomingMessage?: (msg
     });
   });
 
-  // 2. Listar cuentas conectadas (Prompt 2)
+  // 2. Listar cuentas conectadas (filtradas por usuario: cada usuario ve solo las suyas)
   router.get('/accounts', async (req, res) => {
     const result = await getZernioAccounts();
     if (result.success === false) {
       const status = (result as any).error?.status || 500;
       return res.status(status).json(result);
     }
-    res.json(result);
+    // Aislamiento: cada usuario ve solo sus cuentas (mismo Zernio, cuentas por usuario)
+    const userKey = getReqUserKey(req);
+    const isAdmin = isReqAdmin(req);
+    const owners = getAccountOwners();
+    const accounts = Array.isArray((result as any).data) ? (result as any).data : [];
+    // Solo el admin reclama cuentas sin dueño (son sus cuentas existentes).
+    // Cuentas nuevas de usuarios: se asignan a quien inició conexión recientemente (últimos 10 min)
+    let changed = false;
+    const db = (globalThis as any).currentDB;
+    const pending = (db?.zernioPendingConnections || {}) as Record<string, number>;
+    const now = Date.now();
+    for (const acct of accounts) {
+      const aid = String(acct.id || acct._id || '');
+      if (aid && !owners[aid]) {
+        if (isAdmin) {
+          owners[aid] = userKey;
+          changed = true;
+        } else {
+          // Si este usuario conectó recientemente, la cuenta nueva es suya
+          const lastConnect = pending[userKey] || 0;
+          if (now - lastConnect < 10 * 60 * 1000) {
+            owners[aid] = userKey;
+            changed = true;
+            delete pending[userKey];
+          }
+        }
+      }
+    }
+    if (changed) saveDB();
+    // Cada usuario ve solo sus cuentas
+    const filtered = accounts.filter((a: any) => owners[String(a.id || a._id || '')] === userKey);
+    res.json({ ...result, data: filtered });
   });
 
   // 3. Generar URL de conexión OAuth (Prompt 2)
@@ -48,6 +113,57 @@ export function setupZernioRoutes(app: express.Express, onIncomingMessage?: (msg
     const platform = (req.query.platform as any) || 'whatsapp';
     const onboarding = (req.query.onboarding as any) || 'business_app';
     const loginMethod = (req.query.loginMethod as any) || 'instagram_login';
+
+    // Verificar límite de canales (primer gratis, adicionales requieren pago)
+    const userKey = getReqUserKey(req);
+    let effectiveKey = userKey;
+    try {
+      const db = (globalThis as any).currentDB;
+      const member = db?.teamMembers?.[userKey];
+      if (member && member.adminKey) effectiveKey = member.adminKey;
+    } catch {}
+    const session = getSession(req);
+    const role = String((session as any)?.role || '').toLowerCase();
+    if (role !== 'superadmin') {
+      try {
+        const db = (globalThis as any).currentDB;
+        let count = 0;
+        const waProviders = db?.whatsappProvidersByUser?.[effectiveKey];
+        if (waProviders && typeof waProviders === 'object') count += Object.keys(waProviders).length;
+        const owners = db?.zernioAccountOwners;
+        if (owners && typeof owners === 'object') {
+          count += Object.values(owners).filter((o: any) => o === effectiveKey).length;
+        }
+        if (count > 0) {
+          const paidChannels = db?.userPaidChannels?.[effectiveKey];
+          const now = Date.now();
+          let activePaid = 0;
+          if (paidChannels && typeof paidChannels === 'object') {
+            activePaid = Object.values(paidChannels).filter((p: any) => p.expiresAt && p.expiresAt > now).length;
+          }
+          if ((count - 1) > activePaid) {
+            return res.status(402).json({
+              success: false,
+              error: 'Para conectar más canales debes pagar $10 USD/mes por canal adicional o comprar un paquete.',
+              paymentRequired: true,
+              channelsUsed: count
+            });
+          }
+        }
+      } catch {}
+    }
+    
+    // Registrar que este usuario está conectando (para asignarle cuentas nuevas)
+    try {
+      const db = (globalThis as any).currentDB;
+      if (db) {
+        if (!db.zernioPendingConnections || typeof db.zernioPendingConnections !== 'object') {
+          db.zernioPendingConnections = {};
+        }
+        db.zernioPendingConnections[effectiveKey] = Date.now();
+        saveDB();
+      }
+    } catch {}
     
     // URL de retorno segura
     const protocol = req.headers['x-forwarded-proto'] || req.protocol;
@@ -109,10 +225,23 @@ export function setupZernioRoutes(app: express.Express, onIncomingMessage?: (msg
   // 3b. Desvincular cuenta / canal
   router.delete('/accounts/:id', async (req, res) => {
     const accountId = req.params.id;
+    // Solo el dueño puede desvincular su cuenta
+    const userKey = getReqUserKey(req);
+    const isAdmin = isReqAdmin(req);
+    const owners = getAccountOwners();
+    const owner = owners[String(accountId)];
+    if (owner && owner !== userKey && !isAdmin) {
+      return res.status(403).json({ success: false, error: 'No autorizado' });
+    }
     const result = await deleteZernioAccount(accountId);
     if (result.success === false) {
       const status = (result as any).error?.status || 400;
       return res.status(status).json(result);
+    }
+    // Limpiar ownership
+    if (owners[String(accountId)]) {
+      delete owners[String(accountId)];
+      saveDB();
     }
     res.json(result);
   });
@@ -211,6 +340,8 @@ export function setupZernioRoutes(app: express.Express, onIncomingMessage?: (msg
     if (!result.success) {
       return res.status(result.outside24hWindow ? 422 : 400).json(result);
     }
+    // El mensaje recién enviado debe aparecer si el CRM se recarga al instante
+    invalidateWhatsappBootstrapCache();
     res.json(result);
   });
 

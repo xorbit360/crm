@@ -64,6 +64,34 @@ export function formatColombiaTime(date: Date | number | string = new Date(), ho
 }
 
 /**
+ * Formato estilo WhatsApp para la lista de chats: hoy -> hora, ayer -> 'ayer',
+ * fechas anteriores -> dd/mm/aa. Siempre en hora de Colombia.
+ */
+export function formatChatListDate(date: Date | number | string = new Date()): string {
+  try {
+    if (!date) return '';
+    if (typeof date === 'string') {
+      const low = date.toLowerCase();
+      if (low.includes('hace') || low.includes('ahora') || low.includes('ayer')) return date;
+      const parsed = Date.parse(date);
+      if (isNaN(parsed)) return date;
+      date = new Date(parsed);
+    }
+    const tz = 'America/Bogota';
+    const d = typeof date === 'number' ? new Date(date) : date;
+    const dayFmt = new Intl.DateTimeFormat('es-CO', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' });
+    const dStr = dayFmt.format(d);
+    if (dStr === dayFmt.format(new Date())) return formatColombiaTime(d);
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (dStr === dayFmt.format(yesterday)) return 'ayer';
+    return new Intl.DateTimeFormat('es-CO', { timeZone: tz, day: '2-digit', month: '2-digit', year: '2-digit' }).format(d);
+  } catch (_) {
+    return '';
+  }
+}
+
+/**
  * Formats a Date or timestamp according to the detected timezone (e.g. America/Bogota / Colombia)
  */
 export function formatLocalTime(date: Date | number | string = new Date(), options?: Intl.DateTimeFormatOptions): string {

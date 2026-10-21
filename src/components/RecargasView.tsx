@@ -298,100 +298,39 @@ export function RecargasView() {
     setSelectedPackage(pkg);
   };
 
-  // Automated Bold Approval Listener (URL redirect back from Bold)
+  // Retorno de Bold: NO acreditar aquí. Los créditos solo se acreditan
+  // vía webhook del backend (/api/integrations/bold/webhook) tras verificar
+  // la firma de Bold. El balance se actualiza por polling a /api/credits/balance.
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search);
       const boldTxStatus = params.get('bold-tx-status') || params.get('status') || params.get('tx-status');
-      const boldOrderId = params.get('bold-order-id') || params.get('order-id') || params.get('orderId');
-
       if (boldTxStatus && (boldTxStatus.toLowerCase() === 'approved' || boldTxStatus.toLowerCase() === 'successful')) {
-        let pkg = selectedPackage;
-        const pendingRaw = localStorage.getItem('XORBIT 360_PENDING_BOLD_ORDER');
-        if (pendingRaw) {
-          try {
-            const pending = JSON.parse(pendingRaw);
-            if (pending.pkg) pkg = pending.pkg;
-          } catch (e) {}
-        }
-
-        if (pkg) {
-          const newBal = {
-            conversations: balance.conversations + (pkg.conversations || 0),
-            aiMessagesPerConv: Math.max(balance.aiMessagesPerConv, pkg.aiMessagesPerConv || balance.aiMessagesPerConv),
-            audioMinutes: balance.audioMinutes + (pkg.audioMinutes || 0),
-            packagesBought: balance.packagesBought + 1,
-          };
-          updateBalanceAndNotify(newBal);
-
-          const newTx: RechargeTransaction = {
-            id: boldOrderId || `REC-BOLD-${Date.now().toString().slice(-6)}`,
-            date: new Date().toISOString().replace('T', ' ').substring(0, 16),
-            packageName: `${pkg.name} (Bold Oficial)`,
-            type: pkg.type === 'conversations' ? 'Conversaciones Texto + IA' : 'Audio Voz IA',
-            amount: pkg.price,
-            creditsAdded: pkg.conversations ? `+${pkg.conversations.toLocaleString()} conversaciones` : `+${pkg.audioMinutes} mins audio`,
-            status: 'Completado',
-          };
-          setTransactions(prev => [newTx, ...prev]);
-          localStorage.removeItem('XORBIT 360_PENDING_BOLD_ORDER');
-
-          setPurchaseSuccessToast(`¡Pago Aprobado por Bold! Se acreditaron tus créditos de ${pkg.name}.`);
-          setTimeout(() => setPurchaseSuccessToast(null), 7000);
-
-          // Clean URL parameters
-          window.history.replaceState({}, document.title, window.location.pathname);
-        }
+        setPurchaseSuccessToast('Pago recibido. Verificando con Bold… tus créditos aparecerán en unos segundos.');
+        setTimeout(() => setPurchaseSuccessToast(null), 10000);
+        window.history.replaceState({}, document.title, window.location.pathname);
       }
     } catch (err) {
       console.error("Error procesando retorno de Bold:", err);
     }
   }, []);
 
-  // Automated Bold Approval Listener (postMessage from Bold embedded SDK)
+  // postMessage de Bold: solo mostrar aviso. La acreditación real la hace
+  // el backend vía webhook verificado. Se valida el origen del mensaje.
   useEffect(() => {
     const handleBoldMessage = (event: MessageEvent) => {
+      const allowedOrigins = ['https://checkout.bold.co', 'https://payments.bold.co'];
+      if (!allowedOrigins.includes(event.origin)) return;
       const data = event.data;
       if (data?.type === 'BOLD_CHECKOUT_EVENT' && (data?.status === 'APPROVED' || data?.status === 'approved')) {
-        let pkg = selectedPackage;
-        const pendingRaw = localStorage.getItem('XORBIT 360_PENDING_BOLD_ORDER');
-        if (pendingRaw) {
-          try {
-            const pending = JSON.parse(pendingRaw);
-            if (pending.pkg) pkg = pending.pkg;
-          } catch (e) {}
-        }
-
-        if (pkg) {
-          const newBal = {
-            conversations: balance.conversations + (pkg.conversations || 0),
-            aiMessagesPerConv: Math.max(balance.aiMessagesPerConv, pkg.aiMessagesPerConv || balance.aiMessagesPerConv),
-            audioMinutes: balance.audioMinutes + (pkg.audioMinutes || 0),
-            packagesBought: balance.packagesBought + 1,
-          };
-          updateBalanceAndNotify(newBal);
-
-          const newTx: RechargeTransaction = {
-            id: data.orderId || `REC-BOLD-${Date.now().toString().slice(-6)}`,
-            date: new Date().toISOString().replace('T', ' ').substring(0, 16),
-            packageName: `${pkg.name} (Bold Oficial)`,
-            type: pkg.type === 'conversations' ? 'Conversaciones Texto + IA' : 'Audio Voz IA',
-            amount: pkg.price,
-            creditsAdded: pkg.conversations ? `+${pkg.conversations.toLocaleString()} conversaciones` : `+${pkg.audioMinutes} mins audio`,
-            status: 'Completado',
-          };
-          setTransactions(prev => [newTx, ...prev]);
-          localStorage.removeItem('XORBIT 360_PENDING_BOLD_ORDER');
-
-          setPurchaseSuccessToast(`¡Pago Aprobado por Bold! Se acreditaron tus créditos.`);
-          setTimeout(() => setPurchaseSuccessToast(null), 7000);
-        }
+        setPurchaseSuccessToast('Pago aprobado. Verificando con Bold… tus créditos aparecerán en unos segundos.');
+        setTimeout(() => setPurchaseSuccessToast(null), 10000);
       }
     };
 
     window.addEventListener('message', handleBoldMessage);
     return () => window.removeEventListener('message', handleBoldMessage);
-  }, [selectedPackage, balance]);
+  }, []);
 
   // Launch official Bold payment without modals or simulations
   const handleOpenRealBoldCheckout = async (pkgToUse?: PackageOption) => {

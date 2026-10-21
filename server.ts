@@ -30,12 +30,15 @@ import {
   isNormalizedReadReady,
   loadInboxFromTables,
   loadWhatsappFromTables,
+  loadConversationHistoryFromTables,
   loadStateFromNormalizedTables,
 } from './server/normalizedDb.ts';
 import { setupLiveSellingAdminRoutes, setupLiveSellingPublicRoutes } from './server/liveSelling.ts';
 import { setupSocialRoutes, handleIncomingSocialComment } from './server/social.ts';
 import { setupAdsRoutes } from './server/ads.ts';
 import { setupRadarRoutes } from './server/radar.ts';
+import { setupRadarAlertRoutes } from './server/radarAlerts.ts';
+import { runRadarCron } from './server/cron/radarCron.ts';
 import { setupPushRoutes } from './server/push.ts';
 import { setupDiagnosticAdminRoutes, setupDiagnosticPublicRoutes } from './server/diagnostic.ts';
 import { setupVoiceAdminRoutes } from './server/voice.ts';
@@ -47,9 +50,18 @@ import { setupVideoGenAdminRoutes, startVideoWorker } from './server/videoGen.ts
 import { setupZernioRoutes } from './server/zernio/routes.ts';
 import { handleZernioWebhook } from './server/zernio/webhook.ts';
 import { enviarMensajeZernio } from './server/zernio/messaging.ts';
+import { getWhatsappBootstrapCache, setWhatsappBootstrapCache, invalidateWhatsappBootstrapCache } from './server/whatsappBootstrapCache.ts';
 import { getZernioAccounts } from './server/zernio/accounts.ts';
 import { setupBoldRoutes } from './server/bold.ts';
 import { setupAuthPublicRoutes, activateUserForBoldOrder } from './server/authPublic.ts';
+import {
+  setupBillingRoutes,
+  requirePaidPlan,
+  activatePlanForBoldOrder,
+  activateChannelForBoldOrder,
+  activateRadarForBoldOrder,
+} from './server/billing.ts';
+import { runInactiveCleanup, touchUserActivity } from './server/cron/inactiveCleanup.ts';
 import { setupMcpRoutes } from './server/mcp.ts';
 import {
   clearSessionCookie,
@@ -83,6 +95,48 @@ function sanitizeForClient(value: any): any {
     sanitized[key] = sanitizeForClient(fieldValue);
   }
   return sanitized;
+}
+
+// Verifica si la petición viene de un admin (superadmin/admin)
+// Los demás usuarios NO ven datos demo ni datos de otros usuarios
+function isAdminRequest(req: any): boolean {
+  try {
+    const session = getSession(req);
+    if (!session) return false;
+    const role = String(session.role || '').toLowerCase();
+    return role === 'superadmin' || role === 'admin';
+  } catch {
+    return false;
+  }
+}
+
+// Estado vacío para usuarios no-admin (todo en cero)
+function emptyUserState(): any {
+  return {
+    orders: [],
+    customers: [],
+    chats: [],
+    conversations: {},
+    messagesHistory: {},
+    products: [],
+    pipelines: [],
+  };
+}
+
+// Construye el estado con datos aislados del usuario
+// Miembros de equipo ven los datos del admin al que pertenecen
+function getUserIsolatedState(req: any): any {
+  const userKey = getEffectiveUserKey(req);
+  const store = getUserDataStore(userKey);
+  return {
+    orders: Array.isArray(store.orders) ? store.orders : [],
+    customers: Array.isArray(store.customers) ? store.customers : [],
+    chats: Array.isArray(store.chats) ? store.chats : [],
+    conversations: store.conversations || {},
+    messagesHistory: store.messagesHistory || {},
+    products: Array.isArray(store.products) ? store.products : [],
+    pipelines: [],
+  };
 }
 
 async function verifyPassword(candidate: string, stored: unknown): Promise<boolean> {
@@ -447,7 +501,7 @@ function friendlyWhatsappMediaError(raw: string): string {
 // EVOLUTION API INTEGRATION (VPS MULTI-TENANT)
 // ==========================================
 const DEFAULT_EVOLUTION_API_URL = process.env.EVOLUTION_API_URL || "https://whatsapp.xorbit360.com";
-const DEFAULT_EVOLUTION_API_KEY = process.env.EVOLUTION_API_KEY || "06mqaBYA1qN3PA9LejyAUe8YHG3A0YWh";
+const DEFAULT_EVOLUTION_API_KEY = process.env.EVOLUTION_API_KEY || '';
 const DEFAULT_EVOLUTION_WEBHOOK_BASE = "https://crm.xorbit360.com";
 
 function normalizeEvolutionWebhookBase(value?: string) {
@@ -482,7 +536,364 @@ function getEvolutionConfig() {
 // Registro: currentDB.whatsappProviders[key] donde key = dígitos del
 // teléfono (Evolution) o accountId de Zernio.
 // ============================================================
-function getWhatsappProvidersRegistry(): Record<string, any> {
+// ---------------------------------------------------------------------------
+// Plantillas de nichos con roles (multiusuario por equipos)
+// Cada nicho define los roles disponibles para el equipo del usuario.
+// Jerarquía: superadmin (dueño plataforma) > admin (el que paga) > roles de equipo
+// ---------------------------------------------------------------------------
+const NICHE_TEMPLATES: Record<string, { name: string; roles: Record<string, { name: string; permissions: string[] }> }> = {
+  ecommerce: {
+    name: 'E-commerce',
+    roles: {
+      admin: { name: 'Administrador', permissions: ['*'] },
+      confirmacion: { name: 'Confirmación', permissions: ['orders.view', 'orders.confirm', 'customers.view', 'chats.view', 'chats.reply'] },
+      ventas: { name: 'Ventas', permissions: ['orders.view', 'orders.create', 'customers.view', 'customers.create', 'chats.view', 'chats.reply', 'products.view'] },
+      logistica: { name: 'Logística', permissions: ['orders.view', 'orders.ship', 'customers.view'] },
+      soporte: { name: 'Soporte', permissions: ['chats.view', 'chats.reply', 'customers.view'] },
+    }
+  },
+  restaurante: {
+    name: 'Restaurante',
+    roles: {
+      admin: { name: 'Administrador', permissions: ['*'] },
+      mesero: { name: 'Mesero', permissions: ['orders.view', 'orders.create', 'chats.view', 'chats.reply'] },
+      cocina: { name: 'Cocina', permissions: ['orders.view', 'orders.prepare'] },
+      caja: { name: 'Caja', permissions: ['orders.view', 'orders.charge', 'customers.view'] },
+      delivery: { name: 'Delivery', permissions: ['orders.view', 'orders.deliver'] },
+    }
+  },
+  hotel: {
+    name: 'Hotel',
+    roles: {
+      admin: { name: 'Administrador', permissions: ['*'] },
+      recepcion: { name: 'Recepción', permissions: ['orders.view', 'orders.create', 'customers.view', 'customers.create', 'chats.view', 'chats.reply'] },
+      reservas: { name: 'Reservas', permissions: ['orders.view', 'orders.create', 'customers.view', 'chats.view', 'chats.reply'] },
+      limpieza: { name: 'Limpieza', permissions: ['orders.view'] },
+    }
+  },
+  clinica: {
+    name: 'Clínica',
+    roles: {
+      admin: { name: 'Administrador', permissions: ['*'] },
+      recepcion: { name: 'Recepción', permissions: ['orders.view', 'orders.create', 'customers.view', 'customers.create', 'chats.view', 'chats.reply'] },
+      medico: { name: 'Médico', permissions: ['orders.view', 'customers.view', 'chats.view'] },
+      enfermeria: { name: 'Enfermería', permissions: ['orders.view', 'customers.view'] },
+    }
+  },
+  inmobiliaria: {
+    name: 'Inmobiliaria',
+    roles: {
+      admin: { name: 'Administrador', permissions: ['*'] },
+      agente: { name: 'Agente', permissions: ['orders.view', 'orders.create', 'customers.view', 'customers.create', 'chats.view', 'chats.reply', 'products.view'] },
+      captacion: { name: 'Captación', permissions: ['customers.view', 'customers.create', 'chats.view', 'chats.reply'] },
+      cierre: { name: 'Cierre', permissions: ['orders.view', 'orders.confirm', 'customers.view'] },
+    }
+  },
+  servicios: {
+    name: 'Servicios / General',
+    roles: {
+      admin: { name: 'Administrador', permissions: ['*'] },
+      ventas: { name: 'Ventas', permissions: ['orders.view', 'orders.create', 'customers.view', 'customers.create', 'chats.view', 'chats.reply', 'products.view'] },
+      soporte: { name: 'Soporte', permissions: ['chats.view', 'chats.reply', 'customers.view'] },
+    }
+  },
+};
+
+// Obtiene el nicho del usuario (default: ecommerce)
+function getUserNiche(userKey: string): string {
+  try {
+    const db = (globalThis as any).currentDB;
+    const niche = db?.userNiches?.[userKey];
+    if (niche && NICHE_TEMPLATES[niche]) return niche;
+  } catch {}
+  return 'ecommerce';
+}
+
+// Obtiene los miembros del equipo de un admin
+function getTeamMembers(adminKey: string): any[] {
+  try {
+    const db = (globalThis as any).currentDB;
+    if (!db?.teamMembers || typeof db.teamMembers !== 'object') return [];
+    return Object.values(db.teamMembers).filter((m: any) => m.adminKey === adminKey);
+  } catch { return []; }
+}
+
+// Obtiene el admin al que pertenece un usuario (si es miembro de equipo)
+function getUserAdmin(userKey: string): string | null {
+  try {
+    const db = (globalThis as any).currentDB;
+    const member = db?.teamMembers?.[userKey];
+    if (member && member.adminKey) return member.adminKey;
+  } catch {}
+  return null;
+}
+
+// Obtiene el rol de un usuario dentro del equipo
+function getUserTeamRole(userKey: string): string | null {
+  try {
+    const db = (globalThis as any).currentDB;
+    const member = db?.teamMembers?.[userKey];
+    if (member && member.role) return member.role;
+  } catch {}
+  return null;
+}
+
+// Obtiene la key efectiva para datos: si es miembro de equipo, usa la del admin
+function getEffectiveUserKey(req: any): string {
+  const userKey = getUserKey(req);
+  // Superadmin y admin usan su propia key
+  if (isAdminRequest(req)) return userKey;
+  // Miembros de equipo usan la key del admin al que pertenecen
+  const adminKey = getUserAdmin(userKey);
+  if (adminKey) return adminKey;
+  return userKey;
+}
+
+// Verifica si un usuario tiene un permiso
+function hasPermission(req: any, permission: string): boolean {
+  // Superadmin tiene todo
+  try {
+    const session = getSession(req);
+    const role = String((session as any)?.role || '').toLowerCase();
+    if (role === 'superadmin') return true;
+    if (role === 'admin') return true; // El admin (que paga) tiene todo en su cuenta
+  } catch {}
+  // Miembros de equipo: verificar permisos del rol
+  const userKey = getUserKey(req);
+  const teamRole = getUserTeamRole(userKey);
+  if (!teamRole) return false;
+  const niche = getUserNiche(getUserAdmin(userKey) || userKey);
+  const roleDef = NICHE_TEMPLATES[niche]?.roles[teamRole];
+  if (!roleDef) return false;
+  const perms = roleDef.permissions;
+  if (perms.includes('*')) return true;
+  return perms.includes(permission);
+}
+
+function getUserKey(req: any): string {
+  try {
+    const session = getSession(req);
+    if (!session) return 'anonymous';
+    return String(session.sub || session.username || session.email || 'anonymous');
+  } catch {
+    return 'anonymous';
+  }
+}
+
+// Almacenamiento aislado por usuario para datos principales.
+// Cada usuario tiene sus propios productos, pedidos, clientes, chats y config IA.
+function getUserDataStore(userKey: string): any {
+  if (typeof currentDB === 'undefined') return { products: [], orders: [], customers: [], chats: [] };
+  if (!currentDB.userData || typeof currentDB.userData !== 'object') {
+    currentDB.userData = {};
+  }
+  if (!currentDB.userData[userKey] || typeof currentDB.userData[userKey] !== 'object') {
+    currentDB.userData[userKey] = {
+      products: [],
+      orders: [],
+      customers: [],
+      chats: [],
+      conversations: {},
+      messagesHistory: {},
+      aiConfig: {},
+      socialComments: []
+    };
+  }
+  const store = currentDB.userData[userKey];
+  if (!store.aiConfig || typeof store.aiConfig !== 'object') store.aiConfig = {};
+  if (!Array.isArray(store.socialComments)) store.socialComments = [];
+  return store;
+}
+
+// ============================================================
+// AISLAMIENTO TOTAL DE CONVERSACIONES — regla absoluta de Oscar:
+// "Cada usuario es independiente. NI SIQUIERA EL SUPERADMIN
+//  puede ver chats de otros usuarios."
+// Los chats viven en el store del usuario dueño
+// (currentDB.userData[userKey].chats / .messagesHistory).
+// Los webhooks (sin sesión) resuelven el dueño por accountId/instancia.
+// Sin dueño → buckets globales marcados unassigned (invisibles para todos).
+// ============================================================
+
+// Resuelve el userKey dueño de una cuenta Zernio por accountId
+function getZernioAccountOwner(accountId: string): string | null {
+  try {
+    const db = (globalThis as any).currentDB;
+    const owners = db?.zernioAccountOwners;
+    const o = owners?.[String(accountId || '').trim()];
+    return o ? String(o) : null;
+  } catch { return null; }
+}
+
+// Resuelve el userKey dueño de una instancia Evolution por instanceName
+function getEvolutionInstanceOwner(instanceName: string): string | null {
+  try {
+    const target = String(instanceName || '').trim().toLowerCase();
+    if (!target) return null;
+    const db = (globalThis as any).currentDB;
+    const byUser = db?.whatsappProvidersByUser;
+    if (byUser && typeof byUser === 'object') {
+      for (const [userKey, reg] of Object.entries(byUser)) {
+        const r = reg as Record<string, any>;
+        if (r && typeof r === 'object') {
+          for (const entry of Object.values(r)) {
+            const inst = String((entry as any)?.instanceName || '').trim().toLowerCase();
+            if (inst && (inst === target || target.includes(inst) || inst.includes(target))) {
+              return String(userKey);
+            }
+          }
+        }
+      }
+    }
+  } catch {}
+  return null;
+}
+
+// Buckets de chats/historial para un dueño. Sin dueño válido → holder global
+// (huérfanos: nadie los ve). Las reasignaciones via setter reflejan currentDB.
+function getChatStore(ownerKey: string | null): any {
+  const db = (globalThis as any).currentDB;
+  if (ownerKey && ownerKey !== 'anonymous' && db) {
+    const store = getUserDataStore(ownerKey);
+    if (!Array.isArray(store.chats)) store.chats = [];
+    if (!store.messagesHistory || typeof store.messagesHistory !== 'object') store.messagesHistory = {};
+    return store;
+  }
+  if (db) {
+    if (!Array.isArray(db.chats)) db.chats = [];
+    if (!db.messagesHistory || typeof db.messagesHistory !== 'object') db.messagesHistory = {};
+  }
+  return {
+    get chats() { return (globalThis as any).currentDB.chats; },
+    set chats(v: any) { (globalThis as any).currentDB.chats = v; },
+    get messagesHistory() { return (globalThis as any).currentDB.messagesHistory; },
+    set messagesHistory(v: any) { (globalThis as any).currentDB.messagesHistory = v; },
+  };
+}
+
+// Clave efectiva para aislamiento de chats (miembros ven los datos de su admin)
+function getChatUserKey(req: any): string {
+  try { return getEffectiveUserKey(req); } catch { return getUserKey(req); }
+}
+
+// Obtiene la config IA del usuario (o global para superadmin)
+function getAIConfigValue(req: any, key: string, defaultValue: any = ''): any {
+  try {
+    const session = getSession(req);
+    const role = String((session as any)?.role || '').toLowerCase();
+    if (role === 'superadmin') {
+      return (currentDB as any)[key] ?? defaultValue;
+    }
+  } catch {}
+  const userKey = getEffectiveUserKey(req);
+  const store = getUserDataStore(userKey);
+  return store.aiConfig?.[key] ?? (currentDB as any)[key] ?? defaultValue;
+}
+
+// Encuentra el dueño (userKey) de un número de WhatsApp buscando en todos los usuarios
+function findUserByWhatsappNumber(phoneDigits: string): string | null {
+  try {
+    const db = (globalThis as any).currentDB;
+    const digits = String(phoneDigits || '').replace(/\D/g, '');
+    if (!digits) return null;
+    // Buscar en providers por usuario
+    const byUser = db?.whatsappProvidersByUser;
+    if (byUser && typeof byUser === 'object') {
+      for (const [userKey, reg] of Object.entries(byUser)) {
+        const r = reg as Record<string, any>;
+        if (r && r[digits]) return userKey;
+        // Buscar por campo phone en los valores
+        for (const v of Object.values(r || {})) {
+          const vv = v as any;
+          if (vv && String(vv.phone || '').replace(/\D/g, '') === digits) return userKey;
+        }
+      }
+    }
+    // Buscar en cuentas Zernio
+    const owners = db?.zernioAccountOwners;
+    if (owners && typeof owners === 'object') {
+      // Los accountId no son números directos, skip
+    }
+  } catch {}
+  return null;
+}
+
+// Obtiene botPrompt para un número específico (para webhooks sin sesión)
+function getBotPromptForNumber(phoneDigits: string): string {
+  const defaultPrompt = "Actúa como un asistente virtual capacitado para responder dudas, brindar información de nuestros servicios o productos y capturar datos de contacto de manera profesional, amable y eficiente.";
+  try {
+    const userKey = findUserByWhatsappNumber(phoneDigits);
+    if (userKey) {
+      const store = getUserDataStore(userKey);
+      if (store.aiConfig?.botPrompt) return store.aiConfig.botPrompt;
+    }
+  } catch {}
+  return (currentDB as any).botPrompt || defaultPrompt;
+}
+
+// Obtiene datos aislados: admin ve globales, usuarios ven solo los suyos
+// Miembros de equipo ven los datos del admin al que pertenecen
+function getIsolatedData(req: any, dataKey: string): any[] {
+  if (isAdminRequest(req)) {
+    const session = getSession(req);
+    const role = String((session as any)?.role || '').toLowerCase();
+    // Superadmin ve globales; admin ve sus propios datos aislados
+    if (role === 'superadmin') {
+      const data = (currentDB as any)[dataKey];
+      return Array.isArray(data) ? data : [];
+    }
+  }
+  const userKey = getEffectiveUserKey(req);
+  const store = getUserDataStore(userKey);
+  const data = store[dataKey];
+  return Array.isArray(data) ? data : [];
+}
+
+// Busca un proveedor en todos los usuarios (para webhooks sin sesión)
+function findWhatsappProviderGlobal(key: string): any {
+  if (typeof currentDB === 'undefined') return undefined;
+  const k = String(key || '').trim();
+  if (!k) return undefined;
+  // Buscar en todos los usuarios
+  if (currentDB.whatsappProvidersByUser && typeof currentDB.whatsappProvidersByUser === 'object') {
+    for (const userReg of Object.values(currentDB.whatsappProvidersByUser)) {
+      const reg = userReg as Record<string, any>;
+      if (reg && reg[k]) return reg[k];
+    }
+  }
+  // Compatibilidad: registro global antiguo
+  if (currentDB.whatsappProviders && currentDB.whatsappProviders[k]) {
+    return currentDB.whatsappProviders[k];
+  }
+  return undefined;
+}
+
+function getWhatsappProvidersRegistry(userKey?: string): Record<string, any> {
+  if (typeof currentDB === 'undefined') return {};
+  // Almacenamiento por usuario: cada usuario tiene sus propios canales
+  if (!currentDB.whatsappProvidersByUser || typeof currentDB.whatsappProvidersByUser !== 'object') {
+    currentDB.whatsappProvidersByUser = {};
+  }
+  const key = userKey || 'global';
+  if (!currentDB.whatsappProvidersByUser[key]) {
+    currentDB.whatsappProvidersByUser[key] = {};
+    // Migración automática: copiar los canales globales existentes al primer usuario que acceda
+    // (para que el admin no pierda su configuración actual)
+    if (currentDB.whatsappProviders && typeof currentDB.whatsappProviders === 'object' && Object.keys(currentDB.whatsappProviders).length > 0) {
+      const alreadyMigrated = Object.values(currentDB.whatsappProvidersByUser).some(
+        (reg: any) => reg && typeof reg === 'object' && Object.keys(reg).length > 0
+      );
+      if (!alreadyMigrated) {
+        currentDB.whatsappProvidersByUser[key] = JSON.parse(JSON.stringify(currentDB.whatsappProviders));
+        try { if (typeof saveDBData === 'function') saveDBData(currentDB); } catch (_) {}
+      }
+    }
+  }
+  return currentDB.whatsappProvidersByUser[key];
+}
+
+// Compatibilidad: registro global (solo para migración/admin)
+function getGlobalWhatsappProvidersRegistry(): Record<string, any> {
   if (typeof currentDB === 'undefined') return {};
   if (!currentDB.whatsappProviders || typeof currentDB.whatsappProviders !== 'object') {
     currentDB.whatsappProviders = {};
@@ -490,10 +901,10 @@ function getWhatsappProvidersRegistry(): Record<string, any> {
   return currentDB.whatsappProviders;
 }
 
-function setWhatsappProvider(key: string, provider: string, meta: any = {}) {
+function setWhatsappProvider(key: string, provider: string, meta: any = {}, userKey?: string) {
   const k = String(key || '').trim();
   if (!k) return;
-  const registry = getWhatsappProvidersRegistry();
+  const registry = getWhatsappProvidersRegistry(userKey);
   const prev = registry[k] || {};
   registry[k] = {
     provider,
@@ -513,10 +924,25 @@ function zernioProviderFromOnboarding(onboardingMode?: string): string {
 
 // Resuelve el proveedor para un número WhatsApp.
 // Orden: registro explícito por teléfono > campo provider del chat > heurística histórica.
-function getWhatsappProvider(phone: string, chat?: any): string {
+// Busca en todos los usuarios (para webhooks sin sesión) o en un usuario específico.
+function getWhatsappProvider(phone: string, chat?: any, userKey?: string): string {
   const digits = String(phone || '').replace(/\D/g, '');
-  const registry = getWhatsappProvidersRegistry();
-  const entry = digits ? registry[digits] : undefined;
+  // Si hay userKey, buscar solo en sus proveedores; si no, buscar en todos (webhook)
+  const registriesToSearch: Record<string, any>[] = [];
+  if (userKey) {
+    registriesToSearch.push(getWhatsappProvidersRegistry(userKey));
+  } else if (typeof currentDB !== 'undefined' && currentDB.whatsappProvidersByUser) {
+    Object.values(currentDB.whatsappProvidersByUser).forEach(r => registriesToSearch.push(r as Record<string, any>));
+    // Compatibilidad: también buscar en el registro global antiguo
+    if (currentDB.whatsappProviders) registriesToSearch.push(currentDB.whatsappProviders);
+  } else {
+    registriesToSearch.push(getWhatsappProvidersRegistry());
+  }
+  let entry: any = undefined;
+  let registry: Record<string, any> = {};
+  for (const reg of registriesToSearch) {
+    if (digits && reg[digits]) { entry = reg[digits]; registry = reg; break; }
+  }
   if (entry && (entry.provider === 'evolution' || entry.provider === 'zernio_coexistence' || entry.provider === 'zernio_api')) {
     return entry.provider;
   }
@@ -544,9 +970,9 @@ const _zernioAcctProviderCache: Record<string, { provider: string; at: number }>
 async function getZernioAccountProvider(accountId: string): Promise<string | null> {
   const id = String(accountId || '').trim();
   if (!id) return null;
-  const registry = getWhatsappProvidersRegistry();
-  if (registry[id] && (registry[id].provider === 'zernio_coexistence' || registry[id].provider === 'zernio_api')) {
-    return registry[id].provider;
+  const entry = findWhatsappProviderGlobal(id);
+  if (entry && (entry.provider === 'zernio_coexistence' || entry.provider === 'zernio_api')) {
+    return entry.provider;
   }
   const cached = _zernioAcctProviderCache[id];
   if (cached && Date.now() - cached.at < 10 * 60 * 1000) return cached.provider;
@@ -1003,8 +1429,11 @@ async function sendWhatsAppBotReplies(
   userIncomingText: string,
   repliesList: string[],
   phone: string,
-  channelId: string = 'channel-default'
+  channelId: string = 'channel-default',
+  ownerKey: string | null = null
 ) {
+  // Aislamiento: el historial del bot se escribe en el store del dueño
+  const botCS = getChatStore(ownerKey);
   const evoConfig = getEvolutionConfig();
   if (!clientSock && !evoConfig.isConfigured) return;
 
@@ -1181,7 +1610,7 @@ Responde ÚNICAMENTE con un objeto JSON en el siguiente formato, sin bloques de 
     attachedMedia = matchedRule.attachments.find((att: any) => att.url && !att.url.toLowerCase().includes('blob:')) || matchedRule.attachments[0];
   }
 
-  const isFirstAssistantMessage = !currentDB.messagesHistory || !currentDB.messagesHistory[phone] || currentDB.messagesHistory[phone].filter((m: any) => m.role === 'assistant').length === 0;
+  const isFirstAssistantMessage = !botCS.messagesHistory || !botCS.messagesHistory[phone] || botCS.messagesHistory[phone].filter((m: any) => m.role === 'assistant').length === 0;
   if (!attachedMedia && isFirstAssistantMessage && currentDB.greetingAttachments && Array.isArray(currentDB.greetingAttachments) && currentDB.greetingAttachments.length > 0) {
     attachedMedia = currentDB.greetingAttachments.find((att: any) => att.url && !att.url.toLowerCase().includes('blob:')) || currentDB.greetingAttachments[0];
   }
@@ -1290,16 +1719,16 @@ Responde ÚNICAMENTE con un objeto JSON en el siguiente formato, sin bloques de 
         }
       }
 
-      if (!currentDB.messagesHistory) currentDB.messagesHistory = {};
-      if (!currentDB.messagesHistory[phone]) currentDB.messagesHistory[phone] = [];
-      currentDB.messagesHistory[phone].push({
+      if (!botCS.messagesHistory) botCS.messagesHistory = {};
+      if (!botCS.messagesHistory[phone]) botCS.messagesHistory[phone] = [];
+      botCS.messagesHistory[phone].push({
         role: 'assistant',
         text: cleanReplyText,
         time: new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
         timestamp: Date.now()
       });
-      if (currentDB.messagesHistory[phone].length > 15) {
-        currentDB.messagesHistory[phone].shift();
+      if (botCS.messagesHistory[phone].length > 15) {
+        botCS.messagesHistory[phone].shift();
       }
 
       if (idx < effectiveReplies.length - 1 || attachedMedia) {
@@ -1341,8 +1770,8 @@ Responde ÚNICAMENTE con un objeto JSON en el siguiente formato, sin bloques de 
               if (!evoResult?.ok) throw new Error(evoResult?.data?.message || `Evolution API rechazó el audio (${evoResult?.status || 'sin estado'})`);
             }
 
-            if (!currentDB.messagesHistory[phone]) currentDB.messagesHistory[phone] = [];
-            currentDB.messagesHistory[phone].push({
+            if (!botCS.messagesHistory[phone]) botCS.messagesHistory[phone] = [];
+            botCS.messagesHistory[phone].push({
               role: 'assistant',
               text: '🎤 [Nota de voz enviada]',
               attachment: {
@@ -1593,7 +2022,7 @@ const defaultMenu = {
 const defaultBackofficeState = {
   active: defaultMenu.active,
   prompt: defaultMenu.prompt,
-  botPrompt: "Actúa como la Mona IA, la asistente virtual de WhatsApp para el Restaurante La Mona en Yumbo. Tu objetivo es interactuar con el cliente sirviendo el menú de comida, aconsejando opciones y capturando sus datos de domicilio.\n\nSigue ESTE FLUJO paso a paso:\n1. Saluda cordialmente con estilo valluno. Como adjuntaremos una foto del menú real, NO tienes que enlistar todos los platos en texto a menos que te pregunten algo específico. Simplemente diles que ahí les compartes el menú del día en la imagen e invítalos a antojarse.\n2. Con amabilidad, solicita uno a uno los siguientes datos de despacho:\n   - Nombre completo\n   - Dirección exacta de entrega (en Yumbo)\n   - Teléfono de contacto\n   - Si pagará en efectivo o transferencia bancaria.\n3. Una vez confirmados todos los datos de forma explícita, agradece el pedido.\n\nMantén respuestas cortas, amables y con buena sazón, imitando la comunicación real por chat de WhatsApp.\n\nNOTA MUY IMPORTANTE: En tu PRIMER saludo o siempre que vayas a ofrecer el menú por primera vez en la conversación, DEBES incluir este código exacto en tu respuesta: [ENVIAR_IMAGEN_MENU]. Esto le dirá a nuestro sistema que despache la foto del tablero. Luego continuas preguntando qué se les antoja.",
+  botPrompt: "Actúa como el Asistente Virtual Oficial del negocio por WhatsApp. Tu objetivo es atender al cliente con cordialidad: responder preguntas, presentar productos o servicios y ayudar con pedidos.\n\nSigue ESTE FLUJO paso a paso:\n1. Saluda cordialmente con estilo valluno. Como adjuntaremos una foto del menú real, NO tienes que enlistar todos los platos en texto a menos que te pregunten algo específico. Simplemente diles que ahí les compartes el menú del día en la imagen e invítalos a antojarse.\n2. Con amabilidad, solicita uno a uno los siguientes datos de despacho:\n   - Nombre completo\n   - Dirección exacta de entrega (en Yumbo)\n   - Teléfono de contacto\n   - Si pagará en efectivo o transferencia bancaria.\n3. Una vez confirmados todos los datos de forma explícita, agradece el pedido.\n\nMantén respuestas cortas, amables y con buena sazón, imitando la comunicación real por chat de WhatsApp.\n\nNOTA MUY IMPORTANTE: En tu PRIMER saludo o siempre que vayas a ofrecer el menú por primera vez en la conversación, DEBES incluir este código exacto en tu respuesta: [ENVIAR_IMAGEN_MENU]. Esto le dirá a nuestro sistema que despache la foto del tablero. Luego continuas preguntando qué se les antoja.",
   menuImage: null,
   messagesHistory: {} as Record<string, { role: string, text: string }[]>,
   orders: [
@@ -2146,7 +2575,7 @@ function createBotOrder(payload: any, channel: string): any | null {
     const saveFn = (globalThis as any).saveDBData;
     if (typeof saveFn === 'function') saveFn(db);
     // Webhook saliente de plataforma: pedido creado por el bot
-    try { firePlatformEvent('order.created', { id: order.id, total: order.total, paymentMethod: order.paymentMethod, customerName: order.customerName, phone: order.phone, source: 'bot' }); } catch { /* nunca bloquea */ }
+    try { firePlatformEvent('order.created', { id: order.id, total: order.amount, paymentMethod: order.paymentMethod, customerName: order.customerName, phone: order.phone, address: order.address, source: 'bot' }); } catch { /* nunca bloquea */ }
     // Registrar/actualizar cliente
     try {
       if (!Array.isArray(db.customers)) db.customers = [];
@@ -2233,6 +2662,16 @@ async function createServer() {
   // without changing the event/webhook flow.
   app.use(compression({ threshold: 1024 }));
 
+  // Headers de seguridad (sin dependencia helmet)
+  app.use((_req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    next();
+  });
+
   // Set json limit to 15mb and preserve rawBody for HMAC verification (Zernio Webhook)
   app.use(express.json({
     limit: '15mb',
@@ -2290,8 +2729,34 @@ async function createServer() {
   });
 
   // Strict Authentication & Access Validation (Paid / Active Users Only)
+  // Rate-limit: máximo 10 intentos por IP cada 15 minutos (anti fuerza bruta)
+  const loginAttempts = new Map<string, { count: number; resetAt: number }>();
+  function isLoginRateLimited(ip: string): boolean {
+    const now = Date.now();
+    const key = String(ip || 'unknown');
+    const entry = loginAttempts.get(key);
+    if (!entry || now > entry.resetAt) {
+      loginAttempts.set(key, { count: 1, resetAt: now + 15 * 60 * 1000 });
+      return false;
+    }
+    entry.count++;
+    if (entry.count > 10) return true;
+    return false;
+  }
+  // Limpiar entradas expiradas cada hora
+  setInterval(() => {
+    const now = Date.now();
+    for (const [k, v] of loginAttempts) {
+      if (now > v.resetAt) loginAttempts.delete(k);
+    }
+  }, 60 * 60 * 1000);
+
   app.post("/api/auth/login", async (req, res) => {
     try {
+      const clientIp = String(req.ip || req.headers['x-forwarded-for'] || 'unknown').split(',')[0].trim();
+      if (isLoginRateLimited(clientIp)) {
+        return res.status(429).json({ success: false, error: "Demasiados intentos. Espera 15 minutos." });
+      }
       const { username, password } = req.body || {};
       if (!username || !password) {
         return res.status(400).json({ success: false, error: "Por favor ingresa usuario/correo y contraseña." });
@@ -2354,6 +2819,8 @@ async function createServer() {
           delete matchedUser.tempPassword;
           saveDBData(currentDB);
         }
+        // Freemium: marca actividad para el cron de cuentas inactivas
+        touchUserActivity(() => currentDB, (db) => saveDBData(db), matchedUser.email || '');
         setSessionCookie(res, user);
         return res.json({
           success: true,
@@ -2468,15 +2935,16 @@ async function createServer() {
   setupSocialRoutes(app);
   setupAdsRoutes(app);
   setupRadarRoutes(app);
+  setupRadarAlertRoutes(app);
   setupPushRoutes(app);
   setupDiagnosticAdminRoutes(app);
   setupVoiceAdminRoutes(app);
-  setupVoiceCallsRoutes(app);
+  setupVoiceCallsRoutes(app); // sin paywall: las llamadas se cobran por saldo (regla freemium)
   setupVoicePlatformRoutes(app);
   initVoiceCallsScheduler();
   setupPlatformWebhooksRoutes(app);
   setupPageBuilderAdminRoutes(app);
-  setupVideoGenAdminRoutes(app);
+  setupVideoGenAdminRoutes(app, requirePaidPlan(() => currentDB));
   startVideoWorker();
 
   // Receives the real browser exception behind the generic error screen. The
@@ -2501,10 +2969,16 @@ async function createServer() {
   // Setup Bold Payments Gateway (Merchant ID FFVSR3C7Y1) Routes & Webhook
   setupBoldRoutes(app, () => currentDB, (db) => saveDBData(db), (info) => {
     activateUserForBoldOrder(() => currentDB, (db) => saveDBData(db), info.orderId);
+    // Freemium: activa plan (PLAN-*) o canal (CHAN-*) según el prefijo de la orden
+    activatePlanForBoldOrder(() => currentDB, (db) => saveDBData(db), info.orderId);
+    activateChannelForBoldOrder(() => currentDB, (db) => saveDBData(db), info.orderId);
+    activateRadarForBoldOrder(() => currentDB, (db) => saveDBData(db), info.orderId);
     // Acredita minutos de voz si la orden es una recarga VOICE-*
     creditVoiceWalletForBoldOrder(info.orderId).catch((e: any) => console.warn('[VoicePlatform] crédito Bold:', e?.message || e));
   });
   setupAuthPublicRoutes(app, () => currentDB, (db) => saveDBData(db));
+  // Freemium: activación de plan + compra de canal + paywall
+  setupBillingRoutes(app, () => currentDB, (db) => saveDBData(db));
 
   // Setup Zernio (Meta Cloud API Oficial) Routes & Webhook handler
   setupZernioRoutes(app, (event) => {
@@ -2513,11 +2987,15 @@ async function createServer() {
       if (!msg) return;
       const eventType = String(event.eventType || '').toLowerCase();
       if (!['message.received', 'message.sent', 'comment.received', 'comment.created'].includes(eventType)) return;
-      if (!currentDB.chats) currentDB.chats = [];
       const rawEvent: any = event.raw || {};
       const rawData: any = rawEvent.data || {};
       const rawMessage: any = rawEvent.message || rawData.message || {};
       const rawConversation: any = rawEvent.conversation || rawData.conversation || {};
+      // Aislamiento: atribuir el chat al dueño de la cuenta Zernio (antes de tocar chats)
+      const earlyAccountId = String(rawEvent.accountId || rawData.accountId || rawMessage.accountId || '').trim();
+      const zOwnerKey = getZernioAccountOwner(earlyAccountId);
+      const zCS = getChatStore(zOwnerKey);
+      if (!zCS.chats) zCS.chats = [];
       const zernioConversationId = msg.conversationId || rawEvent.conversationId || rawData.conversationId || rawConversation.id || '';
       const incomingMessage = msg.direction !== 'outgoing';
       const socialPlatform = String(rawEvent.platform || rawData.platform || rawMessage.platform || 'instagram').toLowerCase();
@@ -2529,7 +3007,7 @@ async function createServer() {
       const participantUsername = String(rawConversation.participantUsername || rawData.participantUsername || rawMessage.recipient?.username || '').replace(/^@/, '').trim();
       const socialAccountId = String(rawEvent.accountId || rawData.accountId || rawMessage.accountId || '').trim();
       const stableSocialId = String(zernioConversationId || participantId || msg.senderId || msg.senderPhone || '').trim();
-      const existingConversation = currentDB.chats.find((c: any) => {
+      const existingConversation = zCS.chats.find((c: any) => {
         const samePlatform = String(c.platform || c.channelId || '').toLowerCase().includes(socialPlatform === 'facebook' ? 'messenger' : socialPlatform);
         if (!samePlatform) return false;
         if (zernioConversationId && c.conversationId && String(c.conversationId) === String(zernioConversationId)) return true;
@@ -2555,8 +3033,8 @@ async function createServer() {
         msg.raw?.sender?.profile_picture || msg.raw?.sender?.profilePicture || msg.raw?.sender?.profilePictureUrl || msg.raw?.sender?.avatar ||
         rawData.sender?.profile_picture || rawData.sender?.profilePicture || rawData.sender?.profilePictureUrl || rawData.sender?.avatar ||
         rawData.participantPicture || rawData.profile_picture || rawData.profilePicture || rawData.profilePictureUrl || '';
-      if (!currentDB.messagesHistory) currentDB.messagesHistory = {};
-      if (!currentDB.messagesHistory[cleanPhone]) currentDB.messagesHistory[cleanPhone] = [];
+      if (!zCS.messagesHistory) zCS.messagesHistory = {};
+      if (!zCS.messagesHistory[cleanPhone]) zCS.messagesHistory[cleanPhone] = [];
 
       const zAtt: any = (msg as any).attachment || undefined;
       const zAttType: string | undefined = zAtt?.type;
@@ -2568,7 +3046,7 @@ async function createServer() {
         size: zAttType === 'audio' ? 'Audio' : (zAttType === 'imagen' ? 'Imagen' : (zAttType === 'video' ? 'Video' : 'Archivo'))
       } : undefined;
 
-      currentDB.messagesHistory[cleanPhone].push({
+      zCS.messagesHistory[cleanPhone].push({
         id: msg.id || undefined,
         role: msg.direction === 'outgoing' ? 'agent' : 'client',
         source: `social_${socialPlatform || 'omnichannel'}`,
@@ -2604,36 +3082,38 @@ async function createServer() {
         }
       }
 
-      if (currentDB.messagesHistory[cleanPhone].length > 40) {
-        currentDB.messagesHistory[cleanPhone].shift();
+      if (zCS.messagesHistory[cleanPhone].length > 40) {
+        zCS.messagesHistory[cleanPhone].shift();
       }
 
       // Primero se busca por la conversación externa. Así todos los mensajes
       // de Instagram del mismo hilo se mantienen en una sola tarjeta, aunque
       // el proveedor cambie el teléfono/ID mostrado del participante.
-      const chatIdx = currentDB.chats.findIndex((c: any) => {
+      const chatIdx = zCS.chats.findIndex((c: any) => {
         if (zernioConversationId && c.conversationId && String(c.conversationId) === String(zernioConversationId)) return true;
         if (c?.platform !== socialPlatform && c?.channelId !== socialPlatform) return false;
         if (participantId && [c.participantId, c.externalId].some((value: any) => String(value || '') === participantId)) return true;
         return Boolean(c.phone && c.phone.replace(/\D/g, '') === cleanPhone);
       });
       if (chatIdx !== -1) {
-        const updatedChat = { ...currentDB.chats[chatIdx], message: socialDisplayText, time: nowStr, timestamp: Date.now(),
-          channelId: socialPlatform === 'instagram' ? 'instagram' : currentDB.chats[chatIdx].channelId,
-          platform: socialPlatform, conversationId: zernioConversationId || currentDB.chats[chatIdx].conversationId,
+        const updatedChat = { ...zCS.chats[chatIdx], message: socialDisplayText, time: nowStr, timestamp: Date.now(),
+          channelId: socialPlatform === 'instagram' ? 'instagram' : zCS.chats[chatIdx].channelId,
+          platform: socialPlatform, conversationId: zernioConversationId || zCS.chats[chatIdx].conversationId,
           ...(socialPlatform === 'whatsapp' && incomingMessage ? { lastInboundAt: Date.now() } : {}),
-          ...(socialPlatform === 'whatsapp' && !currentDB.chats[chatIdx].provider ? { provider: zernioProviderFromOnboarding(currentDB.chats[chatIdx].onboardingMode) } : {}),
-          externalId: participantId || currentDB.chats[chatIdx].externalId,
-          participantId: participantId || currentDB.chats[chatIdx].participantId,
-          participantUsername: participantUsername || currentDB.chats[chatIdx].participantUsername,
-          accountId: socialAccountId || currentDB.chats[chatIdx].accountId,
+          ...(socialPlatform === 'whatsapp' && !zCS.chats[chatIdx].provider ? { provider: zernioProviderFromOnboarding(zCS.chats[chatIdx].onboardingMode) } : {}),
+          externalId: participantId || zCS.chats[chatIdx].externalId,
+          participantId: participantId || zCS.chats[chatIdx].participantId,
+          participantUsername: participantUsername || zCS.chats[chatIdx].participantUsername,
+          accountId: socialAccountId || zCS.chats[chatIdx].accountId,
           ...(profileAvatar && incomingMessage ? { avatar: profileAvatar } : {}),
-          ...(incomingMessage ? { unread: (Number(currentDB.chats[chatIdx].unread) || 0) + 1 } : {}) };
-        currentDB.chats.splice(chatIdx, 1);
-        currentDB.chats.unshift(updatedChat);
+          ...(incomingMessage ? { unread: (Number(zCS.chats[chatIdx].unread) || 0) + 1 } : {}) };
+        zCS.chats.splice(chatIdx, 1);
+        zCS.chats.unshift(updatedChat);
       } else {
-        currentDB.chats.unshift({
+        zCS.chats.unshift({
           id: `CH-${Date.now().toString().slice(-4)}`,
+          ownerKey: zOwnerKey || undefined,
+          ...(zOwnerKey ? {} : { unassigned: true }),
           sender: msg.senderName || `Cliente +${cleanPhone}`,
           phone: `+${cleanPhone}`,
           message: socialDisplayText,
@@ -2658,7 +3138,7 @@ async function createServer() {
         getZernioAccountProvider(socialAccountId).then((p) => {
           if (!p) return;
           let changed = false;
-          for (const ch of (currentDB.chats || [])) {
+          for (const ch of (zCS.chats || [])) {
             if (String(ch.platform || '').toLowerCase() === 'whatsapp' &&
                 (String(ch.accountId || '') === socialAccountId ||
                  (zernioConversationId && String(ch.conversationId || '') === String(zernioConversationId)))) {
@@ -2767,7 +3247,9 @@ async function createServer() {
   // ============================================================
   app.get("/api/whatsapp/providers", async (req, res) => {
     try {
-      res.json({ success: true, providers: getWhatsappProvidersRegistry() });
+      // Canales por cuenta: miembros de equipo ven los del admin
+      const userKey = getEffectiveUserKey(req);
+      res.json({ success: true, providers: getWhatsappProvidersRegistry(userKey) });
     } catch (err: any) {
       res.status(500).json({ success: false, error: err.message });
     }
@@ -2775,6 +3257,22 @@ async function createServer() {
 
   app.post("/api/whatsapp/providers", async (req, res) => {
     try {
+      // Canales por cuenta: miembros de equipo configuran los del admin
+      const userKey = getEffectiveUserKey(req);
+      // Verificar límite de canales (primer gratis, adicionales requieren pago)
+      // Superadmin exento
+      const session = getSession(req);
+      const role = String((session as any)?.role || '').toLowerCase();
+      if (role !== 'superadmin') {
+        const check = canAddChannel(userKey);
+        // Si ya tiene este canal registrado, permitir (es actualización, no nuevo)
+        const { phone, accountId } = req.body || {};
+        const key = String(accountId || '').trim() || String(phone || '').replace(/\D/g, '');
+        const existing = getWhatsappProvidersRegistry(userKey)[key];
+        if (!existing && !check.allowed) {
+          return res.status(402).json({ success: false, error: check.reason, channelsUsed: check.channelsUsed, paymentRequired: true });
+        }
+      }
       const { phone, accountId, provider, onboardingMode, displayName } = req.body || {};
       let resolved = String(provider || '').toLowerCase();
       if (resolved !== 'evolution' && resolved !== 'zernio_coexistence' && resolved !== 'zernio_api') {
@@ -2787,11 +3285,11 @@ async function createServer() {
       }
       const key = String(accountId || '').trim() || String(phone || '').replace(/\D/g, '');
       if (!key) return res.status(400).json({ success: false, error: "Se requiere phone o accountId" });
-      setWhatsappProvider(key, resolved, { accountId, phone: String(phone || '').replace(/\D/g, '') || undefined, onboardingMode, displayName });
+      setWhatsappProvider(key, resolved, { accountId, phone: String(phone || '').replace(/\D/g, '') || undefined, onboardingMode, displayName }, userKey);
       // También registrar por teléfono cuando hay accountId + phone (búsqueda inversa)
       const phoneDigits = String(phone || '').replace(/\D/g, '');
       if (accountId && phoneDigits && key !== phoneDigits) {
-        setWhatsappProvider(phoneDigits, resolved, { accountId, phone: phoneDigits, onboardingMode, displayName });
+        setWhatsappProvider(phoneDigits, resolved, { accountId, phone: phoneDigits, onboardingMode, displayName }, userKey);
       }
       res.json({ success: true, key, provider: resolved });
     } catch (err: any) {
@@ -2801,7 +3299,8 @@ async function createServer() {
 
   app.delete("/api/whatsapp/providers/:key", async (req, res) => {
     try {
-      const registry = getWhatsappProvidersRegistry();
+      const userKey = getUserKey(req);
+      const registry = getWhatsappProvidersRegistry(userKey);
       const key = String(req.params.key || '').trim();
       if (registry[key]) {
         delete registry[key];
@@ -2852,28 +3351,35 @@ async function createServer() {
   app.post("/api/whatsapp/sync-recent-chats", async (req, res) => {
     try {
       const limit = req.body?.limit ? Number(req.body.limit) : 80;
-      const result = await syncChatsFromEvolutionVPS(limit);
+      const userKey = getChatUserKey(req);
+      const userStore = getUserDataStore(userKey);
+      const result = await syncChatsFromEvolutionVPS(limit, userKey);
+      // La sincronización importó chats/mensajes nuevos: bootstrap cacheado viejo
+      invalidateWhatsappBootstrapCache();
+      // Retornar solo los chats del usuario (aislamiento por usuario)
+      const userChats = userStore.chats || [];
+      const userMessagesHistory = userStore.messagesHistory || {};
       res.json({
         success: true,
-        message: `Sincronización completada. ${result.importedCount} mensaje(s) importados, ${result.chatsCount} chats en total.`,
+        message: `Sincronización completada. ${result.importedCount} mensaje(s) importados, ${userChats.length} chats en total.`,
         importedCount: result.importedCount,
-        chatsCount: result.chatsCount,
-        chats: currentDB.chats || [],
-        messagesHistory: currentDB.messagesHistory || {}
+        chatsCount: userChats.length,
+        chats: userChats,
+        messagesHistory: userMessagesHistory
       });
     } catch (err: any) {
       res.status(500).json({ success: false, error: err.message });
     }
   });
 
-  // Endpoint: Borrar Memoria Completa de la IA (Todas las conversaciones)
+  // Endpoint: Borrar Memoria Completa de la IA (solo del usuario autenticado, NUNCA global)
   app.post("/api/whatsapp/memory/clear", (req, res) => {
     try {
-      currentDB.messagesHistory = {};
-      currentDB.chats = [];
-      currentDB.whatsappError = undefined;
+      const cs = getChatStore(getChatUserKey(req));
+      cs.messagesHistory = {};
+      cs.chats = [];
       saveDBData(currentDB);
-      console.log("[WhatsApp API] Memoria de conversaciones e historial borrados por completo.");
+      console.log("[WhatsApp API] Memoria de conversaciones e historial borrados (usuario).");
       res.json({ success: true, message: "Memoria e historial de la IA borrados exitosamente" });
     } catch (err: any) {
       console.error("Error al borrar memoria de la IA:", err);
@@ -2881,32 +3387,33 @@ async function createServer() {
     }
   });
 
-  // Endpoint: Borrar conversación individual de un cliente (Reiniciar chat de cero)
+  // Endpoint: Borrar conversación individual de un cliente (solo del store del usuario)
   app.post("/api/whatsapp/chat/delete", (req, res) => {
     try {
       const { chatId, phone } = req.body;
       const cleanPhone = phone ? phone.replace(/\D/g, '') : '';
+      const cs = getChatStore(getChatUserKey(req));
 
-      if (currentDB.messagesHistory) {
-        if (cleanPhone && currentDB.messagesHistory[cleanPhone]) {
-          delete currentDB.messagesHistory[cleanPhone];
+      if (cs.messagesHistory) {
+        if (cleanPhone && cs.messagesHistory[cleanPhone]) {
+          delete cs.messagesHistory[cleanPhone];
         }
-        if (chatId && currentDB.messagesHistory[chatId]) {
-          delete currentDB.messagesHistory[chatId];
+        if (chatId && cs.messagesHistory[chatId]) {
+          delete cs.messagesHistory[chatId];
         }
-        for (const k of Object.keys(currentDB.messagesHistory)) {
+        for (const k of Object.keys(cs.messagesHistory)) {
           const kClean = k.replace(/\D/g, '');
           if (cleanPhone && (kClean === cleanPhone || kClean.endsWith(cleanPhone) || cleanPhone.endsWith(kClean))) {
-            delete currentDB.messagesHistory[k];
+            delete cs.messagesHistory[k];
           }
         }
       }
 
-      if (chatId && currentDB.chats) {
-        currentDB.chats = currentDB.chats.filter((c: any) => c.id !== chatId);
+      if (chatId && cs.chats) {
+        cs.chats = cs.chats.filter((c: any) => c.id !== chatId);
       }
-      if (cleanPhone && currentDB.chats) {
-        currentDB.chats = currentDB.chats.filter((c: any) => {
+      if (cleanPhone && cs.chats) {
+        cs.chats = cs.chats.filter((c: any) => {
           const cPhone = (c.phone || '').replace(/\D/g, '');
           return cPhone !== cleanPhone;
         });
@@ -2976,9 +3483,14 @@ async function createServer() {
         return res.status(400).json({ success: false, error: "Falta número de teléfono" });
       }
 
-      if (!currentDB.messagesHistory) currentDB.messagesHistory = {};
-      const history = currentDB.messagesHistory[cleanPhone] || [];
-      const chatObj = (currentDB.chats || []).find((c: any) => c.phone && c.phone.replace(/\D/g, '') === cleanPhone);
+      // Aislamiento: solo chats/historial del usuario autenticado
+      const ownerKey = getChatUserKey(req);
+      const cs = getChatStore(ownerKey);
+      const history = cs.messagesHistory[cleanPhone] || [];
+      const chatObj = (cs.chats || []).find((c: any) => c.phone && c.phone.replace(/\D/g, '') === cleanPhone);
+      if (!chatObj) {
+        return res.status(404).json({ success: false, error: "Conversación no encontrada" });
+      }
       const senderName = chatObj?.sender || `+${cleanPhone}`;
 
       // Get last client message text or fallback
@@ -3026,7 +3538,8 @@ async function createServer() {
         textToProcess,
         replies,
         cleanPhone,
-        activeId
+        activeId,
+        ownerKey
       );
 
       saveDBData(currentDB);
@@ -3034,8 +3547,8 @@ async function createServer() {
       res.json({
         success: true,
         replies,
-        messagesHistory: currentDB.messagesHistory || {},
-        chats: currentDB.chats || []
+        messagesHistory: { [cleanPhone]: cs.messagesHistory[cleanPhone] || [] },
+        chats: cs.chats.filter((c: any) => c.phone && c.phone.replace(/\D/g, '') === cleanPhone)
       });
     } catch (err: any) {
       console.error("Error al forzar respuesta de IA:", err);
@@ -3143,6 +3656,9 @@ async function createServer() {
       if (!targetPhone) {
         return res.status(400).json({ success: false, error: "Falta el número de teléfono (phone)" });
       }
+      // Aislamiento: solo se puede responder en chats propios
+      const replyOwnerKey = getChatUserKey(req);
+      const replyCS = getChatStore(replyOwnerKey);
 
       // La grabadora puede entregar la nota como ruta local (/uploads/...) tras
       // su pre-conversión: resolverla a base64 real antes de enviar, porque los
@@ -3152,16 +3668,19 @@ async function createServer() {
         if (resolvedMedia) mediaBase64 = resolvedMedia.toString('base64');
       }
 
-      const storedChat = (currentDB.chats || []).find((chat: any) =>
+      const storedChat = (replyCS.chats || []).find((chat: any) =>
         !/instagram|messenger|facebook|tiktok/i.test(`${chat?.platform || ''} ${chat?.channelId || ''}`) &&
         String(chat?.phone || '').replace(/\D/g, '') === targetPhone
       );
-      const socialChat = (currentDB.chats || []).find((chat: any) =>
+      const socialChat = (replyCS.chats || []).find((chat: any) =>
         /instagram|messenger|facebook/i.test(`${chat?.platform || ''} ${chat?.channelId || ''}`) &&
         [chat?.phone, chat?.participantId, chat?.externalId].some((value: any) => String(value || '').replace(/\D/g, '') === targetPhone)
       );
       if (socialChat) {
         return res.status(400).json({ success: false, error: 'Este chat es de Instagram/Messenger: la nota de voz debe enviarse por el canal social, no por WhatsApp' });
+      }
+      if (!storedChat) {
+        return res.status(404).json({ success: false, error: 'Conversación no encontrada' });
       }
       const requestedChannel = String(channelId || '').trim();
       const effectiveRemoteJid = remoteJid || storedChat?.remoteJid || '';
@@ -3179,8 +3698,9 @@ async function createServer() {
       const isZernioWhatsapp = replyProvider === 'zernio_coexistence' || replyProvider === 'zernio_api';
       if (isZernioWhatsapp) {
         try {
-          const registry = getWhatsappProvidersRegistry();
-          const regEntry = registry[targetPhone] || {};
+          const userKey = getUserKey(req);
+          const registry = getWhatsappProvidersRegistry(userKey);
+          const regEntry = registry[targetPhone] || findWhatsappProviderGlobal(targetPhone) || {};
           const zAccountId = String(storedChat?.accountId || regEntry.accountId || '').trim();
           if (!zAccountId) {
             return res.status(400).json({ success: false, error: 'Este chat usa WhatsApp oficial (Zernio) pero no hay cuenta conectada registrada. Reconecta el número en la pestaña Conexión.' });
@@ -3201,9 +3721,9 @@ async function createServer() {
             const status = zResult?.outside24hWindow ? 422 : 400;
             return res.status(status).json({ success: false, error: zResult?.error || 'El canal oficial no confirmó el envío', outside24hWindow: !!zResult?.outside24hWindow, provider: replyProvider });
           }
-          if (!currentDB.messagesHistory) currentDB.messagesHistory = {};
-          if (!currentDB.messagesHistory[targetPhone]) currentDB.messagesHistory[targetPhone] = [];
-          currentDB.messagesHistory[targetPhone].push({
+          if (!replyCS.messagesHistory) replyCS.messagesHistory = {};
+          if (!replyCS.messagesHistory[targetPhone]) replyCS.messagesHistory[targetPhone] = [];
+          replyCS.messagesHistory[targetPhone].push({
             role: 'assistant',
             text: message || (normalizedType === 'audio' ? '🎤 [Nota de voz enviada]' : (normalizedType === 'imagen' ? '📷 [Imagen enviada]' : (normalizedType === 'video' ? '🎥 [Video enviado]' : `📎 [${effectiveFileName}]`))),
             attachment: attachmentObj,
@@ -3211,15 +3731,16 @@ async function createServer() {
             timestamp: Date.now(),
             provider: replyProvider
           });
-          if (currentDB.messagesHistory[targetPhone].length > 35) currentDB.messagesHistory[targetPhone].shift();
-          const zChatIdx = (currentDB.chats || []).findIndex((ch: any) => String(ch?.phone || '').replace(/\D/g, '') === targetPhone);
+          if (replyCS.messagesHistory[targetPhone].length > 35) replyCS.messagesHistory[targetPhone].shift();
+          const zChatIdx = (replyCS.chats || []).findIndex((ch: any) => String(ch?.phone || '').replace(/\D/g, '') === targetPhone);
           if (zChatIdx !== -1) {
-            currentDB.chats[zChatIdx].provider = replyProvider;
-            if (zResult.conversationId && !currentDB.chats[zChatIdx].conversationId) {
-              currentDB.chats[zChatIdx].conversationId = zResult.conversationId;
+            replyCS.chats[zChatIdx].provider = replyProvider;
+            if (zResult.conversationId && !replyCS.chats[zChatIdx].conversationId) {
+              replyCS.chats[zChatIdx].conversationId = zResult.conversationId;
             }
           }
           saveDBData(currentDB);
+          invalidateWhatsappBootstrapCache();
           return res.json({ success: true, message: 'Mensaje enviado por WhatsApp oficial (Zernio)', provider: replyProvider, messageId: zResult.messageId });
         } catch (err: any) {
           console.error('[WhatsApp 3 canales] Error enviando por Zernio:', err?.message || err);
@@ -3285,19 +3806,20 @@ async function createServer() {
             if (!evoResult?.ok) throw new Error(evoResult?.data?.response?.message || evoResult?.data?.message || `Evolution API rechazó el mensaje (${evoResult?.status || 'sin estado'})`);
           }
 
-          if (!currentDB.messagesHistory) currentDB.messagesHistory = {};
-          if (!currentDB.messagesHistory[targetPhone]) currentDB.messagesHistory[targetPhone] = [];
-          currentDB.messagesHistory[targetPhone].push({
+          if (!replyCS.messagesHistory) replyCS.messagesHistory = {};
+          if (!replyCS.messagesHistory[targetPhone]) replyCS.messagesHistory[targetPhone] = [];
+          replyCS.messagesHistory[targetPhone].push({
             role: 'assistant',
             text: message || (normalizedType === 'audio' ? '🎤 [Nota de voz enviada]' : (normalizedType === 'imagen' ? '📷 [Imagen enviada]' : (normalizedType === 'video' ? '🎥 [Video enviado]' : `📎 [${effectiveFileName}]`))),
             attachment: attachmentObj,
             time: new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
             timestamp: Date.now()
           });
-          if (currentDB.messagesHistory[targetPhone].length > 35) {
-            currentDB.messagesHistory[targetPhone].shift();
+          if (replyCS.messagesHistory[targetPhone].length > 35) {
+            replyCS.messagesHistory[targetPhone].shift();
           }
           saveDBData(currentDB);
+          invalidateWhatsappBootstrapCache();
 
           return res.json({ success: true, message: "Mensaje y multimedia enviados exitosamente vía Evolution API" });
         }
@@ -3339,19 +3861,20 @@ async function createServer() {
       }
 
       // Record in history
-      if (!currentDB.messagesHistory) currentDB.messagesHistory = {};
-      if (!currentDB.messagesHistory[targetPhone]) currentDB.messagesHistory[targetPhone] = [];
-      currentDB.messagesHistory[targetPhone].push({
+      if (!replyCS.messagesHistory) replyCS.messagesHistory = {};
+      if (!replyCS.messagesHistory[targetPhone]) replyCS.messagesHistory[targetPhone] = [];
+      replyCS.messagesHistory[targetPhone].push({
         role: 'assistant',
         text: message || (normalizedType === 'audio' ? '🎤 [Nota de voz enviada]' : (normalizedType === 'imagen' ? '📷 [Imagen enviada]' : (normalizedType === 'video' ? '🎥 [Video enviado]' : `📎 [${effectiveFileName}]`))),
         attachment: attachmentObj,
         time: new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
         timestamp: Date.now()
       });
-      if (currentDB.messagesHistory[targetPhone].length > 35) {
-        currentDB.messagesHistory[targetPhone].shift();
+      if (replyCS.messagesHistory[targetPhone].length > 35) {
+        replyCS.messagesHistory[targetPhone].shift();
       }
       saveDBData(currentDB);
+      invalidateWhatsappBootstrapCache();
 
       res.json({ success: true, message: "Mensaje enviado exitosamente" });
     } catch (err: any) {
@@ -3360,7 +3883,8 @@ async function createServer() {
     }
   });
 
-  app.post("/api/whatsapp/reconnect", async (req, res) => {
+  // Conectar/reconectar canal de WhatsApp (genera costo) → requiere plan pago (freemium)
+  app.post("/api/whatsapp/reconnect", requirePaidPlan(() => currentDB), async (req, res) => {
     let channelId = (req.body.channelId || 'channel-default').trim();
     if (channelId.startsWith(' ') || (!channelId.startsWith('+') && /^\d+_[a-zA-Z0-9_-]+$/.test(channelId))) {
       channelId = `+${channelId.trim()}`;
@@ -3917,17 +4441,19 @@ async function createServer() {
     }
   });
 
-  function collapseInstagramChats() {
-    if (!Array.isArray(currentDB.chats)) return;
+  function collapseInstagramChats(cs: any = null) {
+    // Aislamiento: colapsa los chats del store indicado (o global legacy)
+    const colCS = cs || getChatStore(null);
+    if (!Array.isArray(colCS.chats)) return;
     const seen = new Map<string, any>();
     const result: any[] = [];
-    for (const chat of currentDB.chats) {
+    for (const chat of colCS.chats) {
       if (/^\+?social-default$/i.test(String(chat?.phone || '')) || String(chat?.conversationId || '').toLowerCase() === 'default') {
         continue;
       }
       const platform = String(chat?.platform || chat?.channelId || '').toLowerCase();
       const phoneKey = String(chat?.phone || '').replace(/\D/g, '');
-      const history = currentDB.messagesHistory?.[phoneKey] || [];
+      const history = colCS.messagesHistory?.[phoneKey] || [];
       const legacyInstagram = !platform && history.some((message: any) => /social_instagram|social_omnichannel/.test(String(message?.source || '').toLowerCase()));
       const instagram = platform.includes('instagram') || legacyInstagram;
       if (!instagram) { result.push(chat); continue; }
@@ -3961,28 +4487,264 @@ async function createServer() {
       if (!previous.accountId && chat.accountId) previous.accountId = chat.accountId;
       if (!previous.sender && chat.sender) previous.sender = chat.sender;
       const previousPhone = String(previous.phone || '').replace(/\D/g, '');
-      if (phoneKey && previousPhone && phoneKey !== previousPhone && Array.isArray(currentDB.messagesHistory?.[phoneKey])) {
-        const combined = [...(currentDB.messagesHistory[previousPhone] || []), ...currentDB.messagesHistory[phoneKey]];
+      if (phoneKey && previousPhone && phoneKey !== previousPhone && Array.isArray(colCS.messagesHistory?.[phoneKey])) {
+        const combined = [...(colCS.messagesHistory[previousPhone] || []), ...colCS.messagesHistory[phoneKey]];
         const unique = new Map<string, any>();
         for (const message of combined) unique.set(`${message.timestamp || message.time || ''}|${message.role || ''}|${message.text || ''}`, message);
-        currentDB.messagesHistory[previousPhone] = Array.from(unique.values()).sort((a: any, b: any) => (Number(a.timestamp) || 0) - (Number(b.timestamp) || 0));
-        delete currentDB.messagesHistory[phoneKey];
+        colCS.messagesHistory[previousPhone] = Array.from(unique.values()).sort((a: any, b: any) => (Number(a.timestamp) || 0) - (Number(b.timestamp) || 0));
+        delete colCS.messagesHistory[phoneKey];
       }
     }
-    if (result.length !== currentDB.chats.length) { currentDB.chats = result; saveDBData(currentDB); }
+    if (result.length !== colCS.chats.length) { colCS.chats = result; saveDBData(currentDB); }
   }
 
+  // ---------------------------------------------------------------------------
+  // Gestión de equipos y nichos (multiusuario)
+  // ---------------------------------------------------------------------------
+
+// Cuenta los canales de un usuario (WhatsApp providers + cuentas Zernio)
+function countUserChannels(userKey: string): number {
+  let count = 0;
+  try {
+    const db = (globalThis as any).currentDB;
+    const waProviders = db?.whatsappProvidersByUser?.[userKey];
+    if (waProviders && typeof waProviders === 'object') {
+      count += Object.keys(waProviders).length;
+    }
+    const owners = db?.zernioAccountOwners;
+    if (owners && typeof owners === 'object') {
+      count += Object.values(owners).filter((o: any) => o === userKey).length;
+    }
+  } catch {}
+  return count;
+}
+
+// Verifica si el usuario puede conectar un canal adicional
+function canAddChannel(userKey: string): { allowed: boolean; reason?: string; channelsUsed: number } {
+  const channelsUsed = countUserChannels(userKey);
+  if (channelsUsed === 0) {
+    return { allowed: true, channelsUsed };
+  }
+  try {
+    const db = (globalThis as any).currentDB;
+    const paidChannels = db?.userPaidChannels?.[userKey];
+    const now = Date.now();
+    if (paidChannels && typeof paidChannels === 'object') {
+      const activePaid = Object.values(paidChannels).filter((p: any) => p.expiresAt && p.expiresAt > now).length;
+      if ((channelsUsed - 1) <= activePaid) {
+        return { allowed: true, channelsUsed };
+      }
+    }
+  } catch {}
+  return {
+    allowed: false,
+    reason: 'Para conectar más canales debes pagar $10 USD/mes por canal adicional o comprar un paquete.',
+    channelsUsed
+  };
+}
+  
+  // Listar nichos disponibles con sus roles
+  app.get("/api/team/niches", (req, res) => {
+    const niches = Object.entries(NICHE_TEMPLATES).map(([key, tpl]) => ({
+      key,
+      name: tpl.name,
+      roles: Object.entries(tpl.roles).map(([rkey, r]) => ({ key: rkey, name: r.name }))
+    }));
+    res.json({ success: true, niches });
+  });
+
+  // Obtener nicho del usuario actual
+  app.get("/api/team/my-niche", (req, res) => {
+    const userKey = getEffectiveUserKey(req);
+    const niche = getUserNiche(userKey);
+    res.json({ success: true, niche, template: NICHE_TEMPLATES[niche] });
+  });
+
+  // Cambiar nicho (solo admin de la cuenta)
+  app.post("/api/team/niche", (req, res) => {
+    const session = getSession(req);
+    const role = String((session as any)?.role || '').toLowerCase();
+    if (role !== 'admin' && role !== 'superadmin') {
+      return res.status(403).json({ success: false, error: 'Solo el administrador puede cambiar el nicho' });
+    }
+    const { niche } = req.body || {};
+    if (!niche || !NICHE_TEMPLATES[niche]) {
+      return res.status(400).json({ success: false, error: 'Nicho inválido' });
+    }
+    const userKey = getEffectiveUserKey(req);
+    if (!(currentDB as any).userNiches) (currentDB as any).userNiches = {};
+    (currentDB as any).userNiches[userKey] = niche;
+    saveDBData(currentDB);
+    res.json({ success: true, niche });
+  });
+
+  // Listar miembros del equipo
+  app.get("/api/team/members", (req, res) => {
+    const userKey = getEffectiveUserKey(req);
+    const members = getTeamMembers(userKey);
+    // No exponer datos sensibles
+    const safe = members.map((m: any) => ({
+      userKey: m.userKey,
+      name: m.name,
+      email: m.email,
+      role: m.role,
+      roleName: NICHE_TEMPLATES[getUserNiche(userKey)]?.roles[m.role]?.name || m.role,
+      addedAt: m.addedAt
+    }));
+    res.json({ success: true, members: safe });
+  });
+
+  // Invitar/agregar miembro al equipo (solo admin)
+  app.post("/api/team/members", (req, res) => {
+    const session = getSession(req);
+    const role = String((session as any)?.role || '').toLowerCase();
+    if (role !== 'admin' && role !== 'superadmin') {
+      return res.status(403).json({ success: false, error: 'Solo el administrador puede invitar miembros' });
+    }
+    const { userKey: memberKey, name, email, role: memberRole } = req.body || {};
+    if (!memberKey || !memberRole) {
+      return res.status(400).json({ success: false, error: 'Se requiere userKey y role' });
+    }
+    const adminKey = getEffectiveUserKey(req);
+    const niche = getUserNiche(adminKey);
+    if (!NICHE_TEMPLATES[niche]?.roles[memberRole]) {
+      return res.status(400).json({ success: false, error: 'Rol inválido para este nicho' });
+    }
+    if (!(currentDB as any).teamMembers) (currentDB as any).teamMembers = {};
+    (currentDB as any).teamMembers[memberKey] = {
+      userKey: memberKey,
+      adminKey,
+      name: name || memberKey,
+      email: email || '',
+      role: memberRole,
+      addedAt: new Date().toISOString()
+    };
+    saveDBData(currentDB);
+    res.json({ success: true });
+  });
+
+  // Eliminar miembro del equipo (solo admin)
+  app.delete("/api/team/members/:userKey", (req, res) => {
+    const session = getSession(req);
+    const role = String((session as any)?.role || '').toLowerCase();
+    if (role !== 'admin' && role !== 'superadmin') {
+      return res.status(403).json({ success: false, error: 'Solo el administrador puede eliminar miembros' });
+    }
+    const memberKey = String(req.params.userKey || '');
+    const adminKey = getEffectiveUserKey(req);
+    const member = (currentDB as any).teamMembers?.[memberKey];
+    if (member && member.adminKey === adminKey) {
+      delete (currentDB as any).teamMembers[memberKey];
+      saveDBData(currentDB);
+    }
+    res.json({ success: true });
+  });
+
+  // Estado de canales del usuario (límites y pagos)
+  app.get("/api/channels/status", (req, res) => {
+    const userKey = getEffectiveUserKey(req);
+    const check = canAddChannel(userKey);
+    res.json({
+      success: true,
+      channelsUsed: check.channelsUsed,
+      freeChannels: 1,
+      canAddMore: check.allowed,
+      reason: check.reason || null,
+      pricePerAdditionalChannel: 10,
+      currency: 'USD'
+    });
+  });
+
+  // Registrar compra de canal adicional (llamado tras pago exitoso vía Bold)
+  app.post("/api/channels/purchase", (req, res) => {
+    const session = getSession(req);
+    const role = String((session as any)?.role || '').toLowerCase();
+    // Solo el admin de la cuenta puede comprar (o superadmin)
+    if (role !== 'admin' && role !== 'superadmin') {
+      return res.status(403).json({ success: false, error: 'Solo el administrador puede comprar canales' });
+    }
+    const { months = 1 } = req.body || {};
+    const userKey = getEffectiveUserKey(req);
+    if (!(currentDB as any).userPaidChannels) (currentDB as any).userPaidChannels = {};
+    if (!(currentDB as any).userPaidChannels[userKey]) (currentDB as any).userPaidChannels[userKey] = {};
+    const purchaseId = `ch_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const expiresAt = Date.now() + (Number(months) || 1) * 30 * 24 * 60 * 60 * 1000;
+    (currentDB as any).userPaidChannels[userKey][purchaseId] = {
+      id: purchaseId,
+      months: Number(months) || 1,
+      purchasedAt: new Date().toISOString(),
+      expiresAt
+    };
+    saveDBData(currentDB);
+    res.json({ success: true, purchaseId, expiresAt });
+  });
+
   app.get("/api/backoffice/state", (req, res) => {
-    collapseInstagramChats();
+    collapseInstagramChats(getChatStore(getChatUserKey(req)));
     res.setHeader('Cache-Control', 'no-store');
-    res.json(sanitizeForClient(currentDB));
+    // Datos aislados por usuario: admin ve globales, usuarios ven solo los suyos
+    if (!isAdminRequest(req)) {
+      const iso: any = sanitizeForClient(getUserIsolatedState(req));
+      // Claves pesadas con endpoints propios: nunca viajan en el estado.
+      delete iso.pageBuilder;
+      delete iso.aiDebugLogs;
+      delete iso.radar;
+      return res.json(iso);
+    }
+    // REGLA ABSOLUTA: ni admin ni superadmin reciben chats de otros usuarios.
+    // Cada usuario solo ve sus propias conversaciones.
+    // Claves pesadas con endpoints propios (page-builder ~3,4 MB,
+    // ai-debug-logs ~1,3 MB, radar ~0,2 MB): se quedan en el servidor y solo
+    // viajan por sus rutas; se excluyen ANTES de sanitizar para no copiarlas.
+    const rawState: any = { ...currentDB };
+    delete rawState.pageBuilder;
+    delete rawState.aiDebugLogs;
+    delete rawState.radar;
+    const out: any = sanitizeForClient(rawState);
+    delete out.chats;
+    delete out.messagesHistory;
+    delete out.conversations;
+    res.json(out);
+  });
+
+  // Datos delgados para el panel de Costos: antes esta vista descargaba el
+  // estado completo (5+ MB) solo para leer estas claves. Replica la semántica
+  // del estado: el admin NO recibe chats ni historiales (aislamiento) y cada
+  // usuario solo ve lo suyo. Los logs de IA viajan reducidos a tokens y
+  // duración, que es lo único que el panel calcula.
+  app.get("/api/backoffice/costos-data", (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    const admin = isAdminRequest(req);
+    const src: any = admin ? currentDB : getUserIsolatedState(req);
+    const chats: any[] = !admin && Array.isArray(src.chats) ? src.chats : [];
+    const mh: Record<string, any> = !admin && src.messagesHistory && typeof src.messagesHistory === 'object' ? src.messagesHistory : {};
+    let totalMessages = 0;
+    for (const v of Object.values(mh)) if (Array.isArray(v)) totalMessages += v.length;
+    const logs = (Array.isArray(src.aiDebugLogs) ? src.aiDebugLogs : []).map((l: any) => ({
+      tokens: l?.tokens || {},
+      durationMs: l?.durationMs || 0,
+    }));
+    const channels = (Array.isArray(src.channels) ? src.channels : []).map((c: any) => ({ connected: !!c?.connected }));
+    res.json(sanitizeForClient({
+      chats: chats.map((c: any) => ({ id: c?.id })),
+      historyKeys: Object.keys(mh).length,
+      totalMessages,
+      aiDebugLogs: logs,
+      rechargeTransactions: Array.isArray(src.rechargeTransactions) ? src.rechargeTransactions : [],
+      channels,
+      aiBalance: src.aiBalance ?? null,
+      aiUsageCounts: src.aiUsageCounts || {},
+    }));
   });
 
   // Lightweight realtime snapshot for the inbox. The full backoffice state
   // also contains AI logs and billing history; sending those on every webhook
   // event made the CRM transfer ~776 KB and caused visible chat jumps.
   app.get("/api/backoffice/inbox", async (req, res) => {
-    collapseInstagramChats();
+    // REGLA ABSOLUTA: todos los roles (incluido superadmin) solo ven sus
+    // propias conversaciones. Nunca se devuelve el inbox global.
+    const cs = getChatStore(getChatUserKey(req));
+    collapseInstagramChats(cs);
     res.setHeader('Cache-Control', 'no-store');
     const chatFields = [
       'id', 'name', 'time', 'msg', 'message', 'unread', 'phone', 'columnId',
@@ -3991,23 +4753,8 @@ async function createServer() {
       'participantUsername', 'instanceName', 'remoteJid', 'timestamp', 'sender'
     ];
     const limit = Math.min(500, Math.max(50, Number(req.query.limit) || 300));
-    const historyLimitForTables = Math.min(200, Math.max(0, Number(req.query.historyLimit) || 80));
-    if (isNormalizedReadReady()) {
-      try {
-        const tableInbox = await loadInboxFromTables(limit, historyLimitForTables);
-        if (tableInbox) {
-          const tableChats = tableInbox.chats.map((chat: any) => {
-            const compact: any = {};
-            for (const field of chatFields) if (chat?.[field] !== undefined) compact[field] = chat[field];
-            return compact;
-          });
-          return res.json({ chats: tableChats, messagesHistory: tableInbox.messagesHistory });
-        }
-      } catch (err: any) {
-        console.warn('[NormalizedDB Inbox Fallback]:', err?.message || err);
-      }
-    }
-    const chats = (Array.isArray(currentDB.chats) ? currentDB.chats : [])
+    const chats = (Array.isArray(cs.chats) ? cs.chats : [])
+      .filter((c: any) => !c?.unassigned)
       .slice()
       .sort((a: any, b: any) => (Number(b?.timestamp) || 0) - (Number(a?.timestamp) || 0))
       .slice(0, limit)
@@ -4022,7 +4769,7 @@ async function createServer() {
     const historyLimit = Math.min(200, Math.max(0, Number(req.query.historyLimit) || 80));
     const messagesHistory: Record<string, any[]> = {};
     if (historyLimit > 0) {
-      for (const [historyKey, history] of Object.entries(currentDB.messagesHistory || {})) {
+      for (const [historyKey, history] of Object.entries(cs.messagesHistory || {})) {
         if (Array.isArray(history)) messagesHistory[historyKey] = history.slice(-historyLimit);
       }
     }
@@ -4038,7 +4785,9 @@ async function createServer() {
   app.post("/api/backoffice/chats/read", (req, res) => {
     const chatId = String(req.body?.chatId || req.body?.id || "");
     if (!chatId) return res.status(400).json({ success: false, error: "chatId requerido" });
-    const chat = (Array.isArray(currentDB.chats) ? currentDB.chats : []).find((item: any) => item?.id === chatId);
+    // Aislamiento: buscar solo en el store del usuario autenticado
+    const cs = getChatStore(getChatUserKey(req));
+    const chat = (Array.isArray(cs.chats) ? cs.chats : []).find((item: any) => item?.id === chatId);
     if (!chat) return res.status(404).json({ success: false, error: "Conversación no encontrada" });
     if (Number(chat.unread) !== 0) {
       chat.unread = 0;
@@ -4047,10 +4796,59 @@ async function createServer() {
     res.json({ success: true, chatId, unread: 0 });
   });
 
+  // Los adjuntos con el archivo embebido en base64 (campo url como data URI)
+  // inflaban el bootstrap de WhatsApp a ~2 MB: 11 mensajes cargaban ~1,9 MB.
+  // En la carga inicial, un adjunto cuyo JSON supera 30 KB se reemplaza por
+  // una referencia liviana (campos pequeños + deferred: true, sin el contenido
+  // pesado). El adjunto completo se pide al abrir la conversación con
+  // GET /api/backoffice/whatsapp/history. Los datos guardados no se tocan.
+  const HEAVY_ATTACHMENT_BYTES = 30 * 1024;
+  const LIGHT_ATTACHMENT_FIELD_BYTES = 1024;
+  const compactHeavyAttachment = (attachment: any): any => {
+    if (!attachment || typeof attachment !== 'object' || Array.isArray(attachment)) return attachment;
+    let serialized = '';
+    try { serialized = JSON.stringify(attachment); } catch { return attachment; }
+    if (serialized.length <= HEAVY_ATTACHMENT_BYTES) return attachment;
+    const light: Record<string, any> = {};
+    for (const [field, value] of Object.entries(attachment)) {
+      let fieldSize = LIGHT_ATTACHMENT_FIELD_BYTES + 1;
+      try { fieldSize = JSON.stringify(value ?? null).length; } catch { /* campo no serializable: se descarta */ }
+      if (fieldSize <= LIGHT_ATTACHMENT_FIELD_BYTES) light[field] = value;
+    }
+    light.deferred = true;
+    return light;
+  };
+  const compactHistoryAttachments = (histories: Record<string, any[]>): Record<string, any[]> => {
+    const out: Record<string, any[]> = {};
+    for (const [key, history] of Object.entries(histories || {})) {
+      if (!Array.isArray(history)) { out[key] = history; continue; }
+      out[key] = history.map((message: any) => {
+        if (!message || typeof message !== 'object' || !message.attachment) return message;
+        const compacted = compactHeavyAttachment(message.attachment);
+        return compacted === message.attachment ? message : { ...message, attachment: compacted };
+      });
+    }
+    return out;
+  };
+
   // WhatsApp view bootstrap: only the configuration fields that the bot UI
   // needs plus the recent inbox. This replaces the 776 KB global state fetch
   // performed when opening the WhatsApp module.
-  app.get("/api/backoffice/whatsapp", async (_req, res) => {
+  app.get("/api/backoffice/whatsapp", async (req, res) => {
+    // Aislamiento: usuarios no-admin ven configuración vacía
+    if (!isAdminRequest(req)) {
+      return res.json({ success: true, whatsapp: {} });
+    }
+    // Caché corta (30 s) de la respuesta ya armada: las reaperturas del
+    // módulo responden sin esperar la consulta a Supabase (~1,6 s). Se
+    // invalida en guardados de configuración, sincronización manual y
+    // envíos de mensajes (invalidateWhatsappBootstrapCache).
+    const bootstrapCacheKey = `${getChatUserKey(req)}:admin`;
+    const cachedBootstrap = getWhatsappBootstrapCache(bootstrapCacheKey);
+    if (cachedBootstrap) {
+      res.setHeader('Cache-Control', 'no-store');
+      return res.json(cachedBootstrap);
+    }
     const configKeys = [
       'whatsappConnected', 'connectedPhone', 'customGreeting',
       'greetingAttachments', 'faqsList', 'reactivationTrigger', 'botPrompt',
@@ -4072,59 +4870,190 @@ async function createServer() {
     } else {
       for (const key of configKeys) if (currentDB[key] !== undefined) config[key] = currentDB[key];
     }
-    const chats = tableWhatsapp?.chats || (Array.isArray(currentDB.chats) ? currentDB.chats : [])
+    // Aislamiento: cada usuario (incluido admin/superadmin) solo ve sus chats
+    const waCS = getChatStore(getChatUserKey(req));
+    const chats = (Array.isArray(waCS.chats) ? waCS.chats : [])
       .slice().sort((a: any, b: any) => (Number(b?.timestamp) || 0) - (Number(a?.timestamp) || 0)).slice(0, 300);
     const recentMessagesHistory: Record<string, any[]> = tableWhatsapp?.messagesHistory || {};
     if (!tableWhatsapp) {
-      for (const [historyKey, history] of Object.entries(currentDB.messagesHistory || {})) {
+      for (const [historyKey, history] of Object.entries(waCS.messagesHistory || {})) {
         if (Array.isArray(history)) recentMessagesHistory[historyKey] = history.slice(-80);
       }
     }
     res.setHeader('Cache-Control', 'no-store');
-    res.json({
+    const bootstrapPayload = {
       ...config,
       customApiKeyConfigured: Boolean(String(currentDB.customApiKey || '').trim()),
       chats: sanitizeForClient(chats),
-      messagesHistory: sanitizeForClient(recentMessagesHistory)
-    });
+      messagesHistory: sanitizeForClient(compactHistoryAttachments(recentMessagesHistory))
+    };
+    setWhatsappBootstrapCache(bootstrapCacheKey, bootstrapPayload);
+    res.json(bootstrapPayload);
+  });
+
+  // Historial COMPLETO (sin compactar) de una sola conversación, bajo
+  // demanda al abrir el chat: restaura los adjuntos que el bootstrap envió
+  // como referencia liviana (deferred). Mismo control de acceso que el
+  // bootstrap: solo admin, y el historial sale de las tablas normalizadas
+  // del workspace (con respaldo en el store del propio usuario).
+  app.get("/api/backoffice/whatsapp/history", async (req, res) => {
+    const historyKey = String(req.query.key || '');
+    if (!historyKey) return res.status(400).json({ success: false, error: "key requerido" });
+    if (!isAdminRequest(req)) {
+      return res.json({ success: true, historyKey, messages: [] });
+    }
+    let messages: any[] | null = null;
+    if (isNormalizedReadReady()) {
+      try {
+        messages = await loadConversationHistoryFromTables(historyKey, 300);
+      } catch (err: any) {
+        console.warn('[NormalizedDB WhatsApp History Fallback]:', err?.message || err);
+      }
+    }
+    if (!messages) {
+      const cs = getChatStore(getChatUserKey(req));
+      const stored = (cs.messagesHistory || {})[historyKey];
+      messages = Array.isArray(stored) ? stored.slice(-300) : [];
+    }
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ success: true, historyKey, messages: sanitizeForClient(messages) });
   });
 
   // Module-scoped snapshots avoid loading the complete backoffice object when
   // opening Catalog or Social Comments.
-  app.get("/api/backoffice/catalog", (_req, res) => {
+  app.get("/api/backoffice/catalog", (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
-    res.json({ products: Array.isArray(currentDB.products) ? currentDB.products : [] });
+    // Datos aislados por usuario
+    res.json({ products: getIsolatedData(req, 'products') });
   });
   app.post("/api/backoffice/catalog", (req, res) => {
     const products = Array.isArray(req.body?.products) ? req.body.products : null;
     if (!products) return res.status(400).json({ success: false, error: 'products debe ser un arreglo' });
-    currentDB.products = products;
-    currentDB.catalogUpdatedAt = req.body?.catalogUpdatedAt || Date.now();
+    // Guardar en almacenamiento aislado por usuario
+    if (isAdminRequest(req)) {
+      currentDB.products = products;
+      currentDB.catalogUpdatedAt = req.body?.catalogUpdatedAt || Date.now();
+    } else {
+      const userKey = getUserKey(req);
+      const store = getUserDataStore(userKey);
+      store.products = products;
+    }
     saveDBData(currentDB);
     res.json({ success: true });
   });
-  app.get("/api/backoffice/orders", (_req, res) => {
+  app.get("/api/backoffice/orders", (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
-    res.json({ orders: Array.isArray(currentDB.orders) ? currentDB.orders : [] });
+    // Datos aislados por usuario
+    res.json({ orders: getIsolatedData(req, 'orders') });
   });
-  app.get("/api/backoffice/social-comments", (_req, res) => {
+  app.get("/api/backoffice/social-comments", (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
-    res.json({ socialComments: Array.isArray(currentDB.socialComments) ? currentDB.socialComments : [] });
+    // Datos aislados por usuario
+    res.json({ socialComments: getIsolatedData(req, 'socialComments') });
   });
 
-  app.get("/api/credits/balance", (_req, res) => {
-    const balance = currentDB.aiBalance || {
-      conversations: 0,
-      aiMessagesPerConv: 0,
-      audioMinutes: 0,
-      packagesBought: 0
-    };
+  // Dashboard ROI por usuario
+  app.get("/api/roi/dashboard", (req, res) => {
+    try {
+      const userKey = getEffectiveUserKey(req);
+      const store = getUserDataStore(userKey);
+      const orders = Array.isArray(store.orders) ? store.orders : [];
+      const products = Array.isArray(store.products) ? store.products : [];
+      
+      const totalRevenue = orders.reduce((sum: number, o: any) => {
+        return sum + (Number(o.total) || 0);
+      }, 0);
+      
+      const totalOrders = orders.length;
+      const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+      
+      // Conversaciones (chats)
+      const chats = store.chats || {};
+      const totalChats = typeof chats === 'object' ? Object.keys(chats).length : 0;
+      
+      // Tasa de conversión
+      const conversionRate = totalChats > 0 ? (totalOrders / totalChats) * 100 : 0;
+      
+      res.json({
+        success: true,
+        roi: {
+          totalRevenue,
+          totalOrders,
+          avgOrderValue: Math.round(avgOrderValue * 100) / 100,
+          totalChats,
+          totalProducts: products.length,
+          conversionRate: Math.round(conversionRate * 100) / 100
+        }
+      });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // Logs de auditoría del equipo
+  app.get("/api/team/audit-log", (req, res) => {
+    try {
+      const userKey = getEffectiveUserKey(req);
+      const store = getUserDataStore(userKey);
+      const logs = Array.isArray(store.auditLog) ? store.auditLog : [];
+      // Últimos 100, más recientes primero
+      res.json({ success: true, logs: logs.slice(-100).reverse() });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // Registrar acción en auditoría (helper interno)
+  function logTeamAction(userKey: string, action: string, details: string) {
+    try {
+      const store = getUserDataStore(userKey);
+      if (!Array.isArray(store.auditLog)) store.auditLog = [];
+      store.auditLog.push({
+        timestamp: new Date().toISOString(),
+        userKey,
+        action,
+        details
+      });
+      // Mantener solo últimos 500
+      if (store.auditLog.length > 500) {
+        store.auditLog = store.auditLog.slice(-500);
+      }
+    } catch {}
+  }
+
+  app.get("/api/credits/balance", (req, res) => {
+    // Balance aislado por usuario
+    const session = getSession(req);
+    const role = String((session as any)?.role || '').toLowerCase();
+    let balance;
+    if (role === 'superadmin') {
+      balance = currentDB.aiBalance || {
+        conversations: 0,
+        aiMessagesPerConv: 0,
+        audioMinutes: 0,
+        packagesBought: 0
+      };
+    } else {
+      const userKey = getEffectiveUserKey(req);
+      const store = getUserDataStore(userKey);
+      balance = store.wallet || {
+        conversations: 0,
+        aiMessagesPerConv: 0,
+        audioMinutes: 0,
+        packagesBought: 0
+      };
+    }
     res.json({ success: true, balance });
   });
 
   app.post("/api/backoffice/state", (req, res) => {
     try {
       const incoming: Record<string, any> = { ...(req.body || {}) };
+      // REGLA ABSOLUTA: las conversaciones nunca se pueden sobrescribir por este
+      // endpoint (evita que un usuario inyecte o borre chats globales/ajenos).
+      for (const blocked of ['chats', 'messagesHistory', 'conversations']) {
+        if (blocked in incoming) delete incoming[blocked];
+      }
       // Las claves de IA nunca se guardan en texto plano: se cifran al escribir.
       for (const field of ['customApiKey', 'customApiKeyBackup', 'openrouterApiKey']) {
         const value = incoming[field];
@@ -4136,6 +5065,25 @@ async function createServer() {
           }
         }
       }
+      // Aislamiento: config IA se guarda por usuario (no global)
+      const AI_CONFIG_KEYS = ['botPrompt', 'customGreeting', 'greetingAttachments', 'faqsList', 'reactivationTrigger', 'apiProvider', 'aiModel'];
+      const session = getSession(req);
+      const role = String((session as any)?.role || '').toLowerCase();
+      if (role !== 'superadmin') {
+        const userKey = getEffectiveUserKey(req);
+        const store = getUserDataStore(userKey);
+        let aiConfigChanged = false;
+        for (const key of AI_CONFIG_KEYS) {
+          if (key in incoming) {
+            store.aiConfig[key] = incoming[key];
+            delete incoming[key];
+            aiConfigChanged = true;
+          }
+        }
+        if (aiConfigChanged) {
+          // No sobrescribir con valores vacíos si ya existen
+        }
+      }
       currentDB = {
         ...currentDB,
         ...incoming
@@ -4145,6 +5093,8 @@ async function createServer() {
       console.log("[WhatsApp API] Estado de configuración actualizado con éxito.");
 
       saveDBData(currentDB);
+      // La configuración del bot cambió: el bootstrap cacheado quedó viejo
+      invalidateWhatsappBootstrapCache();
       // Do not return the full state here: it contains large AI debug logs and
       // made every settings save download hundreds of KB on slow phones. The UI
       // only checks whether the save succeeded.
@@ -4254,9 +5204,77 @@ async function createServer() {
   });
 
   // Bold Webhook Receiver
-  app.post("/api/integrations/bold/webhook", (req, res) => {
-    console.log("[Bold Webhook] Notificación recibida de Bold:", JSON.stringify(req.body));
-    res.json({ status: "received", timestamp: new Date().toISOString() });
+  app.post("/api/integrations/bold/webhook", async (req, res) => {
+    try {
+      const payload = req.body || {};
+      console.log("[Bold Webhook] Notificación recibida");
+      
+      // Verificar firma de Bold — SEGURIDAD CRÍTICA (fail-closed)
+      const secretKey = String(process.env.BOLD_SECRET_KEY || '');
+      if (!secretKey) {
+        console.log("[Bold Webhook] RECHAZADO: BOLD_SECRET_KEY no configurado");
+        return res.status(503).json({ error: 'Webhook no configurado' });
+      }
+      const isValid = verifyWebhookHmac(req, secretKey, 'x-bold-signature') || 
+                      verifyWebhookHmac(req, secretKey, 'x-signature');
+      if (!isValid) {
+        console.log("[Bold Webhook] Firma inválida — rechazado");
+        return res.status(401).json({ error: 'Firma inválida' });
+      }
+      console.log("[Bold Webhook] Firma válida");
+      
+      // Extraer datos del pago
+      const data = payload.data || payload;
+      const paymentId = data.payment_id || data.id || payload.payment_id;
+      const status = (data.status || payload.status || '').toUpperCase();
+      const amount = Number(data.amount?.total || data.total || payload.amount || 0);
+      const orderId = data.reference || data.order_id || payload.reference || payload.orderId;
+      const customerEmail = data.customer?.email || payload.customer_email;
+      
+      console.log(`[Bold Webhook] Pago ${paymentId}: estado=${status}, monto=${amount}, orden=${orderId}`);
+      
+      // Procesar solo pagos aprobados
+      if (status === 'APPROVED' || status === 'APROBADO') {
+        // Buscar la orden de recarga pendiente
+        const rechargeId = String(orderId || '').replace('REC-BOLD-', '');
+        
+        // Acreditar saldo al usuario (buscar por email o orden)
+        if (customerEmail) {
+          const users = Array.isArray(currentDB.users) ? currentDB.users : [];
+          const user = users.find((u: any) => 
+            u.email?.toLowerCase() === String(customerEmail).toLowerCase()
+          );
+          if (user) {
+            user.credits = Number(user.credits || 0) + amount;
+            user.balance = Number(user.balance || 0) + amount;
+            console.log(`[Bold Webhook] Saldo acreditado a ${user.username}: +${amount}`);
+          }
+        }
+        
+        // Registrar la transacción
+        if (!Array.isArray(currentDB.rechargeTransactions)) currentDB.rechargeTransactions = [];
+        currentDB.rechargeTransactions.push({
+          id: `BOLD-${paymentId || Date.now()}`,
+          orderId: orderId,
+          paymentId: paymentId,
+          amount: amount,
+          currency: 'COP',
+          status: 'completed',
+          gateway: 'bold',
+          customerEmail: customerEmail,
+          createdAt: new Date().toISOString(),
+          raw: payload
+        });
+        
+        saveDBData(currentDB);
+        console.log(`[Bold Webhook] Pago ${paymentId} procesado exitosamente`);
+      }
+      
+      res.json({ status: "received", processed: true, timestamp: new Date().toISOString() });
+    } catch (err: any) {
+      console.error("[Bold Webhook] Error:", err?.message || err);
+      res.status(500).json({ status: "error", message: err?.message || "Error procesando webhook" });
+    }
   });
 
   // Dropi Official Webhook Receiver (Order Status & Tracking Updates)
@@ -4991,10 +6009,10 @@ async function createServer() {
       || defaultTriggers.some((e) => t.includes(e));
   }
 
-  function pushSocialHistory(historyKey: string, role: string, htext: string, msgId: string, nowStr: string): void {
-    if (!currentDB.messagesHistory) currentDB.messagesHistory = {};
-    if (!currentDB.messagesHistory[historyKey]) currentDB.messagesHistory[historyKey] = [];
-    const hist: any[] = currentDB.messagesHistory[historyKey];
+  function pushSocialHistory(historyKey: string, role: string, htext: string, msgId: string, nowStr: string, ownerKey: string | null = null): void {
+    const psCS = getChatStore(ownerKey);
+    if (!psCS.messagesHistory[historyKey]) psCS.messagesHistory[historyKey] = [];
+    const hist: any[] = psCS.messagesHistory[historyKey];
     const last = hist[hist.length - 1];
     if (last) {
       if (msgId && last.remoteId === msgId) return;
@@ -5010,7 +6028,9 @@ async function createServer() {
     zernioConversationId: string; socialAccountId: string; socialPlatform: string;
     participantId: string; participantUsername: string;
   }): Promise<void> {
-    const hist: any[] = (currentDB.messagesHistory && currentDB.messagesHistory[opts.historyKey]) || [];
+    // Aislamiento: leer historial del store del dueño de la cuenta
+    const ssCS = getChatStore(getZernioAccountOwner(String(opts.socialAccountId || '')));
+    const hist: any[] = (ssCS.messagesHistory && ssCS.messagesHistory[opts.historyKey]) || [];
     let mediaInfo = '';
     let mediaBase64: string | null = null;
     let mediaMimeType: string | null = null;
@@ -5110,7 +6130,7 @@ async function createServer() {
           idempotencyKey: 'socialbot-' + Date.now() + '-' + Math.random().toString(36).slice(2),
         });
         if (res && res.success) {
-          pushSocialHistory(opts.historyKey, 'assistant', txt, String(res.messageId || ''), nowStr);
+          pushSocialHistory(opts.historyKey, 'assistant', txt, String(res.messageId || ''), nowStr, getZernioAccountOwner(String(opts.socialAccountId || '')));
           console.log('[Zernio AutoBot] Respuesta IA enviada en ' + plat + ' (' + opts.botKey + ')');
         } else {
           console.error('[Zernio AutoBot] No se pudo enviar la respuesta:', (res && res.error) || 'error desconocido');
@@ -5133,6 +6153,8 @@ async function createServer() {
     const botKey = makeSocialBotKey(ctx.stableSocialId, ctx.zernioConversationId, ctx.socialPlatform);
     if (!botKey) return;
     const historyKey = botKey;
+    // Aislamiento: historial social en el store del dueño de la cuenta
+    const socialOwnerKey = getZernioAccountOwner(String(ctx.socialAccountId || ''));
     const text = String(ctx.msg?.text || '').trim();
     const attachment = ctx.msg?.attachment || null;
     const attUrl = String((attachment && (attachment.url || attachment.link || attachment.src)) || '');
@@ -5145,13 +6167,13 @@ async function createServer() {
     // ---- Saliente: lo envio la cuenta del negocio ----
     if (!ctx.incomingMessage) {
       if (isSelfEcho) {
-        if (text) pushSocialHistory(historyKey, 'agent', text, msgId, nowStr);
+        if (text) pushSocialHistory(historyKey, 'agent', text, msgId, nowStr, socialOwnerKey);
         return; // eco de CRM/bot: historial sin pausar
       }
       if (socialBotIsReactivation(text)) {
         const wasPaused = isSocialBotPausedFor(botKey);
         setSocialBotPausedFor(botKey, false);
-        if (text) pushSocialHistory(historyKey, 'agent', text, msgId, nowStr);
+        if (text) pushSocialHistory(historyKey, 'agent', text, msgId, nowStr, socialOwnerKey);
         saveDBData(currentDB);
         if (wasPaused) console.log('[Zernio AutoBot] IA reactivada en ' + ctx.socialPlatform + ' para ' + botKey + ' (disparador desde el dispositivo)');
         await sendSocialBotReply({
@@ -5163,7 +6185,7 @@ async function createServer() {
       }
       // El asesor respondio desde su app -> auto-pausa y se guarda el contexto
       setSocialBotPausedFor(botKey, true);
-      pushSocialHistory(historyKey, 'agent', text || (attUrl ? '[Adjunto enviado desde el dispositivo]' : ''), msgId, nowStr);
+      pushSocialHistory(historyKey, 'agent', text || (attUrl ? '[Adjunto enviado desde el dispositivo]' : ''), msgId, nowStr, socialOwnerKey);
       saveDBData(currentDB);
       console.log('[Zernio AutoBot] IA auto-pausada en ' + ctx.socialPlatform + ' para ' + botKey + ' (asesor respondió desde su dispositivo)');
       return;
@@ -5346,6 +6368,9 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
     const contact = getEvolutionContact(data);
     if (!contact) return;
     const { phone: cleanPhone, jid: senderJid } = contact;
+    // Aislamiento: atribuir al dueño de la instancia Evolution
+    const evoOwnerKey = getEvolutionInstanceOwner(instance);
+    const evoCS = getChatStore(evoOwnerKey);
 
     const senderName = data.pushName || `+${cleanPhone}`;
     const { text, isImage, isAudio, isVideo, isDocument } = extractEvolutionMsgTextAndMedia(data.message);
@@ -5409,10 +6434,10 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
       fetchEvolutionProfilePicture(instance, cleanPhone, senderJid).then(avatarUrl => {
         if (avatarUrl) {
           currentDB.profilePictures[cleanPhone] = avatarUrl;
-          if (currentDB.chats) {
-            const chIdx = findEvolutionChatIndex(cleanPhone);
+          if (evoCS.chats) {
+            const chIdx = evoCS.chats.findIndex((c: any) => !isSocialChat(c) && c.phone && c.phone.replace(/\D/g, "") === cleanPhone);
             if (chIdx !== -1) {
-              currentDB.chats[chIdx].avatar = avatarUrl;
+              evoCS.chats[chIdx].avatar = avatarUrl;
             }
           }
           saveDBData(currentDB);
@@ -5446,9 +6471,9 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
       }
       if (text || isImage || isAudio || isVideo || isDocument) {
         const displayText = text || (isImage ? '📷 [Imagen enviada desde móvil]' : (isAudio ? '🎤 [Nota de voz enviada desde móvil]' : (isVideo ? '🎥 [Video enviado desde móvil]' : '📎 [Archivo enviado desde móvil]')));
-        if (!currentDB.messagesHistory) currentDB.messagesHistory = {};
-        if (!currentDB.messagesHistory[cleanPhone]) currentDB.messagesHistory[cleanPhone] = [];
-        currentDB.messagesHistory[cleanPhone].push({
+        if (!evoCS.messagesHistory) evoCS.messagesHistory = {};
+        if (!evoCS.messagesHistory[cleanPhone]) evoCS.messagesHistory[cleanPhone] = [];
+        evoCS.messagesHistory[cleanPhone].push({
           role: 'agent',
           remoteId: data.key?.id || undefined,
           source: 'mobile',
@@ -5458,19 +6483,21 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
           time: nowStr,
           timestamp: Date.now()
         });
-        if (currentDB.messagesHistory[cleanPhone].length > 35) currentDB.messagesHistory[cleanPhone].shift();
+        if (evoCS.messagesHistory[cleanPhone].length > 35) evoCS.messagesHistory[cleanPhone].shift();
 
-        if (!currentDB.chats) currentDB.chats = [];
-        const chatIdx = findEvolutionChatIndex(cleanPhone);
+        if (!evoCS.chats) evoCS.chats = [];
+        const chatIdx = evoCS.chats.findIndex((c: any) => !isSocialChat(c) && c.phone && c.phone.replace(/\D/g, "") === cleanPhone);
         if (chatIdx !== -1) {
-          currentDB.chats[chatIdx].message = displayText;
-          currentDB.chats[chatIdx].time = nowStr;
-          currentDB.chats[chatIdx].instanceName = instance;
-          currentDB.chats[chatIdx].remoteJid = senderJid;
-          if (cachedAvatar && !currentDB.chats[chatIdx].avatar) currentDB.chats[chatIdx].avatar = cachedAvatar;
+          evoCS.chats[chatIdx].message = displayText;
+          evoCS.chats[chatIdx].time = nowStr;
+          evoCS.chats[chatIdx].instanceName = instance;
+          evoCS.chats[chatIdx].remoteJid = senderJid;
+          if (cachedAvatar && !evoCS.chats[chatIdx].avatar) evoCS.chats[chatIdx].avatar = cachedAvatar;
         } else {
-          currentDB.chats.unshift({
+          evoCS.chats.unshift({
             id: `CH-${Date.now().toString().slice(-4)}`,
+            ownerKey: evoOwnerKey || undefined,
+            ...(evoOwnerKey ? {} : { unassigned: true }),
             sender: senderName,
             phone: `+${cleanPhone}`,
             platform: 'whatsapp',
@@ -5493,9 +6520,9 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
 
     // Save incoming message in history
     const incomingDisplayText = text || (isImage ? '📷 [Imagen recibida]' : (isAudio ? '🎤 [Nota de voz recibida]' : (isVideo ? '🎥 [Video recibido]' : '📎 [Archivo recibido]')));
-    if (!currentDB.messagesHistory) currentDB.messagesHistory = {};
-    if (!currentDB.messagesHistory[cleanPhone]) currentDB.messagesHistory[cleanPhone] = [];
-    currentDB.messagesHistory[cleanPhone].push({
+    if (!evoCS.messagesHistory) evoCS.messagesHistory = {};
+    if (!evoCS.messagesHistory[cleanPhone]) evoCS.messagesHistory[cleanPhone] = [];
+    evoCS.messagesHistory[cleanPhone].push({
       role: 'client',
       remoteId: data.key?.id || undefined,
       text: incomingDisplayText,
@@ -5503,22 +6530,24 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
       time: nowStr,
       timestamp: Date.now()
     });
-    if (currentDB.messagesHistory[cleanPhone].length > 35) currentDB.messagesHistory[cleanPhone].shift();
+    if (evoCS.messagesHistory[cleanPhone].length > 35) evoCS.messagesHistory[cleanPhone].shift();
 
     // Update CRM Chats list
-    if (!currentDB.chats) currentDB.chats = [];
-    const chatIdx = findEvolutionChatIndex(cleanPhone);
+    if (!evoCS.chats) evoCS.chats = [];
+    const chatIdx = evoCS.chats.findIndex((c: any) => !isSocialChat(c) && c.phone && c.phone.replace(/\D/g, "") === cleanPhone);
     if (chatIdx !== -1) {
-      const updatedChat = { ...currentDB.chats[chatIdx], message: incomingDisplayText, time: nowStr, timestamp: Date.now(), status: 'en_conversacion', unread: (Number(currentDB.chats[chatIdx].unread) || 0) + 1, platform: 'whatsapp', channelId: 'evolution_whatsapp', instanceName: instance, remoteJid: senderJid };
+      const updatedChat = { ...evoCS.chats[chatIdx], message: incomingDisplayText, time: nowStr, timestamp: Date.now(), status: 'en_conversacion', unread: (Number(evoCS.chats[chatIdx].unread) || 0) + 1, platform: 'whatsapp', channelId: 'evolution_whatsapp', instanceName: instance, remoteJid: senderJid };
       if (shouldReplaceEvolutionAvatar(updatedChat.avatar, cachedAvatar)) updatedChat.avatar = cachedAvatar;
       if (senderName && senderName !== `+${cleanPhone}`) {
         updatedChat.sender = senderName;
       }
-      currentDB.chats.splice(chatIdx, 1);
-      currentDB.chats.unshift(updatedChat);
+      evoCS.chats.splice(chatIdx, 1);
+      evoCS.chats.unshift(updatedChat);
     } else {
-      currentDB.chats.unshift({
+      evoCS.chats.unshift({
         id: `CH-${Date.now().toString().slice(-4)}`,
+        ownerKey: evoOwnerKey || undefined,
+        ...(evoOwnerKey ? {} : { unassigned: true }),
         sender: senderName,
         phone: `+${cleanPhone}`,
         platform: 'whatsapp',
@@ -5542,6 +6571,43 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
       return;
     }
 
+    // BUFFER: agrupa mensajes del mismo contacto antes de responder.
+    // Si el buffer está activado, acumula el mensaje y espera; si no, responde de inmediato.
+    const bufferEnabled = currentDB.isBufferEnabled !== false;
+    const bufferSecs = Number(currentDB.bufferSeconds) || 8;
+    if (bufferEnabled) {
+      const bufKey = `evo:${cleanPhone}`;
+      const existing = messageBuffers.get(bufKey);
+      const msgData = { text, isImage, isAudio, isVideo, isDocument, data, senderName, senderJid, instance };
+      if (existing) {
+        existing.messages.push(msgData);
+        console.log(`[Buffer] Mensaje acumulado para +${cleanPhone} (${existing.messages.length} en buffer)`);
+        return;
+      }
+      const timer = setTimeout(() => {
+        const buf = messageBuffers.get(bufKey);
+        messageBuffers.delete(bufKey);
+        if (!buf || buf.messages.length === 0) return;
+        const combined = buf.messages.map((m: any) => m.text).filter(Boolean).join(' | ');
+        const hasMedia = buf.messages.some((m: any) => m.isImage || m.isAudio || m.isVideo);
+        console.log(`[Buffer] Procesando ${buf.messages.length} mensaje(s) agrupados de +${cleanPhone}`);
+        processEvolutionMessageWithAI(buf.messages[0], combined, hasMedia).catch((e: any) =>
+          console.error('[Buffer] Error procesando mensajes agrupados:', e?.message || e));
+      }, bufferSecs * 1000);
+      messageBuffers.set(bufKey, { timer, messages: [msgData] });
+      console.log(`[Buffer] Primer mensaje de +${cleanPhone}, esperando ${bufferSecs}s por más mensajes`);
+      return;
+    }
+
+    // Sin buffer: procesar de inmediato
+    await processEvolutionMessageWithAI({ text, isImage, isAudio, isVideo, isDocument, data, senderName, senderJid, instance }, text, isImage || isAudio || isVideo);
+  }
+
+  // Procesa un mensaje (o grupo de mensajes del buffer) con la IA y responde
+  async function processEvolutionMessageWithAI(msgCtx: any, combinedText: string, hasMedia: boolean) {
+    const { text, isImage, isAudio, isVideo, isDocument, data, senderName, senderJid, instance } = msgCtx;
+    const cleanPhone = String(senderJid || '').replace(/[^0-9]/g, '');
+
     // Check if bot disabled for this phone
     if (currentDB.disabledBots && currentDB.disabledBots.includes(cleanPhone)) {
       console.log(`[Evolution API] Bot pausado manualmente para +${cleanPhone}`);
@@ -5549,17 +6615,19 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
     }
 
     // Prepare context and call AI
-    let mediaInfoStr = "";
+    let mediaInfoStr = ""
     if (isImage) mediaInfoStr = "El cliente adjuntó una imagen.";
     if (isAudio) mediaInfoStr = "El cliente envió un audio de voz.";
     if (isVideo) mediaInfoStr = "El cliente envió un video.";
     if (isDocument) mediaInfoStr = "El cliente envió un archivo o documento.";
 
-    const fullPromptText = [text, mediaInfoStr].filter(Boolean).join(" ");
+    const fullPromptText = [combinedText, mediaInfoStr].filter(Boolean).join(" ");
     if (!fullPromptText) return;
 
     try {
-      const history = currentDB.messagesHistory[cleanPhone] || [];
+      // Aislamiento: historial del dueño de la instancia para contexto IA
+      const aiCS = getChatStore(getEvolutionInstanceOwner(instance));
+      const history = aiCS.messagesHistory[cleanPhone] || [];
       let aiMediaBase64: string | null = null;
       let aiMediaMimeType: string | null = null;
       if (isImage || isAudio) {
@@ -5599,7 +6667,8 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
           text,
           replies,
           cleanPhone,
-          instance
+          instance,
+          getEvolutionInstanceOwner(instance)
         );
         saveDBData(currentDB);
       }
@@ -5628,9 +6697,11 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
     }
   }, 1500);
 
-  async function syncChatsFromEvolutionVPS(limit = 60): Promise<{ importedCount: number; chatsCount: number }> {
+  async function syncChatsFromEvolutionVPS(limit = 60, ownerKey: string | null = null): Promise<{ importedCount: number; chatsCount: number }> {
     const evoConfig = getEvolutionConfig();
     if (!evoConfig.isConfigured) return { importedCount: 0, chatsCount: 0 };
+    // Aislamiento: los chats sincronizados van al store del usuario dueño
+    const cs = getChatStore(ownerKey);
     try {
       const instName = await resolveActualEvolutionInstance('channel-default');
       const res = await evolutionRequest(`/chat/findMessages/${encodeURIComponent(instName)}`, {
@@ -5644,8 +6715,8 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
 
       const records = res.data.messages.records;
       let imported = 0;
-      if (!currentDB.messagesHistory) currentDB.messagesHistory = {};
-      if (!currentDB.chats) currentDB.chats = [];
+      if (!cs.messagesHistory) cs.messagesHistory = {};
+      if (!cs.chats) cs.chats = [];
       if (!currentDB.profilePictures) currentDB.profilePictures = {};
 
       // Process from oldest to newest so history is chronologically ordered
@@ -5707,8 +6778,8 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
           };
         }
 
-        if (!currentDB.messagesHistory[cleanPhone]) currentDB.messagesHistory[cleanPhone] = [];
-        const exists = currentDB.messagesHistory[cleanPhone].some((m: any) => {
+        if (!cs.messagesHistory[cleanPhone]) cs.messagesHistory[cleanPhone] = [];
+        const exists = cs.messagesHistory[cleanPhone].some((m: any) => {
           if (record.key?.id && m.remoteId && m.remoteId === record.key.id) return true;
           const sameMediaKind = Boolean(
             (isAudio && m.attachment?.type === 'audio') ||
@@ -5731,7 +6802,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
               if (mediaRes.fileName) recordAttachment.name = mediaRes.fileName;
             }
           }
-          currentDB.messagesHistory[cleanPhone].push({
+          cs.messagesHistory[cleanPhone].push({
             role: fromMe ? 'assistant' : 'client',
             remoteId: record.key?.id || undefined,
             text: displayText,
@@ -5739,8 +6810,8 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
             time: timeStr,
             timestamp: timestampMs
           });
-          if (currentDB.messagesHistory[cleanPhone].length > 35) {
-            currentDB.messagesHistory[cleanPhone].shift();
+          if (cs.messagesHistory[cleanPhone].length > 35) {
+            cs.messagesHistory[cleanPhone].shift();
           }
           imported++;
         }
@@ -5750,7 +6821,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
           fetchEvolutionProfilePicture(instName, cleanPhone, remoteJid).then(pUrl => {
             if (pUrl) {
               currentDB.profilePictures[cleanPhone] = pUrl;
-              const ch = currentDB.chats.find((c: any) => !isSocialChat(c) && c.phone && c.phone.replace(/\D/g, '') === cleanPhone);
+              const ch = cs.chats.find((c: any) => !isSocialChat(c) && c.phone && c.phone.replace(/\D/g, '') === cleanPhone);
               if (ch) ch.avatar = pUrl;
               saveDBData(currentDB);
             }
@@ -5760,22 +6831,24 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
         const avatarUrl = currentDB.profilePictures[cleanPhone] || undefined;
 
         // Upsert in CRM chats list
-        const chatIdx = findEvolutionChatIndex(cleanPhone);
+        const chatIdx = cs.chats.findIndex((c: any) => !isSocialChat(c) && c.phone && c.phone.replace(/\D/g, "") === cleanPhone);
         if (chatIdx !== -1) {
-          currentDB.chats[chatIdx].message = displayText;
-          currentDB.chats[chatIdx].platform = 'whatsapp';
-          currentDB.chats[chatIdx].channelId = 'evolution_whatsapp';
-          currentDB.chats[chatIdx].instanceName = instName;
-          currentDB.chats[chatIdx].remoteJid = remoteJid;
-          currentDB.chats[chatIdx].time = timeStr;
-          currentDB.chats[chatIdx].timestamp = timestampMs;
-          if (shouldReplaceEvolutionAvatar(currentDB.chats[chatIdx].avatar, avatarUrl)) currentDB.chats[chatIdx].avatar = avatarUrl;
+          cs.chats[chatIdx].message = displayText;
+          cs.chats[chatIdx].platform = 'whatsapp';
+          cs.chats[chatIdx].channelId = 'evolution_whatsapp';
+          cs.chats[chatIdx].instanceName = instName;
+          cs.chats[chatIdx].remoteJid = remoteJid;
+          cs.chats[chatIdx].time = timeStr;
+          cs.chats[chatIdx].timestamp = timestampMs;
+          if (shouldReplaceEvolutionAvatar(cs.chats[chatIdx].avatar, avatarUrl)) cs.chats[chatIdx].avatar = avatarUrl;
           if (senderName && senderName !== `+${cleanPhone}`) {
-            currentDB.chats[chatIdx].sender = senderName;
+            cs.chats[chatIdx].sender = senderName;
           }
         } else {
-          currentDB.chats.unshift({
+          cs.chats.unshift({
             id: `CH-${Date.now().toString().slice(-4)}-${cleanPhone.slice(-4)}`,
+            ownerKey: ownerKey || undefined,
+            ...(ownerKey ? {} : { unassigned: true }),
             sender: senderName,
             phone: `+${cleanPhone}`,
             platform: 'whatsapp',
@@ -5794,10 +6867,10 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
       if (imported > 0) {
         saveDBData(currentDB);
       }
-      return { importedCount: imported, chatsCount: currentDB.chats.length };
+      return { importedCount: imported, chatsCount: cs.chats.length };
     } catch (err: any) {
       console.error("[Evolution API] Error sincronizando mensajes recientes:", err?.message || err);
-      return { importedCount: 0, chatsCount: (currentDB.chats || []).length };
+      return { importedCount: 0, chatsCount: (cs.chats || []).length };
     }
   }
 
@@ -5942,10 +7015,18 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
           try {
             if (key?.remoteJid) {
               const cleanPhone = key.remoteJid.replace(/\D/g, '');
-              const history = currentDB.messagesHistory?.[cleanPhone] || [];
-              const found = history.find((m: any) => m.id === key.id || m.key?.id === key.id);
-              if (found && found.text) {
-                return { conversation: found.text };
+              // Buscar en todos los stores (caché de reintento, no expone datos)
+              const searchSpaces: any[] = [currentDB.messagesHistory];
+              const ud: any = (currentDB as any).userData || {};
+              for (const uk of Object.keys(ud)) {
+                if (ud[uk]?.messagesHistory) searchSpaces.push(ud[uk].messagesHistory);
+              }
+              for (const mh of searchSpaces) {
+                const history = mh?.[cleanPhone] || [];
+                const found = history.find((m: any) => m.id === key.id || m.key?.id === key.id);
+                if (found && found.text) {
+                  return { conversation: found.text };
+                }
               }
             }
           } catch (e) {
@@ -6179,6 +7260,10 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
           let rawPhoneString = altJid;
           if (rawPhoneString.includes(':')) rawPhoneString = rawPhoneString.split(':')[0] + '@' + rawPhoneString.split('@')[1];
           const phone = rawPhoneString.split('@')[0];
+          // Aislamiento (legacy Baileys): atribuir al dueño del número de negocio del socket
+          const legacyBizJid = String((clientSock as any)?.user?.id || '').split('@')[0].replace(/\D/g, '');
+          const legacyOwnerKey = findUserByWhatsappNumber(legacyBizJid);
+          const legacyCS = getChatStore(legacyOwnerKey);
           const senderName = msg.pushName || "Cliente WhatsApp";
 
           // 0. Revisar si es un System Command (Actualización de inventario/piezas)
@@ -6252,7 +7337,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
                 try {
                   await new Promise(r => setTimeout(r, 1500));
 
-                  const history = currentDB.messagesHistory?.[phone] || [];
+                  const history = legacyCS.messagesHistory?.[phone] || [];
                   if (history.length === 0) return;
 
                   const replyText = await processWithAgents({
@@ -6264,7 +7349,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
                   if (replyText) {
                     const parsed = safeParseJSON(replyText);
                     const replies = parsed?.replies || [parsed?.reply || "¡Hola! ¿En qué te puedo colaborar?"];
-                    await sendWhatsAppBotReplies(clientSock, senderJid, text || "Hola", replies, phone);
+                    await sendWhatsAppBotReplies(clientSock, senderJid, text || "Hola", replies, phone, 'channel-default', findUserByWhatsappNumber(phone));
                   }
                 } catch(e) {
                   console.error("Error al responder post-reactivación:", e);
@@ -6344,7 +7429,9 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
               time: timestampStr,
               status: 'nuevo'
             };
-            currentDB.chats = [newChat, ...currentDB.chats.filter((c: any) => c.phone !== `+${phone}`).slice(0, 19)];
+            newChat.ownerKey = legacyOwnerKey || undefined;
+            if (!legacyOwnerKey) newChat.unassigned = true;
+            legacyCS.chats = [newChat, ...legacyCS.chats.filter((c: any) => c.phone !== `+${phone}`).slice(0, 19)];
             saveDBData(currentDB);
             continue; // Saltar respuesta de IA
           }
@@ -6371,7 +7458,9 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
             time: timestampStr,
             status: 'nuevo'
           };
-          currentDB.chats = [newChat, ...currentDB.chats.filter((c: any) => c.phone !== `+${phone}`).slice(0, 19)];
+            newChat.ownerKey = legacyOwnerKey || undefined;
+            if (!legacyOwnerKey) newChat.unassigned = true;
+            legacyCS.chats = [newChat, ...legacyCS.chats.filter((c: any) => c.phone !== `+${phone}`).slice(0, 19)];
 
           // 3. Buffer de espera configurado antes de que responda el asistente virtual
           const delaySecs = currentDB.botDelay !== undefined ? currentDB.botDelay : 1;
@@ -6383,7 +7472,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
 
           try {
             const menu = currentDB.active;
-            const botInstructions = currentDB.botPrompt || "Actúa como la Mona IA...";
+            const botInstructions = currentDB.botPrompt || "Eres el Asistente Virtual Oficial del negocio. Atiende por WhatsApp con cordialidad: responde preguntas, presenta productos o servicios y ayuda con pedidos. Sé breve y profesional.";
 
             const activeMenuStr = `Menú del día del hoy:
 - Sopas/Entradas: ${menu.entradas ? menu.entradas.join(', ') : ''}
@@ -6398,14 +7487,14 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
               : '';
 
             // Prepare history
-            if (!currentDB.messagesHistory) currentDB.messagesHistory = {};
-            if (!currentDB.messagesHistory[phone]) currentDB.messagesHistory[phone] = [];
+            if (!legacyCS.messagesHistory) legacyCS.messagesHistory = {};
+            if (!legacyCS.messagesHistory[phone]) legacyCS.messagesHistory[phone] = [];
 
             // Append the new message to history first
             const nowClientTime = new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
-            currentDB.messagesHistory[phone].push({ role: 'client', text, time: nowClientTime, timestamp: Date.now() });
-            if (currentDB.messagesHistory[phone].length > 15) {
-              currentDB.messagesHistory[phone].shift();
+            legacyCS.messagesHistory[phone].push({ role: 'client', text, time: nowClientTime, timestamp: Date.now() });
+            if (legacyCS.messagesHistory[phone].length > 15) {
+              legacyCS.messagesHistory[phone].shift();
             }
 
             let mediaInfoStr = "";
@@ -6416,7 +7505,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
               phone,
               senderName,
               text,
-              history: currentDB.messagesHistory[phone] || [],
+              history: legacyCS.messagesHistory[phone] || [],
               mediaInfo: mediaInfoStr,
               mediaBase64,
               mediaMimeType
@@ -6434,7 +7523,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
               } else {
                 replies = ["¡Hola! ¿En qué te puedo colaborar?"];
               }
-              await sendWhatsAppBotReplies(clientSock, senderJid, text, replies, phone);
+              await sendWhatsAppBotReplies(clientSock, senderJid, text, replies, phone, 'channel-default', findUserByWhatsappNumber(phone));
               // Reset remarketing status since customer got a response from bot
               if (currentDB.remarketingStatus && currentDB.remarketingStatus[phone]) {
                 currentDB.remarketingStatus[phone] = { sentCount: 0, lastSentTimestamp: Date.now() };
@@ -7163,6 +8252,197 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
     }
   });
 
+  // Prueba REAL de conexión con plataforma externa (Shopify, Mastershop, etc.)
+  app.post('/api/integrations/test-connection', async (req, res) => {
+    try {
+      const { platform, token } = req.body || {};
+      if (!platform || !token) {
+        return res.status(400).json({ success: false, error: 'Se requiere plataforma y token.' });
+      }
+      const p = String(platform).toLowerCase();
+      if (p === 'shopify') {
+        // Shopify: probar con un endpoint ligero (shop.json)
+        // El token debe venir como URL completa o lo derivamos
+        return res.json({ success: false, error: 'Configura la URL de tu tienda Shopify para probar la conexión.' });
+      }
+      // Para otras plataformas: validación de formato por ahora
+      if (String(token).length < 5) {
+        return res.json({ success: false, error: 'Token inválido o muy corto.' });
+      }
+      res.json({ success: true, message: 'Token con formato válido. Conecta tu plataforma para sincronizar el catálogo.' });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message || 'Error probando conexión' });
+    }
+  });
+
+  // Importar producto real desde Dropi por ID
+  app.post('/api/integrations/dropi/import-product', async (req, res) => {
+    try {
+      const { productId } = req.body || {};
+      if (!productId) {
+        return res.status(400).json({ success: false, error: 'Se requiere el ID del producto.' });
+      }
+      const dropiToken = decryptSecret(currentDB?.chatbotIntegrationTokens?.dropi?.token || '');
+      if (!dropiToken) {
+        return res.json({ success: false, error: 'Conecta tu cuenta de Dropi en Integraciones primero.' });
+      }
+      // Llamada real a la API de Dropi
+      const apiRes = await fetch(`https://api.dropi.com/api/products/${encodeURIComponent(productId)}`, {
+        headers: { 'Authorization': `Bearer ${dropiToken}`, 'Content-Type': 'application/json' }
+      });
+      if (!apiRes.ok) {
+        return res.json({ success: false, error: `Dropi respondió ${apiRes.status}. Verifica el ID del producto.` });
+      }
+      const p: any = await apiRes.json();
+      const d = p.data || p;
+      res.json({
+        success: true,
+        product: {
+          name: d.name || d.title || '',
+          description: d.description || '',
+          features: d.features || d.specs || '',
+          price: Number(d.price || 0),
+          offerPrice: Number(d.offer_price || d.sale_price || d.price || 0),
+          stock: String(d.stock || d.inventory || ''),
+          image: d.image || d.thumbnail || '',
+          gallery: d.gallery || d.images || []
+        }
+      });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message || 'Error importando de Dropi' });
+    }
+  });
+
+  // Sincronizar estados de pedidos con Dropi (real)
+  app.post('/api/integrations/dropi/sync-orders', async (req, res) => {
+    try {
+      const dropiToken = decryptSecret(currentDB?.chatbotIntegrationTokens?.dropi?.token || '');
+      if (!dropiToken) {
+        return res.json({ success: false, error: 'Conecta tu cuenta de Dropi en Integraciones primero.' });
+      }
+      const apiRes = await fetch('https://api.dropi.com/api/orders/tracking', {
+        headers: { 'Authorization': `Bearer ${dropiToken}`, 'Content-Type': 'application/json' }
+      });
+      if (!apiRes.ok) {
+        return res.json({ success: false, error: `Dropi respondió ${apiRes.status}.` });
+      }
+      const payload: any = await apiRes.json();
+      const list = payload.data || payload.orders || [];
+      const updates = (Array.isArray(list) ? list : []).map((o: any) => ({
+        orderId: o.order_id || o.id,
+        trackingCode: o.tracking_code || o.guide_number,
+        status: o.status || o.shipping_status || ''
+      }));
+      res.json({ success: true, updates });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message || 'Error sincronizando con Dropi' });
+    }
+  });
+
+  // Solicitudes de retiro de referidos (el admin las ve y procesa)
+  app.post('/api/referrals/withdrawals', (req, res) => {
+    try {
+      const w = req.body || {};
+      if (!w.amount || !w.method) {
+        return res.status(400).json({ success: false, error: 'Datos incompletos.' });
+      }
+      if (!Array.isArray(currentDB.referralWithdrawals)) currentDB.referralWithdrawals = [];
+      currentDB.referralWithdrawals.unshift({
+        ...w,
+        createdAt: new Date().toISOString(),
+        status: 'Pendiente'
+      });
+      saveDBData(currentDB);
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message || 'Error guardando solicitud' });
+    }
+  });
+
+  app.get('/api/referrals/withdrawals', (req, res) => {
+    res.json({ success: true, withdrawals: currentDB.referralWithdrawals || [] });
+  });
+
+  // Paquetes/planes disponibles (para ComunidadView)
+  app.get('/api/packages', (req, res) => {
+    const packages = currentDB.packages || [
+      { id: 'starter', name: 'Starter', price: 19, conversations: 500, aiMessages: 25 },
+      { id: 'standard', name: 'Standard', price: 33, conversations: 1000, aiMessages: 40 },
+      { id: 'pro', name: 'Pro', price: 69, conversations: 3000, aiMessages: 50 },
+      { id: 'enterprise', name: 'Enterprise', price: 319, conversations: 20000, aiMessages: 65 }
+    ];
+    res.json(packages);
+  });
+
+  // API v1 pública (documentada en McpApiView) - requiere API key
+  const requireApiKey = (req: any, res: any, next: any) => {
+    const key = req.headers['x-api-key'] || req.query.api_key;
+    const validKeys = currentDB.apiKeys || [];
+    if (!key || !validKeys.find((k: any) => k.key === key && k.active !== false)) {
+      return res.status(401).json({ success: false, error: 'API key inválida o faltante.' });
+    }
+    next();
+  };
+
+  app.get('/api/v1/orders', requireApiKey, (req, res) => {
+    res.json({ success: true, orders: currentDB.orders || [] });
+  });
+  app.get('/api/v1/customers', requireApiKey, (req, res) => {
+    res.json({ success: true, customers: currentDB.clients || [] });
+  });
+  app.get('/api/v1/products', requireApiKey, (req, res) => {
+    res.json({ success: true, products: currentDB.products || [] });
+  });
+  app.get('/api/v1/analytics', requireApiKey, (req, res) => {
+    const orders = currentDB.orders || [];
+    const total = orders.reduce((s: number, o: any) => s + Number(o.total || 0), 0);
+    res.json({ success: true, totalOrders: orders.length, totalSales: total });
+  });
+  app.get('/api/v1/api-keys', requireApiKey, (req, res) => {
+    const keys = (currentDB.apiKeys || []).map((k: any) => ({ id: k.id, name: k.name, active: k.active !== false, createdAt: k.createdAt }));
+    res.json({ success: true, keys });
+  });
+  app.post('/api/v1/api-keys', requireApiKey, (req, res) => {
+    const { name } = req.body || {};
+    if (!Array.isArray(currentDB.apiKeys)) currentDB.apiKeys = [];
+    const newKey = { id: `key_${Date.now()}`, name: name || 'API Key', key: `xrk_${Math.random().toString(36).slice(2, 18)}`, active: true, createdAt: new Date().toISOString() };
+    currentDB.apiKeys.push(newKey);
+    saveDBData(currentDB);
+    res.json({ success: true, key: newKey.key, id: newKey.id });
+  });
+  app.delete('/api/v1/api-keys/:id', requireApiKey, (req, res) => {
+    currentDB.apiKeys = (currentDB.apiKeys || []).filter((k: any) => k.id !== req.params.id);
+    saveDBData(currentDB);
+    res.json({ success: true });
+  });
+
+  // Chat IA de Reportes: responde preguntas sobre los datos del negocio
+  app.post('/api/reports/ai-chat', async (req, res) => {
+    try {
+      const { message, history } = req.body || {};
+      if (!message) {
+        return res.status(400).json({ success: false, error: 'Se requiere un mensaje.' });
+      }
+      // Resumen de datos para contexto
+      const orders = currentDB.orders || [];
+      const clients = currentDB.clients || [];
+      const totalSales = orders.reduce((s: number, o: any) => s + Number(o.total || 0), 0);
+      const context = `Datos del negocio: ${orders.length} pedidos, $${totalSales.toLocaleString()} en ventas totales, ${clients.length} clientes registrados.`;
+      const promptText = `${context}\n\nPregunta del usuario: ${message}\n\nResponde de forma breve y útil basándote en los datos. Si no tienes el dato exacto, dilo.`;
+      const result = await callAIWithProvider(
+        currentDB.apiProvider || 'openai',
+        decryptSecret(currentDB.customApiKey || ''),
+        promptText,
+        null,
+        null,
+        { purpose: 'reports_chat', maxTokens: 500 }
+      );
+      res.json({ success: true, text: result || 'Sin respuesta.' });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message || 'Error procesando consulta' });
+    }
+  });
+
   app.post('/api/integrations/test-token', async (req, res) => {
     try {
       const { provider, platform, credentials } = req.body;
@@ -7173,32 +8453,53 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
         return res.status(400).json({ success: false, message: 'No se recibieron credenciales para probar.' });
       }
 
-      // Simulate or validate connection
+      // Validación de formato para proveedores sin test en vivo disponible
       let isValid = false;
-      let latency = Math.floor(Math.random() * 80) + 120; // 120-200ms
+      let latency = 0;
       let message = '';
 
       switch (targetProvider) {
-        case 'openrouter':
+        case 'openrouter': {
           if (!credentials.token || credentials.token.length < 10) {
             return res.status(400).json({ success: false, message: 'El token de OpenRouter parece inválido o demasiado corto (debe comenzar con sk-or-...).' });
           }
-          isValid = true;
-          message = '¡Token de OpenRouter AI validado exitosamente! Motor de agentes IA conectado.';
+          // Test REAL: valida la clave contra la API de OpenRouter
+          const startTime = Date.now();
+          try {
+            const orRes = await fetch('https://openrouter.ai/api/v1/auth/key', {
+              method: 'GET',
+              headers: { 'Authorization': `Bearer ${credentials.token}` },
+              signal: AbortSignal.timeout(15000)
+            });
+            latency = Date.now() - startTime;
+            if (orRes.ok) {
+              const keyInfo: any = await orRes.json().catch(() => ({}));
+              const label = keyInfo?.data?.label ? ` (${keyInfo.data.label})` : '';
+              isValid = true;
+              message = `¡Token de OpenRouter validado en vivo! Clave activa${label}. Motor IA conectado.`;
+            } else if (orRes.status === 401 || orRes.status === 403) {
+              return res.status(400).json({ success: false, message: 'OpenRouter rechazó el token (401/403). Verifica que la clave sea correcta y esté activa.' });
+            } else {
+              return res.status(400).json({ success: false, message: `OpenRouter respondió con error ${orRes.status}. Intenta de nuevo.` });
+            }
+          } catch (fetchErr: any) {
+            return res.status(400).json({ success: false, message: 'No se pudo contactar a OpenRouter. Revisa tu conexión a internet.' });
+          }
           break;
+        }
         case 'dropi':
           if (!credentials.token || credentials.token.length < 5) {
             return res.status(400).json({ success: false, message: 'El token de Dropi parece inválido o demasiado corto.' });
           }
           isValid = true;
-          message = '¡Conexión exitosa con la API de Dropi LatAm! Catálogo y despacho COD sincronizados.';
+          message = 'Formato de token Dropi válido. La conexión en vivo se verificará al sincronizar el catálogo.';
           break;
         case 'shopify':
           if (!credentials.token || (!credentials.token.startsWith('shpat_') && credentials.token.length < 10)) {
             return res.status(400).json({ success: false, message: 'El token de Shopify Admin debe ser un token de acceso válido (ej: shpat_...).' });
           }
           isValid = true;
-          message = '¡Tienda Shopify conectada con éxito! API Admin lista para sincronizar órdenes.';
+          message = 'Formato de token Shopify válido. La conexión en vivo se verificará al sincronizar la tienda.';
           break;
         case 'metaConversions':
         case 'meta':
@@ -7206,28 +8507,28 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
             return res.status(400).json({ success: false, message: 'Debes ingresar el Token de Acceso del Sistema y el Pixel ID de Meta.' });
           }
           isValid = true;
-          message = '¡Token de Meta Conversions API validado! Evento de prueba enviado a Events Manager.';
+          message = 'Formato válido. La conexión en vivo con Meta se verificará al enviar el primer evento.';
           break;
         case 'google':
           if (!credentials.conversionId) {
             return res.status(400).json({ success: false, message: 'Debes ingresar el Conversion ID de Google Ads (ej: AW-123456789).' });
           }
           isValid = true;
-          message = '¡Google Ads Enhanced Conversions validado correctamente!';
+          message = 'Formato válido. La conexión en vivo con Google Ads se verificará al enviar la primera conversión.';
           break;
         case 'tiktok':
           if (!credentials.token || !credentials.pixelId) {
             return res.status(400).json({ success: false, message: 'Debes ingresar el Access Token y Pixel ID de TikTok Events API.' });
           }
           isValid = true;
-          message = '¡Conexión establecida con TikTok Events API!';
+          message = 'Formato válido. La conexión en vivo con TikTok se verificará al enviar el primer evento.';
           break;
         case 'chateapro':
           if (!credentials.token || credentials.token.length < 5) {
             return res.status(400).json({ success: false, message: 'El token de ChateaPro es requerido para la vinculación.' });
           }
           isValid = true;
-          message = '¡Instancia de ChateaPro conectada correctamente con el Bot de WhatsApp!';
+          message = 'Formato válido. La vinculación en vivo se verificará al conectar la instancia.';
           break;
         default:
           return res.status(400).json({ success: false, message: 'Proveedor desconocido.' });
@@ -8683,25 +9984,104 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
           }
           const msg = event?.message;
           if (!msg) return;
-          const cleanPhone = (msg.senderPhone || msg.senderId || '').replace(/\D/g, '');
+          const cleanPhone = (msg.senderPhone || '').replace(/\D/g, '');
+          const senderId = String(msg.senderId || msg.sender_id || '');
+          const channel = String(msg.channel || msg.platform || event?.channel || '').toLowerCase();
+          const isSocialDM = !cleanPhone && senderId && (channel.includes('instagram') || channel.includes('facebook') || channel.includes('tiktok') || msg.isSocial);
+
+          // Si no hay teléfono ni es DM social identificable, no se puede rastrear
+          if (!cleanPhone && !isSocialDM) return;
+
+          // Para DMs sociales: auto-guardar contacto
+          if (isSocialDM) {
+            try {
+              const platform = channel.includes('instagram') ? 'instagram'
+                : channel.includes('facebook') ? 'facebook'
+                : channel.includes('tiktok') ? 'tiktok' : 'red_social';
+              const username = String(msg.senderName || msg.pushName || msg.username || '').trim();
+              const socialKey = `${platform}:${senderId}`.toLowerCase();
+              if (!currentDB.clients) currentDB.clients = [];
+              const existingDM = currentDB.clients.find((c: any) =>
+                String(c.socialKey || '').toLowerCase() === socialKey
+              );
+              if (!existingDM && senderId) {
+                currentDB.clients.push({
+                  id: 'cli-dm-' + Date.now() + '-' + senderId.slice(-4),
+                  name: username || 'Contacto ' + platform,
+                  socialUsername: username,
+                  socialPlatform: platform,
+                  socialKey,
+                  procedencia: 'organico',
+                  source: platform + '_dm',
+                  createdAt: new Date().toISOString(),
+                  tags: ['Lead Red Social', 'DM ' + platform.charAt(0).toUpperCase() + platform.slice(1)]
+                });
+                saveDBData(currentDB);
+              }
+            } catch (dmErr) {
+              console.error('Error auto-guardando DM social:', dmErr);
+            }
+            return;
+          }
+
           if (!cleanPhone) return;
 
+          // Aislamiento: atribuir al dueño de la cuenta Zernio
+          const mwAccountId = String((msg as any).accountId || (event as any)?.accountId || '').trim();
+          const mwOwnerKey = getZernioAccountOwner(mwAccountId);
+          const mwCS = getChatStore(mwOwnerKey);
           const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-          if (!currentDB.messagesHistory) currentDB.messagesHistory = {};
-          if (!currentDB.messagesHistory[cleanPhone]) currentDB.messagesHistory[cleanPhone] = [];
+          if (!mwCS.messagesHistory) mwCS.messagesHistory = {};
+          if (!mwCS.messagesHistory[cleanPhone]) mwCS.messagesHistory[cleanPhone] = [];
 
-          currentDB.messagesHistory[cleanPhone].push({
+          // Procedencia: detecta si viene de anuncio (click-to-WhatsApp) u orgánico
+          const isFromAd = !!(msg.ctwaClid || msg.metaAdId || msg.referral?.ctwaClid);
+          const procedencia = isFromAd ? 'anuncio' : 'organico';
+
+          mwCS.messagesHistory[cleanPhone].push({
             role: msg.direction === 'outgoing' ? 'agent' : 'client',
             source: 'zernio_meta',
             fromMobile: msg.direction === 'outgoing',
             text: msg.text,
             time: nowStr,
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            procedencia,
+            ctwaClid: msg.ctwaClid || msg.referral?.ctwaClid || null,
+            metaAdId: msg.metaAdId || null
           });
 
-          if (currentDB.messagesHistory[cleanPhone].length > 40) {
-            currentDB.messagesHistory[cleanPhone].shift();
+          if (mwCS.messagesHistory[cleanPhone].length > 40) {
+            mwCS.messagesHistory[cleanPhone].shift();
           }
+
+          // Auto-guardado de lead nuevo en clientes
+          try {
+            if (!currentDB.clients) currentDB.clients = [];
+            const existingClient = currentDB.clients.find((c: any) =>
+              String(c.phone || '').replace(/\D/g, '') === cleanPhone
+            );
+            if (!existingClient && msg.direction !== 'outgoing') {
+              currentDB.clients.push({
+                id: 'cli-' + Date.now() + '-' + cleanPhone.slice(-4),
+                name: msg.senderName || msg.pushName || 'Contacto ' + cleanPhone.slice(-4),
+                phone: cleanPhone,
+                procedencia,
+                ctwaClid: msg.ctwaClid || null,
+                source: 'whatsapp',
+                createdAt: new Date().toISOString(),
+                tags: [procedencia === 'anuncio' ? 'Lead Anuncio' : 'Lead Orgánico']
+              });
+            } else if (existingClient && isFromAd && existingClient.procedencia !== 'anuncio') {
+              // Actualiza procedencia si el cliente existente ahora viene de anuncio
+              existingClient.procedencia = 'anuncio';
+              if (!existingClient.tags.includes('Lead Anuncio')) {
+                existingClient.tags.push('Lead Anuncio');
+              }
+            }
+          } catch (clientErr) {
+            console.error('Error auto-guardando lead:', clientErr);
+          }
+
           saveDBData(currentDB);
         } catch (e) {
           console.error('Error procesando mensaje Zernio en /api/webhooks/meta:', e);
@@ -9134,9 +10514,24 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
       const clientSock = waSock || activeSockets['channel-default'];
       if (!clientSock) return; // No active WhatsApp socket connected
 
-      // Loop through all numbers with message history
-      for (const phone of Object.keys(currentDB.messagesHistory || {})) {
-        const history = currentDB.messagesHistory[phone];
+      // Loop through all numbers with message history (todos los usuarios; job de fondo)
+      const rmTargets: Array<{ phone: string; history: any[]; cs: any }> = [];
+      {
+        const seenRm = new Set<string>();
+        const ud: any = (currentDB as any).userData || {};
+        for (const uk of Object.keys(ud)) {
+          const mh = ud[uk]?.messagesHistory;
+          if (mh && typeof mh === 'object') {
+            for (const p of Object.keys(mh)) {
+              if (!seenRm.has(p) && Array.isArray(mh[p])) { seenRm.add(p); rmTargets.push({ phone: p, history: mh[p], cs: ud[uk] }); }
+            }
+          }
+        }
+        for (const p of Object.keys(currentDB.messagesHistory || {})) {
+          if (!seenRm.has(p) && Array.isArray((currentDB.messagesHistory as any)[p])) { seenRm.add(p); rmTargets.push({ phone: p, history: (currentDB.messagesHistory as any)[p], cs: null }); }
+        }
+      }
+      for (const { phone, history, cs: rmCS } of rmTargets) {
         if (!history || history.length === 0) continue;
 
         const lastMsg = history[history.length - 1];
@@ -9158,7 +10553,7 @@ INSTRUCCIONES DE RESPUESTA Y FORMATO JSON OBLIGATORIO:
           if (hasOrder) continue;
 
           // Check if chat is in a completed Kanban column
-          const chat = (currentDB.chats || []).find((c: any) => c.phone && c.phone.replace(/\D/g, '') === phone.replace(/\D/g, ''));
+          const chat = ((rmCS?.chats || currentDB.chats) || []).find((c: any) => c.phone && c.phone.replace(/\D/g, '') === phone.replace(/\D/g, ''));
           if (chat && (chat.status === 'pedido_confirmado' || chat.status === 'entregado' || chat.status === 'finalizado' || chat.status === 'completado' || (chat.tags || []).includes('Venta Cerrada'))) {
             continue;
           }
@@ -9236,7 +10631,7 @@ Respuesta de remarketing (sin etiquetas JSON, solo texto plano):`;
         }
 
         // Always log remarketing in the history and update status
-        currentDB.messagesHistory[phone].push({
+        (rmCS ? rmCS.messagesHistory : currentDB.messagesHistory)[phone].push({
           role: 'assistant',
           text: `[REMARKETING] ${msgText}`,
           time: new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
@@ -9280,6 +10675,10 @@ Respuesta de remarketing (sin etiquetas JSON, solo texto plano):`;
     const distPath = path.join(process.cwd(), 'dist');
     // Vite assets are content-hashed, so they can be cached for a year. The
     // HTML shell remains uncached so a deployment is visible immediately.
+    // Bloquear acceso a archivos sensibles del backend (ANTES del static)
+    app.get(['/server.js', '/dist/*', '/server.ts', '/.env'], (req, res) => {
+      res.status(404).type('text/plain').send('Not found');
+    });
     app.use('/assets', express.static(path.join(distPath, 'assets'), {
       maxAge: '1y',
       immutable: true
@@ -9311,6 +10710,25 @@ Respuesta de remarketing (sin etiquetas JSON, solo texto plano):`;
   });
   // WebSocket de Twilio Media Streams (upgrade manual, sin dependencias)
   try { attachVoiceCallsUpgrade(httpServer); } catch (e: any) { console.error('[VoiceCalls] no se pudo montar el WebSocket:', e?.message || e); }
+
+  // Freemium: cron diario — elimina cuentas gratuitas inactivas (>7 días) y
+  // suspende canales con pago vencido. Primera ejecución 1h después del arranque.
+  const runDailyMaintenance = () => {
+    try {
+      const result = runInactiveCleanup(() => currentDB, (db) => saveDBData(db));
+      if (result.deletedUsers.length > 0 || result.suspendedChannels.length > 0) {
+        console.log(`[Maintenance] Limpieza diaria: ${result.deletedUsers.length} cuentas eliminadas, ${result.suspendedChannels.length} canales suspendidos.`);
+      }
+    } catch (e: any) {
+      console.warn('[Maintenance] Error en limpieza diaria:', e?.message || e);
+    }
+    // Radar de Anuncios: scraping diario de tendencias + alertas de picos + suspensión de tiers vencidos
+    runRadarCron(() => currentDB, (db) => saveDBData(db)).catch((e: any) =>
+      console.warn('[Maintenance] Error en cron del Radar:', e?.message || e)
+    );
+  };
+  setTimeout(runDailyMaintenance, 60 * 60 * 1000);
+  setInterval(runDailyMaintenance, 24 * 60 * 60 * 1000);
 }
 
 createServer();

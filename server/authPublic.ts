@@ -1,11 +1,15 @@
 /**
- * authPublic.ts — Registro público con pago Bold integrado + recuperación de contraseña.
+ * authPublic.ts — Registro público GRATUITO (modelo freemium) + recuperación de contraseña.
  *
- * - GET  /api/auth/plans           → lista de planes (público)
- * - POST /api/auth/register        → crea usuario (pendiente_pago) + orden Bold (público)
- * - GET  /api/auth/order-status    → estado del pago; activa al usuario si fue aprobado (público con orderId)
+ * - GET  /api/auth/plans           → lista de planes PAGOS (para activación)
+ * - POST /api/auth/register        → crea usuario free (activo) + auto-login (público)
+ * - GET  /api/auth/order-status    → estado del pago REG-* legacy; activa al usuario si fue aprobado
  * - POST /api/auth/forgot-password → envía email de restablecimiento vía Resend @xorbit360.com (público)
  * - POST /api/auth/reset-password  → cambia la contraseña con token válido (público)
+ *
+ * Modelo freemium (2026-10-16): el registro es 100% gratis (plan 'free', view-only).
+ * El pago se hace después vía /api/billing/activate-plan (plan) o /api/billing/buy-channel (canal $10/mes).
+ * El cupón EFFIX2026 (20% OFF primer mes) aplica al ACTIVAR el plan, no en el registro.
  *
  * Los correos salen SIEMPRE del dominio propio @xorbit360.com vía Resend
  * (misma clave cifrada que usa el Diagnóstico). Nunca se usa el remitente de Supabase.
@@ -16,7 +20,6 @@ import crypto from 'crypto';
 import { setSessionCookie } from './auth.ts';
 import { isEncryptedSecret, decryptSecret } from './secretBox.ts';
 import { getSupabase } from './supabase.ts';
-import { BOLD_PRODUCTION_CONFIG, calculateBoldIntegritySignature } from './bold.ts';
 
 export interface RegisterPlan {
   id: string;
@@ -27,14 +30,31 @@ export interface RegisterPlan {
   aiMessages: number;
   tagline: string;
   featured?: boolean;
+  /** Plan gratuito (view-only): no es comprable, solo se muestra como "Plan actual". */
+  free?: boolean;
 }
 
+export const FREE_PLAN: RegisterPlan = {
+  id: 'free', name: 'Gratuito', priceUsd: 0, priceCop: 0,
+  conversations: 0, aiMessages: 0,
+  tagline: 'Explora todas las herramientas en modo vista',
+  free: true,
+};
+
 export const REGISTER_PLANS: RegisterPlan[] = [
+  FREE_PLAN,
   { id: 'starter', name: 'Starter', priceUsd: 19, priceCop: 76000, conversations: 500, aiMessages: 25, tagline: 'Para empezar a automatizar' },
   { id: 'standard', name: 'Standard', priceUsd: 33, priceCop: 132000, conversations: 1000, aiMessages: 40, tagline: 'Para negocios en crecimiento' },
   { id: 'pro', name: 'Pro', priceUsd: 69, priceCop: 276000, conversations: 3000, aiMessages: 50, tagline: 'Para operación seria', featured: true },
   { id: 'enterprise', name: 'Enterprise', priceUsd: 319, priceCop: 1276000, conversations: 20000, aiMessages: 65, tagline: 'Para agencias y alto volumen' },
 ];
+
+/** Planes pagos (excluye el gratuito) — para el flujo de activación. */
+export const PAID_PLANS: RegisterPlan[] = REGISTER_PLANS.filter((p) => !p.free);
+
+/** Precio del canal: $10 USD/mes, cobrado APARTE del plan. */
+export const CHANNEL_PRICE_USD = 10;
+export const CHANNEL_PRICE_COP = 40000;
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hora
 
@@ -107,38 +127,36 @@ export function setupAuthPublicRoutes(
     return db.users;
   };
 
-  // Lista de planes
+  // Lista de planes PAGOS (para activación; el gratuito no es comprable)
   app.get('/api/auth/plans', (_req: Request, res: Response) => {
-    res.json({ success: true, plans: REGISTER_PLANS });
+    res.json({ success: true, plans: PAID_PLANS });
   });
 
-  // Registro + creación de orden Bold
+  // Registro GRATUITO (freemium): crea usuario free + auto-login. Sin orden Bold.
   app.post('/api/auth/register', async (req: Request, res: Response) => {
     try {
-      const { name, email, whatsapp, password, planId, referralCode } = req.body || {};
-      const normName = String(name || '').trim();
+      const { name, email, whatsapp, password, referralCode } = req.body || {};
       const normEmail = String(email || '').trim().toLowerCase();
+      // Registro freemium: SOLO email + contraseña. El nombre es opcional; si no
+      // llega, se deriva del prefijo del correo (algunas vistas muestran name).
+      const rawName = String(name || '').trim();
+      const normName = rawName.length >= 2
+        ? rawName
+        : (normEmail.split('@')[0].replace(/[._-]+/g, ' ').trim() || 'Usuario');
       const normPhone = String(whatsapp || '').replace(/\D/g, '');
       const pass = String(password || '');
-      const plan = REGISTER_PLANS.find((p) => p.id === String(planId || '').trim().toLowerCase());
 
-      if (!normName || normName.length < 2) return res.status(400).json({ success: false, error: 'Ingresa tu nombre completo.' });
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(normEmail)) return res.status(400).json({ success: false, error: 'Ingresa un correo válido.' });
       if (pass.length < 6) return res.status(400).json({ success: false, error: 'La contraseña debe tener al menos 6 caracteres.' });
-      if (!plan) return res.status(400).json({ success: false, error: 'Selecciona un plan.' });
 
       const users = getUsers();
       if (users.some((u: any) => String(u.email || '').trim().toLowerCase() === normEmail)) {
         return res.status(409).json({ success: false, error: 'Este correo ya está registrado. Inicia sesión o restablece tu contraseña.' });
       }
 
-      if (!BOLD_PRODUCTION_CONFIG.merchantId || !BOLD_PRODUCTION_CONFIG.apiKey || !BOLD_PRODUCTION_CONFIG.secretKey) {
-        return res.status(503).json({ success: false, error: 'La pasarela de pagos no está configurada. Inténtalo más tarde.' });
-      }
-
       const passwordHash = await bcrypt.hash(pass, 12);
-      const orderId = `REG-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
       const username = normEmail.split('@')[0].toLowerCase().replace(/[^a-z0-9_-]/g, '') || `user${Date.now().toString().slice(-6)}`;
+      const nowIso = new Date().toISOString();
 
       const newUser: any = {
         id: `u-${Date.now()}-${Math.floor(Math.random() * 1e6)}`,
@@ -148,50 +166,37 @@ export function setupAuthPublicRoutes(
         phone: normPhone,
         password: passwordHash,
         role: 'user',
-        plan: plan.name,
-        planId: plan.id,
-        status: 'pendiente_pago',
-        pendingOrderId: orderId,
-        createdAt: new Date().toISOString(),
+        plan: FREE_PLAN.name,
+        planId: FREE_PLAN.id,
+        status: 'activo',
+        createdAt: nowIso,
+        lastActivityAt: nowIso,
       };
       if (referralCode) newUser.referralCode = String(referralCode).trim();
       users.push(newUser);
       saveDB(getDB());
 
-      // Orden Bold (misma firma que /api/integrations/bold/create-payment)
-      const amount = plan.priceCop;
-      const currency = 'COP';
-      const signature = calculateBoldIntegritySignature(orderId, amount, currency, BOLD_PRODUCTION_CONFIG.secretKey);
-      const description = `Registro Xorbit 360 - Plan ${plan.name}`;
-      const redirectionUrl = `https://crm.xorbit360.com/?view=register&payment_status=completed&order=${orderId}`;
+      // Auto-login: el usuario entra directo en modo gratuito (view-only)
+      setSessionCookie(res, {
+        name: newUser.name, email: newUser.email, role: newUser.role,
+        username: newUser.username, phone: newUser.phone || '', plan: newUser.plan,
+      });
 
       // Email de bienvenida (no bloquea el registro si falla)
       const appUrl = 'https://crm.xorbit360.com';
       sendAuthEmail(
         normEmail,
-        `Bienvenido a Xorbit 360 — completa tu registro`,
+        `Bienvenido a Xorbit 360 — tu cuenta está lista`,
         emailShell(
-          `Hola ${normName.split(' ')[0]}, tu cuenta está casi lista`,
-          `<p>Te registraste al plan <b style="color:#d4a437;">${plan.name}</b> (USD ${plan.priceUsd}). Completa el pago para activar tu acceso al CRM.</p><p>Si ya pagaste, tu cuenta se activará automáticamente en unos segundos.</p>`,
-          { label: 'Ir a Xorbit 360', url: appUrl },
+          `Hola ${normName.split(' ')[0]}, tu cuenta está lista`,
+          `<p>Ya puedes explorar todas las herramientas de <b style="color:#d4a437;">Xorbit 360</b> en modo vista.</p><p>Cuando quieras conectar tu primer canal de WhatsApp, activar llamadas con IA o crear videos, solo toca <b>“Activar plan”</b> dentro de la plataforma.</p>`,
+          { label: 'Explorar Xorbit 360', url: appUrl },
         ),
       ).catch(() => {});
 
       return res.json({
         success: true,
-        orderId,
-        plan: { id: plan.id, name: plan.name, priceUsd: plan.priceUsd, priceCop: plan.priceCop },
-        bold: {
-          merchantId: BOLD_PRODUCTION_CONFIG.merchantId,
-          apiKey: BOLD_PRODUCTION_CONFIG.apiKey,
-          orderId,
-          amount: String(amount),
-          currency,
-          integritySignature: signature,
-          description,
-          redirectionUrl,
-          renderMode: 'embedded',
-        },
+        user: { name: newUser.name, email: newUser.email, role: newUser.role, plan: newUser.plan, planId: newUser.planId, username: newUser.username, phone: newUser.phone },
       });
     } catch (err: any) {
       console.error('[AuthPublic] Error en registro:', err);

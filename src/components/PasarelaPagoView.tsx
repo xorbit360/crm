@@ -272,14 +272,16 @@ export default function PasarelaPagoView() {
   };
 
   const handleSaveConfiguration = () => {
+    // Seguridad: la clave secreta NUNCA se guarda en localStorage.
+    // Solo se guarda configuración no sensible; el secretKey vive solo en memoria.
     const configToSave = {
       environment,
-      wompi: { merchantId, secretKey },
-      gateways
+      wompi: { merchantId },
+      gateways: gateways.map(g => ({ ...g, secretKey: undefined, apiKey: undefined }))
     };
     localStorage.setItem('XORBIT 360_PAYMENT_CONFIG', JSON.stringify(configToSave));
     window.dispatchEvent(new Event('payment-config-updated'));
-    setSavedToast('⚡ Credenciales de la Empresa Guardadas y Conectadas Automáticamente con las Recargas.');
+    setSavedToast('⚡ Configuración guardada. Por seguridad, la clave secreta no se almacena en este navegador.');
     setTimeout(() => setSavedToast(null), 4000);
   };
 

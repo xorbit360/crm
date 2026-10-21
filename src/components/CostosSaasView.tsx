@@ -214,20 +214,19 @@ export default function CostosSaasView() {
     setLiveError(null);
     try {
       const [stateRes, balRes] = await Promise.all([
-        fetch('/api/backoffice/state', { cache: 'no-store' }),
+        fetch('/api/backoffice/costos-data', { cache: 'no-store' }),
         fetch('/api/credits/balance', { cache: 'no-store' }),
       ]);
-      if (!stateRes.ok) throw new Error('No se pudo leer /api/backoffice/state (' + stateRes.status + ')');
+      if (!stateRes.ok) throw new Error('No se pudo leer /api/backoffice/costos-data (' + stateRes.status + ')');
       const state: any = await stateRes.json();
       const balJson: any = balRes.ok ? await balRes.json() : null;
 
       const chats: any[] = Array.isArray(state.chats) ? state.chats : [];
       let demoChats = 0;
       chats.forEach((c: any) => { if (String(c?.id || '').startsWith('demo')) demoChats++; });
-      const mh = state.messagesHistory && typeof state.messagesHistory === 'object' ? state.messagesHistory : {};
-      const historyKeys = Object.keys(mh).length;
-      let totalMessages = 0;
-      Object.values(mh).forEach((v: any) => { if (Array.isArray(v)) totalMessages += v.length; });
+      // El endpoint delgado ya trae los conteos del historial calculados.
+      const historyKeys = Number(state.historyKeys || 0);
+      const totalMessages = Number(state.totalMessages || 0);
 
       const logs: any[] = Array.isArray(state.aiDebugLogs) ? state.aiDebugLogs : [];
       let promptTokens = 0, completionTokens = 0, totalTokens = 0, durSum = 0, durN = 0;
@@ -374,7 +373,7 @@ export default function CostosSaasView() {
       {liveError && (
         <div className="panel p-4 rounded-2xl border border-red-500/40 bg-red-950/30 text-xs text-red-200 flex items-start gap-2">
           <AlertCircle size={16} className="shrink-0 mt-0.5" />
-          <span>No se pudieron cargar las métricas en vivo: {liveError}. Revisa la conexión con /api/backoffice/state y pulsa “Actualizar métricas”. Los cálculos por plan siguen disponibles con los supuestos medidos.</span>
+          <span>No se pudieron cargar las métricas en vivo: {liveError}. Revisa la conexión con /api/backoffice/costos-data y pulsa “Actualizar métricas”. Los cálculos por plan siguen disponibles con los supuestos medidos.</span>
         </div>
       )}
       {live && (

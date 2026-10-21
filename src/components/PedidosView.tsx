@@ -132,10 +132,10 @@ export default function PedidosView({ currentUser }: { currentUser?: { role?: st
         }
         return;
       }
-      const merged = await mergeServerOrders([]);
+      // Usuarios no-admin: todo en cero (no ven datos demo del servidor)
       if (!cancelled) {
-        setOrders(merged);
-        localStorage.setItem(ordersStorageKey, JSON.stringify(merged));
+        setOrders([]);
+        localStorage.setItem(ordersStorageKey, JSON.stringify([]));
       }
     })();
     return () => { cancelled = true; };
@@ -367,34 +367,29 @@ export default function PedidosView({ currentUser }: { currentUser?: { role?: st
     resetForm();
   };
 
-  // Dropi Sincronización API Simulation
-  const handleDropiSync = () => {
+  // Sincronización REAL con Dropi vía backend
+  const handleDropiSync = async () => {
     setIsSyncing(true);
-    setSyncMessage('Conectando con la API de Dropi Latam...');
+    setSyncMessage('Conectando con la API de Dropi…');
 
-    setTimeout(() => {
-      setSyncMessage('Autenticando credenciales de MasterShop/Dropi...');
-      setTimeout(() => {
-        setSyncMessage('Descargando guías de transporte actualizadas...');
-        setTimeout(() => {
-          // Update orders with simulated tracking statuses
-          const updated = orders.map(o => {
-            if (o.shippingStatus === 'Creado en Dropi') {
-              return { ...o, shippingStatus: 'Bodega Medellín' };
-            } else if (o.shippingStatus === 'Bodega Medellín') {
-              return { ...o, shippingStatus: 'En camino' };
-            } else if (o.shippingStatus === 'En camino' && Math.random() > 0.4) {
-              return { ...o, shippingStatus: 'Entregado' };
-            }
-            return o;
-          });
-          saveToStorage(updated);
-          setIsSyncing(false);
-          setSyncMessage('');
-          alert('📦 ¡Sincronización con Dropi Completada con Éxito! Las guías se han actualizado en tiempo real.');
-        }, 1200);
-      }, 1000);
-    }, 1000);
+    try {
+      const res = await fetch('/api/integrations/dropi/sync-orders', { method: 'POST' });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.updates)) {
+        const updated = orders.map(o => {
+          const u = data.updates.find((x: any) => x.orderId === o.id || x.trackingCode === o.trackingCode);
+          return u ? { ...o, shippingStatus: u.status } : o;
+        });
+        saveToStorage(updated);
+        alert(`Sincronización con Dropi completada. ${data.updates.length} pedido(s) actualizados.`);
+      } else {
+        alert(data.error || 'No se pudo sincronizar. Verifica tu conexión con Dropi en Integraciones.');
+      }
+    } catch (e: any) {
+      alert('Error conectando con Dropi: ' + (e.message || 'desconocido'));
+    }
+    setIsSyncing(false);
+    setSyncMessage('');
   };
 
   // Filter orders

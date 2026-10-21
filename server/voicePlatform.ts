@@ -452,17 +452,10 @@ export async function resolveCallTelephony(tenant: string): Promise<{ sid: strin
     }
     return { sid, auth, from, platform: true };
   }
-  // Modo clásico: el tenant trae su propia cuenta (voiceCalls.readConfig)
-  const { readVoiceCallsConfig } = await import('./voiceCalls.ts');
-  const cfg = await readVoiceCallsConfig();
-  const sid = decryptField((cfg as any).twilioAccountSid);
-  const token = decryptField((cfg as any).twilioAuthToken);
-  const from = String((cfg as any).twilioFromNumber || '');
-  if (!sid || !token || !from) {
-    const e: any = new Error('Configura la telefonía primero (cuenta y número).');
-    e.status = 400; throw e;
-  }
-  return { sid, auth: 'Basic ' + Buffer.from(`${sid}:${token}`).toString('base64'), from, platform: false };
+  // Solo plataforma integrada (decisión de Oscar, 2026-10-21): el modo clásico
+  // de cuenta propia por tienda se eliminó.
+  const e: any = new Error('La telefonía integrada no está activa. El Super Admin debe configurar la cuenta maestra en Llamadas → Telefonía.');
+  e.status = 400; throw e;
 }
 
 /** Verifica que el saldo alcance para al menos N minutos al precio con margen. */

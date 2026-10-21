@@ -369,7 +369,7 @@ const DEFAULT_TRACKING_TRIGGERS: TrackingTrigger[] = [
     id: 'trig-1',
     dropiStatus: 'PENDING_CONFIRMATION',
     label: 'Pendiente confirmación',
-    templateSlug: 'pedido_pendiente_confirmacion',
+    templateSlug: 'seguimiento_pendiente_confirmacion',
     templateName: 'Pedido pendiente de confirmacion',
     enabled: true,
     metaApproved: false
@@ -378,7 +378,7 @@ const DEFAULT_TRACKING_TRIGGERS: TrackingTrigger[] = [
     id: 'trig-2',
     dropiStatus: 'PENDING',
     label: 'Pendiente',
-    templateSlug: 'pedido_confirmado_logistica',
+    templateSlug: 'pedido_confirmado',
     templateName: 'Pedido confirmado por logistica',
     enabled: true,
     metaApproved: false
@@ -387,7 +387,7 @@ const DEFAULT_TRACKING_TRIGGERS: TrackingTrigger[] = [
     id: 'trig-3',
     dropiStatus: 'GUIDE_GENERATED',
     label: 'Guía generada',
-    templateSlug: 'guia_envio_generada',
+    templateSlug: 'seguimiento_guia_generada',
     templateName: 'Guia de envio generada',
     enabled: true,
     metaApproved: false
@@ -396,7 +396,7 @@ const DEFAULT_TRACKING_TRIGGERS: TrackingTrigger[] = [
     id: 'trig-4',
     dropiStatus: 'READY_FOR_CARRIER',
     label: 'Preparado para transportadora',
-    templateSlug: 'pedido_preparado_transportadora',
+    templateSlug: 'seguimiento_preparado_transportadora',
     templateName: 'Pedido preparado para transportadora',
     enabled: true,
     metaApproved: false
@@ -405,7 +405,7 @@ const DEFAULT_TRACKING_TRIGGERS: TrackingTrigger[] = [
     id: 'trig-5',
     dropiStatus: 'IN_TRANSIT',
     label: 'En procesamiento / en camino',
-    templateSlug: 'pedido_en_procesamiento_o_camino',
+    templateSlug: 'seguimiento_en_reparto',
     templateName: 'Pedido en procesamiento o en camino',
     enabled: true,
     metaApproved: false
@@ -414,7 +414,7 @@ const DEFAULT_TRACKING_TRIGGERS: TrackingTrigger[] = [
     id: 'trig-6',
     dropiStatus: 'AT_WAREHOUSE',
     label: 'En bodega transportadora',
-    templateSlug: 'pedido_en_bodega_transportadora',
+    templateSlug: 'seguimiento_en_oficina',
     templateName: 'Pedido en bodega transportadora',
     enabled: false,
     metaApproved: false
@@ -423,7 +423,7 @@ const DEFAULT_TRACKING_TRIGGERS: TrackingTrigger[] = [
     id: 'trig-7',
     dropiStatus: 'OUT_FOR_DELIVERY',
     label: 'En reparto hoy con mensajero',
-    templateSlug: 'pedido_en_reparto_hoy',
+    templateSlug: 'seguimiento_en_reparto',
     templateName: 'Pedido en reparto hoy',
     enabled: true,
     metaApproved: false
@@ -432,7 +432,7 @@ const DEFAULT_TRACKING_TRIGGERS: TrackingTrigger[] = [
     id: 'trig-8',
     dropiStatus: 'DELIVERED',
     label: 'Entregado con éxito',
-    templateSlug: 'pedido_entregado_gracias',
+    templateSlug: 'seguimiento_entregado',
     templateName: 'Pedido entregado y gracias',
     enabled: true,
     metaApproved: false
@@ -441,7 +441,7 @@ const DEFAULT_TRACKING_TRIGGERS: TrackingTrigger[] = [
     id: 'trig-9',
     dropiStatus: 'FAILED_ATTEMPT',
     label: 'Novedad / Intento fallido',
-    templateSlug: 'novedad_entrega_pedido',
+    templateSlug: 'novedad_generica',
     templateName: 'Novedad en entrega de pedido',
     enabled: true,
     metaApproved: false

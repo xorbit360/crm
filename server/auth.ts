@@ -145,6 +145,8 @@ const PUBLIC_API_ROUTES = new Set([
   'GET /api/health',
   'POST /api/auth/login',
   'GET /api/auth/plans',
+  'GET /api/radar/countries',
+  'GET /api/billing/radar-tiers',
   'POST /api/auth/register',
   'GET /api/auth/order-status',
   'POST /api/auth/forgot-password',

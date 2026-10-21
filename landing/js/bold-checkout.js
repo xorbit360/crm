@@ -42,8 +42,8 @@
     }
   };
 
-  const CHANNEL_ADDON_PRICE_USD = 3;
-  const CHANNEL_ADDON_PRICE_COP = 12000;
+  const CHANNEL_ADDON_PRICE_USD = 10;
+  const CHANNEL_ADDON_PRICE_COP = 40000;
 
   // Estado del Checkout actual
   let currentSelection = {

@@ -4,6 +4,7 @@ import { renderLivePage } from './livePage.ts';
 import { findPageByDomain as findBuilderPageByDomain, renderPageHtml as renderBuilderPageHtml } from './pageBuilder.ts';
 import crypto from 'crypto';
 import { encryptSecret, decryptSecret, isEncryptedSecret, maskSecret } from './secretBox.ts';
+import { getSession } from './auth.ts';
 
 // ============================================================================
 // Live Selling real: landings multi-tenant, API pública y panel CRM.
@@ -34,6 +35,23 @@ function db(): any {
 }
 
 function tenantId(req: Request): string {
+  // Aislamiento real por usuario: usar la sesión, no DEFAULT_TENANT compartido
+  try {
+    const session = getSession(req);
+    if (session) {
+      const userKey = String((session as any).sub || (session as any).username || (session as any).email || '');
+      if (userKey && userKey !== 'anonymous') {
+        // Si es miembro de equipo, usar la key del admin
+        // (el mapeo teamMembers está en currentDB global)
+        try {
+          const db = (globalThis as any).currentDB;
+          const member = db?.teamMembers?.[userKey];
+          if (member && member.adminKey) return String(member.adminKey).slice(0, 80);
+        } catch {}
+        return userKey.slice(0, 80);
+      }
+    }
+  } catch {}
   const user: any = (req as any).authUser || {};
   return String(user.workspaceId || user.tenantId || DEFAULT_TENANT).slice(0, 80);
 }
@@ -1199,6 +1217,13 @@ export function setupLiveSellingAdminRoutes(app: Express): void {
       .single();
     if (readError || !current) { res.status(404).json({ success: false, error: 'Landing no encontrada' }); return; }
 
+    // Proteger plantillas de ejemplo: no se pueden editar, solo duplicar
+    const TEMPLATE_SLUGS = ['tienda-live', 'emprendedores-live'];
+    if (TEMPLATE_SLUGS.includes(current.slug)) {
+      res.status(403).json({ success: false, error: 'Las plantillas de ejemplo no se pueden editar. Usa "Usar esta plantilla" para crear tu propia copia.' });
+      return;
+    }
+
     const patch = parseLandingBody(req.body || {}, true, current.config || {});
     if (req.body?.slug !== undefined) {
       const slug = slugify(req.body.slug);
@@ -1293,6 +1318,18 @@ export function setupLiveSellingAdminRoutes(app: Express): void {
     const client = db();
     const tenant = tenantId(req);
     if (!UUID_RE.test(req.params.id)) { res.status(404).json({ success: false, error: 'Landing no encontrada' }); return; }
+    // Proteger plantillas: no se pueden eliminar
+    const { data: current } = await client
+      .from('live_landings')
+      .select('slug')
+      .eq('id', req.params.id)
+      .eq('tenant_id', tenant)
+      .single();
+    const TEMPLATE_SLUGS = ['tienda-live', 'emprendedores-live'];
+    if (current && TEMPLATE_SLUGS.includes(current.slug)) {
+      res.status(403).json({ success: false, error: 'Las plantillas de ejemplo no se pueden eliminar.' });
+      return;
+    }
     const { data, error } = await client
       .from('live_landings')
       .update({ status: 'archived' })

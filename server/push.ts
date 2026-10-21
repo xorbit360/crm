@@ -50,6 +50,13 @@ async function setAppSetting(key: string, value: string): Promise<void> {
   await db().from('app_settings').upsert({ key, value }, { onConflict: 'key' });
 }
 
+// web-push es CJS: con import() dinámico en ESM las funciones quedan en
+// .default (generateVAPIDKeys/setVapidDetails no existen en el namespace).
+async function loadWebPush(): Promise<any> {
+  const mod: any = await import('web-push');
+  return mod?.default ?? mod;
+}
+
 // Las claves VAPID se generan una sola vez y viven en la base de datos.
 async function getVapidKeys(): Promise<{ publicKey: string; privateKey: string }> {
   const stored = await getAppSetting('push_vapid_keys');
@@ -63,7 +70,7 @@ async function getVapidKeys(): Promise<{ publicKey: string; privateKey: string }
     } catch { /* regenerar abajo */ }
   }
   // Generar con web-push (viene en dependencies).
-  const webpush = await import('web-push');
+  const webpush = await loadWebPush();
   const keys = webpush.generateVAPIDKeys();
   await setAppSetting('push_vapid_keys', JSON.stringify({
     publicKey: keys.publicKey,
@@ -74,7 +81,7 @@ async function getVapidKeys(): Promise<{ publicKey: string; privateKey: string }
 }
 
 async function getWebPush(): Promise<any> {
-  const webpush = await import('web-push');
+  const webpush = await loadWebPush();
   const keys = await getVapidKeys();
   webpush.setVapidDetails('mailto:admin@xorbit360.com', keys.publicKey, keys.privateKey);
   return webpush;

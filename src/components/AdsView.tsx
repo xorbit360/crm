@@ -480,8 +480,6 @@ export default function AdsView({
   // Utility to fire a beautiful live popup representing the scheduled WhatsApp notification trigger
   const showToastNotification = (title: string, message: string, type: 'alert' | 'success' = 'alert', phone = '+57 3192392853') => {
     setActiveNotification({ title, message, phone, type });
-    // Sound simulator or standard alert log
-    console.log(`[WhatsApp Webhook Triggered] ${title} - ${message} to ${phone}`);
   };
 
   // Handle manual campaign launcher submission

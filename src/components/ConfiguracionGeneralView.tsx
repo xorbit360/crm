@@ -16,6 +16,7 @@ import ProyectosView from './ProyectosView';
 import ProveedorIaOpenRouter from './ProveedorIaOpenRouter';
 import ProveedorCorreoResend from './ProveedorCorreoResend';
 import PlatformWebhooksTab from './PlatformWebhooksTab';
+import TeamManagementView from './TeamManagementView';
 
 interface ConfiguracionGeneralViewProps {
   currentLanguage: Language;
@@ -26,7 +27,7 @@ interface ConfiguracionGeneralViewProps {
   toggleVisibility?: (id: string) => void;
   currentUser?: { name: string; role: string; email: string; plan?: string } | null;
   onCustomizationApplied?: (config: any) => void;
-  initialTab?: 'personalizacion' | 'general' | 'usuarios' | 'automatizaciones' | 'integraciones' | 'recargas' | 'referidos' | 'dominio' | 'tickets' | 'costos' | 'pasarela' | 'mcp_api' | 'embudos' | 'webhooks';
+  initialTab?: 'personalizacion' | 'general' | 'usuarios' | 'equipo' | 'automatizaciones' | 'integraciones' | 'recargas' | 'referidos' | 'dominio' | 'tickets' | 'costos' | 'pasarela' | 'mcp_api' | 'embudos' | 'webhooks';
 }
 
 export default function ConfiguracionGeneralView({
@@ -41,7 +42,7 @@ export default function ConfiguracionGeneralView({
   initialTab = 'general',
 }: ConfiguracionGeneralViewProps) {
   const t = translations[currentLanguage];
-  const [activeTab, setActiveTab] = useState<'personalizacion' | 'general' | 'usuarios' | 'automatizaciones' | 'integraciones' | 'recargas' | 'referidos' | 'dominio' | 'tickets' | 'costos' | 'pasarela' | 'mcp_api' | 'embudos' | 'webhooks'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'personalizacion' | 'general' | 'usuarios' | 'equipo' | 'automatizaciones' | 'integraciones' | 'recargas' | 'referidos' | 'dominio' | 'tickets' | 'costos' | 'pasarela' | 'mcp_api' | 'embudos' | 'webhooks'>(initialTab);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [autoSave, setAutoSave] = useState(true);
   const [notifications, setNotifications] = useState(true);
@@ -107,6 +108,17 @@ export default function ConfiguracionGeneralView({
           >
             <Users size={16} />
             {t.usuarios}
+          </button>
+          <button
+            onClick={() => setActiveTab('equipo')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap cursor-pointer ${
+              activeTab === 'equipo'
+                ? 'bg-gold text-black shadow-lg shadow-gold/20 font-bold'
+                : 'text-gray-400 hover:text-white hover:bg-gray-800/60'
+            }`}
+          >
+            <Users size={16} />
+            Mi equipo
           </button>
 
           <button
@@ -282,6 +294,10 @@ export default function ConfiguracionGeneralView({
           toggleVisibility={toggleVisibility}
           currentUser={currentUser}
         />
+      )}
+
+      {activeTab === 'equipo' && (
+        <TeamManagementView currentUser={currentUser} />
       )}
 
       {activeTab === 'tickets' && (

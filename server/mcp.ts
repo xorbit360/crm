@@ -21,9 +21,9 @@ const USER_TOKEN = () => process.env.MCP_USER_TOKEN || '';
 const HOSTINGER_TOKEN = () => String(process.env.HOSTINGER_API_TOKEN || '').trim();
 const SUPABASE_URL = () => String(process.env.SUPABASE_URL || '').replace(/\/$/, '');
 const SUPABASE_KEY = () => process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || '';
-const VPS_SSH_HOST = () => process.env.VPS_SSH_HOST || '2.25.221.151';
-const VPS_SSH_USER = () => process.env.VPS_SSH_USER || 'root';
-const VPS_SSH_KEY = () => process.env.VPS_SSH_KEY_PATH || '/run/secrets/mcp_vps_ed25519';
+const VPS_SSH_HOST = () => process.env.VPS_SSH_HOST || '';
+const VPS_SSH_USER = () => process.env.VPS_SSH_USER || '';
+const VPS_SSH_KEY = () => process.env.VPS_SSH_KEY_PATH || '';
 
 function tokenFor(req: Request, role: McpRole): boolean {
   const header = String(req.headers.authorization || '');

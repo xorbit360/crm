@@ -467,6 +467,27 @@ export async function loadWhatsappFromTables(configKeys: string[], limit: number
   };
 }
 
+/**
+ * Historial COMPLETO (sin compactar) de una sola conversación, en orden
+ * cronológico ascendente. Lo usa la carga bajo demanda al abrir un chat
+ * cuyos adjuntos llegaron como referencia liviana (deferred).
+ */
+export async function loadConversationHistoryFromTables(historyKey: string, limit: number): Promise<any[] | null> {
+  if (!isSupabaseConfigured()) return null;
+  const client = getSupabase();
+  if (!client) return null;
+
+  const { data, error } = await client
+    .from('messages')
+    .select('raw,ts_ms')
+    .eq('workspace_id', NORMALIZED_WORKSPACE_ID)
+    .eq('history_key', historyKey)
+    .order('ts_ms', { ascending: true, nullsFirst: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return (data || []).map((row: any) => (row as any).raw).filter(Boolean);
+}
+
 async function fetchAllRows(
   client: any,
   table: string,
