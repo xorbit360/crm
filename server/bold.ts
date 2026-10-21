@@ -202,6 +202,56 @@ export function setupBoldRoutes(app: express.Express, getCurrentDB?: () => any, 
 
             if (isApproved) {
               const pkg = getPackageDetailsFromAmount(amount, description);
+              // Enrutar al dueño de la orden cuando sea identificable: primero
+              // por la orden creada en este proceso, luego por el correo del
+              // pagador en el payload. Si se identifica, el saldo va a SU
+              // billetera aislada y la recarga a SU historial; el fondo global
+              // solo recibe compras sin usuario identificado (compras de la casa).
+              const knownTx: any = orderId ? inMemoryTransactions.get(String(orderId)) : null;
+              const payerEmail = String(
+                knownTx?.customerEmail ||
+                (payload as any)?.data?.customer?.email ||
+                (payload as any)?.customer?.email ||
+                (payload as any)?.data?.payer_email ||
+                (payload as any)?.payer_email ||
+                (payload as any)?.customerEmail ||
+                (payload as any)?.data?.customerEmail || ''
+              ).trim().toLowerCase();
+              const accountUser = payerEmail && payerEmail !== 'usuario@xorbit360.com'
+                ? (Array.isArray(db.users) ? db.users : []).find((u: any) => String(u?.email || '').trim().toLowerCase() === payerEmail)
+                : null;
+              let routedToUser = false;
+              if (accountUser) {
+                const userKey = String(accountUser.email).trim().toLowerCase();
+                if (!db.userData || typeof db.userData !== 'object') db.userData = {};
+                if (!db.userData[userKey] || typeof db.userData[userKey] !== 'object') {
+                  db.userData[userKey] = { products: [], orders: [], customers: [], chats: [], conversations: {}, messagesHistory: {}, aiConfig: {}, socialComments: [] };
+                }
+                const store = db.userData[userKey];
+                if (!store.wallet || typeof store.wallet !== 'object') {
+                  store.wallet = { conversations: 0, aiMessagesPerConv: 0, audioMinutes: 0, packagesBought: 0 };
+                }
+                store.wallet.conversations = (store.wallet.conversations || 0) + pkg.conversations;
+                store.wallet.aiMessagesPerConv = Math.max(store.wallet.aiMessagesPerConv || 0, pkg.aiMessagesPerConv);
+                store.wallet.audioMinutes = (store.wallet.audioMinutes || 0) + (pkg.audioMinutes || 0);
+                store.wallet.packagesBought = (store.wallet.packagesBought || 0) + 1;
+                if (!Array.isArray(db.rechargeTransactions)) db.rechargeTransactions = [];
+                db.rechargeTransactions.push({
+                  id: `BOLD-${(payload as any)?.data?.id || (payload as any)?.id || eventId}`,
+                  orderId: String(orderId),
+                  amount, amountCOP: amount, currency: 'COP',
+                  status: 'completed', gateway: 'bold', packageName: pkg.name,
+                  packageType: pkg.audioMinutes > 0 ? 'audio' : 'conversations', paymentType: 'Bold Payments',
+                  creditsAdded: `+${pkg.conversations} conversaciones`,
+                  customerEmail: userKey,
+                  date: new Date().toISOString().split('T')[0],
+                  timestamp: new Date().toISOString(), completedAt: new Date().toISOString(),
+                  reference: String(orderId),
+                });
+                routedToUser = true;
+                console.log(`[Bold Gateway] Recarga acreditada al usuario ${userKey}: ${pkg.name} (+${pkg.conversations} conv).`);
+              }
+              if (!routedToUser) {
               if (!db.aiBalance) {
                 db.aiBalance = {
                   conversations: 500,
@@ -215,6 +265,7 @@ export function setupBoldRoutes(app: express.Express, getCurrentDB?: () => any, 
               db.aiBalance.aiMessagesPerConv = Math.max(db.aiBalance.aiMessagesPerConv || 25, pkg.aiMessagesPerConv);
               db.aiBalance.audioMinutes = (db.aiBalance.audioMinutes || 0) + (pkg.audioMinutes || 0);
               db.aiBalance.lastRechargeAt = new Date().toISOString();
+              }
 
               if (!db.rechargeHistory) db.rechargeHistory = [];
               db.rechargeHistory.unshift({
@@ -228,7 +279,7 @@ export function setupBoldRoutes(app: express.Express, getCurrentDB?: () => any, 
               });
               if (db.rechargeHistory.length > 50) db.rechargeHistory = db.rechargeHistory.slice(0, 50);
 
-              console.log(`[Bold Gateway] Recarga procesada exitosamente: ${pkg.name} (+${pkg.conversations} conv, ${pkg.aiMessagesPerConv} msgs/conv). Nuevo balance: ${db.aiBalance.conversations} conversaciones.`);
+              console.log(`[Bold Gateway] Recarga procesada exitosamente: ${pkg.name} (+${pkg.conversations} conv, ${pkg.aiMessagesPerConv} msgs/conv). Balance global: ${db.aiBalance?.conversations ?? 'sin cambios (acreditada al usuario)'} conversaciones.`);
             }
 
             saveCurrentDB(db);

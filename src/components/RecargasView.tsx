@@ -177,35 +177,25 @@ export function RecargasView() {
     window.dispatchEvent(new Event('credits_updated'));
   };
 
-  const [transactions, setTransactions] = useState<RechargeTransaction[]>([
-    {
-      id: 'REC-98231',
-      date: '2026-07-20 14:32',
-      packageName: 'Paquete Pro',
-      type: 'Conversaciones Texto + IA',
-      amount: 69.00,
-      creditsAdded: '+3,000 conversaciones',
-      status: 'Completado',
-    },
-    {
-      id: 'REC-77120',
-      date: '2026-06-15 09:15',
-      packageName: 'Paquete Starter',
-      type: 'Conversaciones Texto + IA',
-      amount: 19.00,
-      creditsAdded: '+500 conversaciones',
-      status: 'Completado',
-    },
-    {
-      id: 'REC-55410',
-      date: '2026-05-02 18:40',
-      packageName: 'Paquete Standard Audio',
-      type: 'Audio Voz IA',
-      amount: 10.00,
-      creditsAdded: '+30 minutos de audio',
-      status: 'Completado',
-    }
-  ]);
+  const [transactions, setTransactions] = useState<RechargeTransaction[]>([]);
+
+  // Historial REAL del usuario (el servidor filtra por su cuenta). Antes esta
+  // lista era demo fija en el código: ya no se muestra ningún dato inventado.
+  const loadRealHistory = async () => {
+    try {
+      const res = await fetch('/api/credits/history');
+      const data = await res.json();
+      if (data?.success && Array.isArray(data.transactions)) {
+        setTransactions(data.transactions.map((t: any) => ({
+          ...t,
+          type: t.type === 'conversations' ? 'Conversaciones' : (t.type === 'audio' ? 'Audio Voz IA' : t.type),
+        })));
+      }
+    } catch { /* conserva lo ya cargado */ }
+  };
+
+  useEffect(() => { loadRealHistory(); }, []);
+  useEffect(() => { if (showHistoryModal) loadRealHistory(); }, [showHistoryModal]);
 
   // Load Company Payment Gateway Credentials from localStorage
   const [gatewayConfig, setGatewayConfig] = useState<any>(() => {

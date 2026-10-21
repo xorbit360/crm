@@ -5046,6 +5046,39 @@ function canAddChannel(userKey: string): { allowed: boolean; reason?: string; ch
     res.json({ success: true, balance });
   });
 
+  app.get("/api/credits/history", (req, res) => {
+    // Historial REAL de recargas del usuario de la sesión (sin datos demo):
+    // sale de currentDB.rechargeTransactions, donde el webhook de Bold y las
+    // conciliaciones registran cada pago. Superadmin ve el global.
+    const session = getSession(req);
+    if (!session) return res.status(401).json({ success: false, error: 'Sesión requerida.' });
+    const role = String((session as any)?.role || '').toLowerCase();
+    const all = Array.isArray(currentDB.rechargeTransactions) ? currentDB.rechargeTransactions : [];
+    let mine = all;
+    if (role !== 'superadmin') {
+      const email = getEffectiveUserKey(req).toLowerCase();
+      mine = all.filter((tx: any) => String(tx?.customerEmail || '').trim().toLowerCase() === email);
+    }
+    const transactions = mine.map((tx: any) => {
+      const amountCop = Number(tx?.amountCOP ?? (tx?.currency === 'COP' ? tx?.amount : 0) ?? 0) || 0;
+      const amountUsd = (tx?.currency === 'COP' || amountCop > 0)
+        ? Math.round((amountCop / 4000) * 100) / 100
+        : Number(tx?.amount || 0);
+      const rawDate = String(tx?.createdAt || tx?.timestamp || tx?.completedAt || tx?.date || '');
+      const date = rawDate ? rawDate.replace('T', ' ').slice(0, 16) : '';
+      return {
+        id: String(tx?.id || tx?.orderId || ''),
+        date,
+        packageName: String(tx?.packageName || 'Recarga Bold'),
+        type: String(tx?.type || tx?.packageType || 'Recarga'),
+        amount: amountUsd,
+        creditsAdded: String(tx?.creditsAdded || ''),
+        status: /complet|approved|paid/i.test(String(tx?.status || '')) ? 'Completado' : String(tx?.status || 'Completado'),
+      };
+    }).sort((a: any, b: any) => String(b.date).localeCompare(String(a.date)));
+    res.json({ success: true, transactions });
+  });
+
   app.post("/api/backoffice/state", (req, res) => {
     try {
       const incoming: Record<string, any> = { ...(req.body || {}) };
